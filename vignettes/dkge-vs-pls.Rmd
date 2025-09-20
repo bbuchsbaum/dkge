@@ -1,0 +1,86 @@
+---
+title: "DKGE versus Partial Least Squares"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{DKGE versus Partial Least Squares}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+This short note situates Design-Kernel Group Embedding (DKGE) relative to the
+partial least squares (PLS) framework described in McIntosh & Lobaugh (2004).
+The PLS summary below follows the terminology of that paper.
+
+## What classical PLS does
+
+- **Objective**: build latent variables (LVs) that maximise the covariance
+  between an exogenous block (task design or behaviour) and a brain-data block
+  (elements × time).
+- **Variants**: task PLS (condition differences), behaviour PLS (brain–behaviour
+  coupling), seed PLS (functional connectivity), and spatiotemporal PLS (treat
+  space × time jointly for fMRI/ERP/MEG).
+- **Workflow**:
+  1. Arrange data as a single matrix \(M \in \mathbb{R}^{(n k) \times (m t)}\)
+     with observations nested inside conditions.
+  2. Form cross-block covariance with an orthonormal design matrix and apply
+     SVD \(C^\top M = U S V^\top\).
+  3. Extract element/time saliences (singular image), design saliences, and
+     singular values.
+  4. Compute brain scores \(B = M U\) and design scores \(D = C V\).
+  5. For behaviour PLS, replace the design block with behaviour matrices and
+     correlate with \(M\) before SVD.
+- **Inference**: permutation tests for LV significance, bootstrap for voxel
+  salience reliability, Procrustes alignment to stabilise resampled LVs.
+
+PLS therefore emphasises *whole-pattern* effects and time-resolved couplings,
+using linear algebra and resampling to locate distributed, reliable patterns.
+
+## How DKGE relates
+
+DKGE inherits the idea of using a small latent space to explain subject-wise GLM
+outputs, but it is tailored for multi-subject neuroimaging with design-aware
+alignment and transport. The table below summarises commonalities and key
+advances.
+
+| Aspect | Partial Least Squares | DKGE |
+|--------|-----------------------|------|
+| **Latent-space construction** | SVD on cross-block covariance between design/behaviour and brain data; columns of \(U\) and \(V\) are saliences. | Eigen-decomposition of a design-kernel-weighted covariance, producing orthonormal components \(U\). |
+| **Design information** | Implicit via orthonormal contrasts; no way to encode graded similarity between effects. | Explicit design kernel \(K\) encodes factorial structure, smoothness, or prior correlations among effects. |
+| **Data normalisation** | Conditions averaged or mean-centred before SVD; each voxel treated equally. | Row standardisation of subject betas using shared rulers; optional spatial/reliability weights \(\Omega_s\). |
+| **Cross-validation** | Permutation for LV significance, bootstrap for salience stability (no LOSO cross-fitting). | LOSO / K-fold cross-fitting (`dkge_contrast`), analytic approximations, parametric or bootstrap inference with cached transports. |
+| **Transport / alignment** | Outputs latent scores; spatial interpretation relies on the original voxel grid. | Provides barycentric kNN and Sinkhorn transports, anchor graphs, and voxel decoders for consistent spatial maps across parcellations. |
+| **Reliability weighting** | All observations weighted equally; stability assessed post hoc via bootstrap ratios. | Subject- and cluster-level reliabilities enter directly (e.g. sizes, inverse variances), influencing fits and transport. |
+| **Spatiotemporal support** | ST-PLS handles time by stacking features. | DKGE works on any GLM-derived beta blocks; temporal modelling is delegated to the design matrix and optional kernels. |
+| **Implementation focus** | Exploratory LVs; complementary to other analyses. | Integrated workflow for group GLM analysis, transport, and inference tailored to fMRI/ERP pipelines. |
+
+## Similarities worth noting
+
+- Both approaches rely on SVD/eigendecomposition to obtain orthogonal latent
+  patterns and associated scores.
+- Resampling is central: PLS uses permutation/bootstraps, while DKGE provides
+  analytic, LOSO, bootstrap, and transport-aware resampling utilities.
+- Interpretation requires inspecting latent loadings/saliences together with
+  subject scores to understand condition or behaviour effects.
+
+## Why DKGE can replace or complement PLS in modern pipelines
+
+1. **Design control** — kernels offer a principled way to encode factorial
+   relations, smoothing, or hierarchy, which is difficult in classical PLS.
+2. **Bias-aware contrasts** — cross-fitting avoids optimistic bias when
+   estimating condition or behaviour effects, and inference tools are built in.
+3. **Spatial alignment** — transport operators map component or contrast values
+   onto consistent anchor/voxel grids, enabling group-level interpretation even
+   with heterogeneous parcellations.
+4. **Reliability handling** — weights at the subject and cluster level ensure
+   noisy data contribute less, improving stability relative to uniform weighting.
+5. **Integration** — DKGE plugs into downstream rendering, bootstrapping, and
+   component analysis without rebuilding transport or design alignment logic.
+
+In summary, DKGE can be viewed as a design-aware, transport-enabled extension of
+PLS ideas: it preserves the interpretability of latent patterns while supplying
+inference, weighting, and spatial alignment mechanisms required for modern
+multi-subject neuroimaging studies.
