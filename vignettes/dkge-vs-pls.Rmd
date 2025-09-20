@@ -50,7 +50,7 @@ advances.
 |--------|-----------------------|------|
 | **Latent-space construction** | SVD on cross-block covariance between design/behaviour and brain data; columns of \(U\) and \(V\) are saliences. | Eigen-decomposition of a design-kernel-weighted covariance, producing orthonormal components \(U\). |
 | **Design information** | Implicit via orthonormal contrasts; no way to encode graded similarity between effects. | Explicit design kernel \(K\) encodes factorial structure, smoothness, or prior correlations among effects. |
-| **Data normalisation** | Conditions averaged or mean-centred before SVD; each voxel treated equally. | Row standardisation of subject betas using shared rulers; optional spatial/reliability weights \(\Omega_s\). |
+| **Data normalisation** | Conditions averaged or mean-centred before SVD; each voxel treated equally. | Row standardisation of subject betas using the pooled design Cholesky factor; optional spatial/reliability weights \(\Omega_s\). |
 | **Cross-validation** | Permutation for LV significance, bootstrap for salience stability (no LOSO cross-fitting). | LOSO / K-fold cross-fitting (`dkge_contrast`), analytic approximations, parametric or bootstrap inference with cached transports. |
 | **Transport / alignment** | Outputs latent scores; spatial interpretation relies on the original voxel grid. | Provides barycentric kNN and Sinkhorn transports, anchor graphs, and voxel decoders for consistent spatial maps across parcellations. |
 | **Reliability weighting** | All observations weighted equally; stability assessed post hoc via bootstrap ratios. | Subject- and cluster-level reliabilities enter directly (e.g. sizes, inverse variances), influencing fits and transport. |

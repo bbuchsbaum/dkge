@@ -1,7 +1,7 @@
 
 # dkge-stream.R (v0.5)
 # Memory-light, two-pass streaming fit over subjects/runs.
-# Pass 1: accumulate G_pool = Σ X'X to build the shared ruler R (R'R = G_pool).
+# Pass 1: accumulate G_pool = Σ X'X to build the pooled design Cholesky factor R (R'R = G_pool).
 # Pass 2: stream subjects again to update the tiny q×q matrix  Ĉ = K^{1/2} C K^{1/2}.
 # Optionally cache per-subject contributions S_s to disk for LOSO without recomputation.
 

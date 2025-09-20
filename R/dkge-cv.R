@@ -210,14 +210,14 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
   )
 }
 
-#' Pooled design-space covariance and shared ruler
+#' Pooled design-space covariance and Cholesky factor
 #'
-#' Computes the q×q pooled design covariance and the corresponding shared ruler
+#' Computes the q×q pooled design covariance and the corresponding Cholesky factor
 #' needed for fast kernel alignment screening.
 #'
 #' @inheritParams dkge_cv_rank_loso
 #' @return List containing `C` (pooled covariance in the ruler metric), `R`
-#'   (upper-triangular shared ruler), and `G` (pooled design Gram matrix).
+#'   (upper-triangular Cholesky factor), and `G` (pooled design Gram matrix).
 #' @export
 dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
   stopifnot(length(B_list) == length(X_list))

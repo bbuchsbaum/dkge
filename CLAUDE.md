@@ -86,4 +86,4 @@ Remote dependencies (GitHub):
 - Never form large P_s×P_s matrices
 - Use double precision and symmetrization for numerical stability
 - Add small ridge to eigenvalues when needed
-- Streaming variants process subjects in two passes: first to compute shared ruler R, then to accumulate compressed covariance
+- Streaming variants process subjects in two passes: first to compute the pooled design Cholesky factor R, then to accumulate compressed covariance

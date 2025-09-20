@@ -34,7 +34,7 @@ max_abs <- function(M) max(abs(M))
   Khalf  <- sym_eig_sqrt(K, inv = FALSE)
   Kihalf <- sym_eig_sqrt(K, inv = TRUE)
 
-  # shared ruler (Cholesky of pooled design Gram)
+  # pooled design Cholesky factor (R'R = pooled design Gram)
   Gpool <- crossprod(matrix(rnorm(5 * q), 5, q)) + diag(q) * 0.25
   R <- chol(Gpool)
 

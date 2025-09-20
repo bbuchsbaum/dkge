@@ -24,10 +24,10 @@
   list(R = chol(G_pool), G_pool = G_pool)
 }
 
-#' Row-standardise subject betas using shared ruler
+#' Row-standardise subject betas using pooled design Cholesky factor
 #'
 #' @param B_list List of q×P subject beta matrices.
-#' @param R Upper-triangular shared ruler from the pooled Gram matrix.
+#' @param R Upper-triangular Cholesky factor from the pooled Gram matrix.
 #' @return List of row-standardised betas (`R^T B_s`).
 #' @keywords internal
 #' @noRd
@@ -157,7 +157,6 @@
 #'   specifying custom covariance. These weights are applied both when
 #'   accumulating the compressed covariance and when computing MFA/energy block
 #'   normalisation.
-#' @inheritParams dkge
 #' @param w_method Subject-level weighting scheme.
 #'   * `"mfa_sigma1"` (default): inverse squared leading singular value of
 #'     `K^{1/2} Btil_s Omega_s^{1/2}` (Multiple Factor Analysis scaling).

@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-cv.R
 \name{dkge_pooled_cov_q}
 \alias{dkge_pooled_cov_q}
-\title{Pooled design-space covariance and shared ruler}
+\title{Pooled design-space covariance and Cholesky factor}
 \usage{
 dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
 }
@@ -15,9 +15,9 @@ dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
 }
 \value{
 List containing `C` (pooled covariance in the ruler metric), `R`
-  (upper-triangular shared ruler), and `G` (pooled design Gram matrix).
+  (upper-triangular Cholesky factor), and `G` (pooled design Gram matrix).
 }
 \description{
-Computes the q×q pooled design covariance and the corresponding shared ruler
+Computes the q×q pooled design covariance and the corresponding Cholesky factor
 needed for fast kernel alignment screening.
 }

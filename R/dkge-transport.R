@@ -318,6 +318,7 @@ dkge_transport_to_medoid_sinkhorn <- function(v_list, A_list, centroids, sizes =
 }
 
 #' @rdname dkge_transport_to_medoid_sinkhorn
+#' @param return_plans Logical; if TRUE, include transport plans in the output.
 #' @export
 dkge_transport_to_medoid_sinkhorn_cpp <- function(v_list, A_list, centroids, sizes = NULL,
                                                   medoid,

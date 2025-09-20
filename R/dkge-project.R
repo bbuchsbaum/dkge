@@ -3,7 +3,7 @@
 
 #' Preprocess a subject block into DKGE training space
 #'
-#' Applies the same transformations used during fitting (shared ruler,
+#' Applies the same transformations used during fitting (pooled design Cholesky factor,
 #' kernel whitening, optional spatial weights, and subject weighting) to a
 #' subject's beta matrix.
 #'

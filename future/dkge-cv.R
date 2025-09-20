@@ -30,7 +30,7 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                               w_method = "mfa_sigma1", w_tau = 0.3) {
   S <- length(B_list)
   q <- nrow(B_list[[1]])
-  # pre-fit once to get shared ruler and K roots & per-subject contribs
+  # pre-fit once to get pooled design Cholesky and K roots & per-subject contribs
   base <- dkge_fit(B_list, X_list, K, Omega_list, w_method=w_method, w_tau=w_tau, ridge=ridge, rank=max(ranks))
   Khalf <- base$Khalf
 

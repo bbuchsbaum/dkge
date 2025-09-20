@@ -66,7 +66,7 @@ eigen-decomposition.}
 }
 \value{
 A `dkge` object containing the learned basis (`$U`), eigenvalues,
-  shared ruler (`$R`), compressed covariance matrix, subject weights, and
+  pooled design Cholesky factor (`$R`), compressed covariance matrix, subject weights, and
   metadata (subject IDs, effect names, cluster identifiers) derived from the
   input bundle.
 }
@@ -86,7 +86,7 @@ The design matrices `X_s` supplied here are the same T_s×q regressors
   interactions) encourage shared smoothness or coupling between design effects.
 
   DKGE itself operates entirely in this low-dimensional design space: (1) the
-  pooled Gram matrix across subjects yields a shared ruler `R`; (2) each beta
+  pooled Gram matrix across subjects yields a shared Cholesky factor `R`; (2) each beta
   matrix is row-standardised; (3) compressed covariance is accumulated in the
   K-metric with optional subject weighting; and (4) a tiny eigenproblem produces
   the K-orthonormal group basis. The input harmonisation performed by this

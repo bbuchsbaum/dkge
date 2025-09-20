@@ -13,7 +13,7 @@ make_fit_fixture <- function(S = 3, q = 3, P = 4, T = 20, seed = 900) {
   list(betas = betas, designs = designs, K = diag(q))
 }
 
-test_that("shared ruler matches pooled Gram matrix", {
+test_that("pooled design Cholesky matches Gram matrix", {
   fixture <- make_fit_fixture()
   ruler <- dkge:::.dkge_compute_shared_ruler(fixture$designs)
   expect_equal(ruler$G_pool, Reduce(`+`, lapply(fixture$designs, crossprod)))
