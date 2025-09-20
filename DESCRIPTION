@@ -1,0 +1,42 @@
+Package: dkge
+Type: Package
+Title: Design-Kernel Group Embedding for Cluster-Level fMRI
+Version: 0.0.0.9000
+Authors@R: c(
+    person(given = "Brad", family = "Buchsbaum", email = "brad.buchsbaum@gmail.com", role = c("aut", "cre"))
+  )
+Description: Implements Design-Kernel Group Embedding (DKGE) for design-aware
+    cluster-level fMRI analysis. Provides streaming and memory-light estimators,
+    leave-one-subject-out cross-fitting, kernel-based design alignment, and
+    optimal transport to medoid parcellations. Integrates with
+    neuroimaging toolkits such as 'neuroim2', 'fmridesign', and 'fmriAR'.
+Depends: R (>= 4.2.0)
+Imports:
+    fmridesign,
+    fmrireg,
+    FNN,
+    future.apply,
+    lme4,
+    lmerTest,
+    Matrix,
+    neighborweights,
+    neuroim2,
+    stats,
+    Rcpp,
+    RcppArmadillo,
+    multivarious
+Suggests:
+    fmriAR,
+    microbenchmark,
+    pkgdown,
+    remotes
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
+Remotes:
+    bbuchsbaum/neuroim2,
+    bbuchsbaum/fmridesign,
+    bbuchsbaum/fmriAR,
+    bbuchsbaum/fmrireg
+Encoding: UTF-8
+RoxygenNote: 7.3.2.9000

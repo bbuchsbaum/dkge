@@ -1,0 +1,92 @@
+---
+title: "Components and Interpretability"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Components and Interpretability}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+set.seed(4)
+```
+
+This vignette shows how to interpret DKGE components, rotate them if needed, and
+project new data.
+
+## Example Fit
+
+```{r fit}
+library(dkge)
+S <- 4; q <- 5; P <- 18; T <- 70
+betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+designs <- replicate(S, {
+  X <- matrix(rnorm(T * q), T, q)
+  qr.Q(qr(X))
+}, simplify = FALSE)
+subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
+ bundle <- dkge_data(subjects)
+fit <- dkge(bundle, kernel = diag(q), rank = 3)
+```
+
+## Inspect Loadings and Scores
+
+```{r loadings}
+round(fit$U, 3)         # effect-space loadings
+lapply(fit$Btil, function(Bts) round(Bts[, 1:3, drop = FALSE], 2))[1]
+```
+
+- Columns of `fit$U` correspond to components in effect space.
+- `Btil` stores subject betas after row-standardisation; multiply with `fit$U`
+  to obtain cluster scores per component.
+
+## Projecting Subjects into Component Space
+
+```{r project}
+subject_scores <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+str(subject_scores, max.level = 1)
+```
+
+Each subject score matrix has dimensions clusters × components. Average scores
+for a quick component summary.
+
+```{r score-plot, fig.height=4, fig.width=5}
+avg_scores <- Reduce("+", subject_scores) / length(subject_scores)
+matplot(avg_scores, type = "l", lwd = 2, xlab = "Cluster", ylab = "Score",
+        main = "Average component scores")
+legend("topright", legend = paste0("Component ", 1:ncol(avg_scores)), col = 1:ncol(avg_scores), lty = 1:ncol(avg_scores))
+```
+
+## Rotating Components
+
+Use `dkge_procrustes_K()` to rotate components toward a target basis (e.g.
+canonical contrasts or prior loadings) while staying in the design-kernel
+metric.
+
+```{r rotate}
+# target basis: identity for first two effects
+B_target <- diag(1, q)[, 1:2]
+rot <- dkge_procrustes_K(fit$U[, 1:2], B_target, fit$K)
+round(rot$R, 3)
+```
+
+Multiply the original loadings by `rot$R` to obtain aligned components.
+
+## Projecting New Data
+
+```{r new-data}
+new_beta <- matrix(rnorm(q * P), q, P)
+projected <- dkge_project_clusters(fit, new_beta)
+head(projected)
+```
+
+`dkge_project_clusters()` returns component scores for each cluster in the new
+data, ready for contrast analysis or transport.
+
+## Interpreting Components
+
+- Inspect `fit$weights` to see which subjects dominate each component.
+- Plot rows of `fit$v` (cluster-space loadings) to identify spatial patterns.
+- Use `dkge_component_stats()` (from the inference vignette) to obtain
+  statistical evidence per component.

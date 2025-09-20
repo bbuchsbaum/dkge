@@ -1,0 +1,218 @@
+---
+title: "DKGE Workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{DKGE Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Design-Kernel Group Embedding (DKGE) summarises subject-level general linear
+models (GLMs) into a shared latent space that respects structure in the design
+matrix. This vignette provides a guided tour from raw subject betas to
+component-level inference and voxelwise visualisation.
+
+## Why DKGE?
+
+Multi-subject neuroimaging studies often deliver thousands of per-subject beta
+maps tied to the same experimental design. Traditional group analyses rely on
+coordinate-wise averages or mass-univariate models, which discard the smoothness
+and dependence encoded by the design. DKGE instead:
+
+- harmonises subject GLM outputs so that effects share a common ruler;
+- rotates the multiblock beta arrays into orthogonal components using a design
+  kernel that encodes similarity between effects; and
+- exposes utilities for statistical inference, contrast testing, and
+  optimal-transport-based map alignment across subjects or voxels.
+
+## Pipeline At A Glance
+
+1. Prepare per-subject betas, designs, and optional spatial weights with
+   `dkge_subject()` / `dkge_data()`.
+2. Specify a design kernel `K` describing similarity among design effects.
+3. Call `dkge()` (or `dkge_fit()`) to estimate the shared latent basis.
+4. Inspect subject weights, eigenvalues, and component loadings.
+5. Transport component maps to a consensus space and perform inference with
+   `dkge_component_stats()` or contrast utilities.
+6. (Optional) Interpolate consensus maps to voxel space with
+   `dkge_transport_to_voxels()` for visualisation.
+
+## Required Ingredients
+
+- **Betas**: q × P_s matrices of GLM coefficients (effects × clusters/voxels).
+- **Design matrices**: T_s × q regressors per subject; column names define the
+  canonical effect labels.
+- **Kernel `K`**: positive semi-definite matrix over effects. Use `diag(q)` for
+  a neutral choice or build structured kernels with `design_kernel()`.
+- **Spatial weights (optional)**: vectors or matrices describing the reliability
+  or size of each cluster/voxel.
+- **Centroids (optional but recommended)**: 3-D coordinates for clusters, used
+  when transporting values across subjects or voxels.
+
+## Walkthrough: Simulated Study
+
+The following example generates a tiny dataset with three subjects, three design
+rows (effects), and four clusters per subject. Replace these simulated pieces
+with real betas, designs, and centroids in practice.
+
+```{r example-data, message=FALSE}
+library(dkge)
+set.seed(1)
+
+S <- 3        # subjects
+q <- 3        # effects per design
+P <- 4        # clusters per subject
+T <- 30       # time points per subject design
+
+betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+designs <- replicate(S, {
+  X <- matrix(rnorm(T * q), T, q)
+  qr.Q(qr(X))  # orthonormalise columns to stabilise the fit
+}, simplify = FALSE)
+
+centroids <- replicate(S, matrix(runif(P * 3, min = -15, max = 15), P, 3), simplify = FALSE)
+
+subjects <- lapply(seq_len(S), function(s) {
+  dkge_subject(betas[[s]], design = designs[[s]], id = paste0("sub", s))
+})
+
+data_bundle <- dkge_data(subjects)
+identity_kernel <- diag(data_bundle$q)
+```
+
+`dkge_subject()` tags each beta matrix with its design and optional weights,
+while `dkge_data()` harmonises the effect ordering and subject identifiers. For
+real studies, pass parcellated cluster sizes via the `omega` argument to weight
+subjects during fitting.
+
+### Fitting the DKGE model
+
+We fit a rank-2 DKGE model using an identity kernel (no effect smoothing). The
+returned object inherits from `multiblock_biprojector`, so it plays nicely with
+`multivarious` projection helpers.
+
+```{r fit-model}
+fit <- dkge(data_bundle, kernel = identity_kernel, rank = 2)
+fit$centroids <- centroids  # store spatial information for transport utilities
+
+round(fit$sdev, 3)
+fit$weights
+```
+
+- `fit$sdev` reports singular values for the retained components.
+- `fit$weights` shows per-subject block weights after any MFA-style scaling.
+- `fit$U` and `fit$v` hold the component loadings in effect and cluster space,
+  respectively.
+
+### Inspecting component structure
+
+Eigenvalues (`fit$evals`) describe how much variance each component explains in
+K-metric space. The helper below summarises the leading component loadings per
+subject.
+
+```{r inspect-components}
+loadings <- lapply(fit$Btil, function(Bts) {
+  t(Bts) %*% fit$K %*% fit$U
+})
+
+lapply(loadings, function(A) round(A[, 1, drop = FALSE], 3))
+```
+
+The `loadings` matrices contain cluster contributions for each component. Use
+`dkge_project_block()` or `dkge_project_clusters()` to score new data against the
+fitted basis.
+
+### Component-level inference and medoid transport
+
+`dkge_component_stats()` transports component loadings to a reference (medoid)
+parcellation, then computes per-cluster statistics. Different mapper strategies
+balance spatial and embedding distances; here we use Sinkhorn transport with a
+tight entropic regularisation.
+
+```{r component-stats}
+comp <- dkge_component_stats(
+  fit,
+  mapper = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
+  centroids = centroids,
+  inference = list(type = "parametric"),
+  medoid = 1L
+)
+
+head(comp$summary)
+```
+
+The returned list includes:
+
+- `summary`: tidy data frame with statistics, raw p-values, and FDR adjustments.
+- `statistics`: raw component-wise statistic vectors before tidying.
+- `transport`: subject-level matrices (subjects × medoid clusters) after
+  alignment.
+
+### Mapping components to voxel space
+
+When you have voxel features (e.g. centroids or PCA-reduced spatial signatures),
+`dkge_transport_to_voxels()` interpolates transported component values onto a
+voxel grid. This enables visualisation without committing to a single
+parcellation.
+
+```{r voxel-transport}
+voxels <- replicate(S, matrix(runif(10 * 3, min = -20, max = 20), 10, 3), simplify = FALSE)
+component_values <- lapply(loadings, function(A) A[, 1])
+
+voxel_maps <- dkge_transport_to_voxels(
+  fit,
+  values = component_values,
+  voxels = voxels,
+  mapper = "ridge"
+)
+
+round(voxel_maps$value, 3)
+```
+
+`voxel_maps$value` contains the averaged consensus map across subjects, while
+`voxel_maps$subj_values` stores subject-specific interpolations.
+
+## Bootstrap Shortcuts
+
+Re-using a fixed transport ensures every resampled statistic lives in the same
+reference space. Cache the subject→medoid operators once and feed them to the
+bootstrap helpers:
+
+```{r bootstrap-demo, message=FALSE}
+cache <- dkge_prepare_transport(fit, centroids = centroids, medoid = 1)
+values_medoid <- lapply(seq_len(nrow(comp$transport[[1]])),
+                        function(i) comp$transport[[1]][i, ])
+boot_proj <- dkge_bootstrap_projected(values_medoid, B = 200, seed = 99)
+boot_q <- dkge_bootstrap_qspace(fit, contrasts = c(1, -1, 0), B = 200,
+                                transport_cache = cache, medoid = 1, seed = 99)
+boot_proj$medoid$sd[1]
+boot_q$summary[[1]]$medoid$sd[1]
+```
+
+`dkge_bootstrap_projected()` resamples transported subject vectors directly,
+while `dkge_bootstrap_qspace()` includes variability from the re-estimated group
+subspace. When thousands of replicates are required,
+`dkge_bootstrap_analytic()` applies the same cached transport but updates the
+subspace via first-order perturbations, falling back to the exact eigensolve
+when the perturbation is large.
+
+## Where to next?
+
+- Use `dkge_contrast()`, `dkge_loso_contrast()`, or `dkge_pipeline()` to perform
+  hypothesis-driven contrasts and cross-validation.
+- Call `dkge_project_blocks()` to score held-out subjects or new parcellations.
+- Combine voxel transports with `dkge_paint_medoid_map()` (from the
+  `dkge.neuroim2` companion) or external visualisation stacks to render group
+  maps.
+- Explore alternative kernels via `design_kernel()` to encode smoothness across
+  ordinal/circular factors or multi-factor interactions.
+
+Refer to the function reference in `man/` for detailed argument descriptions and
+additional utilities.

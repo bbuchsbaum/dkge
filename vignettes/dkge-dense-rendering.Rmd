@@ -1,0 +1,98 @@
+---
+title: "Transport and Dense Rendering"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Transport and Dense Rendering}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+set.seed(3)
+```
+
+The dense rendering stack converts subject cluster values into a shared anchor
+space and optionally back to voxel grids. Here we show how to assemble renderers
+and inspect diagnostics.
+
+## Toy Dataset with Centroids
+
+```{r data}
+library(dkge)
+S <- 4; q <- 3; P <- 20; T <- 50
+betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+designs <- replicate(S, {
+  X <- matrix(rnorm(T * q), T, q)
+  qr.Q(qr(X))
+}, simplify = FALSE)
+centroids <- replicate(S, matrix(runif(P * 3, -40, 40), P, 3), simplify = FALSE)
+subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
+bundle <- dkge_data(subjects)
+fit <- dkge(bundle, kernel = diag(q), rank = 2)
+fit$centroids <- centroids
+```
+
+## Building an Anchor Renderer
+
+```{r renderer}
+# use 5k anchors sampled from grey-matter-like cube
+vox_xyz <- as.matrix(expand.grid(seq(-40, 40, by = 10), seq(-40, 40, by = 10), seq(-40, 40, by = 20)))
+renderer <- dkge_build_renderer(
+  fit,
+  centroids = centroids,
+  vox_xyz = vox_xyz,
+  mapper = dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1, lambda_feat = 0),
+  graph_k = 10,
+  decoder_k = 8
+)
+str(renderer, max.level = 1)
+```
+
+Key pieces:
+
+- `anchors`: shared anchor coordinates (auto-derived from `vox_xyz`).
+- `graph`: optional kNN graph and Laplacian for anchor smoothing.
+- `mapper_fits`: subject-specific mappers with cached Sinkhorn duals.
+- `mapper_stats`: transport diagnostics (costs, entropies, support sizes).
+
+## Rendering Subject Values
+
+```{r render}
+values_list <- lapply(fit$Btil, function(Bts) as.numeric(Bts[1, ]))
+rendered <- dkge_render_subject_values(renderer, values_list, lambda = 0.2, to_vox = TRUE)
+summary(rendered$details$y)
+head(rendered$details$subject_stats)
+```
+
+- `rendered$anchor`: smoothed group field on anchors.
+- `rendered$voxel`: interpolated voxel map (length `nrow(vox_xyz)`).
+- `details$plan_entropy_mean`: average diffusion of transport plans; high values
+  indicate broad anchor coverage.
+
+Visualise the anchor field along one axis.
+
+```{r plot-anchor, fig.height=4, fig.width=5}
+plot(renderer$anchors[, 1], rendered$anchor, pch = 20, col = "steelblue",
+     xlab = "Anchor x-coordinate", ylab = "Rendered value",
+     main = "Rendered anchor field")
+abline(h = 0, col = "grey70", lty = 2)
+```
+
+## Voxel Map Snapshot
+
+```{r plot-vox, fig.height=4, fig.width=5}
+sel <- vox_xyz[, 3] == 0  # slice at z = 0
+plot(vox_xyz[sel, 1], rendered$voxel[sel], pch = 16, col = "tomato",
+     xlab = "x", ylab = "value", main = "Voxel slice (z=0)")
+```
+
+## Tips
+
+- Tune `lambda` in `dkge_render_subject_values()` to balance fidelity vs
+  smoothness; inspect `plan_entropy_mean` to gauge over/under smoothing.
+- Supply latent features through `subject_feats` / `anchor_feats` in
+  `dkge_build_renderer()` to mix spatial and functional similarity in transport
+  costs.
+- The renderer caches Sinkhorn duals, so repeated calls (e.g. many bootstrap
+  replicates) reuse warm starts automatically.

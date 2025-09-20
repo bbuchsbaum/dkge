@@ -1,0 +1,94 @@
+---
+title: "Mapper Customisation and Performance"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Mapper Customisation and Performance}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+set.seed(5)
+```
+
+This vignette discusses when to choose kNN vs Sinkhorn mappers, how to plug in
+custom transports, and how to take advantage of warm starts for speed.
+
+## Mapper Factory Recap
+
+```{r mapper-factory}
+library(dkge)
+dkge_mapper("knn", k = 8, sigx = 3)
+dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1, lambda_feat = 0)
+```
+
+`dkge_mapper()` stores backend parameters; `fit_mapper()` produces
+subject-specific transports with cached state for reuse.
+
+## Speed Comparison
+
+```{r performance}
+S <- 3; q <- 3; P <- 200
+centroids <- replicate(S, matrix(rnorm(P * 3), P, 3), simplify = FALSE)
+anchors <- matrix(rnorm(1500 * 3), 1500, 3)
+values <- lapply(seq_len(S), function(s) rnorm(P))
+
+knn_mapper <- dkge_mapper("knn", k = 12, sigx = 5)
+knn_fit <- lapply(seq_len(S), function(s) fit_mapper(knn_mapper, centroids[[s]], anchors))
+
+sink_mapper <- dkge_mapper("sinkhorn", epsilon = 0.02, lambda_xyz = 1)
+sink_fit <- lapply(seq_len(S), function(s) fit_mapper(sink_mapper, centroids[[s]], anchors))
+
+microbenchmark::microbenchmark(
+  knn = lapply(seq_len(S), function(s) apply_mapper(knn_fit[[s]], values[[s]])),
+  sinkhorn = lapply(seq_len(S), function(s) apply_mapper(sink_fit[[s]], values[[s]])),
+  times = 10L
+)
+```
+
+kNN mapping is purely local and scales linearly with `k`. Sinkhorn mapping is
+more expressive (supports feature costs, soft matching) but heavier; the C++
+solver with warm starts makes repeated calls tractable.
+
+## Warm Starts and Dual Caching
+
+```{r warm-start}
+C <- as.matrix(dist(anchors[1:200, ]))
+mu <- rep(1/nrow(C), nrow(C))
+nu <- rep(1/ncol(C), ncol(C))
+res1 <- sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7)
+res2 <- sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7,
+                          log_u_init = res1$log_u, log_v_init = res1$log_v)
+res1$iterations
+res2$iterations
+```
+
+The second run converges faster thanks to the saved dual variables. The DKGE
+rendering pipeline stores these automatically in the renderer object; you can
+provide them manually when experimenting with raw `sinkhorn_plan_cpp()`.
+
+## Adding Custom Mappers
+
+Implement two S3 methods and register via `dkge_mapper()` naming convention.
+
+```r
+fit_mapper.dkge_mapper_mytransport <- function(mapper, subj_points, anchor_points, ...) {
+  # return object with class 'dkge_mapper_fit_mytransport'
+}
+
+apply_mapper.dkge_mapper_fit_mytransport <- function(fitted_mapper, values, ...) {
+  # return length(anchor_points) vector
+}
+```
+
+Keep the output dimensions consistent and DKGE will integrate the new mapper
+automatically.
+
+## Practical Guidance
+
+- Prefer kNN for quick exploratory analyses or when clusters already align well.
+- Use Sinkhorn when anatomical shifts are large or latent features should guide
+  matching; tune `epsilon` upward for faster, smoother plans.
+- Reuse renderers across bootstraps/contrasts to exploit cached duals and avoid
+  recomputing transport from scratch.

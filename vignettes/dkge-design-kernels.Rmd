@@ -1,0 +1,113 @@
+---
+title: "Design Kernels and Model Tuning"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Design Kernels and Model Tuning}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+set.seed(1)
+```
+
+This note focuses on how the design kernel steers DKGE fits and how to tune rank
+or penalty parameters before running large analyses.
+
+## Simulated Working Example
+
+```{r data}
+library(dkge)
+S <- 4; q <- 4; P <- 30; T <- 80
+
+betas <- replicate(S, matrix(rnorm(q * P, sd = 0.5), q, P), simplify = FALSE)
+true_kernel <- 0.9 * (diag(q) + 0.3)
+# inject structure: effects 1&2 correlate, 3&4 share mild coupling
+cholK <- chol(true_kernel)
+betas <- lapply(betas, function(B) cholK %*% B + 0.1 * matrix(rnorm(q * P), q, P))
+
+designs <- replicate(S, {
+  X <- matrix(rnorm(T * q), T, q)
+  qr.Q(qr(X))
+}, simplify = FALSE)
+
+subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
+data_bundle <- dkge_data(subjects)
+```
+
+`dkge_data()` aligns effect ordering and caches common metadata. The kernel we
+supply next controls how strongly effects are smoothed or grouped.
+
+## Building Kernels with `design_kernel()`
+
+```{r kernels}
+# tell dkge that effects 1&2 belong to the same factor, 3&4 to another
+spec <- list(
+  list(name = "factor12", type = "nominal", levels = c("e1", "e2"), rho = 0.8),
+  list(name = "factor34", type = "nominal", levels = c("e3", "e4"), rho = 0.6)
+)
+K_struct <- design_kernel(spec, effects = colnames(data_bundle$designs[[1]]))
+
+round(K_struct$K, 2)
+```
+
+- Each term introduces a block-similarity component.
+- `rho` weights the term; defaults to 1. Combine multiple terms to encode
+  interactions or ordered trends.
+- `design_kernel()` returns both the kernel matrix and metadata used by CV
+  helpers below.
+
+## Rank and Kernel Tuning via Cross-Validation
+
+`dkge_cv_kernel_rank()` evaluates candidate ranks and kernel weights using
+leave-one-subject-out style objectives. Here we scan ranks 1–3 and shrink a
+single `rho` parameter for the two factors.
+
+```{r kernel-cv, message=FALSE}
+cv_grid <- expand.grid(rank = 1:3, rho = seq(0.4, 1.0, by = 0.3))
+cv_results <- dkge_cv_kernel_rank(
+  data_bundle,
+  kernel_spec = spec,
+  rank_candidates = cv_grid$rank,
+  rho_grid = list(factor12 = cv_grid$rho, factor34 = cv_grid$rho),
+  folds = NULL,            # default LOSO
+  summary = median         # robust aggregation of fold errors
+)
+
+head(cv_results)
+```
+
+The score reported by `dkge_cv_kernel_rank()` is the average reconstruction
+error of left-out subjects in the K-metric. Lower is better. Pick the
+rank/weights combination with the minimum score and refit.
+
+```{r refit}
+best <- cv_results[which.min(cv_results$cv_score), ]
+best
+
+K_best <- design_kernel(spec, rho = list(factor12 = best$factor12, factor34 = best$factor34))$K
+fit <- dkge(data_bundle, kernel = K_best, rank = best$rank)
+round(fit$sdev, 3)
+```
+
+## Penalising Noisy Effects
+
+When certain effects are known to be high variance (e.g. motion regressors), add
+diagonal ridge terms via `dkge(..., ridge = value)` or pre-scale the kernel.
+Higher ridge values shrink small singular values and stabilise fits when subject
+counts are limited.
+
+```{r ridge}
+fit_ridge <- dkge(data_bundle, kernel = K_best, rank = best$rank, ridge = 0.2)
+round(fit_ridge$sdev, 3)
+```
+
+## Summary
+
+- Use `design_kernel()` to encode your scientific priors; start with `diag(q)`
+  if in doubt, then add structured terms gradually.
+- Run `dkge_cv_kernel_rank()` (loso by default) to select rank and kernel
+  weights before expensive inference.
+- Add ridge regularisation when singular values drop sharply or subjects are
+  few; check `fit$sdev` to verify stability.
