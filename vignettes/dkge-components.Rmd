@@ -44,7 +44,7 @@ lapply(fit$Btil, function(Bts) round(Bts[, 1:3, drop = FALSE], 2))[1]
 ## Projecting Subjects into Component Space
 
 ```{r project}
-subject_scores <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+subject_scores <- dkge_project_btil(fit, fit$Btil)
 str(subject_scores, max.level = 1)
 ```
 

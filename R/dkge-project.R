@@ -86,6 +86,36 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   multivarious::project(fit, Xnew)
 }
 
+#' @title Project DKGE data into component space
+#'
+#' @description Functions for projecting subject-standardised betas or new blocks into DKGE component coordinates.
+#' @param fit A `dkge` object.
+#' @param s Block index (subject) to project against.
+#' @param B_s Beta matrix for the new data block.
+#' @inheritParams dkge_transform_block
+#' @param least_squares Logical; pass to [multivarious::project_block()].
+
+#' @description Convenience wrapper for projecting row-standardised betas onto DKGE components.
+#' @param fit A `dkge` object.
+#' @param Btil Either a q×P matrix or a list of such matrices (e.g. `fit$Btil`).
+#' @return List of P×rank matrices; returns a single matrix when `Btil` is a matrix.
+#' @describeIn dkge_project_block Project subject-standardised betas into component space
+#' @export
+dkge_project_btil <- function(fit, Btil) {
+  stopifnot(inherits(fit, "dkge"))
+  KsU <- fit$K %*% fit$U
+  project_one <- function(mat) {
+    mat <- as.matrix(mat)
+    stopifnot(nrow(mat) == nrow(fit$U))
+    t(mat) %*% KsU
+  }
+  if (is.list(Btil)) {
+    lapply(Btil, project_one)
+  } else {
+    project_one(Btil)
+  }
+}
+
 #' Project a single block against its training block index
 #'
 #' @param fit A `dkge` object.
@@ -94,6 +124,7 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @inheritParams dkge_transform_block
 #' @param least_squares Logical; pass to [multivarious::project_block()].
 #' @return Projection scores (q×rank) restricted to block `s`.
+#' @rdname dkge_project_block
 #' @export
 dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
                                least_squares = TRUE) {
