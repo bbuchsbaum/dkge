@@ -44,7 +44,9 @@ renderer <- dkge_build_renderer(
   vox_xyz = vox_xyz,
   mapper = dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1, lambda_feat = 0),
   graph_k = 10,
-  decoder_k = 8
+  decoder_k = 8,
+  anchor_n = min(500L, nrow(vox_xyz)),
+  anchor_method = "sample"
 )
 str(renderer, max.level = 1)
 ```
@@ -72,7 +74,7 @@ head(rendered$details$subject_stats)
 
 Visualise the anchor field along one axis.
 
-```{r plot-anchor, fig.height=4, fig.width=5}
+```{r plot-anchor, fig.height=4, fig.width=5, fig.alt="Scatter plot of anchor x-coordinate versus rendered value."}
 plot(renderer$anchors[, 1], rendered$anchor, pch = 20, col = "steelblue",
      xlab = "Anchor x-coordinate", ylab = "Rendered value",
      main = "Rendered anchor field")
@@ -81,7 +83,7 @@ abline(h = 0, col = "grey70", lty = 2)
 
 ## Voxel Map Snapshot
 
-```{r plot-vox, fig.height=4, fig.width=5}
+```{r plot-vox, fig.height=4, fig.width=5, fig.alt="Scatter plot of voxel slice values for z equals zero."}
 sel <- vox_xyz[, 3] == 0  # slice at z = 0
 plot(vox_xyz[sel, 1], rendered$voxel[sel], pch = 16, col = "tomato",
      xlab = "x", ylab = "value", main = "Voxel slice (z=0)")

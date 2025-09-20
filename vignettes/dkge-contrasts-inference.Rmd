@@ -39,24 +39,28 @@ transport operators consistent across folds.
 
 ```{r loso}
 contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
-loso <- dkge_loso_contrast(
+loso <- dkge_contrast(fit, contrast_vec, method = "loso")
+
+transported <- dkge_transport_contrasts_to_medoid(
   fit,
-  contrast = contrast_vec,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
+  loso,
+  medoid = 1L,
   centroids = centroids,
-  medoid = 1L
+  mapper = dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1)
 )
-str(loso, max.level = 1)
+
+str(loso$values, max.level = 1)
 ```
 
-- `loso$v`: medoid-aligned contrast values averaged across subjects.
-- `loso$subject_values`: individual-subject contributions before aggregation.
-- `loso$transport$plans`: transport matrices (subject clusters → medoid).
+- `loso$values`: subject-level contrast vectors before transport.
+- `transported[[1]]$value`: medoid-aligned contrast values averaged across subjects.
+- `transported[[1]]$subj_values`: individual-subject contributions after transport.
 
 Plot the LOSO medoid map for quick inspection.
 
-```{r loso-plot, fig.width=5, fig.height=4}
-plot(loso$v, type = "h", lwd = 2, main = "LOSO contrast on medoid clusters",
+```{r loso-plot, fig.width=5, fig.height=4, fig.alt="Lollipop plot of LOSO contrast values on medoid clusters."}
+loso_medoid <- transported[[1]]$value
+plot(loso_medoid, type = "h", lwd = 2, main = "LOSO contrast on medoid clusters",
      xlab = "Medoid cluster", ylab = "Contrast value")
 abline(h = 0, col = "grey60", lty = 2)
 ```
@@ -88,17 +92,17 @@ resampling bootstraps. The analytic fit above can be re-used to seed bootstrap
 runs.
 
 ```{r bootstrap, message=FALSE}
+subject_medoid <- lapply(seq_len(nrow(transported[[1]]$subj_values)), function(idx) {
+  transported[[1]]$subj_values[idx, ]
+})
+
 boot <- dkge_bootstrap_projected(
-  fit,
+  subject_medoid,
   B = 200,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
-  centroids = centroids,
-  medoid = 1L,
-  contrast = contrast_vec,
-  cores = 1
+  seed = 2
 )
 
-summary(boot$ci[[1]])
+head(boot$medoid$mean)
 ```
 
 `dkge_bootstrap_projected()` returns confidence intervals and standard errors for

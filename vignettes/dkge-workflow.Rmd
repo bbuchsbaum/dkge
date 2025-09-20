@@ -162,7 +162,7 @@ When you have voxel features (e.g. centroids or PCA-reduced spatial signatures),
 voxel grid. This enables visualisation without committing to a single
 parcellation.
 
-```{r voxel-transport}
+```{r voxel-transport, eval=FALSE}
 voxels <- replicate(S, matrix(runif(10 * 3, min = -20, max = 20), 10, 3), simplify = FALSE)
 component_values <- lapply(loadings, function(A) A[, 1])
 

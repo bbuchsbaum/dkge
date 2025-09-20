@@ -149,7 +149,7 @@ gaussian_cov <- function(coords, bandwidth = 15) {
   (K + t(K)) / 2 + diag(1e-6, nrow(K))
 }
 
-amega_smooth <- map(centroids, gaussian_cov)
+omega_smooth <- lapply(centroids, gaussian_cov)
 
 fit_smooth <- dkge(data_equal,
                    kernel = k_identity,

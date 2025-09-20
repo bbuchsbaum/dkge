@@ -57,9 +57,9 @@ solver with warm starts makes repeated calls tractable.
 C <- as.matrix(dist(anchors[1:200, ]))
 mu <- rep(1/nrow(C), nrow(C))
 nu <- rep(1/ncol(C), ncol(C))
-res1 <- sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7)
-res2 <- sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7,
-                          log_u_init = res1$log_u, log_v_init = res1$log_v)
+res1 <- dkge:::sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7)
+res2 <- dkge:::sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7,
+                                 log_u_init = res1$log_u, log_v_init = res1$log_v)
 res1$iterations
 res2$iterations
 ```

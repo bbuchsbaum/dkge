@@ -51,7 +51,7 @@ str(subject_scores, max.level = 1)
 Each subject score matrix has dimensions clusters × components. Average scores
 for a quick component summary.
 
-```{r score-plot, fig.height=4, fig.width=5}
+```{r score-plot, fig.height=4, fig.width=5, fig.alt="Line plot showing average DKGE component scores across clusters."}
 avg_scores <- Reduce("+", subject_scores) / length(subject_scores)
 matplot(avg_scores, type = "l", lwd = 2, xlab = "Cluster", ylab = "Score",
         main = "Average component scores")
