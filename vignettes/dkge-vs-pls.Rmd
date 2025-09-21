@@ -15,6 +15,9 @@ This short note situates Design-Kernel Group Embedding (DKGE) relative to the
 partial least squares (PLS) framework described in McIntosh & Lobaugh (2004).
 The PLS summary below follows the terminology of that paper.
 
+
+
+---
 ## What classical PLS does
 
 - **Objective**: build latent variables (LVs) that maximise the covariance
