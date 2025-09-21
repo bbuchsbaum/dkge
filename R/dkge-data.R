@@ -287,7 +287,14 @@ dkge_subject.ClusteredNeuroVec <- function(x, design, id = NULL, omega = NULL, .
 #' @export
 #' @examples
 #' betas <- replicate(3, matrix(rnorm(5 * 80), 5, 80), simplify = FALSE)
-#' designs <- replicate(3, matrix(rnorm(150 * 5), 150, 5, dimnames = list(NULL, paste0("eff", 1:5))), simplify = FALSE)
+#' designs <- replicate(
+#'   3,
+#'   matrix(
+#'     rnorm(150 * 5), 150, 5,
+#'     dimnames = list(NULL, paste0("eff", 1:5))
+#'   ),
+#'   simplify = FALSE
+#' )
 #' data <- dkge_data(betas, designs)
 #' data$effects
 dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {

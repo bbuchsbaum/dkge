@@ -73,7 +73,7 @@ predict_mapper <- function(mapping, new_source_vals, ...) {
 # ---------------------------------------------------------------------------
 
 #' @export
-fit_mapper.dkge_mapper_knn <- function(mapper,
+fit_mapper.dkge_mapper_knn <- function(spec,
                                        subj_points,
                                        anchor_points,
                                        subj_feats = NULL,
@@ -82,7 +82,7 @@ fit_mapper.dkge_mapper_knn <- function(mapper,
   stopifnot(is.matrix(subj_points), ncol(subj_points) == 3,
             is.matrix(anchor_points), ncol(anchor_points) == 3)
 
-  pars <- mapper$pars
+  pars <- spec$pars
   k <- pars$k %||% 8L
   sigx <- pars$sigx %||% 3.0
   sigz <- pars$sigz
@@ -175,7 +175,7 @@ apply_mapper.dkge_mapper_fit_knn <- function(fitted_mapper,
 
 # Placeholders for alternative backends (implemented elsewhere)
 #' @export
-fit_mapper.dkge_mapper_sinkhorn <- function(mapper,
+fit_mapper.dkge_mapper_sinkhorn <- function(spec,
                                             subj_points,
                                             anchor_points,
                                             subj_feats = NULL,
@@ -186,7 +186,7 @@ fit_mapper.dkge_mapper_sinkhorn <- function(mapper,
   stopifnot(is.matrix(subj_points), ncol(subj_points) == 3,
             is.matrix(anchor_points), ncol(anchor_points) == 3)
 
-  pars <- mapper$pars
+  pars <- spec$pars
   epsilon <- pars$epsilon %||% 0.05
   max_iter <- pars$max_iter %||% 300
   tol <- pars$tol %||% 1e-6
@@ -314,13 +314,13 @@ apply_mapper.dkge_mapper_fit_sinkhorn <- function(fitted_mapper,
 }
 
 #' @export
-fit_mapper.dkge_mapper_ridge <- function(mapper, ...) {
+fit_mapper.dkge_mapper_ridge <- function(spec, ...) {
   stop("Ridge mapper not implemented in the dense rendering core. ",
        "Provide a 'dkge_mapper_ridge' plugin that defines fit_mapper() and apply_mapper().")
 }
 
 #' @export
-fit_mapper.dkge_mapper_gw <- function(mapper, ...) {
+fit_mapper.dkge_mapper_gw <- function(spec, ...) {
   stop("Gromov-Wasserstein mapper not implemented in the dense rendering core. ",
        "Provide a 'dkge_mapper_gw' plugin that defines fit_mapper() and apply_mapper().")
 }

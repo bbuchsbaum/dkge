@@ -23,7 +23,14 @@ Bundle subject-level inputs for DKGE
 }
 \examples{
 betas <- replicate(3, matrix(rnorm(5 * 80), 5, 80), simplify = FALSE)
-designs <- replicate(3, matrix(rnorm(150 * 5), 150, 5, dimnames = list(NULL, paste0("eff", 1:5))), simplify = FALSE)
+designs <- replicate(
+  3,
+  matrix(
+    rnorm(150 * 5), 150, 5,
+    dimnames = list(NULL, paste0("eff", 1:5))
+  ),
+  simplify = FALSE
+)
 data <- dkge_data(betas, designs)
 data$effects
 }

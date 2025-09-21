@@ -24,7 +24,8 @@ Imports:
     stats,
     Rcpp,
     RcppArmadillo,
-    multivarious
+    multivarious,
+    utils
 Suggests:
     fmriAR,
     microbenchmark,
@@ -38,6 +39,7 @@ Remotes:
     bbuchsbaum/fmridesign,
     bbuchsbaum/fmriAR,
     bbuchsbaum/fmrireg
+License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.2.9000
 URL: https://bbuchsbaum.github.io/dkge/
