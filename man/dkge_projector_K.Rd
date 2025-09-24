@@ -7,9 +7,9 @@
 dkge_projector_K(T, K)
 }
 \arguments{
-\item{T}{q×q0 matrix whose columns span the subspace of interest.}
+\item{T}{qxq0 matrix whose columns span the subspace of interest.}
 
-\item{K}{q×q positive semi-definite design kernel.}
+\item{K}{qxq positive semi-definite design kernel.}
 }
 \value{
 List with entries `P_K` (effect-space projector) and `P_hat`
@@ -19,4 +19,13 @@ List with entries `P_K` (effect-space projector) and `P_hat`
 Builds both the K-selfadjoint projector operating in effect coordinates and
 the Euclidean projector in the K^{1/2} metric. These projectors are useful
 for CPCA-style splits of the compressed covariance.
+}
+\details{
+All computations take place in the metric induced by the design kernel
+`K`. Choosing a non-identity kernel therefore changes the projector: smooth
+kernels diffuse energy across correlated effects, whereas a diagonal kernel
+keeps the split tied to the raw effect indices. When the design-aligned
+subspace is not well represented by coordinate axes, supply `cpca_T` with
+columns that already capture the kernel geometry so the CPCA basis respects
+those relationships.
 }

@@ -7,15 +7,29 @@
 #' the Euclidean projector in the K^{1/2} metric. These projectors are useful
 #' for CPCA-style splits of the compressed covariance.
 #'
-#' @param T q×q0 matrix whose columns span the subspace of interest.
-#' @param K q×q positive semi-definite design kernel.
+#' All computations take place in the metric induced by the design kernel
+#' `K`. Choosing a non-identity kernel therefore changes the projector: smooth
+#' kernels diffuse energy across correlated effects, whereas a diagonal kernel
+#' keeps the split tied to the raw effect indices. When the design-aligned
+#' subspace is not well represented by coordinate axes, supply `cpca_T` with
+#' columns that already capture the kernel geometry so the CPCA basis respects
+#' those relationships.
+#'
+#' @param T qxq0 matrix whose columns span the subspace of interest.
+#' @param K qxq positive semi-definite design kernel.
 #' @return List with entries `P_K` (effect-space projector) and `P_hat`
 #'   (projector in the K^{1/2} metric).
 #' @export
 dkge_projector_K <- function(T, K) {
   stopifnot(is.matrix(T), is.matrix(K), nrow(T) == nrow(K))
   M <- crossprod(T, K %*% T)
-  Minv <- solve((M + t(M)) / 2)
+  Msym <- (M + t(M)) / 2
+  chol_M <- tryCatch(chol(Msym), error = function(e) NULL)
+  Minv <- if (is.null(chol_M)) {
+    solve(Msym)
+  } else {
+    chol2inv(chol_M)
+  }
   P_K <- T %*% Minv %*% crossprod(T, K)
 
   eig <- eigen((K + t(K)) / 2, symmetric = TRUE)
@@ -29,9 +43,9 @@ dkge_projector_K <- function(T, K) {
 
 #' Split compressed covariance into design/residual parts (CPCA inside-span)
 #'
-#' @param Chat q×q compressed covariance expressed in the K^{1/2} metric.
-#' @param T q×q0 matrix describing the design-aligned subspace.
-#' @param K q×q design kernel.
+#' @param Chat qxq compressed covariance expressed in the K^{1/2} metric.
+#' @param T qxq0 matrix describing the design-aligned subspace.
+#' @param K qxq design kernel.
 #' @return List with `Chat_design`, `Chat_resid`, and the projector `P_hat`.
 #' @export
 dkge_cpca_split_chat <- function(Chat, T, K) {
@@ -59,7 +73,7 @@ dkge_cpca_split_chat <- function(Chat, T, K) {
 #' @param fit A `dkge` object from [dkge_fit()] or [dkge()].
 #' @param blocks Optional integer vector of effect indices defining the subspace
 #'   (used when `T` is not supplied).
-#' @param T Optional explicit q×q0 basis matrix; overrides `blocks` when given.
+#' @param T Optional explicit qxq0 basis matrix; overrides `blocks` when given.
 #' @param part Which portion to return: "design", "resid", or "both".
 #' @param rank Target rank for the returned bases (defaults to `ncol(fit$U)`).
 #' @param ridge Optional ridge term applied before the eigen decompositions.
