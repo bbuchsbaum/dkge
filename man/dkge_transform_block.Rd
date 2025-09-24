@@ -9,15 +9,15 @@ dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL)
 \arguments{
 \item{fit}{A `dkge` object.}
 
-\item{B_s}{q×P matrix of subject betas.}
+\item{B_s}{qxP matrix of subject betas.}
 
-\item{Omega_s}{Optional weights (vector length P or P×P matrix) matching the
+\item{Omega_s}{Optional weights (vector length P or PxP matrix) matching the
 columns of `B_s`.}
 
 \item{w_s}{Optional subject-level weight (defaults to 1 when omitted).}
 }
 \value{
-q×P matrix in the DKGE training space.
+qxP matrix in the DKGE training space.
 }
 \description{
 Applies the same transformations used during fitting (pooled design Cholesky factor,

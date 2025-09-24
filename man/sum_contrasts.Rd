@@ -10,7 +10,7 @@ sum_contrasts(Ls)
 \item{Ls}{Numeric vector of factor levels (named or unnamed).}
 }
 \value{
-Named list of L×(L-1) contrast matrices.
+Named list of Lx(L-1) contrast matrices.
 }
 \description{
 Sum-to-zero contrasts for a set of factors

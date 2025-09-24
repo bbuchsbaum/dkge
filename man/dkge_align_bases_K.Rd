@@ -13,9 +13,9 @@ dkge_align_bases_K(
 )
 }
 \arguments{
-\item{U_list}{list of q×r bases}
+\item{U_list}{list of qxr bases}
 
-\item{K}{q×q design kernel}
+\item{K}{qxq design kernel}
 
 \item{ref}{reference basis or index (default 1)}
 

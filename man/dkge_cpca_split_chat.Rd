@@ -7,11 +7,11 @@
 dkge_cpca_split_chat(Chat, T, K)
 }
 \arguments{
-\item{Chat}{q×q compressed covariance expressed in the K^{1/2} metric.}
+\item{Chat}{qxq compressed covariance expressed in the K^{1/2} metric.}
 
-\item{T}{q×q0 matrix describing the design-aligned subspace.}
+\item{T}{qxq0 matrix describing the design-aligned subspace.}
 
-\item{K}{q×q design kernel.}
+\item{K}{qxq design kernel.}
 }
 \value{
 List with `Chat_design`, `Chat_resid`, and the projector `P_hat`.

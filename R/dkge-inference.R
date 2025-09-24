@@ -5,15 +5,15 @@
 #' One-sample sign-flip max-T inference on transported subject maps
 #'
 #' Computes cluster-wise one-sample t-statistics across subjects on transported
-#' values (S×Q matrix), and calibrates p-values by the max-|t| distribution under
+#' values (SxQ matrix), and calibrates p-values by the max-|t| distribution under
 #' random subject-wise sign flips (symmetric null). This does not re-estimate DKGE,
 #' leveraging LOSO independence of each subject's value.
 #'
-#' @param Y S×Q matrix of subject values on the medoid parcellation (rows=subjects, cols=clusters)
+#' @param Y SxQ matrix of subject values on the medoid parcellation (rows=subjects, cols=clusters)
 #' @param B number of sign-flip permutations
 #' @param center "mean" or "median" for the location statistic (t uses mean)
 #' @param tail "two.sided" | "greater" | "less"
-#' @return list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector), flips (S×B signs)
+#' @return list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector), flips (SxB signs)
 #' @export
 dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
                                tail = c("two.sided","greater","less")) {
@@ -26,7 +26,7 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
   sdv <- apply(Y, 2, stats::sd)
   t_obs <- mu / (sdv / sqrt(S) + 1e-12)
 
-  # generate random sign matrix (S×B)
+  # generate random sign matrix (SxB)
   flips <- matrix(sample(c(-1,1), S*B, replace=TRUE), S, B)
   # center data if using "median" just for display; t uses mean in any case
   Yc <- Y
@@ -199,10 +199,60 @@ dkge_infer <- function(fit, contrasts,
   infer_results$alpha <- alpha
 
   if (!is.null(transport_results)) {
-    infer_results$transport <- transport_results
+  infer_results$transport <- transport_results
   }
 
   structure(infer_results, class = "dkge_inference")
+}
+
+#' @export
+as.data.frame.dkge_inference <- function(x, row.names = NULL, optional = FALSE, ...) {
+  contrast_names <- names(x$contrasts$contrasts)
+  if (is.null(contrast_names) || any(!nzchar(contrast_names))) {
+    contrast_names <- paste0("contrast", seq_along(x$statistics))
+  }
+
+  alpha <- x$alpha %||% NA_real_
+  method <- x$method %||% NA_character_
+  inference <- x$inference %||% NA_character_
+  correction <- x$correction %||% NA_character_
+  significant_list <- x$significant
+  if (is.null(significant_list)) {
+    significant_list <- vector("list", length(x$statistics))
+  }
+
+  rows <- lapply(seq_along(x$statistics), function(i) {
+    stats <- x$statistics[[i]]
+    comp_names <- names(stats)
+    if (is.null(comp_names) || any(!nzchar(comp_names))) {
+      comp_names <- paste0("component", seq_along(stats))
+    }
+    p_vals <- x$p_values[[i]] %||% rep(NA_real_, length(stats))
+    padj <- x$p_adjusted[[i]] %||% rep(NA_real_, length(stats))
+    sig <- significant_list[[i]]
+    if (is.null(sig)) {
+      sig <- rep(NA, length(stats))
+    }
+    data.frame(
+      contrast = contrast_names[i],
+      component = comp_names,
+      statistic = as.numeric(stats),
+      p_value = as.numeric(p_vals),
+      p_adjusted = as.numeric(padj),
+      significant = as.logical(sig),
+      alpha = alpha,
+      method = method,
+      inference = inference,
+      correction = correction,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  res <- do.call(rbind, rows)
+  if (!is.null(row.names)) {
+    rownames(res) <- row.names
+  }
+  res
 }
 
 #' Sign-flip inference helper
@@ -355,30 +405,106 @@ print.dkge_inference <- function(x, ...) {
   }
 
   if (n_contrasts > 5) {
-    cat("  ...\n")
+	cat("  ...\n")
   }
 
   invisible(x)
 }
 
-# ---- Freedman–Lane scaffolding (heavy; requires time-series & GLM adapter) ----
-
-#' Freedman–Lane permutations for DKGE (scaffold)
+#' Convert DKGE inference results to a tidy data frame
 #'
-#' This function orchestrates Freedman–Lane permutations at the *time-series* level:
+#' @param x A `dkge_inference` object
+#' @param ... Additional arguments passed to [base::data.frame()]
+#' @param stringsAsFactors Logical; forwarded to [base::data.frame()]
+#' @return Data frame with columns `contrast`, `cluster`, `statistic`, `p_value`,
+#'   `p_adjusted`, and `significant`
+#' @export
+as.data.frame.dkge_inference <- function(x, ..., stringsAsFactors = FALSE) {
+  contrast_names <- names(x$statistics)
+  if (is.null(contrast_names) || any(!nzchar(contrast_names))) {
+    contrast_names <- names(x$contrasts$contrasts)
+  }
+  if (is.null(contrast_names) || length(contrast_names) != length(x$statistics)) {
+    contrast_names <- paste0("contrast", seq_along(x$statistics))
+  }
+
+  rows <- vector("list", length(x$statistics))
+  for (i in seq_along(x$statistics)) {
+    stats <- x$statistics[[i]]
+    if (is.null(stats)) {
+      next
+    }
+    cluster_ids <- names(stats)
+    if (is.null(cluster_ids) || any(!nzchar(cluster_ids))) {
+      cluster_ids <- paste0("cluster", seq_along(stats))
+    }
+    p_vals <- x$p_values[[i]]
+    if (is.null(p_vals)) {
+      p_vals <- rep(NA_real_, length(stats))
+    }
+    padj <- x$p_adjusted[[i]]
+    if (is.null(padj)) {
+      padj <- p_vals
+    }
+    signif_vec <- x$significant[[i]]
+    if (is.null(signif_vec)) {
+      signif_vec <- rep(NA, length(stats))
+    }
+
+    rows[[i]] <- data.frame(
+      contrast = rep(contrast_names[[i]], length(stats)),
+      component = cluster_ids,
+      statistic = as.numeric(stats),
+      p_value = as.numeric(p_vals),
+      p_adjusted = as.numeric(padj),
+      significant = as.logical(signif_vec),
+      stringsAsFactors = stringsAsFactors
+    )
+  }
+
+  rows <- Filter(Negate(is.null), rows)
+  result <- if (length(rows)) do.call(rbind, rows) else NULL
+  if (is.null(result)) {
+    result <- data.frame(
+      contrast = character(0),
+      component = character(0),
+      statistic = numeric(0),
+      p_value = numeric(0),
+      p_adjusted = numeric(0),
+      significant = logical(0),
+      stringsAsFactors = stringsAsFactors
+    )
+  }
+
+  if (!is.null(x$alpha)) {
+    result$alpha <- rep(x$alpha, nrow(result))
+  }
+  result$method <- rep(x$method, nrow(result))
+  result$inference <- rep(x$inference, nrow(result))
+  result$correction <- rep(x$correction, nrow(result))
+
+  rownames(result) <- NULL
+  result
+}
+
+# ---- Freedman-Lane scaffolding (heavy; requires time-series & GLM adapter) ----
+
+#' Freedman-Lane permutations for DKGE (scaffold)
+#'
+#' This function orchestrates Freedman-Lane permutations at the *time-series* level:
 #' for each subject, fit the reduced model (without the effect of interest), permute residuals,
 #' reconstruct surrogate data, refit the full GLM to get B* betas, then re-run DKGE LOSO
 #' to obtain a group statistic (e.g., max-|t| over medoid clusters). It requires the caller
 #' to provide three adapter functions (or rely on 'fmrireg'/'neuroim2'):
-#'   - fit_glm(Y_s, X_s, X0_s) -> list(beta = q×P, beta0 = q0×P, resid = T×P)
-#'   - resample_resid(resid_s) -> resid_s* (T×P)  [permute or phase-randomize per run]
+#'   - fit_glm(Y_s, X_s, X0_s) -> list(beta = qxP, beta0 = q0xP, resid = TxP)
+#'   - resample_resid(resid_s) -> resid_s* (TxP)  [permute or phase-randomize per run]
 #'   - transport_and_stat(B_list, X_list, K, c) -> scalar (e.g., max-|t|)
 #'
-#' @param Y_list list of neuroim2 BrainVectors (or T×P matrices) per subject
-#' @param X_list list of T×q design matrices (full)
-#' @param X0_list list of T×q0 reduced designs (null space of the contrast)
-#' @param K design kernel (q×q)
-#' @param c contrast vector (q×1)
+#' @param Y_list list of neuroim2 BrainVectors (or TxP matrices) per subject
+#' @param X_list list of Txq design matrices (full)
+#' @param X0_list list of Txq0 reduced designs (null space of the contrast)
+#' @param K design kernel (qxq)
+#' @param c contrast vector (qx1)
 #' @param B number of permutations
 #' @param adapters list with functions: fit_glm, resample_resid, transport_and_stat
 #' @param seed RNG seed for reproducibility
@@ -397,16 +523,16 @@ dkge_freedman_lane <- function(Y_list, X_list, X0_list, K, c, B = 500,
   # Build observed DKGE fit and LOSO contrasts; user supplies the stat function
   stat_obs <- adapters$transport_and_stat(B_list, X_list, K, c)
 
-  # ---- 2) Freedman–Lane permutations ----
+  # ---- 2) Freedman-Lane permutations ----
   stat_null <- numeric(B)
-  message("Running Freedman–Lane permutations...")
+  message("Running Freedman-Lane permutations...")
   for (b in seq_len(B)) {
     if (b %% max(1, B %/% 10) == 0) message(sprintf("  perm %d / %d", b, B))
     Bperm <- vector("list", S)
     for (s in seq_len(S)) {
       fs <- fit_full[[s]]
       # Y*_s = X_s beta0_s + P resid_s
-      res_star <- adapters$resample_resid(fs$resid)  # T×P
+      res_star <- adapters$resample_resid(fs$resid)  # TxP
       Ystar    <- X_list[[s]] %*% rbind(fs$beta0, matrix(0, nrow = ncol(X_list[[s]]) - nrow(fs$beta0), ncol = ncol(fs$beta0))) + res_star
       # refit full GLM on Ystar to get B*
       fs2 <- adapters$fit_glm(Ystar, X_list[[s]], X0_list[[s]])

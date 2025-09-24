@@ -1,8 +1,6 @@
 # dkge-cv.R
 # Cross-validation helpers and diagnostics for DKGE fits.
 
-`%||%` <- function(a, b) if (!is.null(a)) a else b
-
 #' Compute per-component variance explained
 #'
 #' Returns the standard deviation, variance, and cumulative variance explained
@@ -44,12 +42,18 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
 #' @export
 dkge_diagnostics <- function(fit) {
   stopifnot(inherits(fit, "dkge"))
+  voxel_stats <- if (!is.null(fit$voxel_weights)) {
+    vw <- fit$voxel_weights
+    list(mean = mean(vw), sd = stats::sd(vw), min = min(vw), max = max(vw))
+  } else NULL
   list(
     variance = dkge_variance_explained(fit),
     weights = fit$weights,
     rank = fit$rank,
     q = nrow(fit$U),
-    n_subjects = length(fit$Btil)
+    n_subjects = length(fit$Btil),
+    voxel_weights = voxel_stats,
+    weight_spec = fit$weight_spec
   )
 }
 
@@ -99,9 +103,9 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' Evaluates candidate ranks by recomputing LOSO bases and measuring explained
 #' variance on the held-out subject in the K^{1/2} metric.
 #'
-#' @param B_list List of q×P subject beta matrices.
-#' @param X_list List of T×q subject design matrices.
-#' @param K q×q design kernel.
+#' @param B_list List of qxP subject beta matrices.
+#' @param X_list List of Txq subject design matrices.
+#' @param K qxq design kernel.
 #' @param ranks Integer vector of ranks to evaluate.
 #' @param Omega_list Optional list of spatial weights.
 #' @param ridge Optional ridge parameter passed to [dkge_fit()].
@@ -123,23 +127,24 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                   ridge = ridge, rank = max(ranks))
   Khalf <- base$Khalf
 
-  ev_subject <- function(s, Uminus) {
-    Bts <- base$Btil[[s]]
-    Xs <- Khalf %*% Bts
-    V <- Khalf %*% Uminus
-    Xhat <- V %*% (t(Uminus) %*% base$K %*% Bts)
-    sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
-  }
-
   rows <- vector("list", S * length(ranks))
   row_id <- 1L
   for (s in seq_len(S)) {
-    Chat_minus <- base$Chat - base$weights[s] * base$contribs[[s]]
-    if (ridge > 0) Chat_minus <- Chat_minus + ridge * diag(q)
-    eg <- eigen((Chat_minus + t(Chat_minus)) / 2, symmetric = TRUE)
+    train_ids <- setdiff(seq_len(S), s)
+    ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
+    eg <- eigen(ctx$Chat, symmetric = TRUE)
+    loader_weights <- ctx$weights$total
     for (r in ranks) {
       Uminus <- base$Kihalf %*% eg$vectors[, seq_len(r), drop = FALSE]
-      rows[[row_id]] <- data.frame(subject = s, rank = r, score = ev_subject(s, Uminus))
+      score <- {
+        Bts <- base$Btil[[s]]
+        Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
+        Xs <- base$Khalf %*% Bw
+        V <- base$Khalf %*% Uminus
+        Xhat <- V %*% (t(Uminus) %*% base$K %*% Bw)
+        sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
+      }
+      rows[[row_id]] <- data.frame(subject = s, rank = r, score = score)
       row_id <- row_id + 1L
     }
   }
@@ -173,15 +178,17 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
     S <- length(B_list)
 
     for (s in seq_len(S)) {
-      Chat_minus <- base$Chat - base$weights[s] * base$contribs[[s]]
-      if (ridge > 0) Chat_minus <- Chat_minus + ridge * diag(nrow(Kc))
-      eg <- eigen((Chat_minus + t(Chat_minus)) / 2, symmetric = TRUE)
+      train_ids <- setdiff(seq_len(S), s)
+      ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
+      eg <- eigen(ctx$Chat, symmetric = TRUE)
+      loader_weights <- ctx$weights$total
       Uminus <- base$Kihalf %*% eg$vectors[, seq_len(rank), drop = FALSE]
 
       Bts <- base$Btil[[s]]
+      Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
       V <- Khalf %*% Uminus
-      Xs <- Khalf %*% Bts
-      Xhat <- V %*% (t(Uminus) %*% base$K %*% Bts)
+      Xs <- Khalf %*% Bw
+      Xhat <- V %*% (t(Uminus) %*% base$K %*% Bw)
       ev <- sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
       rows[[length(rows) + 1L]] <- data.frame(kernel = nm, subject = s, score = ev)
     }
@@ -212,7 +219,7 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
 
 #' Pooled design-space covariance and Cholesky factor
 #'
-#' Computes the q×q pooled design covariance and the corresponding Cholesky factor
+#' Computes the qxq pooled design covariance and the corresponding Cholesky factor
 #' needed for fast kernel alignment screening.
 #'
 #' @inheritParams dkge_cv_rank_loso
@@ -252,7 +259,7 @@ dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
 #' Ranks candidate kernels by their alignment with the pooled design-space
 #' covariance produced by [dkge_pooled_cov_q()].
 #'
-#' @param K_grid Named list of q×q kernels.
+#' @param K_grid Named list of qxq kernels.
 #' @param C Pooled covariance matrix.
 #' @param normalize_k Logical; if `TRUE`, kernels are scaled to unit trace before
 #'   alignment.

@@ -34,13 +34,13 @@ eigenvalue perturbation theory, avoiding full eigen-decomposition per subject.
 This function implements the first-order eigenvalue perturbation approximation
 described in the paper. For the held-out compressed covariance:
 
-Chat^(-s) ≈ Chat - w_s S_s
+Chat^(-s) ~ Chat - w_s S_s
 
 The eigenvalues and eigenvectors are updated using:
-- δλ_j = -w_s v_j^T S_s v_j (eigenvalue shift)
-- δv_j = -w_s Σ_{k≠j} (v_k^T S_s v_j)/(λ_j - λ_k) v_k (eigenvector rotation)
+- deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
+- deltav_j = -w_s Sigma_{k!=j} (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
 
-This avoids the O(q³) eigen-decomposition, requiring only O(q²r) operations
+This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r) operations
 where r is the rank. The approximation is accurate when:
 1. Subject weights w_s are small (no single subject dominates)
 2. Eigenvalue gaps are large (well-separated components)

@@ -1,6 +1,13 @@
 ---
 title: "DKGE Workflow"
-output: rmarkdown::html_vignette
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
 vignette: >
   %\VignetteIndexEntry{DKGE Workflow}
   %\VignetteEngine{knitr::rmarkdown}
@@ -8,63 +15,72 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
+library(dkge)
+library(ggplot2)
+
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "90%"
 )
+options(
+  tibble.print_min = 4,
+  tibble.print_max = 4,
+  digits = 3
+)
+set.seed(2024)
+theme_set(theme_dkge())
 ```
 
-Design-Kernel Group Embedding (DKGE) summarises subject-level general linear
-models (GLMs) into a shared latent space that respects structure in the design
-matrix. This vignette provides a guided tour from raw subject betas to
-component-level inference and voxelwise visualisation.
+
+Design-Kernel Group Embedding (DKGE) provides a principled approach for summarizing subject-level general linear models (GLMs) into a shared latent space that respects the underlying structure in the design matrix. This vignette provides a comprehensive guided tour that takes you from raw subject beta coefficients through to component-level statistical inference and voxelwise visualization of group-level patterns.
 
 ## Why DKGE?
 
-Multi-subject neuroimaging studies often deliver thousands of per-subject beta
-maps tied to the same experimental design. Traditional group analyses rely on
-coordinate-wise averages or mass-univariate models, which discard the smoothness
-and dependence encoded by the design. DKGE instead:
+Multi-subject neuroimaging studies typically generate thousands of per-subject beta maps that are all tied to the same experimental design structure. Traditional group analysis approaches rely on coordinate-wise averaging or mass-univariate statistical models, both of which unfortunately discard the rich smoothness and dependency patterns that are encoded within the experimental design itself.
 
-- harmonises subject GLM outputs so that effects share a common ruler;
-- rotates the multiblock beta arrays into orthogonal components using a design
-  kernel that encodes similarity between effects; and
-- exposes utilities for statistical inference, contrast testing, and
-  optimal-transport-based map alignment across subjects or voxels.
+DKGE addresses these limitations through a three-pronged approach. First, it harmonizes subject-level GLM outputs so that effects across different subjects share a common measurement scale. Second, it rotates the multiblock beta arrays into orthogonal components by leveraging a design kernel that explicitly encodes similarity relationships between different experimental effects. Finally, it exposes a comprehensive suite of utilities for statistical inference, contrast testing, and optimal-transport-based map alignment that can operate across both subjects and spatial locations.
 
 ## Pipeline At A Glance
 
-1. Prepare per-subject betas, designs, and optional spatial weights with
-   `dkge_subject()` / `dkge_data()`.
-2. Specify a design kernel `K` describing similarity among design effects.
-3. Call `dkge()` (or `dkge_fit()`) to estimate the shared latent basis.
-4. Inspect subject weights, eigenvalues, and component loadings.
-5. Transport component maps to a consensus space and perform inference with
-   `dkge_component_stats()` or contrast utilities.
-6. (Optional) Interpolate consensus maps to voxel space with
-   `dkge_transport_to_voxels()` for visualisation.
+The DKGE workflow follows a logical sequence of steps that build upon each other to produce interpretable group-level results:
+
+1. **Data preparation**: Begin by organizing per-subject beta coefficients, design matrices, and optional spatial weights using `dkge_subject()` and `dkge_data()` functions.
+
+2. **Kernel specification**: Define a design kernel `K` that captures the similarity relationships among your experimental design effects.
+
+3. **Model fitting**: Execute the core DKGE algorithm by calling `dkge()` (or the lower-level `dkge_fit()`) to estimate the shared latent basis that spans across subjects.
+
+4. **Component inspection**: Examine the fitted model by inspecting subject-specific weights, component eigenvalues, and the resulting loadings structure.
+
+5. **Consensus mapping and inference**: Transport individual component maps into a consensus space and perform statistical inference using `dkge_component_stats()` or specialized contrast utilities.
+
+6. **Voxelwise visualization** (optional): Interpolate the consensus maps back to voxel space using `dkge_transport_to_voxels()` to enable detailed spatial visualization.
 
 ## Required Ingredients
 
-- **Betas**: q × P_s matrices of GLM coefficients (effects × clusters/voxels).
-- **Design matrices**: T_s × q regressors per subject; column names define the
-  canonical effect labels.
-- **Kernel `K`**: positive semi-definite matrix over effects. Use `diag(q)` for
-  a neutral choice or build structured kernels with `design_kernel()`.
-- **Spatial weights (optional)**: vectors or matrices describing the reliability
-  or size of each cluster/voxel.
-- **Centroids (optional but recommended)**: 3-D coordinates for clusters, used
-  when transporting values across subjects or voxels.
+To successfully apply DKGE, you'll need to prepare several key data components:
+
+- **Beta coefficient matrices**: These are q × P_s matrices containing GLM coefficients, where q represents the number of experimental effects and P_s represents the number of spatial clusters or voxels for subject s.
+
+- **Design matrices**: Each subject contributes a T_s × q matrix of regressors, where T_s is the number of time points for that subject. The column names in these matrices serve to define the canonical labels for each experimental effect.
+
+- **Design kernel `K`**: This is a positive semi-definite matrix that operates over the experimental effects. You can use `diag(q)` as a neutral starting choice, or construct more sophisticated structured kernels using the `design_kernel()` function.
+
+- **Spatial weights** (optional): These can be provided as vectors or matrices that describe the reliability or effective size of each spatial cluster or voxel, allowing the algorithm to appropriately weight different brain regions.
+
+- **Spatial centroids** (optional but recommended): These are 3-D coordinate locations for each cluster, which become essential when transporting statistical values across different subjects or when mapping results back to voxel space.
 
 ## Walkthrough: Simulated Study
 
-The following example generates a tiny dataset with three subjects, three design
-rows (effects), and four clusters per subject. Replace these simulated pieces
-with real betas, designs, and centroids in practice.
+To illustrate the DKGE workflow in practice, we'll work through a complete example using simulated data. The following code generates a minimal dataset consisting of three subjects, three experimental design effects, and four spatial clusters per subject. In your own analyses, you would naturally replace these simulated components with real beta coefficients, design matrices, and spatial centroids derived from your actual neuroimaging study.
 
 ```{r example-data, message=FALSE}
 library(dkge)
-set.seed(1)
+set.seed(2024)
 
 S <- 3        # subjects
 q <- 3        # effects per design
@@ -87,16 +103,11 @@ data_bundle <- dkge_data(subjects)
 identity_kernel <- diag(data_bundle$q)
 ```
 
-`dkge_subject()` tags each beta matrix with its design and optional weights,
-while `dkge_data()` harmonises the effect ordering and subject identifiers. For
-real studies, pass parcellated cluster sizes via the `omega` argument to weight
-subjects during fitting.
+The `dkge_subject()` function serves to package each beta matrix together with its corresponding design matrix and any optional weighting information. Meanwhile, `dkge_data()` takes care of harmonizing the effect ordering across subjects and standardizing subject identifiers throughout the dataset. When working with real neuroimaging studies, you would typically pass parcellated cluster sizes through the `omega` argument, which allows the algorithm to appropriately weight different subjects based on the spatial extent of their data during the fitting process.
 
 ### Fitting the DKGE model
 
-We fit a rank-2 DKGE model using an identity kernel (no effect smoothing). The
-returned object inherits from `multiblock_biprojector`, so it plays nicely with
-`multivarious` projection helpers.
+Now we can proceed to fit a rank-2 DKGE model using an identity kernel, which means we're not imposing any smoothing relationships between different experimental effects. The object returned by the fitting process inherits from the `multiblock_biprojector` class, which ensures that it integrates seamlessly with the broader ecosystem of `multivarious` projection helper functions.
 
 ```{r fit-model}
 fit <- dkge(data_bundle, kernel = identity_kernel, rank = 2)
@@ -106,16 +117,11 @@ round(fit$sdev, 3)
 fit$weights
 ```
 
-- `fit$sdev` reports singular values for the retained components.
-- `fit$weights` shows per-subject block weights after any MFA-style scaling.
-- `fit$U` and `fit$v` hold the component loadings in effect and cluster space,
-  respectively.
+The fitted model object contains several key components that summarize the results. The `fit$sdev` element reports the singular values associated with each of the retained components, providing insight into their relative importance. The `fit$weights` element displays the per-subject block weights that result from any MFA-style scaling that was applied during fitting. Finally, the `fit$U` and `fit$v` elements contain the component loadings in effect space and cluster space, respectively, which encode how the original variables relate to the discovered latent components.
 
 ### Inspecting component structure
 
-Eigenvalues (`fit$evals`) describe how much variance each component explains in
-K-metric space. The helper below summarises the leading component loadings per
-subject.
+The eigenvalues stored in `fit$evals` provide crucial information about how much variance each discovered component explains within the K-metric space defined by your design kernel. To gain deeper insight into the structure of these components, the following code demonstrates how to extract and examine the leading component loadings for each individual subject.
 
 ```{r inspect-components}
 loadings <- lapply(fit$Btil, function(Bts) {
@@ -125,16 +131,11 @@ loadings <- lapply(fit$Btil, function(Bts) {
 lapply(loadings, function(A) round(A[, 1, drop = FALSE], 3))
 ```
 
-The `loadings` matrices contain cluster contributions for each component. Use
-`dkge_project_block()` or `dkge_project_clusters()` to score new data against the
-fitted basis.
+The resulting `loadings` matrices contain the cluster-wise contributions for each discovered component, revealing how different spatial regions contribute to the overall component structure. When you need to apply this fitted model to new data, you can leverage either `dkge_project_block()` or `dkge_project_clusters()` to score additional datasets against the established basis.
 
 ### Component-level inference and medoid transport
 
-`dkge_component_stats()` transports component loadings to a reference (medoid)
-parcellation, then computes per-cluster statistics. Different mapper strategies
-balance spatial and embedding distances; here we use Sinkhorn transport with a
-tight entropic regularisation.
+The `dkge_component_stats()` function performs a crucial step in the analysis pipeline by transporting component loadings from individual subject spaces to a shared reference parcellation (known as the medoid). Once this transport is complete, the function computes statistical summaries for each cluster in the reference space. Different mapper strategies offer various ways to balance spatial proximity against embedding distance relationships. In this example, we employ Sinkhorn optimal transport with tight entropic regularization to achieve a robust alignment.
 
 ```{r component-stats}
 comp <- dkge_component_stats(
@@ -148,19 +149,15 @@ comp <- dkge_component_stats(
 head(comp$summary)
 ```
 
-The returned list includes:
+The returned object is a comprehensive list that provides multiple perspectives on the statistical results:
 
-- `summary`: tidy data frame with statistics, raw p-values, and FDR adjustments.
-- `statistics`: raw component-wise statistic vectors before tidying.
-- `transport`: subject-level matrices (subjects × medoid clusters) after
-  alignment.
+- `summary`: A tidy data frame containing test statistics, raw p-values, and false discovery rate (FDR) adjustments for easy interpretation and downstream analysis.
+- `statistics`: The raw component-wise statistic vectors in their original form before any tidying operations were applied.
+- `transport`: Subject-level matrices with dimensions (subjects × medoid clusters) that capture the aligned data after the optimal transport procedure.
 
 ### Mapping components to voxel space
 
-When you have voxel features (e.g. centroids or PCA-reduced spatial signatures),
-`dkge_transport_to_voxels()` interpolates transported component values onto a
-voxel grid. This enables visualisation without committing to a single
-parcellation.
+When your analysis includes voxel-level features such as spatial centroids or PCA-reduced spatial signatures, the `dkge_transport_to_voxels()` function provides a powerful mechanism for interpolating the transported component values onto a full voxel grid. This capability enables high-resolution visualization of your results without forcing you to commit to any single parcellation scheme, thereby preserving flexibility in how you present and interpret your findings.
 
 ```{r voxel-transport, eval=FALSE}
 voxels <- replicate(S, matrix(runif(10 * 3, min = -20, max = 20), 10, 3), simplify = FALSE)
@@ -176,14 +173,11 @@ voxel_maps <- dkge_transport_to_voxels(
 round(voxel_maps$value, 3)
 ```
 
-`voxel_maps$value` contains the averaged consensus map across subjects, while
-`voxel_maps$subj_values` stores subject-specific interpolations.
+The resulting object provides both group-level and individual-level perspectives on the interpolated results. The `voxel_maps$value` element contains the averaged consensus map that synthesizes information across all subjects, while `voxel_maps$subj_values` preserves the subject-specific interpolations for cases where individual variation is of particular interest.
 
 ## Bootstrap Shortcuts
 
-Re-using a fixed transport ensures every resampled statistic lives in the same
-reference space. Cache the subject→medoid operators once and feed them to the
-bootstrap helpers:
+When conducting bootstrap-based statistical inference, it's crucial to ensure that every resampled statistic exists within the same reference coordinate system. By caching and re-using a fixed optimal transport mapping, we can guarantee this consistency across bootstrap iterations. The following approach demonstrates how to cache the subject-to-medoid transport operators once and then efficiently feed them to the specialized bootstrap helper functions:
 
 ```{r bootstrap-demo, message=FALSE}
 cache <- dkge_prepare_transport(fit, centroids = centroids, medoid = 1)
@@ -196,23 +190,20 @@ boot_proj$medoid$sd[1]
 boot_q$summary[[1]]$medoid$sd[1]
 ```
 
-`dkge_bootstrap_projected()` resamples transported subject vectors directly,
-while `dkge_bootstrap_qspace()` includes variability from the re-estimated group
-subspace. When thousands of replicates are required,
-`dkge_bootstrap_analytic()` applies the same cached transport but updates the
-subspace via first-order perturbations, falling back to the exact eigensolve
-when the perturbation is large.
+These two bootstrap approaches capture different sources of variability in your statistical inference. The `dkge_bootstrap_projected()` function resamples the already-transported subject vectors directly, focusing on the variability that remains after the group-level latent space has been fixed. In contrast, `dkge_bootstrap_qspace()` incorporates additional uncertainty by including variability that arises from re-estimating the group-level subspace itself on each bootstrap iteration.
+
+For computationally demanding scenarios where thousands of bootstrap replicates are required, the `dkge_bootstrap_analytic()` function offers an efficient alternative. This approach applies the same cached transport mapping but updates the subspace using fast first-order perturbation theory, only falling back to the more expensive exact eigendecomposition when the perturbation becomes too large to trust the linear approximation.
 
 ## Where to next?
 
-- Use `dkge_contrast()`, `dkge_loso_contrast()`, or `dkge_pipeline()` to perform
-  hypothesis-driven contrasts and cross-validation.
-- Call `dkge_project_blocks()` to score held-out subjects or new parcellations.
-- Combine voxel transports with `dkge_paint_medoid_map()` (from the
-  `dkge.neuroim2` companion) or external visualisation stacks to render group
-  maps.
-- Explore alternative kernels via `design_kernel()` to encode smoothness across
-  ordinal/circular factors or multi-factor interactions.
+Having completed this foundational walkthrough, you're now equipped to explore more advanced DKGE capabilities:
 
-Refer to the function reference in `man/` for detailed argument descriptions and
-additional utilities.
+- **Hypothesis testing**: Leverage `dkge_contrast()`, `dkge_loso_contrast()`, or the comprehensive `dkge_pipeline()` function to perform sophisticated hypothesis-driven contrasts and cross-validation procedures.
+
+- **Out-of-sample prediction**: Apply `dkge_project_blocks()` to score held-out subjects or evaluate the model performance on entirely new parcellation schemes.
+
+- **Advanced visualization**: Combine the voxel transport capabilities with `dkge_paint_medoid_map()` (available in the companion `dkge.neuroim2` package) or integrate with external visualization frameworks to create publication-ready group-level activation maps.
+
+- **Structured kernels**: Explore the rich possibilities offered by `design_kernel()` to encode smoothness relationships across ordinal or circular experimental factors, or to capture complex multi-factor interaction patterns in your design.
+
+For comprehensive details on function arguments and additional utility functions, consult the complete function reference documentation available in the `man/` directory.

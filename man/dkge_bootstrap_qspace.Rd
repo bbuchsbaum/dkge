@@ -62,6 +62,6 @@ List containing per-contrast bootstrap summaries and the transport
 }
 \description{
 Reweights subject contributions with i.i.d. multiplier weights, recomputes
-the tiny q×q eigendecomposition, and propagates contrasts to the medoid (and
+the tiny qxq eigendecomposition, and propagates contrasts to the medoid (and
 optionally voxel) space using cached transport operators.
 }

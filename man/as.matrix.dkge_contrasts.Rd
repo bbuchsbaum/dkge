@@ -14,7 +14,7 @@
 \item{...}{Additional arguments (not used)}
 }
 \value{
-S×P matrix of contrast values
+SxP matrix of contrast values
 }
 \description{
 Extract contrast values as matrix

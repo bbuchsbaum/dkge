@@ -9,14 +9,14 @@ dkge_project_clusters(fit, B, omega_vec = NULL, w = 1)
 \arguments{
 \item{fit}{A `dkge` object.}
 
-\item{B}{q×P matrix of cluster betas.}
+\item{B}{qxP matrix of cluster betas.}
 
 \item{omega_vec}{Optional vector of per-cluster weights.}
 
 \item{w}{Optional subject weight.}
 }
 \value{
-P×rank matrix of projected coordinates.
+Pxrank matrix of projected coordinates.
 }
 \description{
 Project multiple cluster/voxel vectors

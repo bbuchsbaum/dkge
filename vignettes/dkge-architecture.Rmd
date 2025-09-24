@@ -1,0 +1,144 @@
+---
+title: "DKGE Architecture Guide"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
+vignette: >
+  %\VignetteIndexEntry{DKGE Architecture Guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.show = "hide"
+)
+```
+
+## Motivation
+
+The DKGE codebase has grown rapidly as new utilities — transport, inference, classifier localisation, bootstrap diagnostics — were added around the original fitting routine. Many of these features currently live in large, multi-purpose functions. This vignette documents the present architecture and sets out a modular refactor roadmap. The goals are to make the package easier to extend, reduce the coupling between subsystems, and provide contributors with a concise reference for how data moves through DKGE.
+
+## High-Level Package Layout
+
+| Domain | Key files | Responsibilities |
+| --- | --- | --- |
+| Data & kernels | `dkge-data.R`, `design-kernel.R`, `dkge-weights*.R` | Build subject bundles, harmonise design metadata, and construct similarity kernels/weights. |
+| Fitting core | `dkge-fit.R`, `dkge-cpca.R`, `dkge-components.R` | Row-standardise betas, accumulate compressed covariances, run the eigensolver, and expose component summaries. |
+| Contrasts & inference | `dkge-contrast.R`, `dkge-inference*.R`, `dkge-analytic*.R` | Generate LOSO/K-fold contrasts, analytic approximations, and sign-flip inference. |
+| Transport & rendering | `dkge-transport*.R`, `dkge-render*.R`, C++ sinkhorn/pwdist | Map subject maps to anchors/voxels via kNN or Sinkhorn operators. |
+| Classification | `dkge-classify.R`, `dkge-info-maps.R`, `dkge-latent-*.R` | Train latent classifiers, derive Haufe/LOCO maps, and aggregate anchor evidence. |
+| Orchestration | `dkge-pipeline.R`, `dkge-predict.R`, `dkge-bootstrap*.R` | Wrap core steps into workflows, prediction helpers, and resampling utilities. |
+| Visualisation | `dkge-plot*.R`, `theme_dkge()` | Plot scree, loadings, subject contribution heatmaps, and information maps. |
+
+The package follows standard R conventions (roxygen2, testthat, pkgdown) and links to C++ helpers for computational hotspots.
+
+## Current `dkge_fit()` Lifecycle
+
+`dkge_fit()` is the main entry point for batch fitting. Today it performs a long sequence of responsibilities in one 400+ line function:
+
+1. **Coercion**: Accept raw lists or `dkge_data` bundles, validate dimensions, and attach kernel metadata.
+2. **Row standardisation**: Pool subject designs, compute the shared Cholesky factor `R`, and build `Btil` (`R^T B_s`).
+3. **Kernel preparation**: Symmetrise the kernel, derive square roots/inverses, and resolve voxel/anchor weights.
+4. **Weighting**: Compute optional subject MFA weights (`svd` per subject) and voxel weights, accumulating the compressed covariance `Chat`.
+5. **CPCA branches**: Optionally split the covariance into design/residual parts, re-merge based on `cpca_part`, and inject ridge terms.
+6. **Eigen solve**: Run a dense `eigen()` on `Chat`, drop near-zero components, and project back to the K-metric basis.
+7. **Block assembly**: Build the concatenated subject matrix, populate the multivarious `multiblock_biprojector`, and package diagnostics (weights, contributions, CPCA payloads, cached Chat pieces).
+
+This structure makes it difficult to reuse intermediate artefacts (e.g. cached `Chat`, per-subject contributions) or to experiment with variant solvers, streaming fits, or GPU back-ends.
+
+## Proposed Modular Decomposition
+
+To improve cohesion we will split the lifecycle into composable stages with explicit inputs and outputs:
+
+```
++---------------------+    +-------------------+    +--------------------+
+| fit_prepare()       | -> | fit_accumulate()   | -> | fit_solve()        |
+| - coerce inputs     |    | - subject/voxel    |    | - eigen/CPCA       |
+| - pool designs, R   |    |   weights          |    | - basis assembly   |
+| - resolve kernel    |    | - compressed Chat  |    | - diagnostics      |
++---------------------+    +-------------------+    +--------------------+
+                                  |
+                                  v
+                        +--------------------+
+                        | fit_assemble()     |
+                        | - multiblock view  |
+                        | - scores/loadings  |
+                        | - result object    |
+                        +--------------------+
+```
+
+Each function will live in `R/dkge-fit-core.R` (internal) with focused unit tests. Public wrappers (`dkge_fit()`, `dkge()`) will orchestrate these stages but remain minimal. Key contracts:
+
+- `fit_prepare()` returns a list containing harmonised data, kernel payload (`K`, `Khalf`, `Kihalf`), `Btil`, subject ids, and resolved weighting specs.
+- `fit_accumulate()` consumes the prepared payload plus weighting options and returns `Chat`, `contribs`, updated weights, and CPCA-ready intermediates.
+- `fit_solve()` encapsulates `cpca_part` branching, ridge handling, and eigen decomposition, returning `basis` matrices (`U`, `U_hat`), eigenvalues, CPCA splits, and ready-to-project column scalings.
+- `fit_assemble()` creates the `multiblock_biprojector`, attaches diagnostics, and constructs the final `dkge` object.
+
+This decomposition allows drop-in replacement of any stage (e.g. streaming accumulation, truncated eigen solvers) and clarifies test boundaries.
+
+## Pipeline & Service Layers
+
+`dkge_pipeline()` currently coordinates contrasts, transport, inference, and classification through ad-hoc lists. We plan to formalise these as lightweight service objects:
+
+- `dkge_contrast_service(fit, scheme, ridge, ...)` will encapsulate cross-fitting strategy selection and expose `run()` returning a `dkge_contrasts` object.
+- `dkge_transport_service(spec)` will precompute and cache mappers/centroids, exposing `apply(contrast_values)` and `operators()`. Specs will be created using a constructor (`dkge_transport_spec()`) that validates mapper arguments.
+- `dkge_inference_service(spec)` will wrap sign-flip/parametric routines with validated parameters (`B`, `tail`, `center`).
+- `dkge_classification_service(spec)` will standardise latent classifier training options.
+
+The pipeline will accept these services (or specs) and wire them together, making it easier to reuse components independently and to unit-test each subsystem in isolation.
+
+## User-Facing API Improvements
+
+To reduce boilerplate and misconfiguration we will introduce small constructor helpers:
+
+- `dkge_transport_spec(method = "sinkhorn", centroids, sizes = NULL, ...)`
+- `dkge_inference_spec(B = 2000, tail = "two.sided", center = "mean")`
+- `dkge_classification_spec(targets, method = "elasticnet", ...)`
+
+These helpers will perform argument checking up front and provide sensible defaults. They will also carry print methods for clearer logging.
+
+For prediction workflows we will layer a friendly wrapper, e.g.:
+
+```r
+predict_subjects <- dkge_predict_subjects(fit, betas, contrasts, ids = NULL)
+```
+
+The helper will accept matrices, `dkge_subject` objects, or tidy data frames and internally convert them to the low-level list format required by `dkge_predict()`.
+
+## Performance Work Areas
+
+The refactor will also make targeted optimisation straightforward:
+
+- Memoise or approximate the leading singular value in the weighting stage (e.g. power iteration) to avoid full SVD per subject.
+- Vectorise bootstrap resampling loops and expose a `parallel` flag that leverages `future.apply` when available.
+- Surface diagnostics for the Sinkhorn cache (size, hit rate) and allow users to tune cache depth or disable it explicitly.
+- Remove compiled artefacts (`*.o`, `dkge.so`) from the repository and add a CI check to guard against regressions.
+
+Each optimisation will be benchmarked using micro-benchmarks (stored under `bench/`) and guarded by regression tests where feasible.
+
+## Implementation Roadmap
+
+1. **Extract fit stages** with testthat coverage for each helper.
+2. **Introduce spec constructors** and adapt pipeline/predict entry points to consume them.
+3. **Refactor pipeline** into service objects while maintaining backward compatibility (the existing list signature will continue to work).
+4. **Optimise hotspot code paths** guided by microbenchmarks and profiler traces.
+5. **Clean repository hygiene** (remove compiled binaries, update `.Rbuildignore`, document build requirements).
+
+Progress on each milestone will be tracked in the package NEWS and cross-linked from this vignette so contributors can follow the evolving architecture.
+
+## Contributing Notes
+
+- Keep new helper functions internal (`@keywords internal`) until the public API stabilises.
+- When introducing services/specs, supply coercion helpers so existing list-based calls continue to work.
+- Update relevant vignettes (workflow, performance) to reference the new helpers once they are in place.
+- Extend the test suite alongside every refactor step: unit tests for internal helpers, integration tests for pipeline outputs, and snapshots for user messaging.
+
+By tightening the architectural boundaries and improving ergonomics we expect DKGE to remain nimble while accommodating richer workflows (e.g. streaming fits, multimodal transport) without exponential growth in complexity.

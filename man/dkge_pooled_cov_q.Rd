@@ -7,9 +7,9 @@
 dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
 }
 \arguments{
-\item{B_list}{List of q×P subject beta matrices.}
+\item{B_list}{List of qxP subject beta matrices.}
 
-\item{X_list}{List of T×q subject design matrices.}
+\item{X_list}{List of Txq subject design matrices.}
 
 \item{Omega_list}{Optional list of spatial weights.}
 }
@@ -18,6 +18,6 @@ List containing `C` (pooled covariance in the ruler metric), `R`
   (upper-triangular Cholesky factor), and `G` (pooled design Gram matrix).
 }
 \description{
-Computes the q×q pooled design covariance and the corresponding Cholesky factor
+Computes the qxq pooled design covariance and the corresponding Cholesky factor
 needed for fast kernel alignment screening.
 }

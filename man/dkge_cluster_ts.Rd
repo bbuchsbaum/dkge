@@ -7,17 +7,17 @@
 dkge_cluster_ts(bv, labels, ids = NULL, chunker = NULL)
 }
 \arguments{
-\item{bv}{A `neuroim2::NeuroVec` object (4D time-series data, T×X×Y×Z).}
+\item{bv}{A `neuroim2::NeuroVec` object (4D time-series data, TxXxYxZ).}
 
 \item{labels}{A `neuroim2::NeuroVol` with integer cluster identifiers
 (0 indicates background).}
 
 \item{ids}{Optional subset of cluster IDs to retain.}
 
-\item{chunker}{Optional function returning list(mat = T×V_block, vox_idx).}
+\item{chunker}{Optional function returning list(mat = TxV_block, vox_idx).}
 }
 \value{
-Matrix of dimension T×P where P is the number of clusters retained.
+Matrix of dimension TxP where P is the number of clusters retained.
 }
 \description{
 Aggregate voxel time series into cluster means

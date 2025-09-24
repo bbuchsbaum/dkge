@@ -39,9 +39,9 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 \arguments{
 \item{v_list}{List of subject-level cluster values (length P_s each).}
 
-\item{A_list}{List of subject loadings (P_s × r).}
+\item{A_list}{List of subject loadings (P_s x r).}
 
-\item{centroids}{List of subject cluster centroids (each P_s × 3 matrix).}
+\item{centroids}{List of subject cluster centroids (each P_s x 3 matrix).}
 
 \item{sizes}{Optional list of cluster masses (defaults to uniform weights).}
 

@@ -50,18 +50,26 @@ dkge_bootstrap_projected <- function(values_medoid,
   }
 
   boot_medoid <- matrix(NA_real_, nrow = B, ncol = Q)
-  for (b in seq_len(B)) {
-    idx <- sample.int(S, size = S, replace = TRUE)
-    Yb <- Y[idx, , drop = FALSE]
-    if (aggregate == "mean") {
-      if (is.null(weights)) {
-        boot_medoid[b, ] <- colMeans(Yb)
-      } else {
-        w <- weights[idx]
-        boot_medoid[b, ] <- colSums(w * Yb) / (sum(w) + 1e-12)
-      }
-    } else {
-      boot_medoid[b, ] <- apply(Yb, 2, stats::median)
+  if (aggregate == "mean" && is.null(weights)) {
+    draws <- matrix(sample.int(S, size = B * S, replace = TRUE), nrow = B, ncol = S)
+    boot_medoid <- matrix(0, B, Q)
+    for (s in seq_len(S)) {
+      boot_medoid <- boot_medoid + Y[draws[, s], , drop = FALSE]
+    }
+    boot_medoid <- boot_medoid / S
+  } else if (aggregate == "mean") {
+    draws <- matrix(sample.int(S, size = B * S, replace = TRUE), nrow = B, ncol = S)
+    weight_mat <- matrix(weights[draws], nrow = B, ncol = S)
+    boot_medoid <- matrix(0, B, Q)
+    denom <- rowSums(weight_mat) + 1e-12
+    for (s in seq_len(S)) {
+      boot_medoid <- boot_medoid + (weight_mat[, s] * Y[draws[, s], , drop = FALSE])
+    }
+    boot_medoid <- boot_medoid / denom
+  } else {
+    for (b in seq_len(B)) {
+      idx <- sample.int(S, size = S, replace = TRUE)
+      boot_medoid[b, ] <- apply(Y[idx, , drop = FALSE], 2, stats::median)
     }
   }
 
@@ -86,7 +94,7 @@ dkge_bootstrap_projected <- function(values_medoid,
 #' Multiplier bootstrap in the design space (q-space)
 #'
 #' Reweights subject contributions with i.i.d. multiplier weights, recomputes
-#' the tiny q×q eigendecomposition, and propagates contrasts to the medoid (and
+#' the tiny qxq eigendecomposition, and propagates contrasts to the medoid (and
 #' optionally voxel) space using cached transport operators.
 #'
 #' @inheritParams dkge_bootstrap_projected
@@ -163,14 +171,13 @@ dkge_bootstrap_qspace <- function(fit,
 
   weights_base <- as.numeric(fit$weights)
   contribs <- fit$contribs
+  contrib_matrix <- vapply(contribs, function(M) as.numeric(M), numeric(q * q))
 
   for (b in seq_len(B)) {
     xi <- .dkge_bootstrap_multipliers(scheme, S)
-
-    Chat_b <- matrix(0, q, q)
-    for (s in seq_len(S)) {
-      Chat_b <- Chat_b + xi[s] * weights_base[s] * contribs[[s]]
-    }
+    coeff <- weights_base * xi
+    Chat_vec <- contrib_matrix %*% coeff
+    Chat_b <- matrix(Chat_vec, q, q)
     if (ridge > 0) {
       diag(Chat_b) <- diag(Chat_b) + ridge
     }
@@ -187,16 +194,16 @@ dkge_bootstrap_qspace <- function(fit,
     corr_sign <- ifelse(corr_diag < 0, -1, 1)
     Ub <- sweep(Ub, 2, corr_sign, `*`)
 
-    subject_maps <- matrix(0, S, Q)
-    weights_boot <- weights_base * xi
+    A_list <- lapply(KBtil_t, function(mat) mat %*% Ub)
+    weights_boot <- coeff
     w_sum <- sum(weights_boot)
     if (!is.finite(w_sum) || w_sum <= 0) w_sum <- 1
 
     for (idx_con in seq_len(n_contrasts)) {
       alpha_b <- as.numeric(crossprod(Ub, Kctil_list[[idx_con]]))
+      subject_maps <- matrix(0, S, Q)
       for (s in seq_len(S)) {
-        A_s <- KBtil_t[[s]] %*% Ub
-        v_s <- as.numeric(A_s %*% alpha_b)
+        v_s <- as.numeric(A_list[[s]] %*% alpha_b)
         subject_maps[s, ] <- as.numeric(t(operators[[s]]) %*% v_s)
       }
       boot_medoid[[idx_con]][b, ] <- colSums(subject_maps * weights_boot) / (w_sum + 1e-12)

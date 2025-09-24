@@ -15,9 +15,10 @@ dkge_loso_contrast <- function(fit, s, c, ridge = 0) {
   q <- nrow(fit$U)
   stopifnot(length(c) == q)
 
-  Chat_minus <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
-  if (ridge > 0) Chat_minus <- Chat_minus + ridge * diag(q)
-  Chat_minus <- (Chat_minus + t(Chat_minus)) / 2
+  train_ids <- setdiff(seq_len(length(fit$Btil)), s)
+  ctx <- .dkge_fold_weight_context(fit, train_ids, ridge = ridge)
+  Chat_minus <- ctx$Chat
+  weight_eval <- ctx$weights
 
   eig_minus <- eigen(Chat_minus, symmetric = TRUE)
   r <- ncol(fit$U)
@@ -26,8 +27,10 @@ dkge_loso_contrast <- function(fit, s, c, ridge = 0) {
   c_tilde <- backsolve(fit$R, c, transpose = FALSE)
   alpha <- t(Uminus) %*% fit$K %*% c_tilde
 
+  loader_weights <- weight_eval$total
   Bts <- fit$Btil[[s]]
-  A_s <- t(Bts) %*% fit$K %*% Uminus
+  Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
+  A_s <- t(Bw) %*% fit$K %*% Uminus
   v_s <- as.numeric(A_s %*% alpha)
 
   list(v = v_s, alpha = alpha, basis = Uminus, evals = eig_minus$values)

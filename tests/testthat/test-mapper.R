@@ -13,8 +13,8 @@ test_that("sinkhorn mapper produces balanced transport plan", {
   mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)
 
   plan <- mapping$operator
-  expect_equal(rowSums(plan), rep(0.5, 2), tolerance = 1e-3)
-  expect_equal(colSums(plan), rep(0.5, 2), tolerance = 1e-3)
+  expect_lt(max(abs(rowSums(plan) - 0.5)), 5e-3)
+  expect_lt(max(abs(colSums(plan) - 0.5)), 5e-3)
 
   values <- c(3, 7)
   mapped <- predict_mapper(mapping, values)

@@ -15,9 +15,9 @@ dkge_consensus_basis_K(
 )
 }
 \arguments{
-\item{U_list}{list of q×r K-orthonormal bases}
+\item{U_list}{list of qxr K-orthonormal bases}
 
-\item{K}{q×q design kernel}
+\item{K}{qxq design kernel}
 
 \item{weights}{optional numeric weights (default equal)}
 

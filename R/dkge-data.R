@@ -2,15 +2,6 @@
 # dkge-data.R
 # Subject-level constructors, data bundling, and high-level DKGE entry point.
 
-#' Return the first non-NULL value
-#'
-#' @param a Primary value to test.
-#' @param b Fallback value when `a` is `NULL`.
-#' @return `a` if it is not `NULL`, otherwise `b`.
-#' @keywords internal
-#' @noRd
-`%||%` <- function(a, b) if (!is.null(a)) a else b
-
 #' Generate default effect labels
 #'
 #' @param q Number of design effects.
@@ -21,8 +12,8 @@
 
 #' Harmonise beta rows with design-effect names
 #'
-#' @param beta q×P matrix of subject coefficients.
-#' @param design T×q design matrix with named columns.
+#' @param beta qxP matrix of subject coefficients.
+#' @param design Txq design matrix with named columns.
 #' @return List containing aligned `beta`, `design`, and the shared effect labels.
 #' @keywords internal
 #' @noRd
@@ -77,12 +68,12 @@
 #' Construct a DKGE subject record
 #'
 #' @param x Source object containing subject-level data:
-#'   - matrix: q×P beta coefficients (effects × clusters/voxels)
-#'   - NeuroVec: 4D time-series data (T×X×Y×Z), betas computed via GLM
-#'   - ClusteredNeuroVec: Cluster time-series (T×K), betas computed via GLM
+#'   - matrix: qxP beta coefficients (effects x clusters/voxels)
+#'   - NeuroVec: 4D time-series data (TxXxYxZ), betas computed via GLM
+#'   - ClusteredNeuroVec: Cluster time-series (TxK), betas computed via GLM
 #' @param ... Additional arguments passed to methods. For the matrix method:
-#'   `design` (Subject design matrix T_s × q), `id` (Optional subject identifier),
-#'   `omega` (Optional cluster weights - numeric vector length P or P×P matrix).
+#'   `design` (Subject design matrix T_s x q), `id` (Optional subject identifier),
+#'   `omega` (Optional cluster weights - numeric vector length P or PxP matrix).
 #'   For ClusteredNeuroVec method: omega defaults to cluster sizes if not provided
 #' @return Object of class `dkge_subject`
 #' @export
@@ -149,7 +140,7 @@ dkge_subject.NeuroVec <- function(x, design, id = NULL, omega = NULL, mask = NUL
       stop("Install 'fmrireg' to compute GLM betas from NeuroVec time-series.", call. = FALSE)
     }
 
-    # Convert to matrix (voxels × time)
+    # Convert to matrix (voxels x time)
     mat <- neuroim2::as.matrix(x)
 
     # Apply mask if provided
@@ -166,16 +157,16 @@ dkge_subject.NeuroVec <- function(x, design, id = NULL, omega = NULL, mask = NUL
       mat <- mat[idx, , drop = FALSE]
     }
 
-    # Transpose to get time × voxels
+    # Transpose to get time x voxels
     mat <- t(mat)
 
     # Compute betas using GLM
     fit <- fmrireg::fmri_ols_fit(design, mat)
-    beta <- fit$betas  # q × voxels
+    beta <- fit$betas  # q x voxels
 
   } else {
     # Assume x already contains betas
-    mat <- neuroim2::as.matrix(x)  # voxels × effects/time
+    mat <- neuroim2::as.matrix(x)  # voxels x effects/time
 
     if (!is.null(mask)) {
       if (inherits(mask, "LogicalNeuroVol")) {
@@ -190,7 +181,7 @@ dkge_subject.NeuroVec <- function(x, design, id = NULL, omega = NULL, mask = NUL
       mat <- mat[idx, , drop = FALSE]
     }
 
-    beta <- t(mat)  # effects × voxels
+    beta <- t(mat)  # effects x voxels
   }
 
   if (is.null(colnames(beta))) {
@@ -206,8 +197,8 @@ dkge_subject.ClusteredNeuroVec <- function(x, design, id = NULL, omega = NULL, .
     stop("Install 'neuroim2' to build dkge subjects from ClusteredNeuroVec objects.", call. = FALSE)
   }
 
-  # Extract the T×K cluster time-series matrix using neuroim2 method
-  cluster_ts <- neuroim2::as.matrix(x)  # This returns T×K matrix with cluster labels as colnames
+  # Extract the TxK cluster time-series matrix using neuroim2 method
+  cluster_ts <- neuroim2::as.matrix(x)  # This returns TxK matrix with cluster labels as colnames
 
   # For GLM fitting, we need to compute betas from time-series
   # This requires the design matrix
@@ -215,9 +206,9 @@ dkge_subject.ClusteredNeuroVec <- function(x, design, id = NULL, omega = NULL, .
     stop("Install 'fmrireg' to compute GLM betas from ClusteredNeuroVec.", call. = FALSE)
   }
 
-  # Fit GLM to get betas (q×K)
+  # Fit GLM to get betas (qxK)
   fit <- fmrireg::fmri_ols_fit(design, cluster_ts)
-  beta <- fit$betas  # q×K matrix
+  beta <- fit$betas  # qxK matrix
 
   # Use cluster labels from the ClusteredNeuroVec if available
   if (is.null(colnames(beta)) || all(grepl("^Cluster_", colnames(beta)))) {
@@ -368,20 +359,20 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #' design matrices, and receive a `dkge` object ready for LOSO contrasts, medoid
 #' transport, or out-of-sample prediction.
 #'
-#' @param betas Either (i) a list of q×P_s beta matrices (one per subject), (ii)
+#' @param betas Either (i) a list of qxP_s beta matrices (one per subject), (ii)
 #'   a list/tibble of [dkge_subject()] objects, or (iii) a pre-built `dkge_data`
 #'   bundle. Rows must align with design effects.
-#' @param designs Optional list of T_s×q design matrices from the subject GLMs.
+#' @param designs Optional list of T_sxq design matrices from the subject GLMs.
 #'   Each column corresponds to an effect/regressor; column names become the
 #'   canonical effect labels enforced across subjects. Ignored when `betas`
 #'   already carries `dkge_subject`/`dkge_data` entries.
 #' @param kernel Design kernel that expresses similarity or smoothness between
 #'   effects in the design space (e.g. identity for nominal factors, RBF for
 #'   ordinal factors, Kronecker combinations for interactions). Supply either a
-#'   q×q numeric matrix or the list returned by [design_kernel()], whose `K`
+#'   qxq numeric matrix or the list returned by [design_kernel()], whose `K`
 #'   element is extracted automatically.
 #' @param omega Optional list overriding per-subject spatial weights. Each element
-#'   may be `NULL`, a length-P_s numeric vector, or a P_s×P_s matrix. When betas
+#'   may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix. When betas
 #'   are voxelwise (e.g. coming from `NeuroVec`), these weights operate on spatial
 #'   units (voxels) rather than clusters; equal weights are assumed when omitted.
 #' @param subject_ids Optional subject identifiers used when raw matrices are
@@ -392,7 +383,7 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #' @param cpca_blocks Optional integer vector specifying the effect rows that
 #'   span a CPCA design subspace. Ignored when `cpca_part = "none"` or when
 #'   `cpca_T` is provided.
-#' @param cpca_T Optional q×q0 matrix giving the CPCA design basis explicitly.
+#' @param cpca_T Optional qxq0 matrix giving the CPCA design basis explicitly.
 #'   Overrides `cpca_blocks` when supplied.
 #' @param cpca_part Which CPCA-filtered component to fit: `"none"` (default)
 #'   performs the standard DKGE fit; `"design"` uses only the CPCA design part;
@@ -400,13 +391,17 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #'   stores the residual basis.
 #' @param cpca_ridge Optional ridge applied to the CPCA-filtered matrices before
 #'   eigen-decomposition.
+#' @param weights Optional [`dkge_weights()`] specification that overrides the
+#'   default adaptive weighting behaviour when accumulating covariance. Use this
+#'   to inject custom spatial reliabilities or to reuse a precomputed weighting
+#'   recipe produced by [dkge_weights()].
 #' @param ... Additional arguments forwarded to [dkge_fit()] (e.g. `rank`,
-#'   `ridge`, `w_method`).
+#'   `ridge`, `w_method`, `weights`).
 #'
-#' @details The design matrices `X_s` supplied here are the same T_s×q regressors
+#' @details The design matrices `X_s` supplied here are the same T_sxq regressors
 #'   used to fit the subject-level GLMs; their columns must align with the effects
 #'   encoded by the kernel. The kernel `K` captures how effects relate to one
-#'   another—identity recovers standard OLS scaling, while structured kernels (e.g.
+#'   another-identity recovers standard OLS scaling, while structured kernels (e.g.
 #'   RBF for ordinal factors, circulant for wrapped factors, Kronecker products for
 #'   interactions) encourage shared smoothness or coupling between design effects.
 #'
@@ -430,7 +425,7 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 dkge <- function(betas, designs = NULL, kernel, omega = NULL, subject_ids = NULL,
                  keep_inputs = TRUE, cpca_blocks = NULL, cpca_T = NULL,
                  cpca_part = c("none", "design", "resid", "both"),
-                 cpca_ridge = 0, ...) {
+                 cpca_ridge = 0, weights = NULL, ...) {
   cpca_part <- match.arg(cpca_part)
   omega_override <- NULL
   if (inherits(betas, "dkge_data")) {
@@ -446,7 +441,8 @@ dkge <- function(betas, designs = NULL, kernel, omega = NULL, subject_ids = NULL
 
   fit <- dkge_fit(data, K = K, Omega_list = omega_override,
                      cpca_blocks = cpca_blocks, cpca_T = cpca_T,
-                     cpca_part = cpca_part, cpca_ridge = cpca_ridge, ...)
+                     cpca_part = cpca_part, cpca_ridge = cpca_ridge,
+                     weights = weights, ...)
   fit$kernel_info <- kernel_info
   if (keep_inputs) fit$input <- data
   fit

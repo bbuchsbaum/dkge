@@ -16,21 +16,26 @@ Imports:
     fmrireg,
     FNN,
     future.apply,
-    lme4,
-    lmerTest,
     Matrix,
     neighborweights,
     neuroim2,
     stats,
     Rcpp,
-    RcppArmadillo,
     multivarious,
-    utils
+    utils,
+    ggplot2,
+    glmnet
 Suggests:
     fmriAR,
     microbenchmark,
     pkgdown,
-    remotes
+    remotes,
+    testthat,
+    knitr,
+    rmarkdown,
+    patchwork,
+    ggrepel,
+    purrr
 LinkingTo:
     Rcpp,
     RcppArmadillo
@@ -43,3 +48,5 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.2.9000
 URL: https://bbuchsbaum.github.io/dkge/
+VignetteBuilder: knitr
+Config/testthat/edition: 3

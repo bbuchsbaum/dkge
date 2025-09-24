@@ -19,13 +19,13 @@ dkge_project_block(
 \arguments{
 \item{fit}{A `dkge` object.}
 
-\item{Btil}{Either a q×P matrix or a list of such matrices (e.g. `fit$Btil`).}
+\item{Btil}{Either a qxP matrix or a list of such matrices (e.g. `fit$Btil`).}
 
 \item{s}{Block index (subject) to project against.}
 
 \item{B_s}{Beta matrix for the new data block.}
 
-\item{Omega_s}{Optional weights (vector length P or P×P matrix) matching the
+\item{Omega_s}{Optional weights (vector length P or PxP matrix) matching the
 columns of `B_s`.}
 
 \item{w_s}{Optional subject-level weight (defaults to 1 when omitted).}
@@ -33,9 +33,9 @@ columns of `B_s`.}
 \item{least_squares}{Logical; pass to [multivarious::project_block()].}
 }
 \value{
-List of P×rank matrices; returns a single matrix when `Btil` is a matrix.
+List of Pxrank matrices; returns a single matrix when `Btil` is a matrix.
 
-Projection scores (q×rank) restricted to block `s`.
+Projection scores (qxrank) restricted to block `s`.
 }
 \description{
 Functions for projecting subject-standardised betas or new blocks into DKGE component coordinates.

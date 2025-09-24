@@ -16,7 +16,7 @@ dkge_project_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 \item{w}{Optional vector of subject weights for the new data.}
 }
 \value{
-Matrix of projected scores (q×rank).
+Matrix of projected scores (qxrank).
 }
 \description{
 Project new blocks into DKGE score space

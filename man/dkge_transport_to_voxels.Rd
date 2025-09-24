@@ -30,7 +30,7 @@ dkge_transport_to_voxels(
 \item{...}{Additional mapper parameters.}
 }
 \value{
-List with `subj_values` (S × V matrix) and `value` (mean across subjects).
+List with `subj_values` (S x V matrix) and `value` (mean across subjects).
 }
 \description{
 Transport DKGE quantities directly to voxel space

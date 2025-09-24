@@ -2,6 +2,13 @@
 # Transport DKGE maps to a common reference parcellation via pluggable mappers.
 
 .dkge_pairwise_sqdist <- function(A, B) {
+  A <- as.matrix(A)
+  B <- as.matrix(B)
+  cpp_fun <- get0("pairwise_sqdist_cpp", mode = "function")
+  if (!is.null(cpp_fun)) {
+    return(cpp_fun(A, B))
+  }
+
   n <- nrow(A); m <- nrow(B)
   An <- rowSums(A * A); Bn <- rowSums(B * B)
   outer(An, rep(1, m)) + outer(rep(1, n), Bn) - 2 * (A %*% t(B))
@@ -33,6 +40,31 @@
 }
 
 .dkge_sinkhorn_cache <- new.env(parent = emptyenv())
+assign(".order", character(0), envir = .dkge_sinkhorn_cache)
+
+.dkge_sinkhorn_cache_fetch <- function(key) {
+  state <- .dkge_sinkhorn_cache[[key]]
+  if (!is.null(state)) {
+    order <- get(".order", envir = .dkge_sinkhorn_cache, inherits = FALSE)
+    order <- c(setdiff(order, key), key)
+    assign(".order", order, envir = .dkge_sinkhorn_cache)
+  }
+  state
+}
+
+.dkge_sinkhorn_cache_store <- function(key, state, max_entries = 64) {
+  assign(key, state, envir = .dkge_sinkhorn_cache)
+  order <- get(".order", envir = .dkge_sinkhorn_cache, inherits = FALSE)
+  order <- c(setdiff(order, key), key)
+  if (length(order) > max_entries) {
+    drop <- order[seq_len(length(order) - max_entries)]
+    if (length(drop)) {
+      rm(list = drop, envir = .dkge_sinkhorn_cache)
+    }
+    order <- order[(length(order) - max_entries + 1):length(order)]
+  }
+  assign(".order", order, envir = .dkge_sinkhorn_cache)
+}
 
 .dkge_sinkhorn_plan <- function(C, mu, nu, epsilon = 0.05, max_iter = 200, tol = 1e-6) {
   stopifnot(is.matrix(C), length(mu) == nrow(C), length(nu) == ncol(C))
@@ -41,22 +73,44 @@
     stop("mu and nu must sum to the same total mass")
   }
 
+  sinkhorn_fun <- get0("sinkhorn_plan_cpp", mode = "function")
+  if (is.null(sinkhorn_fun)) {
+    stop("sinkhorn_plan_cpp() is unavailable; reinstall dkge with compiled code or install a binary build.",
+         call. = FALSE)
+  }
+
   key <- paste(nrow(C), ncol(C), signif(epsilon, 8), sep = "|")
-  state <- .dkge_sinkhorn_cache[[key]]
+  state <- .dkge_sinkhorn_cache_fetch(key)
   log_u_init <- if (!is.null(state)) state$log_u else NULL
   log_v_init <- if (!is.null(state)) state$log_v else NULL
 
-  res <- sinkhorn_plan_cpp(C, mu, nu, epsilon, as.integer(max_iter), tol,
-                           log_u_init = log_u_init,
-                           log_v_init = log_v_init,
-                           keep_duals = TRUE)
+  res <- sinkhorn_fun(C, mu, nu, epsilon, as.integer(max_iter), tol,
+                      log_u_init = log_u_init,
+                      log_v_init = log_v_init,
+                      keep_duals = TRUE)
   plan <- res$plan
   if (!is.null(res$log_u) && !is.null(res$log_v)) {
-    .dkge_sinkhorn_cache[[key]] <- list(log_u = res$log_u,
-                                        log_v = res$log_v,
-                                        iterations = res$iterations)
+    .dkge_sinkhorn_cache_store(key, list(log_u = res$log_u,
+                                         log_v = res$log_v,
+                                         iterations = res$iterations))
   }
   plan
+}
+
+#' Clear cached dual variables for Sinkhorn warm-starts
+#'
+#' Releases memory held by the internal Sinkhorn cache. Call this after large
+#' transport batches or before serialising objects.
+#'
+#' @return Logical `TRUE` invisibly.
+#' @export
+dkge_clear_sinkhorn_cache <- function() {
+  keys <- setdiff(ls(.dkge_sinkhorn_cache, all.names = TRUE), ".order")
+  if (length(keys)) {
+    rm(list = keys, envir = .dkge_sinkhorn_cache)
+  }
+  assign(".order", character(0), envir = .dkge_sinkhorn_cache)
+  invisible(TRUE)
 }
 
 # ---------------------------------------------------------------------------
@@ -284,8 +338,8 @@ dkge_prepare_transport <- function(fit,
 #' Transport cluster values to a medoid via entropic Sinkhorn OT
 #'
 #' @param v_list List of subject-level cluster values (length P_s each).
-#' @param A_list List of subject loadings (P_s × r).
-#' @param centroids List of subject cluster centroids (each P_s × 3 matrix).
+#' @param A_list List of subject loadings (P_s x r).
+#' @param centroids List of subject cluster centroids (each P_s x 3 matrix).
 #' @param sizes Optional list of cluster masses (defaults to uniform weights).
 #' @param medoid Integer index of the reference subject (1-based).
 #' @param lambda_emb,lambda_spa Cost weights for embedding and spatial terms.
@@ -345,8 +399,8 @@ dkge_transport_to_medoid_sinkhorn_cpp <- function(v_list, A_list, centroids, siz
 #'
 #' @param fit A `dkge` object used to compute the loadings.
 #' @param medoid Integer index of the reference subject (1-based).
-#' @param centroids List of subject cluster centroids (each P_s × 3 matrix).
-#' @param loadings Optional list of subject loadings (P_s × r). When omitted,
+#' @param centroids List of subject cluster centroids (each P_s x 3 matrix).
+#' @param loadings Optional list of subject loadings (P_s x r). When omitted,
 #'   they are recomputed from `betas`.
 #' @param betas Optional list of subject betas used to recompute loadings when
 #'   `loadings` is `NULL`.
@@ -430,8 +484,8 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
 #' @param fit A `dkge` object used to compute the contrasts.
 #' @param contrast_obj A `dkge_contrasts` result.
 #' @param medoid Integer index of the reference subject (1-based).
-#' @param centroids List of subject cluster centroids (each P_s × 3 matrix).
-#' @param loadings Optional list of subject loadings (P_s × r).
+#' @param centroids List of subject cluster centroids (each P_s x 3 matrix).
+#' @param loadings Optional list of subject loadings (P_s x r).
 #' @param betas Optional list of subject betas used to recompute loadings.
 #' @param sizes Optional list of cluster masses.
 #' @param mapper Optional mapper specification created by [dkge_mapper_spec()].

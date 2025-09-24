@@ -1,6 +1,13 @@
 ---
 title: "Design Kernels and Model Tuning"
-output: rmarkdown::html_vignette
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
 vignette: >
   %\VignetteIndexEntry{Design Kernels and Model Tuning}
   %\VignetteEngine{knitr::rmarkdown}
@@ -8,12 +15,28 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-set.seed(1)
+library(dkge)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "90%"
+)
+options(
+  tibble.print_min = 4,
+  tibble.print_max = 4,
+  digits = 3
+)
+set.seed(2024)
+theme_set(theme_dkge())
 ```
 
-This note focuses on how the design kernel steers DKGE fits and how to tune rank
-or penalty parameters before running large analyses.
+
+This vignette demonstrates how the design kernel controls and guides DKGE model fits, and provides practical guidance on tuning rank and penalty parameters before conducting large-scale analyses. Understanding how to construct appropriate kernels and select optimal parameters is crucial for achieving robust and interpretable results in cluster-level fMRI analysis.
 
 ## Simulated Working Example
 
@@ -35,8 +58,7 @@ subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]]
 bundle <- dkge_data(subjects)
 ```
 
-`dkge_data()` aligns effect ordering and caches common metadata. The kernel we
-supply next controls how strongly effects are smoothed or grouped.
+The `dkge_data()` function serves an important preprocessing role by aligning effect ordering across subjects and caching common metadata for efficient computation. The design kernel that we specify in subsequent steps determines how strongly different effects are smoothed or grouped together during the embedding process.
 
 ## Building Kernels with `design_kernel()`
 
@@ -57,17 +79,11 @@ K_struct <- design_kernel(
 round(K_struct$K, 2)
 ```
 
-- Each term introduces a block-similarity component.
-- `rho` weights the term; defaults to 1. Combine multiple terms to encode
-  interactions or ordered trends.
-- `design_kernel()` returns both the kernel matrix and metadata used by CV
-  helpers below.
+The kernel construction process involves several key concepts. Each term in the design introduces a block-similarity component that captures relationships between effects. The `rho` parameter weights the contribution of each term, with a default value of 1, allowing you to control the relative importance of different components. By combining multiple terms, you can encode complex relationships such as interactions or ordered trends within your experimental design. The `design_kernel()` function returns not only the kernel matrix itself but also associated metadata that will be used by the cross-validation helper functions described in the following sections.
 
 ## Rank and Kernel Tuning via Cross-Validation
 
-`dkge_cv_kernel_rank()` evaluates candidate ranks and kernels using
-leave-one-subject-out objectives. Build a small grid of kernels and let the
-helper pick the best combination.
+The `dkge_cv_kernel_rank()` function provides a systematic approach for evaluating candidate ranks and kernels using leave-one-subject-out cross-validation objectives. The strategy involves building a grid of candidate kernels with different parameter settings and allowing the cross-validation procedure to identify the optimal combination based on predictive performance.
 
 ```{r kernel-cv, message=FALSE}
 rho_vals <- seq(0.4, 1.0, by = 0.3)
@@ -93,9 +109,7 @@ cv_table <- do.call(rbind, cv_rows)
 head(cv_table)
 ```
 
-The score reported by `dkge_cv_kernel_rank()` is the average reconstruction
-error of left-out subjects in the K-metric. Lower is better. Pick the
-rank/kernel combination with the highest cross-validated score and refit.
+The cross-validation procedure reports a score that represents the average reconstruction error of left-out subjects measured in the K-metric space. Lower scores indicate better predictive performance, as they reflect more accurate reconstruction of held-out data. Based on these results, you should select the rank and kernel combination that achieves the highest cross-validated score, then refit the model using these optimal parameters.
 
 ```{r refit}
 best_idx <- which.max(cv_table$mean)
@@ -109,10 +123,7 @@ round(fit$sdev, 3)
 
 ## Penalising Noisy Effects
 
-When certain effects are known to be high variance (e.g. motion regressors), add
-diagonal ridge terms via `dkge(..., ridge = value)` or pre-scale the kernel.
-Higher ridge values shrink small singular values and stabilise fits when subject
-counts are limited.
+In many neuroimaging studies, certain effects are known to exhibit high variance characteristics, such as motion regressors or other nuisance variables. To handle these problematic effects, you can add diagonal ridge terms through the `dkge(..., ridge = value)` parameter or alternatively pre-scale the kernel matrix to de-emphasize these components. Higher ridge values have the effect of shrinking small singular values toward zero, which helps stabilize model fits particularly when working with limited subject counts or noisy data.
 
 ```{r ridge}
 fit_ridge <- dkge(bundle, kernel = K_best, rank = best$param, ridge = 0.2)
@@ -121,9 +132,4 @@ round(fit_ridge$sdev, 3)
 
 ## Summary
 
-- Use `design_kernel()` to encode your scientific priors; start with `diag(q)`
-  if in doubt, then add structured terms gradually.
-- Run `dkge_cv_kernel_rank()` (LOSO by default) to select rank and kernel before
-  expensive inference.
-- Add ridge regularisation when singular values drop sharply or subjects are
-  few; check `fit$sdev` to verify stability.
+This vignette has demonstrated several key principles for effective DKGE modeling. First, use the `design_kernel()` function to encode your scientific priors about effect relationships. If you are uncertain about the appropriate kernel structure, start with a simple diagonal matrix `diag(q)` and then gradually add structured terms as you develop understanding of your data. Second, always run `dkge_cv_kernel_rank()` with leave-one-subject-out cross-validation (the default) to systematically select both rank and kernel parameters before proceeding to computationally expensive inference procedures. Finally, consider adding ridge regularization when singular values drop sharply or when working with small subject samples, and regularly check the `fit$sdev` values to verify numerical stability of your fitted models.

@@ -2,9 +2,9 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' Pairwise squared distances between two point sets (rows)
-#' @param A n×d
-#' @param B m×d
-#' @return n×m matrix of ||a_i - b_j||^2
+#' @param A nxd
+#' @param B mxd
+#' @return nxm matrix of ||a_i - b_j||^2
 pairwise_sqdist_cpp <- function(A, B) {
     .Call(`_dkge_pairwise_sqdist_cpp`, A, B)
 }

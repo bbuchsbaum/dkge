@@ -1,0 +1,7 @@
+html_document:
+  toc: true
+  toc_float: true
+  toc_depth: 2
+  number_sections: true
+  df_print: paged
+  self_contained: false

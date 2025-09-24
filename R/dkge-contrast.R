@@ -1,5 +1,4 @@
 # dkge-contrast.R
-"%||%" <- function(a, b) if (is.null(a)) b else a
 # Unified contrast engine for DKGE with multiple cross-fitting strategies
 
 #' Compute DKGE contrasts with cross-fitting
@@ -9,13 +8,14 @@
 #'
 #' @param fit A `dkge` object from [dkge_fit()] or [dkge()]
 #' @param contrasts Either a q-length numeric vector for a single contrast,
-#'   a named list of contrasts, or a q×k matrix where columns are contrasts
+#'   a named list of contrasts, or a qxk matrix where columns are contrasts
 #' @param method Cross-fitting strategy: "loso" (leave-one-subject-out),
 #'   "kfold" (K-fold cross-validation), or "analytic" (first-order approximation)
 #' @param folds For method="kfold", either an integer K for random folds,
 #'   or a list defining custom fold assignments (see [dkge_define_folds()])
 #' @param ridge Optional ridge parameter added when recomputing held-out basis
-#' @param parallel Logical; use parallel processing for multiple contrasts
+#' @param parallel Logical; if TRUE uses `future.apply::future_lapply()` for
+#'   per-subject work (requires the future.apply package)
 #' @param verbose Logical; print progress messages
 #' @param align Logical; if TRUE (default) align LOSO/K-fold bases to a common reference and compute a consensus basis for reporting.
 #' @param transport Optional list describing how to transport subject-level
@@ -48,7 +48,7 @@
 #'    theory to approximate the LOSO solution without full recomputation. Fast but
 #'    may be less accurate when subjects have high leverage.
 #'
-#' All methods work entirely in the q×q design space and respect the K-metric
+#' All methods work entirely in the qxq design space and respect the K-metric
 #' throughout. Multiple contrasts can be evaluated simultaneously for efficiency.
 #'
 #' @examples
@@ -161,67 +161,88 @@ dkge_contrast <- function(fit, contrasts,
 .dkge_contrast_loso <- function(fit, contrast_list, ridge, parallel, verbose, align, ...) {
   S <- length(fit$Btil)
   n_contrasts <- length(contrast_list)
+  verbose_flag <- .dkge_verbose(verbose)
 
-  if (verbose) message(sprintf("Computing %d contrast(s) via LOSO for %d subjects", n_contrasts, S))
+  if (verbose_flag) {
+    message(sprintf("Computing %d contrast(s) via LOSO for %d subjects", n_contrasts, S))
+  }
 
-  # Storage
+  subject_labels <- fit$subject_ids %||% paste0("subject", seq_len(S))
+  assignments <- lapply(seq_len(S), function(s) s)
+
+  fold_info <- .dkge_build_fold_bases(
+    fit,
+    assignments = assignments,
+    ridge = ridge,
+    align = align,
+    loader_scope = "heldout",
+    verbose = verbose
+  )
+  folds <- fold_info$folds
+
+  c_tilde_list <- lapply(contrast_list, function(ct) backsolve(fit$R, ct, transpose = FALSE))
+
   values <- vector("list", n_contrasts)
   names(values) <- names(contrast_list)
-  bases <- vector("list", S)
   alphas <- vector("list", n_contrasts)
 
-  fold_basis <- vector("list", S)
-  fold_scores <- vector("list", S)
+  r <- ncol(fit$U)
+  fold_row_names <- vapply(folds, function(fold) paste(subject_labels[fold$subjects], collapse = ","), character(1))
 
   for (i in seq_along(contrast_list)) {
-    contrast_values <- vector("list", S)
-    alpha_values <- matrix(NA_real_, nrow = S, ncol = ncol(fit$U))
+    values[[i]] <- vector("list", S)
+    names(values[[i]]) <- subject_labels
+    alpha_mat <- matrix(NA_real_, nrow = length(folds), ncol = r)
+    rownames(alpha_mat) <- fold_row_names
 
-    for (s in seq_len(S)) {
-      if (verbose && s %% 10 == 0) {
-        message(sprintf("  Subject %d/%d", s, S))
-      }
+    for (fold in folds) {
+      U_fold <- fold$basis
+      alpha_vec <- as.numeric(t(U_fold) %*% fit$K %*% c_tilde_list[[i]])
+      alpha_mat[fold$index, seq_along(alpha_vec)] <- alpha_vec
 
-      loso_result <- dkge_loso_contrast(fit, s, contrast_list[[i]], ridge)
-      contrast_values[[s]] <- loso_result$v
-      alpha_values[s, ] <- loso_result$alpha
+      holdout <- fold$subjects
+      loaders <- fold$loaders
+      subject_scores <- .dkge_apply(
+        holdout,
+        function(s) {
+          loader <- loaders[[as.character(s)]]
+          as.numeric(loader$A %*% alpha_vec)
+        },
+        parallel = parallel
+      )
 
-      if (i == 1) {
-        fold_basis[[s]] <- loso_result$basis
+      for (pos in seq_along(holdout)) {
+        s <- holdout[[pos]]
+        values[[i]][[subject_labels[[s]]]] <- subject_scores[[pos]]
       }
     }
 
-    values[[i]] <- contrast_values
-    alphas[[i]] <- alpha_values
+    alphas[[i]] <- alpha_mat
   }
 
-  procrustes <- NULL
-  aligned_bases <- fold_basis
-  rotations <- vector("list", length(fold_basis))
-  consensus <- NULL
-  if (align && length(fold_basis) > 0) {
-    align_obj <- dkge_align_bases_K(fold_basis, fit$K, allow_reflection = FALSE)
-    aligned_bases <- align_obj$U_aligned
-    rotations <- align_obj$R
-    weights <- fit$weights %||% rep(1, length(fold_basis))
-    consensus <- dkge_consensus_basis_K(fold_basis, fit$K,
-                                        weights = weights,
-                                        allow_reflection = FALSE)
-    procrustes <- list(alignment = align_obj, consensus = consensus)
+  for (i in seq_along(values)) {
+    missing <- which(vapply(values[[i]], is.null, logical(1)))
+    if (length(missing) > 0) {
+      warning(sprintf("Subjects %s not processed for contrast %s",
+                      paste(subject_labels[missing], collapse = ","),
+                      names(values)[i] %||% paste0("contrast", i)))
+    }
   }
+
+  metadata <- list(
+    bases = lapply(folds, `[[`, "basis"),
+    aligned_bases = lapply(folds, `[[`, "basis_aligned"),
+    rotations = lapply(folds, `[[`, "rotation"),
+    alphas = alphas,
+    ridge = ridge,
+    procrustes = if (align) list(alignment = fold_info$alignment, consensus = fold_info$consensus) else NULL
+  )
 
   list(
     values = values,
     method = "loso",
     contrasts = contrast_list,
-    metadata = list(
-      bases = fold_basis,
-      aligned_bases = aligned_bases,
-      rotations = rotations,
-      alphas = alphas,
-      ridge = ridge,
-      procrustes = procrustes
-    )
+    metadata = metadata
   )
 }
 
@@ -267,7 +288,7 @@ print.dkge_contrasts <- function(x, ...) {
 #' @param x A dkge_contrasts object
 #' @param contrast Name or index of contrast to extract
 #' @param ... Additional arguments (not used)
-#' @return S×P matrix of contrast values
+#' @return SxP matrix of contrast values
 #' @export
 as.matrix.dkge_contrasts <- function(x, contrast = 1, ...) {
   if (is.character(contrast)) {
@@ -284,4 +305,60 @@ as.matrix.dkge_contrasts <- function(x, contrast = 1, ...) {
   }
 
   do.call(rbind, value_list)
+}
+
+#' @export
+as.data.frame.dkge_contrasts <- function(x, row.names = NULL, optional = FALSE, ...,
+                                         stringsAsFactors = FALSE) {
+  contrast_names <- names(x$contrasts)
+  if (is.null(contrast_names) || any(!nzchar(contrast_names))) {
+    contrast_names <- paste0("contrast", seq_along(x$contrasts))
+  }
+
+  rows <- vector("list", length(x$values))
+  for (i in seq_along(x$values)) {
+    subj_values <- x$values[[i]]
+    if (!length(subj_values)) {
+      next
+    }
+    subj_names <- names(subj_values)
+    if (is.null(subj_names) || any(!nzchar(subj_names))) {
+      subj_names <- paste0("subject", seq_along(subj_values))
+    }
+
+    entries <- Map(function(vals, subj) {
+      cluster_ids <- names(vals)
+      if (is.null(cluster_ids) || any(!nzchar(cluster_ids))) {
+        cluster_ids <- paste0("cluster", seq_along(vals))
+      }
+      data.frame(
+        contrast = contrast_names[[i]],
+        subject = subj,
+        component = cluster_ids,
+        value = as.numeric(vals),
+        method = x$method,
+        stringsAsFactors = stringsAsFactors
+      )
+    }, subj_values, subj_names)
+    rows[[i]] <- do.call(rbind, entries)
+  }
+
+  rows <- Filter(Negate(is.null), rows)
+  result <- if (length(rows)) do.call(rbind, rows) else NULL
+  if (is.null(result)) {
+    result <- data.frame(
+      contrast = character(0),
+      subject = character(0),
+      component = character(0),
+      value = numeric(0),
+      method = character(0),
+      stringsAsFactors = stringsAsFactors
+    )
+  }
+  if (!is.null(row.names)) {
+    rownames(result) <- row.names
+  } else {
+    rownames(result) <- NULL
+  }
+  result
 }

@@ -21,7 +21,7 @@ dkge_contrast(
 \item{fit}{A `dkge` object from [dkge_fit()] or [dkge()]}
 
 \item{contrasts}{Either a q-length numeric vector for a single contrast,
-a named list of contrasts, or a q×k matrix where columns are contrasts}
+a named list of contrasts, or a qxk matrix where columns are contrasts}
 
 \item{method}{Cross-fitting strategy: "loso" (leave-one-subject-out),
 "kfold" (K-fold cross-validation), or "analytic" (first-order approximation)}
@@ -31,7 +31,8 @@ or a list defining custom fold assignments (see [dkge_define_folds()])}
 
 \item{ridge}{Optional ridge parameter added when recomputing held-out basis}
 
-\item{parallel}{Logical; use parallel processing for multiple contrasts}
+\item{parallel}{Logical; if TRUE uses `future.apply::future_lapply()` for
+per-subject work (requires the future.apply package)}
 
 \item{verbose}{Logical; print progress messages}
 
@@ -73,7 +74,7 @@ This function provides a unified interface to three cross-fitting strategies:
    theory to approximate the LOSO solution without full recomputation. Fast but
    may be less accurate when subjects have high leverage.
 
-All methods work entirely in the q×q design space and respect the K-metric
+All methods work entirely in the qxq design space and respect the K-metric
 throughout. Multiple contrasts can be evaluated simultaneously for efficiency.
 }
 \examples{

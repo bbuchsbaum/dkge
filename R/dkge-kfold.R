@@ -183,14 +183,15 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 #' @param contrast_list List of normalized contrasts
 #' @param folds Either integer k or dkge_folds object
 #' @param ridge Ridge parameter for held-out basis
-#' @param parallel Use parallel processing
+#' @param parallel Logical; enables future.apply-based parallelism for
+#'   per-subject projections (requires future.apply)
 #' @param verbose Print progress
 #' @param ... Additional arguments
 #' @return List with values, metadata, etc.
 #' @keywords internal
-#' @export
+#' @noRd
 .dkge_contrast_kfold <- function(fit, contrast_list, folds, ridge,
-                                parallel, verbose, ...) {
+                                parallel, verbose, align = FALSE, ...) {
   # Prepare folds
   if (is.numeric(folds) && length(folds) == 1) {
     folds <- dkge_define_folds(fit, type = "subject", k = folds)
@@ -203,82 +204,87 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
   r <- ncol(fit$U)
   n_contrasts <- length(contrast_list)
   k <- folds$k
+  verbose_flag <- .dkge_verbose(verbose)
 
-  if (verbose) {
+  if (verbose_flag) {
     message(sprintf("Computing %d contrast(s) via %d-fold CV", n_contrasts, k))
   }
 
-  # Storage
+  subject_labels <- fit$subject_ids %||% paste0("subject", seq_len(S))
+
+  fold_info <- .dkge_build_fold_bases(
+    fit,
+    assignments = folds$assignments,
+    ridge = ridge,
+    align = align,
+    loader_scope = "heldout",
+    verbose = verbose
+  )
+
+  folds_internal <- fold_info$folds
+  c_tilde_list <- lapply(contrast_list, function(ct) backsolve(fit$R, ct, transpose = FALSE))
+
   values <- vector("list", n_contrasts)
   names(values) <- names(contrast_list)
-  fold_bases <- vector("list", k)
   fold_alphas <- vector("list", n_contrasts)
 
-  # Process each fold
-  for (fold_idx in seq_len(k)) {
-    fold_subjects <- folds$assignments[[fold_idx]]
-    if (verbose) {
-      message(sprintf("Processing fold %d/%d (%d subjects)", fold_idx, k, length(fold_subjects)))
-    }
+  fold_row_names <- vapply(folds_internal, function(fold) paste(subject_labels[fold$subjects], collapse = ","), character(1))
 
-    # Rebuild Chat excluding this fold
-    Chat_minus_fold <- fit$Chat
-    for (s in fold_subjects) {
-      Chat_minus_fold <- Chat_minus_fold - fit$weights[s] * fit$contribs[[s]]
-    }
+  for (i in seq_along(contrast_list)) {
+    values[[i]] <- vector("list", S)
+    names(values[[i]]) <- subject_labels
+    alpha_mat <- matrix(NA_real_, nrow = length(folds_internal), ncol = r)
+    rownames(alpha_mat) <- fold_row_names
 
-    if (ridge > 0) {
-      Chat_minus_fold <- Chat_minus_fold + ridge * diag(q)
-    }
-    Chat_minus_fold <- (Chat_minus_fold + t(Chat_minus_fold)) / 2
+    for (fold in folds_internal) {
+      U_fold <- fold$basis
+      alpha_vec <- as.numeric(t(U_fold) %*% fit$K %*% c_tilde_list[[i]])
+      alpha_mat[fold$index, seq_along(alpha_vec)] <- alpha_vec
 
-    # Eigen decomposition for fold-specific basis
-    eig_fold <- eigen(Chat_minus_fold, symmetric = TRUE)
-    U_fold <- fit$Kihalf %*% eig_fold$vectors[, seq_len(r), drop = FALSE]
-    fold_bases[[fold_idx]] <- U_fold
+      holdout <- fold$subjects
+      loaders <- fold$loaders
+      subject_values <- .dkge_apply(
+        holdout,
+        function(s) {
+          loader <- loaders[[as.character(s)]]
+          as.numeric(loader$A %*% alpha_vec)
+        },
+        parallel = parallel
+      )
 
-    # Project each contrast
-    for (i in seq_along(contrast_list)) {
-      c_tilde <- backsolve(fit$R, contrast_list[[i]], transpose = FALSE)
-      alpha_fold <- t(U_fold) %*% fit$K %*% c_tilde
-
-      # Initialize storage on first contrast
-      if (fold_idx == 1) {
-        values[[i]] <- vector("list", S)
-        fold_alphas[[i]] <- matrix(NA_real_, k, r)
-      }
-
-      fold_alphas[[i]][fold_idx, ] <- alpha_fold
-
-      # Compute values for held-out subjects
-      for (s in fold_subjects) {
-        Bts <- fit$Btil[[s]]
-        A_s <- t(Bts) %*% fit$K %*% U_fold
-        v_s <- as.numeric(A_s %*% alpha_fold)
-        values[[i]][[s]] <- v_s
+      for (idx in seq_along(holdout)) {
+        s <- holdout[[idx]]
+        values[[i]][[subject_labels[[s]]]] <- subject_values[[idx]]
       }
     }
+
+    fold_alphas[[i]] <- alpha_mat
   }
 
-  # Verify all subjects were processed
   for (i in seq_along(values)) {
     missing <- which(vapply(values[[i]], is.null, logical(1)))
     if (length(missing) > 0) {
       warning(sprintf("Subjects %s not in any fold for contrast %s",
-                     paste(missing, collapse = ","), names(values)[i]))
+                      paste(subject_labels[missing], collapse = ","),
+                      names(values)[i] %||% paste0("contrast", i)))
     }
   }
+
+  metadata <- list(
+    folds = folds,
+    fold_bases = lapply(folds_internal, `[[`, "basis"),
+    aligned_bases = lapply(folds_internal, `[[`, "basis_aligned"),
+    rotations = lapply(folds_internal, `[[`, "rotation"),
+    fold_alphas = fold_alphas,
+    ridge = ridge,
+    procrustes = if (align) list(alignment = fold_info$alignment, consensus = fold_info$consensus) else NULL
+  )
 
   list(
     values = values,
     method = "kfold",
     contrasts = contrast_list,
-    metadata = list(
-      folds = folds,
-      fold_bases = fold_bases,
-      fold_alphas = fold_alphas,
-      ridge = ridge
-    )
+    metadata = metadata
   )
 }
 

@@ -1,0 +1,202 @@
+---
+title: "Adaptive Voxel Weighting in DKGE"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
+vignette: >
+  %\VignetteIndexEntry{Adaptive Voxel Weighting in DKGE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(dkge)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "90%"
+)
+options(
+  tibble.print_min = 4,
+  tibble.print_max = 4,
+  digits = 3
+)
+set.seed(2024)
+theme_set(theme_dkge())
+```
+
+
+DKGE fits are fundamentally driven by cross-subject second moments. When every voxel is treated equally in the analysis, strong signals can be diluted by large regions that mainly contribute noise rather than meaningful signal. Adaptive voxel weighting provides us with a principled approach to up-weight informative locations while still working within the analytic DKGE framework. This vignette explains what the various weighting options mean, demonstrates how to configure them effectively, and shows how to verify that cross-validation and permutation tests remain statistically valid.
+
+We will proceed through four main steps to build understanding:
+
+1. First, we clarify the terminology and concepts used by `dkge_weights()` to establish a foundation;
+2. Next, we build several weight specifications and demonstrate how to fit DKGE models with them;
+3. Then, we inspect the effects of mixing prior knowledge with adaptive statistics; and
+4. Finally, we run quick safety checks and demonstrate post-hoc weight updates.
+
+The examples throughout this vignette use small synthetic datasets so that everything runs quickly and the concepts can be clearly illustrated.
+
+## 1. Understanding the ingredients
+
+The weight specification is created with `dkge_weights()`, which packages four
+essential pieces of information that work together to define the weighting strategy:
+
+- **Prior weights** describe locations you already trust based on external information (for example, a
+  reliability map from previous studies). These weights must be *sign invariant*, meaning that flipping the
+  sign of a beta map does not change the weight assigned to that voxel. Squares, absolute values, and
+  variances all meet this important requirement and can be used safely as priors.
+- **Adaptive statistics** are computed dynamically from the training subjects inside each
+  cross-validation split. The built-in options examine *energy* (squared
+  amplitude in the design metric), *precision* (inverse variance), or their
+  product. Energy is simply $\|K^{1/2} B_{:\alpha}\|_2^2$, representing the amount of signal a
+  voxel carries in effect space; precision is defined as $1/(\sigma^2 + \varepsilon)$ and captures measurement reliability.
+- **Combination rules** specify how prior knowledge and adaptive components are blended together
+  (through product, sum, or override operations). The `mix` parameter provides fine-grained control over the relative balance between these two sources of information.
+- **Shrinkage** keeps the final weights well-behaved by applying several regularization steps: we winsorize extreme values and pull
+  everything back towards 1 to ensure that no single voxel dominates the fit.
+
+All adaptive statistics are computed within each training fold (enforced by the
+`scope = "fold"` setting). This careful isolation is what preserves the validity of leave-one-subject-out
+results and keeps them statistically unbiased.
+
+## 2. Building weight specifications and fitting DKGE
+
+We begin our exploration with the default configuration, which relies purely on adaptive
+statistics without any prior knowledge.
+
+```{r make-weight}
+library(dkge)
+
+wts_adapt <- dkge_weights(
+  prior   = NULL,            # no prior information
+  adapt   = "kenergy_prec",  # energy × precision, a simple SNR proxy
+  combine = "product",
+  mix     = 0.6,             # adaptive term has more influence than the prior
+  shrink  = list(alpha = 0.5, winsor = 0.99, normalize = "mean"),
+  scope   = "fold"           # recomputed on the training subjects of each fold
+)
+
+print(wts_adapt)
+```
+
+Next, we create a small synthetic dataset to work with: ten subjects, four effects, and sixty voxels
+per subject. While the exact numbers are unimportant for our purposes, this scale allows us to clearly demonstrate the
+API and observe the effects of different weighting strategies.
+
+```{r toy-data}
+make_subject <- function(id, q = 4L, v = 60L) {
+  design <- diag(q)
+  colnames(design) <- paste0("eff", seq_len(q))
+  beta <- matrix(rnorm(q * v), nrow = q)
+  dkge_subject(beta, design = design, id = paste0("sub", id))
+}
+
+subjects <- lapply(seq_len(10L), make_subject)
+K <- diag(4)
+
+fit_uniform  <- dkge(subjects, kernel = K, rank = 2, w_method = "none")
+fit_adaptive <- dkge(subjects, kernel = K, rank = 2, weights = wts_adapt)
+```
+
+The second fit internally computes voxel weights for every training fold, applying the adaptive weighting strategy we specified. We
+can inspect both the global weights and examine the average weight values across subjects to understand how the algorithm has adjusted the influence of different voxels.
+
+```{r inspect-weights}
+head(fit_adaptive$voxel_weights)
+dkge_diagnostics(fit_adaptive)$voxel_weights
+```
+
+You should observe modest deviations from 1.0 rather than extreme spikes in the weight values. This well-behaved pattern is
+exactly what the shrinkage parameters are designed to enforce, preventing any single voxel from dominating the analysis.
+
+## 3. Mixing priors with adaptive statistics
+
+Now let us consider a scenario where we have an external reliability image from previous studies or analyses. We need to convert this reliability information into a sign-invariant quantity (here, squared reliability) and incorporate it as a prior. The adaptive
+component remains the same as before, but now we blend it with this external knowledge.
+
+```{r prior}
+reliability_prior <- runif(60)
+reliability_even <- (reliability_prior - 0.5)^2 + 1e-6
+
+wts_mixed <- dkge_weights(
+  prior   = reliability_even,
+  adapt   = "kenergy_prec",
+  combine = "product",
+  mix     = 0.4,   # stronger prior, weaker adaptive term
+  shrink  = list(alpha = 0.6, winsor = 0.995)
+)
+
+fit_mixed <- dkge(subjects, kernel = K, rank = 2, weights = wts_mixed)
+```
+
+The diagnostics now reveal how the prior information nudges the final weights towards voxels with high
+reliability values from our external map. Crucially, because the prior is even in the betas (sign-invariant), leave-one-subject-out contrasts and permutation tests continue to behave exactly as before, preserving all statistical guarantees.
+
+## 4. Safety checks and post-hoc updates
+
+### Null simulations
+
+The test suite contains specialized routines that simulate DKGE fits under the null hypothesis,
+construct LOSO contrasts, and verify that p-values are uniformly distributed as expected.
+These validation routines rely on the same `dkge_weights()` machinery we have been exploring. You can run one of these
+critical checks locally to verify that your weighting scheme preserves statistical validity (the code is disabled in the vignette to keep it lightweight).
+
+```{r null-check, eval=FALSE}
+# source(system.file("testthat/helper-weights-null.R", package = "dkge"))
+# pvals <- dkge_test_null_uniformity(nrep = 24,
+#                                    nsub = 12,
+#                                    V = 96,
+#                                    adapt = "kenergy_prec",
+#                                    w_prior = reliability_even,
+#                                    mix = 0.4,
+#                                    n_perm = 149)
+# hist(pvals)
+```
+
+The diagnostic code emits a histogram of p-values; under a statistically valid specification, this histogram
+should display a flat line across all p-value ranges, confirming that the permutations remain exact and unbiased.
+
+If you plan to implement a custom adaptive rule, there are two critical requirements to verify:
+
+1. The rule must depend only on even statistics (such as squares or absolute values). If your custom rule depends
+   on signed means or other odd functions, you must set `perm_recompute = "always"` so that weights are recomputed
+   inside each permutation flip to maintain validity.
+2. The rule must be fold-specific (enforced by `scope = "fold"`), otherwise the held-out subject
+   would contaminate the training statistics and introduce bias into the cross-validation procedure.
+
+### Updating an existing fit
+
+Sometimes you may fit a DKGE model once, then later decide to revisit the weighting strategy without
+having to rerun the entire preprocessing pipeline. In such cases, you can use `dkge_update_weights()` to efficiently rebuild the fold bases
+in place with your new weighting scheme.
+
+```{r update}
+fit_refit <- dkge_update_weights(fit_uniform, wts_mixed)
+```
+
+This update operation only modifies the weighting machinery itself; all subject-level projections and stored
+projections remain fully compatible with the updated model.
+
+## Summary
+
+Adaptive weighting in DKGE is fundamentally defined by four essential building blocks: a prior, an
+adaptive statistic, a combination rule, and shrinkage parameters. As long as the prior and
+adaptive terms are even functions and are computed strictly from training data, the resulting
+fitted models continue to respect LOSO cross-validation and permutation tests without any loss of statistical validity.
+
+The code examples throughout this vignette have demonstrated how to inspect the resulting weights, how to effectively mix prior knowledge with
+adaptive rules, and how to retrofit new weighting choices onto an existing fit without recomputing everything from scratch. You should employ these
+weighting controls when you have reason to believe that only a subset of voxels carries the effect of
+interest, or when external reliability maps are available from previous studies. These techniques allow you to improve the
+sensitivity of DKGE analyses without compromising the method's rigorous inferential guarantees.

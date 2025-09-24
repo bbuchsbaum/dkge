@@ -16,11 +16,11 @@ dkge_cv_rank_loso(
 )
 }
 \arguments{
-\item{B_list}{List of q×P subject beta matrices.}
+\item{B_list}{List of qxP subject beta matrices.}
 
-\item{X_list}{List of T×q subject design matrices.}
+\item{X_list}{List of Txq subject design matrices.}
 
-\item{K}{q×q design kernel.}
+\item{K}{qxq design kernel.}
 
 \item{ranks}{Integer vector of ranks to evaluate.}
 

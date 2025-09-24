@@ -19,7 +19,7 @@ dkge_fit_cpca(
 \item{blocks}{Optional integer vector of effect indices defining the subspace
 (used when `T` is not supplied).}
 
-\item{T}{Optional explicit q×q0 basis matrix; overrides `blocks` when given.}
+\item{T}{Optional explicit qxq0 basis matrix; overrides `blocks` when given.}
 
 \item{part}{Which portion to return: "design", "resid", or "both".}
 

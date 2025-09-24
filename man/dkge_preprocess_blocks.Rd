@@ -16,7 +16,7 @@ dkge_preprocess_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 \item{w}{Optional vector of subject weights for the new data.}
 }
 \value{
-q×(sum P_s) matrix matching the training block layout.
+qx(sum P_s) matrix matching the training block layout.
 }
 \description{
 Preprocess multiple blocks into the DKGE training space

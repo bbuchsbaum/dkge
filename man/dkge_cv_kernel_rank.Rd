@@ -17,9 +17,9 @@ dkge_cv_kernel_rank(
 )
 }
 \arguments{
-\item{B_list}{List of q×P subject beta matrices.}
+\item{B_list}{List of qxP subject beta matrices.}
 
-\item{X_list}{List of T×q subject design matrices.}
+\item{X_list}{List of Txq subject design matrices.}
 
 \item{K_grid}{Named list of candidate kernels.}
 

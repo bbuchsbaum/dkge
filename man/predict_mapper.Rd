@@ -9,12 +9,12 @@ predict_mapper(mapping, new_source_vals, ...)
 \arguments{
 \item{mapping}{Mapping object returned by [fit_mapper()].}
 
-\item{new_source_vals}{Matrix or vector of new source values (P_s × K).}
+\item{new_source_vals}{Matrix or vector of new source values (P_s x K).}
 
 \item{...}{Optional arguments used by specific strategies.}
 }
 \value{
-Matrix (Q × K) or vector of mapped values.
+Matrix (Q x K) or vector of mapped values.
 }
 \description{
 Apply a fitted mapper to new source values

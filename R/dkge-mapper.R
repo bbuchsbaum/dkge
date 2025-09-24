@@ -60,9 +60,9 @@ fit_mapper <- function(spec, ...) {
 #' Apply a fitted mapper to new source values
 #'
 #' @param mapping Mapping object returned by [fit_mapper()].
-#' @param new_source_vals Matrix or vector of new source values (P_s × K).
+#' @param new_source_vals Matrix or vector of new source values (P_s x K).
 #' @param ... Optional arguments used by specific strategies.
-#' @return Matrix (Q × K) or vector of mapped values.
+#' @return Matrix (Q x K) or vector of mapped values.
 #' @export
 predict_mapper <- function(mapping, new_source_vals, ...) {
   UseMethod("predict_mapper", mapping)
@@ -78,7 +78,8 @@ fit_mapper.dkge_mapper_knn <- function(spec,
                                        anchor_points,
                                        subj_feats = NULL,
                                        anchor_feats = NULL,
-                                       reliab = NULL) {
+                                       reliab = NULL,
+                                       ...) {
   stopifnot(is.matrix(subj_points), ncol(subj_points) == 3,
             is.matrix(anchor_points), ncol(anchor_points) == 3)
 
@@ -418,7 +419,7 @@ fit_mapper.dkge_mapper_spec_ridge <- function(spec, source_feat, source_vals = N
   if (lambda > 0) {
     G <- G + diag(lambda, n)
   }
-  rhs <- A %*% t(B)  # n × Q
+  rhs <- A %*% t(B)  # n x Q
   coeff <- tryCatch(qr.solve(G, rhs), error = function(e) {
     qr.solve(G + 1e-8 * diag(n), rhs)
   })
@@ -485,7 +486,7 @@ apply_mapper.dkge_mapping <- function(fitted_mapper, values, ...) {
   w / total
 }
 
-# Apply operator (P × Q) to source values (P × K) returning Q × K
+# Apply operator (P x Q) to source values (P x K) returning Q x K
 .dkge_apply_operator <- function(operator, new_source_vals) {
   if (is.null(operator)) stop("Operator is NULL")
   vals <- new_source_vals

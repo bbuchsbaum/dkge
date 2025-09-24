@@ -15,15 +15,16 @@ dkge(
   cpca_T = NULL,
   cpca_part = c("none", "design", "resid", "both"),
   cpca_ridge = 0,
+  weights = NULL,
   ...
 )
 }
 \arguments{
-\item{betas}{Either (i) a list of q×P_s beta matrices (one per subject), (ii)
+\item{betas}{Either (i) a list of qxP_s beta matrices (one per subject), (ii)
 a list/tibble of [dkge_subject()] objects, or (iii) a pre-built `dkge_data`
 bundle. Rows must align with design effects.}
 
-\item{designs}{Optional list of T_s×q design matrices from the subject GLMs.
+\item{designs}{Optional list of T_sxq design matrices from the subject GLMs.
 Each column corresponds to an effect/regressor; column names become the
 canonical effect labels enforced across subjects. Ignored when `betas`
 already carries `dkge_subject`/`dkge_data` entries.}
@@ -31,11 +32,11 @@ already carries `dkge_subject`/`dkge_data` entries.}
 \item{kernel}{Design kernel that expresses similarity or smoothness between
 effects in the design space (e.g. identity for nominal factors, RBF for
 ordinal factors, Kronecker combinations for interactions). Supply either a
-q×q numeric matrix or the list returned by [design_kernel()], whose `K`
+qxq numeric matrix or the list returned by [design_kernel()], whose `K`
 element is extracted automatically.}
 
 \item{omega}{Optional list overriding per-subject spatial weights. Each element
-may be `NULL`, a length-P_s numeric vector, or a P_s×P_s matrix. When betas
+may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix. When betas
 are voxelwise (e.g. coming from `NeuroVec`), these weights operate on spatial
 units (voxels) rather than clusters; equal weights are assumed when omitted.}
 
@@ -50,7 +51,7 @@ prediction.}
 span a CPCA design subspace. Ignored when `cpca_part = "none"` or when
 `cpca_T` is provided.}
 
-\item{cpca_T}{Optional q×q0 matrix giving the CPCA design basis explicitly.
+\item{cpca_T}{Optional qxq0 matrix giving the CPCA design basis explicitly.
 Overrides `cpca_blocks` when supplied.}
 
 \item{cpca_part}{Which CPCA-filtered component to fit: `"none"` (default)
@@ -61,8 +62,13 @@ stores the residual basis.}
 \item{cpca_ridge}{Optional ridge applied to the CPCA-filtered matrices before
 eigen-decomposition.}
 
+\item{weights}{Optional [`dkge_weights()`] specification that overrides the
+default adaptive weighting behaviour when accumulating covariance. Use this
+to inject custom spatial reliabilities or to reuse a precomputed weighting
+recipe produced by [dkge_weights()].}
+
 \item{...}{Additional arguments forwarded to [dkge_fit()] (e.g. `rank`,
-`ridge`, `w_method`).}
+`ridge`, `w_method`, `weights`).}
 }
 \value{
 A `dkge` object containing the learned basis (`$U`), eigenvalues,
@@ -78,10 +84,10 @@ design matrices, and receive a `dkge` object ready for LOSO contrasts, medoid
 transport, or out-of-sample prediction.
 }
 \details{
-The design matrices `X_s` supplied here are the same T_s×q regressors
+The design matrices `X_s` supplied here are the same T_sxq regressors
   used to fit the subject-level GLMs; their columns must align with the effects
   encoded by the kernel. The kernel `K` captures how effects relate to one
-  another—identity recovers standard OLS scaling, while structured kernels (e.g.
+  another-identity recovers standard OLS scaling, while structured kernels (e.g.
   RBF for ordinal factors, circulant for wrapped factors, Kronecker products for
   interactions) encourage shared smoothness or coupling between design effects.
 

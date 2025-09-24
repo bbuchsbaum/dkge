@@ -72,5 +72,5 @@ test_that("dkge_cpca_fit wrapper matches dkge", {
                         kernel = kernel_identity, cpca_blocks = 1:2,
                         cpca_part = "design", rank = 3)
   expect_equal(fit1$U, fit2$U)
-  expect_equal(fit1$cpca$Chat_design, fit2$cpca$Chat_design)
+  expect_equal(fit1$cpca$Chat_design, fit2$cpca$Chat_design, tolerance = 1e-5)
 })

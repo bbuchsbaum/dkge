@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-inference.R
 \name{dkge_freedman_lane}
 \alias{dkge_freedman_lane}
-\title{Freedman–Lane permutations for DKGE (scaffold)}
+\title{Freedman-Lane permutations for DKGE (scaffold)}
 \usage{
 dkge_freedman_lane(
   Y_list,
@@ -16,15 +16,15 @@ dkge_freedman_lane(
 )
 }
 \arguments{
-\item{Y_list}{list of neuroim2 BrainVectors (or T×P matrices) per subject}
+\item{Y_list}{list of neuroim2 BrainVectors (or TxP matrices) per subject}
 
-\item{X_list}{list of T×q design matrices (full)}
+\item{X_list}{list of Txq design matrices (full)}
 
-\item{X0_list}{list of T×q0 reduced designs (null space of the contrast)}
+\item{X0_list}{list of Txq0 reduced designs (null space of the contrast)}
 
-\item{K}{design kernel (q×q)}
+\item{K}{design kernel (qxq)}
 
-\item{c}{contrast vector (q×1)}
+\item{c}{contrast vector (qx1)}
 
 \item{B}{number of permutations}
 
@@ -36,12 +36,12 @@ dkge_freedman_lane(
 list with fields: stat_obs, stat_null (B-vector), p, details
 }
 \description{
-This function orchestrates Freedman–Lane permutations at the *time-series* level:
+This function orchestrates Freedman-Lane permutations at the *time-series* level:
 for each subject, fit the reduced model (without the effect of interest), permute residuals,
 reconstruct surrogate data, refit the full GLM to get B* betas, then re-run DKGE LOSO
 to obtain a group statistic (e.g., max-|t| over medoid clusters). It requires the caller
 to provide three adapter functions (or rely on 'fmrireg'/'neuroim2'):
-  - fit_glm(Y_s, X_s, X0_s) -> list(beta = q×P, beta0 = q0×P, resid = T×P)
-  - resample_resid(resid_s) -> resid_s* (T×P)  [permute or phase-randomize per run]
+  - fit_glm(Y_s, X_s, X0_s) -> list(beta = qxP, beta0 = q0xP, resid = TxP)
+  - resample_resid(resid_s) -> resid_s* (TxP)  [permute or phase-randomize per run]
   - transport_and_stat(B_list, X_list, K, c) -> scalar (e.g., max-|t|)
 }

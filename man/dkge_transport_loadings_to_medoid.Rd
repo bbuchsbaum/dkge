@@ -22,9 +22,9 @@ dkge_transport_loadings_to_medoid(
 
 \item{medoid}{Integer index of the reference subject (1-based).}
 
-\item{centroids}{List of subject cluster centroids (each P_s × 3 matrix).}
+\item{centroids}{List of subject cluster centroids (each P_s x 3 matrix).}
 
-\item{loadings}{Optional list of subject loadings (P_s × r). When omitted,
+\item{loadings}{Optional list of subject loadings (P_s x r). When omitted,
 they are recomputed from `betas`.}
 
 \item{betas}{Optional list of subject betas used to recompute loadings when

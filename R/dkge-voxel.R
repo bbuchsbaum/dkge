@@ -11,7 +11,7 @@
 #' @param sizes Optional list of cluster masses (one vector per subject).
 #' @param ... Additional mapper parameters.
 #'
-#' @return List with `subj_values` (S × V matrix) and `value` (mean across subjects).
+#' @return List with `subj_values` (S x V matrix) and `value` (mean across subjects).
 #' @export
 dkge_transport_to_voxels <- function(fit,
                                      values,

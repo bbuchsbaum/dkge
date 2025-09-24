@@ -17,7 +17,8 @@ dkge_fit(
   cpca_blocks = NULL,
   cpca_T = NULL,
   cpca_part = c("none", "design", "resid", "both"),
-  cpca_ridge = 0
+  cpca_ridge = 0,
+  weights = NULL
 )
 }
 \arguments{
@@ -26,12 +27,12 @@ dkge_fit(
 \item{designs}{Per-subject design matrices (ignored when `data` already carries
 them). Columns must align with the effects encoded by `K`.}
 
-\item{K}{q×q design kernel in effect space. Supply either a raw matrix or the
+\item{K}{qxq design kernel in effect space. Supply either a raw matrix or the
 list returned by [design_kernel()].}
 
 \item{Omega_list}{Optional per-subject spatial reliabilities/weights. Each
 element may be `NULL` (no extra weighting), a numeric vector of length
-`P_s` (diagonal weights for clusters/voxels), or a full `P_s × P_s` matrix
+`P_s` (diagonal weights for clusters/voxels), or a full `P_s x P_s` matrix
 specifying custom covariance. These weights are applied both when
 accumulating the compressed covariance and when computing MFA/energy block
 normalisation.}
@@ -56,7 +57,7 @@ used to build the multiblock projection (can be large).}
 the CPCA design subspace. Ignored when `cpca_part = "none"` or when
 `cpca_T` is provided.}
 
-\item{cpca_T}{Optional q×q0 matrix giving the CPCA design basis explicitly.
+\item{cpca_T}{Optional qxq0 matrix giving the CPCA design basis explicitly.
 When supplied it overrides `cpca_blocks`.}
 
 \item{cpca_part}{Which CPCA-filtered component to estimate: `"none"` (default)
@@ -66,6 +67,11 @@ stores the residual basis for inspection.}
 
 \item{cpca_ridge}{Optional ridge added to the CPCA-filtered matrices before
 eigen-decomposition.}
+
+\item{weights}{Either `NULL` (default) to apply the weighting scheme specified
+by `w_method`, or a [`dkge_weights()`] specification controlling additional
+voxel/anchor-level weighting. When supplied, it must inherit from
+`dkge_weights` and is resolved via [dkge_weights()].}
 }
 \value{
 A fitted `dkge` object. When the \pkg{multivarious} package is installed

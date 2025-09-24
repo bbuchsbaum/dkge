@@ -13,6 +13,7 @@ dkge_pipeline(
   contrasts,
   transport = NULL,
   inference = list(),
+  classification = NULL,
   method = c("loso", "kfold", "analytic"),
   ridge = 0,
   ...
@@ -28,14 +29,11 @@ dkge_pipeline(
 
 \item{contrasts}{Contrast specification as accepted by [dkge_contrast()].}
 
-\item{transport}{Optional list configuring transport. Recognised fields:
-`method` ("sinkhorn" or "sinkhorn_cpp"), `centroids`, `sizes`, `medoid`,
-`lambda_emb`, `lambda_spa`, `sigma_mm`, `epsilon`, `max_iter`, `tol`.
-Alternatively, supply precomputed transport matrices via
-`transforms`/`matrices` to bypass the medoid transport helper.}
+\item{transport}{Either a transport specification/service or `NULL`.}
 
-\item{inference}{Optional list configuring sign-flip inference with entries
-`B` (permutations), `tail`, and `center`.}
+\item{inference}{Either an inference specification/service or `NULL`.}
+
+\item{classification}{Optional specification passed to [dkge_classify()].}
 
 \item{method}{Cross-fitting strategy for contrasts (default "loso").}
 

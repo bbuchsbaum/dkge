@@ -8,13 +8,13 @@ dkge_subject(x, ...)
 }
 \arguments{
 \item{x}{Source object containing subject-level data:
-- matrix: q×P beta coefficients (effects × clusters/voxels)
-- NeuroVec: 4D time-series data (T×X×Y×Z), betas computed via GLM
-- ClusteredNeuroVec: Cluster time-series (T×K), betas computed via GLM}
+- matrix: qxP beta coefficients (effects x clusters/voxels)
+- NeuroVec: 4D time-series data (TxXxYxZ), betas computed via GLM
+- ClusteredNeuroVec: Cluster time-series (TxK), betas computed via GLM}
 
 \item{...}{Additional arguments passed to methods. For the matrix method:
-`design` (Subject design matrix T_s × q), `id` (Optional subject identifier),
-`omega` (Optional cluster weights - numeric vector length P or P×P matrix).
+`design` (Subject design matrix T_s x q), `id` (Optional subject identifier),
+`omega` (Optional cluster weights - numeric vector length P or PxP matrix).
 For ClusteredNeuroVec method: omega defaults to cluster sizes if not provided}
 }
 \value{

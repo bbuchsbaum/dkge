@@ -12,7 +12,7 @@ dkge_signflip_maxT(
 )
 }
 \arguments{
-\item{Y}{S×Q matrix of subject values on the medoid parcellation (rows=subjects, cols=clusters)}
+\item{Y}{SxQ matrix of subject values on the medoid parcellation (rows=subjects, cols=clusters)}
 
 \item{B}{number of sign-flip permutations}
 
@@ -21,11 +21,11 @@ dkge_signflip_maxT(
 \item{tail}{"two.sided" | "greater" | "less"}
 }
 \value{
-list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector), flips (S×B signs)
+list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector), flips (SxB signs)
 }
 \description{
 Computes cluster-wise one-sample t-statistics across subjects on transported
-values (S×Q matrix), and calibrates p-values by the max-|t| distribution under
+values (SxQ matrix), and calibrates p-values by the max-|t| distribution under
 random subject-wise sign flips (symmetric null). This does not re-estimate DKGE,
 leveraging LOSO independence of each subject's value.
 }

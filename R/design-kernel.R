@@ -2,8 +2,6 @@
 # design-kernel.R
 # Flexible constructors for design similarity kernels.
 
-"%||%" <- function(a, b) if (is.null(a)) b else a
-
 #' Build a flexible design-similarity kernel
 #'
 #' Constructs a PSD kernel that captures factorial similarity across design
@@ -210,7 +208,7 @@ design_kernel <- function(factors,
 
 #' Sum-to-zero contrasts for a set of factors
 #' @param Ls Numeric vector of factor levels (named or unnamed).
-#' @return Named list of L×(L-1) contrast matrices.
+#' @return Named list of Lx(L-1) contrast matrices.
 #' @export
 sum_contrasts <- function(Ls) {
   lapply(Ls, function(L) { cm <- contr.sum(L); storage.mode(cm) <- "double"; cm })

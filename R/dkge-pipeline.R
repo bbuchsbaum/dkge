@@ -11,13 +11,9 @@
 #' @param betas,designs,kernel Inputs passed to [dkge()] when `fit` is `NULL`.
 #' @param omega Optional spatial weights forwarded to [dkge()].
 #' @param contrasts Contrast specification as accepted by [dkge_contrast()].
-#' @param transport Optional list configuring transport. Recognised fields:
-#'   `method` ("sinkhorn" or "sinkhorn_cpp"), `centroids`, `sizes`, `medoid`,
-#'   `lambda_emb`, `lambda_spa`, `sigma_mm`, `epsilon`, `max_iter`, `tol`.
-#'   Alternatively, supply precomputed transport matrices via
-#'   `transforms`/`matrices` to bypass the medoid transport helper.
-#' @param inference Optional list configuring sign-flip inference with entries
-#'   `B` (permutations), `tail`, and `center`.
+#' @param transport Either a transport specification/service or `NULL`.
+#' @param inference Either an inference specification/service or `NULL`.
+#' @param classification Optional specification passed to [dkge_classify()].
 #' @param method Cross-fitting strategy for contrasts (default "loso").
 #' @param ridge Optional ridge added during held-out decompositions.
 #' @param ... Additional arguments passed to [dkge()] when fitting inside the
@@ -30,66 +26,68 @@ dkge_pipeline <- function(fit = NULL,
                           contrasts,
                           transport = NULL,
                           inference = list(),
+                          classification = NULL,
                           method = c("loso", "kfold", "analytic"),
                           ridge = 0,
                           ...) {
   method <- match.arg(method)
+  extra_args <- list(...)
+
+  if (inherits(transport, "dkge_transport_spec")) {
+    transport <- unclass(transport)
+  }
+  if (inherits(inference, "dkge_inference_spec")) {
+    inference <- unclass(inference)
+  }
+  if (inherits(classification, "dkge_classification_spec")) {
+    classification <- unclass(classification)
+  }
 
   if (is.null(fit)) {
     stopifnot(!is.null(betas), !is.null(designs), !is.null(kernel))
-    fit <- dkge(betas, designs = designs, kernel = kernel, omega = omega, ...)
+    fit_args <- c(list(betas, designs = designs, kernel = kernel, omega = omega),
+                  extra_args)
+    fit <- do.call(dkge, fit_args)
   }
   stopifnot(inherits(fit, "dkge"))
 
-  contrast_results <- dkge_contrast(fit, contrasts, method = method, ridge = ridge, ...)
+  contrast_service <- dkge_contrast_service(method = method, ridge = ridge)
+  contrast_results <- .dkge_run_contrast_service(contrast_service, fit, contrasts, extra_args)
 
-  transport_results <- NULL
-  if (!is.null(transport) && !is.null(transport$centroids)) {
-    medoid <- transport$medoid %||% 1L
-    mapper_spec <- transport$mapper %||% NULL
-    method_arg <- transport$method %||% "sinkhorn"
-    mapper_args <- transport[intersect(names(transport),
-                                       c("epsilon", "max_iter", "tol",
-                                         "lambda_emb", "lambda_spa",
-                                         "sigma_mm", "lambda_size"))]
-    args <- list(
-      fit = fit,
-      contrast_obj = contrast_results,
-      medoid = medoid,
-      centroids = transport$centroids,
-      loadings = transport$loadings,
-      betas = transport$betas,
-      sizes = transport$sizes,
-      mapper = mapper_spec,
-      method = method_arg
-    )
-    args <- c(args, mapper_args)
-    args <- args[!vapply(args, is.null, logical(1))]
-    transport_results <- do.call(dkge_transport_contrasts_to_medoid, args)
+  transport_service <- if (inherits(transport, "dkge_transport_service")) {
+    transport
+  } else {
+    dkge_transport_service(transport)
+  }
+  transport_results <- .dkge_run_transport_service(transport_service, fit, contrast_results)
+
+  classification_result <- NULL
+  if (!is.null(classification)) {
+    if (inherits(classification, "dkge_classification")) {
+      classification_result <- classification
+    } else if (is.list(classification) && !is.null(classification$targets)) {
+      args <- utils::modifyList(list(fit = fit), classification)
+      classification_result <- do.call(dkge_classify, args)
+    } else {
+      classification_result <- dkge_classify(fit, classification)
+    }
   }
 
-  inference_results <- NULL
-  if (!is.null(inference)) {
-    B <- inference$B %||% 2000
-    tail <- inference$tail %||% "two.sided"
-    center <- inference$center %||% "mean"
-
-    inference_results <- lapply(seq_along(contrast_results$values), function(i) {
-      subj_mat <- if (!is.null(transport_results)) {
-        transport_results[[i]]$subj_values
-      } else {
-        as.matrix(contrast_results, contrast = i)
-      }
-      dkge_signflip_maxT(subj_mat, B = B, tail = tail, center = center)
-    })
-    names(inference_results) <- names(contrast_results$values)
+  inference_service <- if (inherits(inference, "dkge_inference_service")) {
+    inference
+  } else {
+    dkge_inference_service(inference)
   }
+  inference_results <- .dkge_run_inference_service(inference_service,
+                                                   contrast_results,
+                                                   transport_results)
 
   list(
     fit = fit,
     diagnostics = dkge_diagnostics(fit),
     contrasts = contrast_results,
     transport = transport_results,
-    inference = inference_results
+    inference = inference_results,
+    classification = classification_result
   )
 }

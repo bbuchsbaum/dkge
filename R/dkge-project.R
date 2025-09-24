@@ -8,11 +8,11 @@
 #' subject's beta matrix.
 #'
 #' @param fit A `dkge` object.
-#' @param B_s q×P matrix of subject betas.
-#' @param Omega_s Optional weights (vector length P or P×P matrix) matching the
+#' @param B_s qxP matrix of subject betas.
+#' @param Omega_s Optional weights (vector length P or PxP matrix) matching the
 #'   columns of `B_s`.
 #' @param w_s Optional subject-level weight (defaults to 1 when omitted).
-#' @return q×P matrix in the DKGE training space.
+#' @return qxP matrix in the DKGE training space.
 #' @export
 dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL) {
   stopifnot(inherits(fit, "dkge"))
@@ -52,7 +52,7 @@ dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL) {
 #' @param B_list List of subject beta matrices.
 #' @param Omega_list Optional list of spatial weights aligned with `B_list`.
 #' @param w Optional vector of subject weights for the new data.
-#' @return q×(sum P_s) matrix matching the training block layout.
+#' @return qx(sum P_s) matrix matching the training block layout.
 #' @export
 dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   stopifnot(inherits(fit, "dkge"))
@@ -79,7 +79,7 @@ dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #'
 #' @param fit A `dkge` object.
 #' @inheritParams dkge_preprocess_blocks
-#' @return Matrix of projected scores (q×rank).
+#' @return Matrix of projected scores (qxrank).
 #' @export
 dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   Xnew <- dkge_preprocess_blocks(fit, B_list, Omega_list, w)
@@ -97,8 +97,8 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 
 #' @description Convenience wrapper for projecting row-standardised betas onto DKGE components.
 #' @param fit A `dkge` object.
-#' @param Btil Either a q×P matrix or a list of such matrices (e.g. `fit$Btil`).
-#' @return List of P×rank matrices; returns a single matrix when `Btil` is a matrix.
+#' @param Btil Either a qxP matrix or a list of such matrices (e.g. `fit$Btil`).
+#' @return List of Pxrank matrices; returns a single matrix when `Btil` is a matrix.
 #' @describeIn dkge_project_block Project subject-standardised betas into component space
 #' @export
 dkge_project_btil <- function(fit, Btil) {
@@ -123,7 +123,7 @@ dkge_project_btil <- function(fit, Btil) {
 #' @param B_s Beta matrix for the new data block.
 #' @inheritParams dkge_transform_block
 #' @param least_squares Logical; pass to [multivarious::project_block()].
-#' @return Projection scores (q×rank) restricted to block `s`.
+#' @return Projection scores (qxrank) restricted to block `s`.
 #' @rdname dkge_project_block
 #' @export
 dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
@@ -163,10 +163,10 @@ dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
 #' Project multiple cluster/voxel vectors
 #'
 #' @param fit A `dkge` object.
-#' @param B q×P matrix of cluster betas.
+#' @param B qxP matrix of cluster betas.
 #' @param omega_vec Optional vector of per-cluster weights.
 #' @param w Optional subject weight.
-#' @return P×rank matrix of projected coordinates.
+#' @return Pxrank matrix of projected coordinates.
 #' @export
 dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1) {
   stopifnot(inherits(fit, "dkge"))

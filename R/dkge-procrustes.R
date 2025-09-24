@@ -1,8 +1,6 @@
 # dkge-procrustes.R (robust K-Procrustes utilities)
 # Provides numerically stable alignment/consensus helpers for DKGE bases.
 
-`%||%` <- function(a, b) if (is.null(a)) b else a
-
 # Internal helper: kernel roots with jitter (exported via design-kernel)
 .dkge_kernel_roots <- function(K, jitter = 1e-10) {
   Ksym <- (K + t(K))/2
@@ -19,10 +17,10 @@
 #' Ensures the columns of `W` are orthonormal with respect to the
 #' design kernel metric: U^T K U = I.
 #'
-#' @param W q×r matrix (columns = basis vectors)
-#' @param K q×q design kernel (PSD)
+#' @param W qxr matrix (columns = basis vectors)
+#' @param K qxq design kernel (PSD)
 #' @param Kroots optional precomputed kernel roots from `.dkge_kernel_roots`
-#' @return q×r matrix with K-orthonormal columns
+#' @return qxr matrix with K-orthonormal columns
 #' @export
 dkge_k_orthonormalize <- function(W, K, Kroots = NULL) {
   stopifnot(is.matrix(W), is.matrix(K), nrow(K) == nrow(W))
@@ -37,9 +35,9 @@ dkge_k_orthonormalize <- function(W, K, Kroots = NULL) {
 #' Aligns basis `U` to reference `Uref` by solving
 #' max_R tr((U_ref^T K U) R) subject to R^T R = I.
 #'
-#' @param Uref reference basis (q×r)
-#' @param U basis to align (q×r)
-#' @param K q×q design kernel
+#' @param Uref reference basis (qxr)
+#' @param U basis to align (qxr)
+#' @param K qxq design kernel
 #' @param allow_reflection logical; if FALSE, forces det(R)=+1
 #' @return list(U_aligned, R, d=sum(singular values), cosines, det)
 #' @export
@@ -63,8 +61,8 @@ dkge_procrustes_K <- function(Uref, U, K, allow_reflection = TRUE) {
 
 #' Align multiple bases to a reference
 #'
-#' @param U_list list of q×r bases
-#' @param K q×q design kernel
+#' @param U_list list of qxr bases
+#' @param K qxq design kernel
 #' @param ref reference basis or index (default 1)
 #' @param allow_reflection logical passed to `dkge_procrustes_K`
 #' @param weights optional numeric weights (stored for convenience)
@@ -96,8 +94,8 @@ dkge_align_bases_K <- function(U_list, K, ref = 1L,
 #' Iteratively aligns bases, takes a weighted average, and retraction via
 #' K-orthonormalization until convergence.
 #'
-#' @param U_list list of q×r K-orthonormal bases
-#' @param K q×q design kernel
+#' @param U_list list of qxr K-orthonormal bases
+#' @param K qxq design kernel
 #' @param weights optional numeric weights (default equal)
 #' @param Kroots optional precomputed kernel roots
 #' @param max_iter maximum iterations

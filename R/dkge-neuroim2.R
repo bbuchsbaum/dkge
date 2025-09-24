@@ -3,12 +3,12 @@
 
 #' Aggregate voxel time series into cluster means
 #'
-#' @param bv A `neuroim2::NeuroVec` object (4D time-series data, T×X×Y×Z).
+#' @param bv A `neuroim2::NeuroVec` object (4D time-series data, TxXxYxZ).
 #' @param labels A `neuroim2::NeuroVol` with integer cluster identifiers
 #'   (0 indicates background).
 #' @param ids Optional subset of cluster IDs to retain.
-#' @param chunker Optional function returning list(mat = T×V_block, vox_idx).
-#' @return Matrix of dimension T×P where P is the number of clusters retained.
+#' @param chunker Optional function returning list(mat = TxV_block, vox_idx).
+#' @return Matrix of dimension TxP where P is the number of clusters retained.
 #' @export
 dkge_cluster_ts <- function(bv, labels, ids = NULL, chunker = NULL) {
   lab <- as.vector(neuroim2::values(labels))
@@ -20,9 +20,9 @@ dkge_cluster_ts <- function(bv, labels, ids = NULL, chunker = NULL) {
   id_to_col <- setNames(seq_len(p), ids)
 
   if (is.null(chunker)) {
-    # Convert NeuroVec to matrix (T×V format)
+    # Convert NeuroVec to matrix (TxV format)
     y_mat <- neuroim2::as.matrix(bv)
-    # y_mat is now voxels×time, need to transpose for T×V
+    # y_mat is now voxelsxtime, need to transpose for TxV
     y_mat <- t(y_mat)
     keep <- which(lab > 0)
     grp <- id_to_col[as.character(lab[keep])]
@@ -65,9 +65,9 @@ dkge_cluster_ts <- function(bv, labels, ids = NULL, chunker = NULL) {
 #' Compute cluster-level betas from neuroim2 objects
 #'
 #' @param bv A `neuroim2::NeuroVec` object containing 4D time-series data.
-#' @param x_mat Subject design matrix (T×q).
+#' @param x_mat Subject design matrix (Txq).
 #' @param labels A `neuroim2::NeuroVol` object with cluster label assignments.
-#' @return Matrix of GLM betas (q×P) where P is the number of clusters.
+#' @return Matrix of GLM betas (qxP) where P is the number of clusters.
 #' @export
 dkge_cluster_betas <- function(bv, x_mat, labels) {
   z_mat <- dkge_cluster_ts(bv, labels)
@@ -142,7 +142,7 @@ dkge_neuro_loader <- function(design_objs, bv_list,
 
       if (inherits(bv, "ClusteredNeuroVec")) {
         # For ClusteredNeuroVec, compute betas directly
-        cluster_ts <- neuroim2::as.matrix(bv)  # T×K matrix
+        cluster_ts <- neuroim2::as.matrix(bv)  # TxK matrix
         fit <- fmrireg::fmri_ols_fit(x_mat, cluster_ts)
         fit$betas
       } else {

@@ -19,7 +19,7 @@ dkge_cpca_fit(
 span a CPCA design subspace. Ignored when `cpca_part = "none"` or when
 `cpca_T` is provided.}
 
-\item{cpca_T}{Optional q×q0 matrix giving the CPCA design basis explicitly.
+\item{cpca_T}{Optional qxq0 matrix giving the CPCA design basis explicitly.
 Overrides `cpca_blocks` when supplied.}
 
 \item{cpca_part}{Which CPCA-filtered component to fit: `"none"` (default)

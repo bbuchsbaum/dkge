@@ -7,14 +7,14 @@
 dkge_k_orthonormalize(W, K, Kroots = NULL)
 }
 \arguments{
-\item{W}{q×r matrix (columns = basis vectors)}
+\item{W}{qxr matrix (columns = basis vectors)}
 
-\item{K}{q×q design kernel (PSD)}
+\item{K}{qxq design kernel (PSD)}
 
 \item{Kroots}{optional precomputed kernel roots from `.dkge_kernel_roots`}
 }
 \value{
-q×r matrix with K-orthonormal columns
+qxr matrix with K-orthonormal columns
 }
 \description{
 Ensures the columns of `W` are orthonormal with respect to the

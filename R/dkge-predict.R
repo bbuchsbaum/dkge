@@ -46,8 +46,8 @@ dkge_freeze <- function(fit) {
 #' Predict DKGE loadings for new subjects (out-of-sample)
 #'
 #' @param object dkge | dkge_stream | dkge_model
-#' @param B_list list of q×P_s beta matrices for new subjects
-#' @return list of P_s×r loadings (A_s) for each subject
+#' @param B_list list of qxP_s beta matrices for new subjects
+#' @return list of P_sxr loadings (A_s) for each subject
 #' @export
 dkge_predict_loadings <- function(object, B_list) {
   comps <- .dkge_components(object)
@@ -55,8 +55,9 @@ dkge_predict_loadings <- function(object, B_list) {
   lapply(mats, function(Bs) {
     Bs <- .dkge_align_effects(Bs, comps$effects)
     Btil <- t(comps$R) %*% Bs
-    if (exists("dkge_project_loadings_cpp")) {
-      dkge_project_loadings_cpp(Btil, comps$K, comps$U)
+    project_cpp <- get0("dkge_project_loadings_cpp", mode = "function")
+    if (is.function(project_cpp)) {
+      project_cpp(Btil, comps$K, comps$U)
     } else {
       t(Btil) %*% comps$K %*% comps$U
     }
@@ -66,8 +67,8 @@ dkge_predict_loadings <- function(object, B_list) {
 #' Predict DKGE contrasts for new subjects (out-of-sample)
 #'
 #' @param object dkge | dkge_stream | dkge_model
-#' @param B_list list of q×P_s betas
-#' @param contrasts list of named q-vectors or a q×k matrix (columns are contrasts)
+#' @param B_list list of qxP_s betas
+#' @param contrasts list of named q-vectors or a qxk matrix (columns are contrasts)
 #' @param return_loadings logical; if TRUE also return A_list
 #' @return list(A_list=..., values = list of per-contrast subject vectors)
 #' @export
@@ -104,8 +105,9 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
   # precompute alpha per contrast
   alpha_list <- lapply(contrasts, function(c) {
     ctil <- backsolve(comps$R, c, transpose = FALSE)
-    if (exists("dkge_alpha_cpp")) {
-      dkge_alpha_cpp(comps$U, comps$K, comps$R, c)
+    alpha_cpp <- get0("dkge_alpha_cpp", mode = "function")
+    if (is.function(alpha_cpp)) {
+      alpha_cpp(comps$U, comps$K, comps$R, c)
     } else {
       t(comps$U) %*% comps$K %*% ctil
     }
@@ -124,6 +126,102 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
   out <- list(values = vals)
   if (return_loadings) out$A_list <- A_list
   out
+}
+
+
+#' Convenience prediction for subject collections
+#'
+#' Harmonises a variety of beta inputs (matrices, `dkge_subject` objects, or
+#' `dkge_data` bundles) before forwarding to [dkge_predict()]. This allows
+#' callers to work with tidy inputs without manually assembling `B_list`
+#' structures.
+#'
+#' @param object dkge | dkge_stream | dkge_model.
+#' @param betas Subject data. Accepts a matrix, list of matrices,
+#'   `dkge_subject` objects, or a `dkge_data` bundle.
+#' @param contrasts List or matrix accepted by [dkge_predict()].
+#' @param ids Optional subject identifiers overriding those inferred from
+#'   `betas`.
+#' @param return_loadings Logical; when TRUE, include projected loadings in the
+#'   result bundle.
+#' @return Output from [dkge_predict()] with harmonised subject names.
+#' @export
+dkge_predict_subjects <- function(object,
+                                  betas,
+                                  contrasts,
+                                  ids = NULL,
+                                  return_loadings = TRUE) {
+  prep <- .dkge_prepare_predict_inputs(betas, ids)
+  dkge_predict(object,
+               B_list = prep$B_list,
+               contrasts = contrasts,
+               return_loadings = return_loadings)
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_prepare_predict_inputs <- function(betas, ids = NULL) {
+  B_list <- NULL
+  derived_ids <- character(0)
+
+  add_subject <- function(beta_obj, label = "") {
+    if (inherits(beta_obj, "dkge_subject")) {
+      mat <- as.matrix(beta_obj$beta)
+      lid <- beta_obj$id %||% label %||% ""
+    } else {
+      mat <- as.matrix(beta_obj)
+      lid <- label %||% ""
+    }
+    list(matrix = mat, id = lid)
+  }
+
+  if (inherits(betas, "dkge_data")) {
+    B_list <- lapply(betas$betas, as.matrix)
+    derived_ids <- betas$subject_ids %||% rep("", length(B_list))
+  } else if (inherits(betas, "dkge_subject")) {
+    subj <- add_subject(betas)
+    B_list <- list(subj$matrix)
+    derived_ids <- subj$id
+  } else if (is.matrix(betas)) {
+    B_list <- list(as.matrix(betas))
+    derived_ids <- ""
+  } else if (is.list(betas)) {
+    B_list <- vector("list", length(betas))
+    derived_ids <- rep("", length(betas))
+    betas_names <- names(betas)
+    for (i in seq_along(betas)) {
+      label <- if (!is.null(betas_names) && nzchar(betas_names[i])) betas_names[i] else ""
+      subj <- add_subject(betas[[i]], label = label)
+      B_list[[i]] <- subj$matrix
+      derived_ids[i] <- subj$id %||% label
+    }
+  } else {
+    stop("Unsupported `betas` input; supply matrices, dkge_subject objects, or dkge_data", call. = FALSE)
+  }
+
+  if (is.null(B_list) || !length(B_list)) {
+    stop("No subjects detected in `betas`", call. = FALSE)
+  }
+
+  if (!is.null(ids)) {
+    if (length(ids) != length(B_list)) {
+      stop("Length of `ids` must match the number of subjects inferred from `betas`.")
+    }
+    final_ids <- as.character(ids)
+  } else {
+    final_ids <- derived_ids
+  }
+  if (length(final_ids) != length(B_list)) {
+    final_ids <- rep("", length(B_list))
+  }
+  missing <- which(!nzchar(final_ids))
+  if (length(missing)) {
+    fallback <- paste0("subj", seq_along(B_list))
+    final_ids[missing] <- fallback[missing]
+  }
+
+  names(B_list) <- final_ids
+  list(B_list = B_list, ids = final_ids)
 }
 
 #' Streaming prediction for new subjects via a loader
@@ -162,4 +260,53 @@ dkge_predict_stream <- function(object, loader, contrasts) {
   }
   names(vals) <- paste0("subj", seq_len(S))
   list(values = vals, A_list = A_list)
+}
+
+.dkge_resolve_predict_args <- function(newdata, args) {
+  if (!missing(newdata) && !is.null(newdata)) {
+    if (is.null(args$B_list) && !is.null(newdata$B_list)) {
+      args$B_list <- newdata$B_list
+    }
+    if (is.null(args$B_list) && !is.null(newdata$betas)) {
+      args$B_list <- newdata$betas
+    }
+    if (is.null(args$contrasts) && !is.null(newdata$contrasts)) {
+      args$contrasts <- newdata$contrasts
+    }
+    if (is.null(args$return_loadings) && !is.null(newdata$return_loadings)) {
+      args$return_loadings <- newdata$return_loadings
+    }
+  }
+  args
+}
+
+.dkge_predict_dispatch <- function(object, newdata, args) {
+  args <- .dkge_resolve_predict_args(newdata, args)
+  if (is.null(args$B_list)) {
+    stop("Provide `B_list` via `newdata` or the `B_list` argument.", call. = FALSE)
+  }
+  if (is.null(args$contrasts)) {
+    stop("Provide `contrasts` via `newdata` or the `contrasts` argument.", call. = FALSE)
+  }
+  do.call(dkge_predict, c(list(object = object), args))
+}
+
+#' Predict contrasts for new subjects using a DKGE fit
+#'
+#' S3 front-end that forwards to [dkge_predict()] while accepting `newdata`
+#' lists with `betas`/`B_list` and `contrasts` entries.
+#'
+#' @param object A `dkge` fit.
+#' @param newdata Optional list with elements `betas`/`B_list` and `contrasts`.
+#' @param ... Additional arguments passed to [dkge_predict()].
+#' @return Output of [dkge_predict()].
+#' @export
+predict.dkge <- function(object, newdata = NULL, ...) {
+  .dkge_predict_dispatch(object, newdata, list(...))
+}
+
+#' @rdname predict.dkge
+#' @export
+predict.dkge_model <- function(object, newdata = NULL, ...) {
+  .dkge_predict_dispatch(object, newdata, list(...))
 }

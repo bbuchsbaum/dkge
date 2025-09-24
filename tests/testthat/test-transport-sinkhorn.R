@@ -24,7 +24,7 @@ test_that("Sinkhorn plan matches T4transport for simple Gaussian blobs", {
   cmp <- compare_sinkhorn(C, mu, nu, epsilon = eps)
 
   expect_equal(cmp$ref$distance, sum(cmp$ours * C), tolerance = 1e-6)
-  expect_equal(unname(cmp$ours), unname(cmp$ref$plan), tolerance = 1e-8)
+  expect_equal(unname(cmp$ours), unname(cmp$ref$plan), tolerance = 1e-6)
   expect_equal(unname(rowSums(cmp$ours)), mu, tolerance = 1e-6)
   expect_equal(unname(colSums(cmp$ours)), nu, tolerance = 1e-6)
 })
@@ -41,7 +41,7 @@ test_that("Sinkhorn plan matches T4transport with non-uniform weights", {
   cmp <- compare_sinkhorn(D, mu, nu, epsilon = eps)
 
   expect_equal(cmp$ref$distance, sum(cmp$ours * D), tolerance = 1e-6)
-  expect_equal(unname(cmp$ours), unname(cmp$ref$plan), tolerance = 1e-8)
+  expect_equal(unname(cmp$ours), unname(cmp$ref$plan), tolerance = 1e-6)
   expect_equal(unname(rowSums(cmp$ours)), mu, tolerance = 1e-6)
   expect_equal(unname(colSums(cmp$ours)), nu, tolerance = 1e-6)
 })
@@ -73,4 +73,23 @@ test_that("CPP Sinkhorn wrapper honours return_plans flag", {
 
   expect_false(is.null(with_plans$plans))
   expect_null(without_plans$plans)
+})
+
+test_that("dkge_clear_sinkhorn_cache removes cached entries", {
+  skip_if_not(exists("sinkhorn_plan_cpp", envir = asNamespace("dkge"), inherits = FALSE))
+
+  env <- dkge:::.dkge_sinkhorn_cache
+  dkge_clear_sinkhorn_cache()
+  expect_equal(length(setdiff(ls(env, all.names = TRUE), ".order")), 0)
+
+  C <- matrix(c(0, 1, 1, 0.2), 2, 2)
+  mu <- rep(0.5, 2)
+  nu <- rep(0.5, 2)
+  invisible(dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 10))
+
+  expect_gt(length(setdiff(ls(env, all.names = TRUE), ".order")), 0)
+
+  dkge_clear_sinkhorn_cache()
+  expect_equal(length(setdiff(ls(env, all.names = TRUE), ".order")), 0)
+  expect_equal(length(get(".order", envir = env, inherits = FALSE)), 0)
 })

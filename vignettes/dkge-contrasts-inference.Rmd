@@ -1,6 +1,13 @@
 ---
 title: "Contrasts, Inference, and Bootstraps"
-output: rmarkdown::html_vignette
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
 vignette: >
   %\VignetteIndexEntry{Contrasts, Inference, and Bootstraps}
   %\VignetteEngine{knitr::rmarkdown}
@@ -8,14 +15,37 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-set.seed(2)
+library(dkge)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "90%"
+)
+options(
+  tibble.print_min = 4,
+  tibble.print_max = 4,
+  digits = 3
+)
+set.seed(2024)
+theme_set(theme_dkge())
 ```
 
-This vignette shows how to generate subject-level contrasts with DKGE, apply
-analytic and bootstrap inference, and read the outputs.
+
+This vignette demonstrates how to generate subject-level contrasts using DKGE methodology,
+apply both analytic and bootstrap-based statistical inference procedures, and interpret
+the resulting outputs. We will walk through the complete workflow from contrast specification
+to statistical testing and visualization.
 
 ## Demo Dataset
+
+We begin by setting up a simulated dataset that illustrates the key components of a DKGE analysis.
+This synthetic dataset includes multiple subjects with different design matrices, beta coefficients,
+and spatial coordinates that will serve as the foundation for our contrast and inference examples.
 
 ```{r data}
 library(dkge)
@@ -34,8 +64,10 @@ fit$centroids <- centroids
 
 ## Leave-One-Subject-Out (LOSO) Contrasts
 
-`dkge_loso_contrast()` computes cross-validated subject contrasts while keeping
-transport operators consistent across folds.
+The LOSO approach provides an unbiased method for computing subject-level contrasts by using
+cross-validation. The `dkge_loso_contrast()` function computes these cross-validated subject
+contrasts while maintaining consistency of transport operators across all cross-validation folds,
+ensuring that spatial alignment remains stable throughout the procedure.
 
 ```{r loso}
 contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
@@ -52,11 +84,15 @@ transported <- dkge_transport_contrasts_to_medoid(
 str(loso$values, max.level = 1)
 ```
 
-- `loso$values`: subject-level contrast vectors before transport.
-- `transported[[1]]$value`: medoid-aligned contrast values averaged across subjects.
-- `transported[[1]]$subj_values`: individual-subject contributions after transport.
+The resulting data structure contains several important components that capture different
+stages of the contrast computation process. The `loso$values` component stores the raw
+subject-level contrast vectors before any spatial transport has been applied. After transport
+to the medoid space, `transported[[1]]$value` contains the contrast values that have been
+aligned to the medoid parcellation and averaged across all subjects. Additionally,
+`transported[[1]]$subj_values` preserves the individual-subject contributions after transport,
+which can be useful for detecting outliers or understanding between-subject variability.
 
-Plot the LOSO medoid map for quick inspection.
+We can visualize the LOSO medoid map to quickly inspect the spatial pattern of contrast values.
 
 ```{r loso-plot, fig.width=5, fig.height=4, fig.alt="Lollipop plot of LOSO contrast values on medoid clusters."}
 loso_medoid <- transported[[1]]$value
@@ -67,8 +103,11 @@ abline(h = 0, col = "grey60", lty = 2)
 
 ## Analytic Inference on Components
 
-`dkge_component_stats()` combines subject loadings, optionally performs
-sign-flip inference, and returns FDR-adjusted summaries.
+For statistical testing of group-level effects, we can apply analytic inference methods that
+leverage parametric assumptions about the underlying distributions. The `dkge_component_stats()`
+function combines subject loadings across the group, optionally performs sign-flip inference
+to handle arbitrary sign ambiguity in the components, and returns comprehensive summaries
+with false discovery rate (FDR) adjustments to control for multiple comparisons.
 
 ```{r analytic}
 comp_stats <- dkge_component_stats(
@@ -82,14 +121,18 @@ comp_stats <- dkge_component_stats(
 head(comp_stats$summary)
 ```
 
-The `summary` tibble includes component id, cluster index, statistic, and both
-raw and adjusted p-values; use it to select clusters surpassing your threshold.
+The resulting `summary` tibble provides a comprehensive overview of the statistical results,
+including component identifiers, cluster indices, test statistics, and both raw and FDR-adjusted
+p-values. This structured output enables systematic identification of clusters that surpass
+your predetermined significance threshold while accounting for multiple comparison corrections.
 
 ## Bootstrap Inference
 
-When effect distributions deviate from Gaussian assumptions, run multiplier or
-resampling bootstraps. The analytic fit above can be re-used to seed bootstrap
-runs.
+When the underlying effect distributions deviate substantially from Gaussian assumptions,
+or when sample sizes are small, bootstrap-based inference provides a more robust alternative
+to parametric methods. Both multiplier and resampling bootstrap approaches are available,
+and the analytic fit computed in the previous section can be efficiently re-used to seed
+the bootstrap resampling procedure, avoiding redundant computations.
 
 ```{r bootstrap, message=FALSE}
 subject_medoid <- lapply(seq_len(nrow(transported[[1]]$subj_values)), function(idx) {
@@ -105,15 +148,24 @@ boot <- dkge_bootstrap_projected(
 head(boot$medoid$mean)
 ```
 
-`dkge_bootstrap_projected()` returns confidence intervals and standard errors for
-medoid space contrasts. Swap in `dkge_bootstrap_qspace()` to work directly in the
-component basis without spatial transport.
+The `dkge_bootstrap_projected()` function returns comprehensive bootstrap statistics,
+including confidence intervals and standard errors, specifically computed for contrasts
+in the medoid space. For analyses that do not require spatial transport, you can alternatively
+use `dkge_bootstrap_qspace()` to work directly in the component basis, which bypasses
+the transport step and may be computationally more efficient for certain applications.
 
-## Tips
+## Practical Recommendations
 
-- Analytic inference is fast and works well when subject counts are moderate and
-  residuals appear symmetric.
-- Bootstraps are robust but slower; rely on warm-started Sinkhorn transport to
-  curb runtime (the package caches dual variables automatically).
-- Always inspect `loso$subject_values` to detect outlier subjects before
-  reporting group-level results.
+When choosing between analytic and bootstrap inference methods, several considerations
+can guide your decision. Analytic inference provides computational efficiency and works
+reliably when you have moderate subject counts and when residual distributions appear
+approximately symmetric. However, bootstrap methods offer greater robustness to
+distributional assumptions, though they require more computational time. To mitigate
+the computational burden of bootstrap inference, the package leverages warm-started
+Sinkhorn transport algorithms and automatically caches dual variables to reduce runtime
+in subsequent iterations.
+
+Regardless of the inference method chosen, it is essential to inspect the `loso$subject_values`
+output to identify potential outlier subjects before reporting group-level results. This
+quality control step helps ensure that your conclusions are not unduly influenced by
+atypical individual responses and maintains the integrity of your statistical inferences.

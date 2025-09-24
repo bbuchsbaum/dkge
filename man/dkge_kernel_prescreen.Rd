@@ -7,7 +7,7 @@
 dkge_kernel_prescreen(K_grid, C, normalize_k = TRUE, top_k = 3)
 }
 \arguments{
-\item{K_grid}{Named list of q×q kernels.}
+\item{K_grid}{Named list of qxq kernels.}
 
 \item{C}{Pooled covariance matrix.}
 

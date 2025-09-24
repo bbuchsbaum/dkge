@@ -46,3 +46,23 @@ test_that("dkge_pipeline uses mapper transport for mismatched clusters", {
   expect_false(is.null(res$inference))
   expect_equal(length(res$inference[[1]]$stat), ncol(res$transport[[1]]$subj_values))
 })
+
+test_that("dkge_pipeline accepts service objects", {
+  dat <- make_pipeline_inputs(S = 5, q = 3, P = 4, T = 10)
+  fit <- dkge_fit(dat$betas, dat$designs, K = dat$K, rank = 2)
+  cvec <- c(1, -1, 0)
+
+  transport_spec <- dkge_transport_spec(centroids = replicate(5, matrix(rnorm(12), 4, 3), simplify = FALSE),
+                                        medoid = 1L)
+  inference_spec <- dkge_inference_spec(B = 500, tail = "two.sided")
+
+  res <- dkge_pipeline(fit = fit,
+                       contrasts = cvec,
+                       transport = dkge_transport_service(transport_spec),
+                       inference = dkge_inference_service(inference_spec))
+
+  expect_s3_class(res$contrasts, "dkge_contrasts")
+  expect_false(is.null(res$transport))
+  expect_false(is.null(res$inference))
+  expect_equal(length(res$inference), length(res$contrasts$values))
+})

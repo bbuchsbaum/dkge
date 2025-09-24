@@ -9,9 +9,9 @@ dkge_predict(object, B_list, contrasts, return_loadings = TRUE)
 \arguments{
 \item{object}{dkge | dkge_stream | dkge_model}
 
-\item{B_list}{list of q×P_s betas}
+\item{B_list}{list of qxP_s betas}
 
-\item{contrasts}{list of named q-vectors or a q×k matrix (columns are contrasts)}
+\item{contrasts}{list of named q-vectors or a qxk matrix (columns are contrasts)}
 
 \item{return_loadings}{logical; if TRUE also return A_list}
 }

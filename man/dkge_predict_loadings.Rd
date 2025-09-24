@@ -9,10 +9,10 @@ dkge_predict_loadings(object, B_list)
 \arguments{
 \item{object}{dkge | dkge_stream | dkge_model}
 
-\item{B_list}{list of q×P_s beta matrices for new subjects}
+\item{B_list}{list of qxP_s beta matrices for new subjects}
 }
 \value{
-list of P_s×r loadings (A_s) for each subject
+list of P_sxr loadings (A_s) for each subject
 }
 \description{
 Predict DKGE loadings for new subjects (out-of-sample)

@@ -1,6 +1,13 @@
 ---
 title: "Mapper Customisation and Performance"
-output: rmarkdown::html_vignette
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
 vignette: >
   %\VignetteIndexEntry{Mapper Customisation and Performance}
   %\VignetteEngine{knitr::rmarkdown}
@@ -8,12 +15,28 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-set.seed(5)
+library(dkge)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "90%"
+)
+options(
+  tibble.print_min = 4,
+  tibble.print_max = 4,
+  digits = 3
+)
+set.seed(2024)
+theme_set(theme_dkge())
 ```
 
-This vignette discusses when to choose kNN vs Sinkhorn mappers, how to plug in
-custom transports, and how to take advantage of warm starts for speed.
+
+This vignette provides guidance on selecting between kNN and Sinkhorn mappers based on your analysis needs, demonstrates how to implement custom transport methods, and shows how to leverage warm starts to improve computational performance.
 
 ## Mapper Factory Recap
 
@@ -23,8 +46,7 @@ dkge_mapper("knn", k = 8, sigx = 3)
 dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1, lambda_feat = 0)
 ```
 
-`dkge_mapper()` stores backend parameters; `fit_mapper()` produces
-subject-specific transports with cached state for reuse.
+The `dkge_mapper()` function creates a mapper configuration that stores the backend parameters for your chosen transport method. When you call `fit_mapper()` on this configuration, it produces subject-specific transport plans that include cached computational state, enabling efficient reuse across multiple mapping operations.
 
 ## Speed Comparison
 
@@ -47,9 +69,7 @@ microbenchmark::microbenchmark(
 )
 ```
 
-kNN mapping is purely local and scales linearly with `k`. Sinkhorn mapping is
-more expressive (supports feature costs, soft matching) but heavier; the C++
-solver with warm starts makes repeated calls tractable.
+The performance characteristics of these two mapping approaches differ significantly. kNN mapping operates through purely local neighborhoods and scales linearly with the number of neighbors `k`, making it computationally efficient for most applications. In contrast, Sinkhorn mapping offers greater expressiveness by supporting feature-based costs and soft matching between points, but this flexibility comes with increased computational overhead. However, the optimized C++ solver implementation with warm start capabilities makes repeated Sinkhorn calls much more tractable for iterative analyses.
 
 ## Warm Starts and Dual Caching
 
@@ -64,13 +84,11 @@ res1$iterations
 res2$iterations
 ```
 
-The second run converges faster thanks to the saved dual variables. The DKGE
-rendering pipeline stores these automatically in the renderer object; you can
-provide them manually when experimenting with raw `sinkhorn_plan_cpp()`.
+The second optimization run converges significantly faster because it leverages the saved dual variables from the previous computation. This warm start mechanism is automatically handled by the DKGE rendering pipeline, which stores these dual variables in the renderer object for subsequent use. When working directly with the lower-level `sinkhorn_plan_cpp()` function for experimentation, you can manually provide these initialization values to achieve similar performance gains.
 
 ## Adding Custom Mappers
 
-Implement two S3 methods and register via `dkge_mapper()` naming convention.
+To integrate a custom mapping approach into the DKGE framework, you need to implement two key S3 methods that follow the established naming convention recognized by `dkge_mapper()`.
 
 ```r
 fit_mapper.dkge_mapper_mytransport <- function(mapper, subj_points, anchor_points, ...) {
@@ -82,13 +100,12 @@ apply_mapper.dkge_mapper_fit_mytransport <- function(fitted_mapper, values, ...)
 }
 ```
 
-Keep the output dimensions consistent and DKGE will integrate the new mapper
-automatically.
+As long as you maintain consistent output dimensions that match the expected anchor point structure, DKGE will seamlessly integrate your custom mapper into the existing analysis pipeline without requiring additional configuration.
 
 ## Practical Guidance
 
-- Prefer kNN for quick exploratory analyses or when clusters already align well.
-- Use Sinkhorn when anatomical shifts are large or latent features should guide
-  matching; tune `epsilon` upward for faster, smoother plans.
-- Reuse renderers across bootstraps/contrasts to exploit cached duals and avoid
-  recomputing transport from scratch.
+The choice between mapping methods should be guided by your specific analysis requirements and data characteristics. For quick exploratory analyses or situations where subject clusters already show good anatomical alignment, kNN mapping provides an efficient and straightforward solution.
+
+However, when dealing with substantial anatomical shifts between subjects or when latent features should guide the matching process, Sinkhorn mapping becomes the preferred choice. In these cases, you can tune the `epsilon` parameter upward to achieve faster convergence and smoother transport plans, though this comes with a trade-off in matching precision.
+
+To maximize computational efficiency across multiple analyses, make sure to reuse renderer objects when performing bootstraps or computing contrasts. This practice allows you to exploit the cached dual variables and avoid the computational overhead of recomputing transport plans from scratch.

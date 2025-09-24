@@ -7,11 +7,11 @@
 dkge_procrustes_K(Uref, U, K, allow_reflection = TRUE)
 }
 \arguments{
-\item{Uref}{reference basis (q×r)}
+\item{Uref}{reference basis (qxr)}
 
-\item{U}{basis to align (q×r)}
+\item{U}{basis to align (qxr)}
 
-\item{K}{q×q design kernel}
+\item{K}{qxq design kernel}
 
 \item{allow_reflection}{logical; if FALSE, forces det(R)=+1}
 }

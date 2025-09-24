@@ -1,0 +1,12 @@
+^doc$
+^Meta$
+^\.claude$
+^CLAUDE\.md$
+^Rplots\.pdf$
+^data-raw$
+^docs$
+^future$
+^repomix-output\.xml$
+^_pkgdown\.yml$
+^pkgdown$
+^\.github$

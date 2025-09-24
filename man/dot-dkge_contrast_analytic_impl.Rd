@@ -23,7 +23,8 @@
 
 \item{ridge}{Ridge parameter (unused in analytic, kept for consistency)}
 
-\item{parallel}{Use parallel processing}
+\item{parallel}{Logical; enables future.apply-based parallelism for
+per-subject computations (requires future.apply)}
 
 \item{verbose}{Print progress}
 

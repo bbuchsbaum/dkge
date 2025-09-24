@@ -23,13 +23,13 @@
 #' This function implements the first-order eigenvalue perturbation approximation
 #' described in the paper. For the held-out compressed covariance:
 #'
-#' Chat^(-s) ≈ Chat - w_s S_s
+#' Chat^(-s) ~ Chat - w_s S_s
 #'
 #' The eigenvalues and eigenvectors are updated using:
-#' - δλ_j = -w_s v_j^T S_s v_j (eigenvalue shift)
-#' - δv_j = -w_s Σ_{k≠j} (v_k^T S_s v_j)/(λ_j - λ_k) v_k (eigenvector rotation)
+#' - deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
+#' - deltav_j = -w_s Sigma_{k!=j} (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
 #'
-#' This avoids the O(q³) eigen-decomposition, requiring only O(q²r) operations
+#' This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r) operations
 #' where r is the rank. The approximation is accurate when:
 #' 1. Subject weights w_s are small (no single subject dominates)
 #' 2. Eigenvalue gaps are large (well-separated components)
@@ -61,6 +61,13 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   q <- nrow(fit$U)
   r <- ncol(fit$U)
   stopifnot(length(c) == q)
+
+  if (!is.null(fit$voxel_weights)) {
+    uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
+    if (!uniform) {
+      return(.dkge_analytic_fallback(fit, s, c, ridge))
+    }
+  }
 
   w_s <- fit$weights[s]
   S_s <- fit$contribs[[s]]
@@ -187,7 +194,8 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
 #' @param fit dkge object
 #' @param contrast_list List of normalized contrasts
 #' @param ridge Ridge parameter (unused in analytic, kept for consistency)
-#' @param parallel Use parallel processing
+#' @param parallel Logical; enables future.apply-based parallelism for
+#'   per-subject computations (requires future.apply)
 #' @param verbose Print progress
 #' @param tol Tolerance for perturbation stability
 #' @param fallback Allow fallback to full eigen when unstable
@@ -200,7 +208,9 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   S <- length(fit$Btil)
   n_contrasts <- length(contrast_list)
 
-  if (verbose) {
+  verbose_flag <- .dkge_verbose(verbose)
+
+  if (verbose_flag) {
     message(sprintf("Computing %d contrast(s) via analytic LOSO for %d subjects",
                    n_contrasts, S))
   }
@@ -210,31 +220,36 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   bases <- vector("list", S)
   alphas <- vector("list", n_contrasts)
   methods_list <- vector("list", n_contrasts)
+  subject_indices <- seq_len(S)
 
   for (i in seq_along(contrast_list)) {
-    contrast_values <- vector("list", S)
-    alpha_values <- matrix(NA_real_, nrow = S, ncol = ncol(fit$U))
-    methods_vec <- character(S)
+    subject_results <- .dkge_apply(
+      subject_indices,
+      function(s) {
+        if (!parallel && verbose_flag && s %% 10 == 0) {
+          message(sprintf("  Subject %d/%d", s, S))
+        }
+        res <- dkge_analytic_loso(fit, s, contrast_list[[i]],
+                                  tol = tol, fallback = fallback, ridge = ridge)
+        list(
+          value = res$v,
+          alpha = as.numeric(res$alpha),
+          method = res$method,
+          basis = res$basis
+        )
+      },
+      parallel = parallel
+    )
 
-    for (s in seq_len(S)) {
-      if (verbose && s %% 10 == 0) {
-        message(sprintf("  Subject %d/%d", s, S))
-      }
+    values[[i]] <- lapply(subject_results, `[[`, "value")
+    alpha_mat <- do.call(rbind, lapply(subject_results, `[[`, "alpha"))
+    rownames(alpha_mat) <- NULL
+    alphas[[i]] <- alpha_mat
+    methods_list[[i]] <- vapply(subject_results, function(x) x$method, character(1))
 
-      res <- dkge_analytic_loso(fit, s, contrast_list[[i]],
-                                tol = tol, fallback = fallback, ridge = ridge)
-      contrast_values[[s]] <- res$v
-      alpha_values[s, ] <- res$alpha
-      methods_vec[s] <- res$method
-
-      if (i == 1) {
-        bases[[s]] <- res$basis
-      }
+    if (i == 1) {
+      bases <- lapply(subject_results, `[[`, "basis")
     }
-
-    values[[i]] <- contrast_values
-    alphas[[i]] <- alpha_values
-    methods_list[[i]] <- methods_vec
   }
 
   aligned_bases <- bases
@@ -252,7 +267,7 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
     procrustes <- list(alignment = align_obj, consensus = consensus)
   }
 
-  if (verbose) {
+  if (verbose_flag) {
     fallback_counts <- vapply(methods_list, function(m) sum(m == "fallback"), integer(1))
     if (any(fallback_counts > 0)) {
       message(sprintf("Fallback used for %d/%d subjects (max %.1f%% across contrasts)",

@@ -6,6 +6,7 @@ Design-Kernel Group Embedding (DKGE) turns subject-level GLM outputs into a shar
 - **Flexible design kernels** – encode factorial structure, smoothness, and interactions to control how effects align across subjects.
 - **Robust contrasts and inference** – LOSO/K-fold cross-fitting, analytic approximations, and bootstrap utilities for medoid or voxel maps.
 - **Transport & rendering** – barycentric kNN and C++-accelerated Sinkhorn mappers with warm starts, anchor graph smoothing, and voxel decoders.
+- **Classifier localisation** – cross-fitted latent classifiers with decoder, Haufe, and LOCO maps for bias-aware whole-brain interpretation.
 - **Component interpretability** – convenience helpers for projecting new data, rotating components, and summarising variance explained.
 
 ## Installation
@@ -40,6 +41,40 @@ See the vignettes for full workflows:
 - `vignette("dkge-components")`
 - `vignette("dkge-performance")`
 - `vignette("dkge-weighting")`
+
+## Helper constructors
+
+DKGE now provides small helper constructors that validate common orchestration inputs.
+They shorten calls to `dkge_pipeline()` and prediction helpers while keeping backward
+compatibility with raw lists.
+
+```r
+transport <- dkge_transport_spec(
+  centroids = centroids,
+  sizes = sizes,
+  medoid = 2
+)
+inference <- dkge_inference_spec(B = 1000, tail = "two.sided")
+cls_spec <- dkge_classification_spec(targets = ~ condition, method = "lda")
+
+results <- dkge_pipeline(
+  betas = betas,
+  designs = designs,
+  kernel = kernel,
+  contrasts = contrasts,
+  transport = transport,
+  inference = inference,
+  classification = cls_spec
+)
+```
+
+To score new subjects without manually assembling `B_list`, use
+`dkge_predict_subjects()`:
+
+```r
+pred <- dkge_predict_subjects(fit, betas = new_subjects, contrasts = my_contrasts)
+```
+
 
 ## Documentation & support
 Rendered articles and function reference are available at the pkgdown site: <https://bbuchsbaum.github.io/dkge/>. Issues and feature requests are welcome on the [GitHub tracker](https://github.com/bbuchsbaum/dkge/issues).
