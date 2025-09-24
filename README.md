@@ -26,7 +26,7 @@ betas <- replicate(3, matrix(rnorm(4 * 5), 4, 5), simplify = FALSE)
 designs <- replicate(3, qr.Q(qr(matrix(rnorm(60 * 4), 60, 4))), simplify = FALSE)
 
 # fit DKGE with an identity kernel and rank 2
-fit <- dkge(betas, designs, K = diag(4), rank = 2)
+fit <- dkge(betas, designs, kernel = diag(4), rank = 2)
 
 # project subjects into component space
 scores <- dkge_project_btil(fit, fit$Btil)
@@ -49,6 +49,7 @@ They shorten calls to `dkge_pipeline()` and prediction helpers while keeping bac
 compatibility with raw lists.
 
 ```r
+kernel <- diag(nrow(betas[[1]]))
 transport <- dkge_transport_spec(
   centroids = centroids,
   sizes = sizes,
