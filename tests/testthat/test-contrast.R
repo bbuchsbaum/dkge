@@ -276,3 +276,14 @@ test_that("Ridge parameter affects results", {
   # But should be correlated
   expect_gt(cor(v1, v2), 0.9)
 })
+
+test_that("as.matrix hints about transport when cluster counts differ", {
+  data <- create_toy_data(S = 3, q = 3, P = 6)
+  fit <- dkge_fit(data$betas, data$designs, K = data$K, rank = 2)
+  result <- dkge_contrast(fit, c(1, -1, 0), method = "loso")
+  # Tamper with one subject to shorten the value vector
+  result$values[[1]][[1]] <- result$values[[1]][[1]][-1]
+  expect_error(as.matrix(result),
+               "dkge_transport_contrasts_to_medoid",
+               class = "dkge_transport_needed")
+})

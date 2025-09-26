@@ -65,7 +65,14 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   if (!is.null(fit$voxel_weights)) {
     uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
     if (!uniform) {
-      return(.dkge_analytic_fallback(fit, s, c, ridge))
+      diag_info <- list(reason = "nonuniform_voxel_weights",
+                        min_eigengap = NA_real_,
+                        max_abs_coeff = NA_real_,
+                        threshold_eigengap = NA_real_,
+                        threshold_coeff = NA_real_)
+      return(.dkge_analytic_fallback(fit, s, c, ridge,
+                                     reason = "nonuniform_voxel_weights",
+                                     diagnostic = diag_info))
     }
   }
 
@@ -76,11 +83,25 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   V_full <- fit$eig_vectors_full
   lambda_full <- fit$eig_values_full
   if (is.null(V_full) || is.null(lambda_full)) {
-    return(.dkge_analytic_fallback(fit, s, c, ridge))
+    diag_info <- list(reason = "missing_full_decomposition",
+                      min_eigengap = NA_real_,
+                      max_abs_coeff = NA_real_,
+                      threshold_eigengap = NA_real_,
+                      threshold_coeff = NA_real_)
+    return(.dkge_analytic_fallback(fit, s, c, ridge,
+                                   reason = "missing_full_decomposition",
+                                   diagnostic = diag_info))
   }
 
   if (ncol(V_full) != q || length(lambda_full) != q) {
-    return(.dkge_analytic_fallback(fit, s, c, ridge))
+    diag_info <- list(reason = "dimension_mismatch",
+                      min_eigengap = NA_real_,
+                      max_abs_coeff = NA_real_,
+                      threshold_eigengap = NA_real_,
+                      threshold_coeff = NA_real_)
+    return(.dkge_analytic_fallback(fit, s, c, ridge,
+                                   reason = "dimension_mismatch",
+                                   diagnostic = diag_info))
   }
 
   # Precompute couplings H = V^T S V
@@ -92,6 +113,9 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   gap_tol <- max(tol, 1e-8)
   perturb_tol <- 0.1
 
+  min_gap_observed <- Inf
+  max_coeff_observed <- -Inf
+
   for (j in seq_len(r)) {
     v_j <- V_full[, j]
     delta_lambda_j <- -w_s * H[j, j]
@@ -99,13 +123,41 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
 
     gaps <- lambda_full[j] - lambda_full
     gaps[j] <- NA
+    min_gap_j <- suppressWarnings(min(abs(gaps), na.rm = TRUE))
+    if (!is.finite(min_gap_j)) {
+      min_gap_j <- NA_real_
+    }
+    if (is.finite(min_gap_j)) {
+      min_gap_observed <- min(min_gap_observed, min_gap_j)
+    }
     if (any(abs(gaps) < gap_tol, na.rm = TRUE)) {
-      return(.dkge_analytic_fallback(fit, s, c, ridge))
+      diag_info <- list(reason = "eigengap",
+                        min_eigengap = min_gap_j,
+                        max_abs_coeff = if (is.finite(max_coeff_observed)) max_coeff_observed else NA_real_,
+                        threshold_eigengap = gap_tol,
+                        threshold_coeff = perturb_tol)
+      return(.dkge_analytic_fallback(fit, s, c, ridge,
+                                     reason = "eigengap",
+                                     diagnostic = diag_info))
     }
     coeffs <- rep(0, q)
     coeffs[-j] <- -w_s * H[-j, j] / gaps[-j]
+    max_coeff_j <- suppressWarnings(max(abs(coeffs[-j]), na.rm = TRUE))
+    if (!is.finite(max_coeff_j)) {
+      max_coeff_j <- NA_real_
+    }
+    if (!is.na(max_coeff_j)) {
+      max_coeff_observed <- max(max_coeff_observed, max_coeff_j, na.rm = TRUE)
+    }
     if (any(abs(coeffs[-j]) > perturb_tol, na.rm = TRUE)) {
-      return(.dkge_analytic_fallback(fit, s, c, ridge))
+      diag_info <- list(reason = "perturbation_magnitude",
+                        min_eigengap = if (is.finite(min_gap_observed)) min_gap_observed else NA_real_,
+                        max_abs_coeff = max_coeff_j,
+                        threshold_eigengap = gap_tol,
+                        threshold_coeff = perturb_tol)
+      return(.dkge_analytic_fallback(fit, s, c, ridge,
+                                     reason = "perturbation_magnitude",
+                                     diagnostic = diag_info))
     }
     delta_v <- V_full %*% coeffs
     V_new[, j] <- v_j + delta_v
@@ -124,12 +176,21 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   A_s <- t(Bts) %*% KU_minus
   v_s <- as.numeric(A_s %*% alpha)
 
+  diag_info <- list(
+    reason = "analytic",
+    min_eigengap = if (is.finite(min_gap_observed)) min_gap_observed else NA_real_,
+    max_abs_coeff = if (is.finite(max_coeff_observed)) max_coeff_observed else NA_real_,
+    threshold_eigengap = gap_tol,
+    threshold_coeff = perturb_tol
+  )
+
   list(
     v = v_s,
     alpha = alpha,
     basis = U_minus,
     evals = lambda_new,
-    method = "analytic"
+    method = "analytic",
+    diagnostic = diag_info
   )
 }
 
@@ -143,9 +204,14 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
 #' @return Same as dkge_loso_contrast but with method="fallback"
 #' @keywords internal
 #' @noRd
-.dkge_analytic_fallback <- function(fit, s, c, ridge = 0) {
+.dkge_analytic_fallback <- function(fit, s, c, ridge = 0,
+                                    reason = "fallback",
+                                    diagnostic = NULL) {
   result <- dkge_loso_contrast(fit, s, c, ridge)
   result$method <- "fallback"
+  diag_out <- diagnostic %||% list()
+  diag_out$reason <- reason
+  result$diagnostic <- diag_out
   result
 }
 
@@ -220,6 +286,7 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   bases <- vector("list", S)
   alphas <- vector("list", n_contrasts)
   methods_list <- vector("list", n_contrasts)
+  diagnostics_list <- vector("list", n_contrasts)
   subject_indices <- seq_len(S)
 
   for (i in seq_along(contrast_list)) {
@@ -235,7 +302,8 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
           value = res$v,
           alpha = as.numeric(res$alpha),
           method = res$method,
-          basis = res$basis
+          basis = res$basis,
+          diagnostic = res$diagnostic %||% list()
         )
       },
       parallel = parallel
@@ -246,6 +314,7 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
     rownames(alpha_mat) <- NULL
     alphas[[i]] <- alpha_mat
     methods_list[[i]] <- vapply(subject_results, function(x) x$method, character(1))
+    diagnostics_list[[i]] <- lapply(subject_results, `[[`, "diagnostic")
 
     if (i == 1) {
       bases <- lapply(subject_results, `[[`, "basis")
@@ -278,6 +347,43 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
 
   fallback_rates <- vapply(methods_list, function(m) mean(m == "fallback"), numeric(1))
 
+  subject_ids <- fit$subject_ids %||% seq_len(S)
+  fallback_rows <- list()
+  for (i in seq_along(diagnostics_list)) {
+    contrast_name <- names(contrast_list)[i]
+    if (is.null(contrast_name) || !nzchar(contrast_name)) {
+      contrast_name <- paste0("contrast", i)
+    }
+    diag_entries <- diagnostics_list[[i]]
+    for (s in seq_along(diag_entries)) {
+      diag <- diag_entries[[s]] %||% list()
+      fallback_rows[[length(fallback_rows) + 1L]] <- data.frame(
+        contrast = contrast_name,
+        subject = subject_ids[s],
+        reason = diag$reason %||% NA_character_,
+        min_eigengap = diag$min_eigengap %||% NA_real_,
+        max_abs_coeff = diag$max_abs_coeff %||% NA_real_,
+        threshold_eigengap = diag$threshold_eigengap %||% NA_real_,
+        threshold_coeff = diag$threshold_coeff %||% NA_real_,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  fallback_detail <- if (length(fallback_rows)) {
+    do.call(rbind, fallback_rows)
+  } else {
+    data.frame(
+      contrast = character(0),
+      subject = character(0),
+      reason = character(0),
+      min_eigengap = numeric(0),
+      max_abs_coeff = numeric(0),
+      threshold_eigengap = numeric(0),
+      threshold_coeff = numeric(0),
+      stringsAsFactors = FALSE
+    )
+  }
+
   list(
     values = values,
     method = "analytic",
@@ -288,9 +394,11 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
       rotations = rotations,
       alphas = alphas,
       methods = methods_list,
+      diagnostics = diagnostics_list,
       tol = tol,
       fallback = fallback,
       fallback_rates = fallback_rates,
+      fallback_detail = fallback_detail,
       procrustes = procrustes
     )
   )

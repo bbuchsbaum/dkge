@@ -35,13 +35,27 @@ dkge_plot_suite <- function(fit,
                             dpi = 300,
                             save_path = NULL) {
   if (!inherits(fit, "dkge")) stop("`fit` must be a dkge object.")
-  if (!requireNamespace("patchwork", quietly = TRUE)) {
-    stop("Package 'patchwork' is required for dkge_plot_suite().")
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package 'ggplot2' is required for dkge_plot_suite().")
   }
 
   placeholder <- function(msg) {
     ggplot2::ggplot() + ggplot2::theme_void() +
       ggplot2::annotate("text", x = 0.5, y = 0.5, label = msg, size = 4)
+  }
+
+  optional_pkgs <- c("patchwork", "ggrepel")
+  missing_opt <- optional_pkgs[!vapply(optional_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+
+  if ("patchwork" %in% missing_opt) {
+    warning("Package 'patchwork' not available; returning placeholder plot.")
+    missing_opt <- setdiff(missing_opt, "patchwork")
+    return(placeholder("Install 'patchwork' for dkge_plot_suite"))
+  }
+
+  if (length(missing_opt)) {
+    warning(sprintf("Missing suggested package(s) for dkge_plot_suite: %s. Some panels will be placeholders.",
+                    paste(missing_opt, collapse = ", ")))
   }
 
   p_scree <- tryCatch(dkge_plot_scree(fit, one_se_pick = one_se_pick),
@@ -71,19 +85,23 @@ dkge_plot_suite <- function(fit,
   if (is.null(info_haufe) && is.null(info_loco)) {
     p_info <- placeholder("Information maps not supplied")
   } else {
-    info_panels <- tryCatch(dkge_plot_info_anchor(info_haufe = info_haufe,
-                                                  info_loco = info_loco,
-                                                  top = top),
-                            error = identity)
-    if (inherits(info_panels, "error")) {
-      p_info <- placeholder("Information maps failed")
+    if ("ggrepel" %in% missing_opt) {
+      p_info <- placeholder("Install 'ggrepel' for information maps")
     } else {
-      if (!is.null(info_panels$haufe) && !is.null(info_panels$loco)) {
-        p_info <- info_panels$haufe + info_panels$loco + patchwork::plot_layout(ncol = 2)
-      } else if (!is.null(info_panels$haufe)) {
-        p_info <- info_panels$haufe
+      info_panels <- tryCatch(dkge_plot_info_anchor(info_haufe = info_haufe,
+                                                    info_loco = info_loco,
+                                                    top = top),
+                              error = identity)
+      if (inherits(info_panels, "error")) {
+        p_info <- placeholder("Information maps failed")
       } else {
-        p_info <- info_panels$loco
+        if (!is.null(info_panels$haufe) && !is.null(info_panels$loco)) {
+          p_info <- info_panels$haufe + info_panels$loco + patchwork::plot_layout(ncol = 2)
+        } else if (!is.null(info_panels$haufe)) {
+          p_info <- info_panels$haufe
+        } else {
+          p_info <- info_panels$loco
+        }
       }
     }
   }

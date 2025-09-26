@@ -72,7 +72,11 @@ dkge_cluster_ts <- function(bv, labels, ids = NULL, chunker = NULL) {
 dkge_cluster_betas <- function(bv, x_mat, labels) {
   z_mat <- dkge_cluster_ts(bv, labels)
   fit <- fmrireg::fmri_ols_fit(x_mat, z_mat)
-  fit$betas
+  betas <- fit$betas %||% fit$beta
+  if (is.null(betas)) {
+    stop("fmri_ols_fit did not return betas; expected fields 'betas' or 'beta'.")
+  }
+  betas
 }
 
 #' Build a streaming loader backed by neuroim2 objects
@@ -157,8 +161,23 @@ dkge_neuro_loader <- function(design_objs, bv_list,
         if (!is.null(omega_fun)) {
           omega_fun(bv)
         } else {
-          # Use cluster sizes from ClusteredNeuroVec
-          cluster_sizes <- table(bv@cl_map[bv@cl_map > 0])
+          # Use cluster sizes from ClusteredNeuroVec (guard S4 access)
+          cluster_sizes <- tryCatch({
+            if (methods::hasSlot(bv, "cl_map")) {
+              cl_map <- methods::slot(bv, "cl_map")
+            } else {
+              stop("ClusteredNeuroVec object lacks slot 'cl_map'.", call. = FALSE)
+            }
+            tab <- table(cl_map[cl_map > 0])
+            tab[order(as.integer(names(tab)))]
+          }, error = function(e) {
+            msg <- sprintf(
+              "Unable to derive cluster weights from ClusteredNeuroVec (neuroim2 %s): %s. Provide `omega_fun` explicitly.",
+              tryCatch(as.character(utils::packageVersion("neuroim2")), error = function(...) "unknown"),
+              conditionMessage(e)
+            )
+            stop(msg, call. = FALSE)
+          })
           as.numeric(cluster_sizes)
         }
       } else {

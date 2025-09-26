@@ -314,10 +314,12 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
     cv <- dkge_cv_rank_loso(B_list, X_list, K_grid[[nm]], ranks,
                              Omega_list = Omega_list, ridge = ridge,
                              w_method = w_method, w_tau = w_tau)
+    summary_tbl <- cv$table %||% cv$summary
+    stopifnot(!is.null(summary_tbl), all(c("param", "mean", "se") %in% names(summary_tbl)))
     tmp <- data.frame(kernel = nm,
-                      rank = cv$summary$param,
-                      mean = cv$summary$score,
-                      se = cv$summary$se)
+                      rank = summary_tbl$param,
+                      mean = summary_tbl$mean,
+                      se = summary_tbl$se)
     cv_rows[[i]] <- tmp
     idx <- tmp$rank == cv$pick
     picks[[i]] <- data.frame(kernel = nm,

@@ -74,9 +74,105 @@ test_that("dkge_classify delta mode handles rank-1 targets", {
     scope = "within_subject"
   )
   class(target) <- c("dkge_target", "list")
-  cls <- dkge_classify(fit, targets = list(target), mode = "delta", n_perm = 10, seed = 5)
+  cls <- dkge_classify(fit, targets = list(target), mode = "delta", n_perm = 10,
+                       scope = "signflip", seed = 5)
   expect_s3_class(cls, "dkge_classification")
   expect_true(all(names(cls$results[[1]]$metrics) == cls$metric))
+})
+
+test_that("delta mode computes label-aware metrics", {
+  fixture <- make_classification_fit(S = 4)
+  fit <- fixture$fit
+  w <- matrix(c(1, -1, rep(0, nrow(fit$U) - 2)), nrow = 1)
+  target <- list(
+    name = "delta_target",
+    factors = character(0),
+    labels = data.frame(),
+    class_labels = c("pos", "neg"),
+    weight_matrix = rbind(w, -w),
+    indicator = NULL,
+    residualized = FALSE,
+    collapse = NULL,
+    scope = "within_subject"
+  )
+  class(target) <- c("dkge_target", "list")
+  y <- factor(rep(c("pos", "neg"), length.out = length(fit$Btil)), levels = c("pos", "neg"))
+  cls <- dkge_classify(fit,
+                       targets = list(target),
+                       mode = "delta",
+                       metric = c("accuracy", "logloss", "brier", "auroc", "ece"),
+                       y = y,
+                       scope = "signflip",
+                       n_perm = 0)
+  res <- cls$results[[1]]
+  expect_false(any(is.na(res$metrics)))
+  expect_equal(res$positive_class, "pos")
+  expect_equal(unname(res$subject_labels), y)
+  expected_ids <- fit$subject_ids %||% paste0("subject", seq_along(y))
+  expect_equal(names(res$subject_labels), expected_ids)
+})
+
+test_that("delta mode errors on mismatched labels", {
+  fixture <- make_classification_fit(S = 3)
+  fit <- fixture$fit
+  w <- matrix(c(1, -1, rep(0, nrow(fit$U) - 2)), nrow = 1)
+  target <- list(
+    name = "delta_target",
+    factors = character(0),
+    labels = data.frame(),
+    class_labels = c("pos", "neg"),
+    weight_matrix = rbind(w, -w),
+    indicator = NULL,
+    residualized = FALSE,
+    collapse = NULL,
+    scope = "within_subject"
+  )
+  class(target) <- c("dkge_target", "list")
+  y_bad <- c("pos", "neg")
+  expect_error(
+    dkge_classify(fit, targets = list(target), mode = "delta", y = y_bad),
+    "subject labels must have length"
+  )
+  y_unknown <- c("pos", "pos", "maybe")
+  expect_error(
+    dkge_classify(fit, targets = list(target), mode = "delta", y = y_unknown),
+    "unknown levels"
+  )
+})
+
+test_that("dkge_confusion aggregates per-target matrices", {
+  fixture <- make_classification_fit()
+  fit <- fixture$fit
+  cls <- dkge_classify(fit, targets = ~ A + B, n_perm = 0)
+  conf_all <- dkge_confusion(cls)
+  conf_matrix <- if (is.list(conf_all)) conf_all[[1]] else conf_all
+  expect_true(is.matrix(conf_matrix))
+  expect_equal(nrow(conf_matrix), length(cls$results[[1]]$target$class_labels))
+  conf_fold <- dkge_confusion(cls, fold = 1)
+  conf_matrix_fold <- if (is.list(conf_fold)) conf_fold[[1]] else conf_fold
+  expect_true(is.matrix(conf_matrix_fold))
+})
+
+test_that("classification diagnostics expose per-fold data frames", {
+  fixture <- make_classification_fit()
+  fit <- fixture$fit
+  cls <- dkge_classify(fit, targets = ~ A, n_perm = 0)
+  fold_counts <- as.data.frame(cls, what = "fold_counts")
+  expect_true(all(c("target", "fold", "class", "train", "test") %in% names(fold_counts)))
+  lambda_df <- as.data.frame(cls, what = "lambda")
+  expect_true(all(c("target", "fold", "lambda") %in% names(lambda_df)))
+})
+
+test_that("logit predictions renormalize underflowed rows", {
+  model <- list(
+    type = "logit",
+    classes = c("case", "control"),
+    beta = matrix(-1e6, nrow = 3, ncol = 2)
+  )
+  X <- matrix(0, nrow = 2, ncol = 2)
+  probs <- .dkge_predict_logit(model, X, class_levels = c("case", "control"))
+  expect_equal(rowSums(probs), rep(1, nrow(X)))
+  expect_true(all(probs >= 0 & probs <= 1))
 })
 
 test_that("dkge_pipeline integrates classification", {

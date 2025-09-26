@@ -44,6 +44,27 @@ test_that("ridge mapper applies regularisation", {
   expect_equal(mapping$operator, diag(2 / (1 + 1), 2), tolerance = 1e-10)
 })
 
+test_that("ridge mapper matches n-by-n solve with regularisation", {
+  set.seed(99)
+  source_feat <- matrix(rnorm(5 * 3), 5, 3)
+  target_feat <- matrix(rnorm(4 * 3), 4, 3)
+  lambda <- 0.2
+
+  spec <- dkge_mapper_spec("ridge", lambda = lambda)
+  mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)
+
+  A <- as.matrix(source_feat)
+  B <- as.matrix(target_feat)
+  G <- A %*% t(A)
+  if (lambda > 0) {
+    G <- G + diag(lambda, nrow(G))
+  }
+  rhs <- A %*% t(B)
+  legacy_coeff <- solve(G, rhs)
+
+  expect_equal(mapping$operator, legacy_coeff, tolerance = 1e-8)
+})
+
 test_that("sinkhorn mapper solves near-identity transport when supports align", {
   subj_points <- matrix(c(0, 0, 0,
                           1, 0, 0), ncol = 3, byrow = TRUE)
@@ -84,6 +105,39 @@ test_that("sinkhorn mapper honours reliability weights", {
   mapped <- apply_mapper(fit, values, normalize_by_reliab = TRUE)
   expect_true(all(is.finite(mapped)))
   expect_gt(max(mapped), min(mapped))
+})
+
+test_that("sinkhorn mapper apply vectorises over value matrices", {
+  plan_mat <- Matrix::Matrix(matrix(c(0.3, 0.1,
+                                      0.7, 0.9), nrow = 2), sparse = TRUE)
+  mapper <- list(plan = plan_mat,
+                 mu = c(0.6, 0.4),
+                 P = 2L,
+                 Q = 2L,
+                 epsilon = 0.1,
+                 max_iter = 50L,
+                 tol = 1e-6)
+  class(mapper) <- "dkge_mapper_fit_sinkhorn"
+
+  values <- matrix(c(1, 4,
+                     2, -3), nrow = 2)
+
+  vectorised <- apply_mapper(mapper, values, normalize_by_reliab = TRUE)
+
+  plan_t <- Matrix::t(plan_mat)
+  manual <- sapply(seq_len(ncol(values)), function(j) {
+    numer <- as.numeric(plan_t %*% (mapper$mu * values[, j]))
+    denom <- as.numeric(plan_t %*% mapper$mu)
+    denom_safe <- pmax(denom, 1e-12)
+    res <- numer / denom_safe
+    res[denom <= 1e-12] <- 0
+    res
+  })
+
+  expect_equal(vectorised, manual)
+
+  unnorm <- apply_mapper(mapper, values, normalize_by_reliab = FALSE)
+  expect_equal(unnorm, as.matrix(plan_t %*% values))
 })
 
 test_that("sinkhorn mapper leverages features when geometry is ambiguous", {

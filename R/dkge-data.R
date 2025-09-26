@@ -435,9 +435,10 @@ dkge <- function(betas, designs = NULL, kernel, omega = NULL, subject_ids = NULL
     data <- dkge_data(betas, designs = designs, omega = omega, subject_ids = subject_ids)
   }
 
-  K <- if (is.list(kernel) && !is.null(kernel$K)) kernel$K else kernel
+  kernel <- as_dkge_kernel(kernel)
+  K <- kernel$K
   stopifnot(is.matrix(K), nrow(K) == data$q, ncol(K) == data$q)
-  kernel_info <- if (is.list(kernel) && !is.null(kernel$info)) kernel$info else NULL
+  kernel_info <- kernel$info %||% NULL
 
   fit <- dkge_fit(data, K = K, Omega_list = omega_override,
                      cpca_blocks = cpca_blocks, cpca_T = cpca_T,

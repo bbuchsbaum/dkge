@@ -10,8 +10,13 @@
   }
 
   n <- nrow(A); m <- nrow(B)
-  An <- rowSums(A * A); Bn <- rowSums(B * B)
-  outer(An, rep(1, m)) + outer(rep(1, n), Bn) - 2 * (A %*% t(B))
+  An <- rowSums(A * A)
+  Bn <- rowSums(B * B)
+  D <- matrix(An, nrow = n, ncol = m)
+  D <- D + matrix(Bn, nrow = n, ncol = m, byrow = TRUE)
+  D <- D - 2 * tcrossprod(A, B)
+  D[D < 0] <- 0
+  D
 }
 
 .dkge_cost_matrix <- function(Aemb_s, Aemb_ref, X_s = NULL, X_ref = NULL,
@@ -24,8 +29,8 @@
   }
   C <- lambda_emb * C_emb + lambda_spa * C_spa
   if (!is.null(sizes_s) && !is.null(sizes_ref) && lambda_size > 0) {
-    la <- log(pmax(sizes_s, 1))
-    lb <- log(pmax(sizes_ref, 1))
+    la <- log(pmax(sizes_s, 1e-8))
+    lb <- log(pmax(sizes_ref, 1e-8))
     C <- C + lambda_size * outer(la, lb, function(x, y) (x - y)^2)
   }
   C
@@ -79,7 +84,13 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
          call. = FALSE)
   }
 
-  key <- paste(nrow(C), ncol(C), signif(epsilon, 8), sep = "|")
+  safe_sd <- function(x) if (length(x) > 1) stats::sd(x) else 0
+  cost_vals <- as.numeric(C)
+  cache_fingerprint <- c(mean(cost_vals), safe_sd(cost_vals),
+                         mean(mu), safe_sd(mu),
+                         mean(nu), safe_sd(nu))
+  cache_fingerprint <- paste(sprintf("%.6f", signif(cache_fingerprint, 6)), collapse = ",")
+  key <- paste(nrow(C), ncol(C), signif(epsilon, 8), cache_fingerprint, sep = "|")
   state <- .dkge_sinkhorn_cache_fetch(key)
   log_u_init <- if (!is.null(state)) state$log_u else NULL
   log_v_init <- if (!is.null(state)) state$log_v else NULL

@@ -53,3 +53,11 @@ test_that("kernel roots and alignment behave", {
   expect_equal(reconstructed, K, tolerance = 1e-6)
   expect_equal(kernel_alignment(K, K), 1, tolerance = 1e-8)
 })
+
+test_that("kernel_roots reports clamped eigenvalues", {
+  K <- diag(c(1, 1e-12, 0))
+  roots <- kernel_roots(K, jitter = NULL)
+  expect_equal(roots$n_clamped, 1L)
+  expect_equal(roots$rank, 3L)
+  expect_true(all(roots$evals >= 0))
+})

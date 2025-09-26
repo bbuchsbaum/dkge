@@ -65,6 +65,7 @@
   fold_evals <- vector("list", n_folds)
   fold_loaders <- vector("list", n_folds)
   fold_weight_info <- vector("list", n_folds)
+  recycled_subjects <- character(0)
 
   for (fold_idx in seq_len(n_folds)) {
     holdout <- assignments[[fold_idx]]
@@ -97,6 +98,9 @@
       Bts <- fit$Btil[[s]]
       w_s <- loader_weights
       if (!is.null(w_s) && length(w_s) != ncol(Bts)) {
+        if (length(w_s) > 1L) {
+          recycled_subjects <- unique(c(recycled_subjects, subject_ids[s]))
+        }
         w_s <- rep(w_s, length.out = ncol(Bts))
       }
       Bw <- if (is.null(w_s) || length(w_s) == 0L) {
@@ -179,5 +183,12 @@
     alignment = alignment,
     loader_scope = loader_scope,
     weight_spec = weight_spec
-  )
+  ) -> result
+
+  if (length(recycled_subjects)) {
+    warning(sprintf("Per-subject voxel weights recycled for: %s",
+                    paste(recycled_subjects, collapse = ", ")))
+    attr(result, "recycled_weights_subjects") <- recycled_subjects
+  }
+  result
 }

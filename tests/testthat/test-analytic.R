@@ -56,3 +56,14 @@ test_that("dkge_contrast analytic metadata records fallback usage", {
   expect_equal(res$metadata$fallback_rates[[1]], 1)
   expect_true(all(res$metadata$methods[[1]] == "fallback"))
 })
+
+test_that("analytic metadata includes diagnostic detail", {
+  toy <- make_analytic_toy(S = 4)
+  fit <- dkge_fit(toy$betas, toy$designs, K = toy$K, rank = 2)
+  contrast <- c(1, -1, 0, 0)
+
+  res <- dkge_contrast(fit, contrast, method = "analytic", tol = 1e-6, fallback = TRUE)
+  detail <- res$metadata$fallback_detail
+  expect_s3_class(detail, "data.frame")
+  expect_true(all(c("contrast", "subject", "reason") %in% names(detail)))
+})

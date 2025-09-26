@@ -17,6 +17,7 @@ vignette: >
 ```{r setup, include=FALSE}
 library(dkge)
 library(ggplot2)
+library(tidyr)
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -73,9 +74,20 @@ Each subject score matrix has dimensions clusters × components, providing a com
 
 ```{r score-plot, fig.height=4, fig.width=5, fig.alt="Line plot showing average DKGE component scores across clusters."}
 avg_scores <- Reduce("+", subject_scores) / length(subject_scores)
-matplot(avg_scores, type = "l", lwd = 2, xlab = "Cluster", ylab = "Score",
-        main = "Average component scores")
-legend("topright", legend = paste0("Component ", 1:ncol(avg_scores)), col = 1:ncol(avg_scores), lty = 1:ncol(avg_scores))
+avg_df <- as.data.frame(avg_scores)
+component_cols <- paste0("Component ", seq_len(ncol(avg_df)))
+names(avg_df) <- component_cols
+avg_df$Cluster <- seq_len(nrow(avg_df))
+avg_long <- tidyr::pivot_longer(avg_df,
+                                cols = component_cols,
+                                names_to = "Component",
+                                values_to = "Score")
+
+ggplot(avg_long, aes(x = Cluster, y = Score, colour = Component)) +
+  geom_line(linewidth = 1.1) +
+  labs(title = "Average component scores", y = "Score") +
+  scale_x_continuous(breaks = seq_len(nrow(avg_scores))) +
+  theme(legend.position = "top")
 ```
 
 ## Rotating Components

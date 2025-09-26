@@ -205,56 +205,6 @@ dkge_infer <- function(fit, contrasts,
   structure(infer_results, class = "dkge_inference")
 }
 
-#' @export
-as.data.frame.dkge_inference <- function(x, row.names = NULL, optional = FALSE, ...) {
-  contrast_names <- names(x$contrasts$contrasts)
-  if (is.null(contrast_names) || any(!nzchar(contrast_names))) {
-    contrast_names <- paste0("contrast", seq_along(x$statistics))
-  }
-
-  alpha <- x$alpha %||% NA_real_
-  method <- x$method %||% NA_character_
-  inference <- x$inference %||% NA_character_
-  correction <- x$correction %||% NA_character_
-  significant_list <- x$significant
-  if (is.null(significant_list)) {
-    significant_list <- vector("list", length(x$statistics))
-  }
-
-  rows <- lapply(seq_along(x$statistics), function(i) {
-    stats <- x$statistics[[i]]
-    comp_names <- names(stats)
-    if (is.null(comp_names) || any(!nzchar(comp_names))) {
-      comp_names <- paste0("component", seq_along(stats))
-    }
-    p_vals <- x$p_values[[i]] %||% rep(NA_real_, length(stats))
-    padj <- x$p_adjusted[[i]] %||% rep(NA_real_, length(stats))
-    sig <- significant_list[[i]]
-    if (is.null(sig)) {
-      sig <- rep(NA, length(stats))
-    }
-    data.frame(
-      contrast = contrast_names[i],
-      component = comp_names,
-      statistic = as.numeric(stats),
-      p_value = as.numeric(p_vals),
-      p_adjusted = as.numeric(padj),
-      significant = as.logical(sig),
-      alpha = alpha,
-      method = method,
-      inference = inference,
-      correction = correction,
-      stringsAsFactors = FALSE
-    )
-  })
-
-  res <- do.call(rbind, rows)
-  if (!is.null(row.names)) {
-    rownames(res) <- row.names
-  }
-  res
-}
-
 #' Sign-flip inference helper
 #' @keywords internal
 #' @noRd
@@ -419,7 +369,11 @@ print.dkge_inference <- function(x, ...) {
 #' @return Data frame with columns `contrast`, `cluster`, `statistic`, `p_value`,
 #'   `p_adjusted`, and `significant`
 #' @export
-as.data.frame.dkge_inference <- function(x, ..., stringsAsFactors = FALSE) {
+as.data.frame.dkge_inference <- function(x, row.names = NULL, optional = FALSE, ...) {
+  dots <- list(...)
+  stringsAsFactors <- dots$stringsAsFactors %||% FALSE
+  dots$stringsAsFactors <- NULL
+
   contrast_names <- names(x$statistics)
   if (is.null(contrast_names) || any(!nzchar(contrast_names))) {
     contrast_names <- names(x$contrasts$contrasts)
@@ -427,6 +381,11 @@ as.data.frame.dkge_inference <- function(x, ..., stringsAsFactors = FALSE) {
   if (is.null(contrast_names) || length(contrast_names) != length(x$statistics)) {
     contrast_names <- paste0("contrast", seq_along(x$statistics))
   }
+
+  alpha_val <- x$alpha %||% NA_real_
+  method_val <- x$method %||% NA_character_
+  inference_val <- x$inference %||% NA_character_
+  correction_val <- x$correction %||% NA_character_
 
   rows <- vector("list", length(x$statistics))
   for (i in seq_along(x$statistics)) {
@@ -438,52 +397,45 @@ as.data.frame.dkge_inference <- function(x, ..., stringsAsFactors = FALSE) {
     if (is.null(cluster_ids) || any(!nzchar(cluster_ids))) {
       cluster_ids <- paste0("cluster", seq_along(stats))
     }
-    p_vals <- x$p_values[[i]]
-    if (is.null(p_vals)) {
-      p_vals <- rep(NA_real_, length(stats))
-    }
-    padj <- x$p_adjusted[[i]]
-    if (is.null(padj)) {
-      padj <- p_vals
-    }
-    signif_vec <- x$significant[[i]]
-    if (is.null(signif_vec)) {
-      signif_vec <- rep(NA, length(stats))
-    }
+    p_vals <- x$p_values[[i]] %||% rep(NA_real_, length(stats))
+    padj <- x$p_adjusted[[i]] %||% p_vals
+    signif_vec <- x$significant[[i]] %||% rep(NA, length(stats))
 
-    rows[[i]] <- data.frame(
+    rows[[i]] <- do.call(data.frame, c(list(
       contrast = rep(contrast_names[[i]], length(stats)),
       component = cluster_ids,
       statistic = as.numeric(stats),
       p_value = as.numeric(p_vals),
       p_adjusted = as.numeric(padj),
-      significant = as.logical(signif_vec),
-      stringsAsFactors = stringsAsFactors
-    )
+      significant = as.logical(signif_vec)
+    ), dots, list(stringsAsFactors = stringsAsFactors)))
   }
 
   rows <- Filter(Negate(is.null), rows)
-  result <- if (length(rows)) do.call(rbind, rows) else NULL
-  if (is.null(result)) {
-    result <- data.frame(
+  result <- if (length(rows)) {
+    do.call(rbind, rows)
+  } else {
+    do.call(data.frame, c(list(
       contrast = character(0),
       component = character(0),
       statistic = numeric(0),
       p_value = numeric(0),
       p_adjusted = numeric(0),
-      significant = logical(0),
-      stringsAsFactors = stringsAsFactors
-    )
+      significant = logical(0)
+    ), dots, list(stringsAsFactors = stringsAsFactors)))
   }
 
-  if (!is.null(x$alpha)) {
-    result$alpha <- rep(x$alpha, nrow(result))
-  }
-  result$method <- rep(x$method, nrow(result))
-  result$inference <- rep(x$inference, nrow(result))
-  result$correction <- rep(x$correction, nrow(result))
+  result$alpha <- rep(alpha_val, nrow(result))
+  result$method <- rep(method_val, nrow(result))
+  result$inference <- rep(inference_val, nrow(result))
+  result$correction <- rep(correction_val, nrow(result))
 
-  rownames(result) <- NULL
+  if (!is.null(row.names)) {
+    rownames(result) <- row.names
+  } else {
+    rownames(result) <- NULL
+  }
+
   result
 }
 

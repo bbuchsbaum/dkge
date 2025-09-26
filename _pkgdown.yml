@@ -1,4 +1,6 @@
 url: https://bbuchsbaum.github.io/dkge/
 template:
   bootstrap: 5
-
+figures:
+  dev: grDevices::png
+  dpi: 96

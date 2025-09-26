@@ -95,6 +95,8 @@ print(cls)
 
 The classification results are returned as a structured tibble that reports balanced accuracy for each individual subject, along with cross-validated group-level summary statistics and permutation-based p-values. Given that we deliberately injected only weak signal into our simulated data, the resulting accuracies are modest but notably above chance levels.
 
+If you wish to evaluate directionality using `mode = "delta"`, provide subject-level labels through the new `y` argument (or by attaching `target$y` to individual targets). DKGE will align the supplied factor levels with each target's `class_labels` and compute label-aware metrics such as AUROC and calibration error. A complementary `mode = "cell_cross"` now supports subjectwise generalisation with optional within-fold standardisation controlled via `standardize_within_fold`.
+
 ## Inspecting loadings and confusion
 
 The classification object provides rich diagnostic information that can be accessed programmatically for further analysis:
@@ -153,6 +155,40 @@ cls_multi$summary
 ```
 
 This approach maintains the statistical integrity of the cross-validation procedure because the runs are averaged within the target weight matrix, ensuring that each LOSO fold observes only a single pattern per condition. This preserves the unbiased nature of the cross-fitted statistic and keeps the permutation-based inference valid. When working with more than two runs, simply replace the `0.5` entries with `1 / n_runs` to compute the arithmetic mean. More generally, any set of non-negative weights that sum to one is acceptable, allowing for sophisticated approaches such as reliability-weighted averages that account for differential measurement quality across runs.
+
+## Hyperdesign inputs and fold bridges
+
+Many labs organise beta estimates and design metadata using richer containers such as `multidesign::hyperdesign()`. DKGE now exposes light-weight coercion hooks that let those objects flow through existing pipelines without altering the core solvers. Any object that implements
+
+```
+as_dkge_kernel(x, ...)
+as_dkge_folds(x, fit_or_data, ...)
+```
+
+can supply design kernels and fold assignments directly to DKGE entry points. For example, if `hd` is a hyperdesign that already knows how to build kernels and cross-validation folds, the following pattern just works:
+
+```r
+library(multidesign)
+
+hd <- make_demo_hyperdesign()                     # user-defined helper
+Kobj <- as_dkge_kernel(hd, basis = "effect")      # returns list(K = ..., info = ...)
+
+fit_hd <- dkge(
+  betas = dkge_data_from_hd(hd),                  # list/array of subject betas
+  kernel = Kobj,
+  keep_inputs = TRUE
+)
+
+# fold_over() output converts transparently
+folds <- as_dkge_folds(fold_over(hd, over = "subject", k = 5, seed = 1), fit_hd)
+
+res_hd <- dkge_contrast(fit_hd,
+                        contrasts = c(1, -1, 0, 0),
+                        method = "kfold",
+                        folds = folds)
+```
+
+The default methods keep backwards compatibility by treating matrices, lists with a `$K` element, and existing `dkge_folds` objects exactly as before. Packages that manage richer design structures only need to provide S3 methods for the two coercion generics, allowing DKGE to stay agnostic about upstream data management while still benefiting from advanced fold builders such as `multidesign::fold_over()`.
 
 ## Tips for real datasets
 

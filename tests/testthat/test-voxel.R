@@ -27,3 +27,12 @@ test_that("dkge_transport_to_voxels maps values", {
   expect_equal(nrow(res$subj_values), length(fx$values))
   expect_equal(length(res$value), ncol(res$subj_values))
 })
+
+test_that("dkge_transport_to_voxels handles missing sizes weights", {
+  fx <- make_voxel_fixture()
+  expect_no_error(dkge_transport_to_voxels(fx$fit,
+                                           values = fx$values,
+                                           voxels = fx$voxels,
+                                           mapper = "ridge",
+                                           sizes = NULL))
+})

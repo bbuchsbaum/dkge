@@ -196,7 +196,10 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
   if (is.numeric(folds) && length(folds) == 1) {
     folds <- dkge_define_folds(fit, type = "subject", k = folds)
   } else if (!inherits(folds, "dkge_folds")) {
-    stop("folds must be an integer k or a dkge_folds object")
+    folds <- as_dkge_folds(folds, fit_or_data = fit)
+    if (!inherits(folds, "dkge_folds")) {
+      stop("folds must be an integer k or convertible via as_dkge_folds().")
+    }
   }
 
   S <- length(fit$Btil)

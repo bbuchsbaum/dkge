@@ -6,14 +6,19 @@
 #' @param fit dkge object.
 #' @param targets Target specification consumed by [dkge_targets()] or a list of
 #'   `dkge_target` objects.
+#' @param y Optional subject-level labels for delta-mode targets. Can be a vector
+#'   (recycled across all delta targets) or a list matching `targets`; values are
+#'   coerced to factors using each target's `class_labels`.
 #' @param method Classifier backend: "lda" (default) or "logit" (one-vs-rest
 #'   ridge logistic regression).
 #' @param folds Cross-fitting specification. `NULL` (default) performs LOSO.
 #'   Integer values request subject-level K-fold. A `dkge_folds` object is also
-#'   accepted.
+#'   accepted. Other coercible inputs are routed through [as_dkge_folds()].
 #' @param lambda Optional ridge parameter passed to the classifier backend.
 #' @param metric Evaluation metric(s); defaults to c("accuracy", "logloss").
-#' @param mode Decoding mode: "auto" (default), "cell", or "delta".
+#' @param mode Decoding mode: "auto" (default), "cell", "cell_cross", or
+#'   "delta". Cell-cross trains on held-in subjects and tests generalisation to
+#'   the held-out subject.
 #' @param residualize Forwarded to [dkge_targets()].
 #' @param collapse Forwarded to [dkge_targets()] for factor collapsing.
 #' @param restrict_factors Optional factor subset for `spec = "fullcell"`.
@@ -29,17 +34,22 @@
 #' @param blocks Optional vector identifying within-subject blocks (e.g., runs or
 #'   sessions) used to constrain permutations. Length must match the number of
 #'   subjects in `fit` when supplied.
+#' @param standardize_within_fold Logical indicating whether to z-score features
+#'   using training data inside each fold. When `NULL` (default), standardisation
+#'   is enabled automatically for `mode = "cell_cross"` and disabled otherwise.
 #' @param parallel Logical; reserved for future parallelism hooks.
 #' @param verbose Logical; print progress messages.
 #' @param seed Optional random seed applied before permutations.
 #' @export
 dkge_classify <- function(fit,
                           targets,
+                          y = NULL,
                           method = c("lda", "logit"),
                           folds = NULL,
                           lambda = NULL,
                           metric = c("accuracy", "logloss"),
-                          mode = c("auto", "cell", "delta"),
+                          mode = c("auto", "cell", "cell_cross", "delta"),
+                          standardize_within_fold = NULL,
                           residualize = TRUE,
                           collapse = NULL,
                           restrict_factors = NULL,
@@ -91,6 +101,66 @@ dkge_classify <- function(fit,
     stop("No valid targets supplied")
   }
 
+  S <- length(fit$Btil)
+  subject_ids <- fit$subject_ids %||% seq_len(S)
+
+  resolve_delta_labels <- function(target_idx, target_obj) {
+    if (!is.null(target_obj$y)) {
+      return(target_obj$y)
+    }
+    if (is.null(y)) {
+      return(NULL)
+    }
+    if (is.list(y)) {
+      if (length(y) == 0) {
+        return(NULL)
+      }
+      name_vec <- names(y)
+      if (!is.null(name_vec) && any(nzchar(name_vec))) {
+        if (target_obj$name %in% name_vec) {
+          return(y[[target_obj$name]])
+        }
+      }
+      if (target_idx <= length(y)) {
+        return(y[[target_idx]])
+      }
+      return(NULL)
+    }
+    y
+  }
+
+  resolve_standardize <- function(target_idx, target_obj, target_mode) {
+    default_val <- identical(target_mode, "cell_cross")
+    if (is.null(standardize_within_fold)) {
+      return(default_val)
+    }
+    value <- standardize_within_fold
+    if (is.list(value)) {
+      if (length(value) == 0) {
+        return(default_val)
+      }
+      name_vec <- names(value)
+      if (!is.null(name_vec) && any(nzchar(name_vec)) && target_obj$name %in% name_vec) {
+        value <- value[[target_obj$name]]
+      } else if (target_idx <= length(value)) {
+        value <- value[[target_idx]]
+      } else {
+        return(default_val)
+      }
+    } else if (length(value) > 1) {
+      if (target_idx <= length(value)) {
+        value <- value[[target_idx]]
+      } else {
+        value <- value[[length(value)]]
+      }
+    }
+    value_logical <- suppressWarnings(as.logical(value))
+    if (length(value_logical) == 0 || is.na(value_logical[[1]])) {
+      return(default_val)
+    }
+    isTRUE(value_logical[[1]])
+  }
+
   fold_bundle <- .dkge_prepare_folds(fit, folds)
   fold_info <- .dkge_build_fold_bases(fit,
                                       assignments = fold_bundle$assignments,
@@ -106,12 +176,14 @@ dkge_classify <- function(fit,
     target <- target_list[[i]]
     target_mode <- if (mode == "auto") .dkge_choose_target_mode(target) else mode
     target_scope <- scope %||% target$scope
-    if (target_mode == "cell") {
+    if (target_mode %in% c("cell", "cell_cross")) {
       if (nrow(target$weight_matrix) < 2) {
         warning(sprintf("Target '%s' has fewer than two classes; skipping.", target$name))
         next
       }
+      standardize_flag <- resolve_standardize(i, target, target_mode)
       res <- .dkge_classify_cell_target(fit, target, fold_info,
+                                        mode = target_mode,
                                         method = method,
                                         lambda = lambda,
                                         metric = metric,
@@ -121,15 +193,19 @@ dkge_classify <- function(fit,
                                         control = list(lambda_grid = lambda_grid, lambda_fun = lambda_fun),
                                         blocks = blocks,
                                         parallel = parallel,
-                                        verbose = verbose)
+                                        verbose = verbose,
+                                        standardize_within_fold = standardize_flag)
     } else if (target_mode == "delta") {
+      delta_labels <- resolve_delta_labels(i, target)
       res <- .dkge_classify_delta_target(fit, target, fold_info,
                                          lambda = lambda,
                                          metric = metric,
                                          n_perm = n_perm,
                                          scope = target_scope,
                                          control = list(lambda_fun = lambda_fun),
-                                         verbose = verbose)
+                                         verbose = verbose,
+                                         y = delta_labels,
+                                         subject_ids = subject_ids)
     } else {
       warning(sprintf("Target '%s': unsupported mode '%s'; skipping.", target$name, target_mode))
       next
@@ -222,16 +298,18 @@ dkge_classify <- function(fit,
     fold_obj <- folds
     assignments <- folds$assignments
   } else {
-    stop("folds must be NULL, an integer K, or a dkge_folds object.")
+    fold_obj <- as_dkge_folds(folds, fit_or_data = fit)
+    assignments <- fold_obj$assignments
   }
   list(assignments = assignments, folds = fold_obj)
 }
 
 .dkge_classify_cell_target <- function(fit, target, fold_info,
-                                       method, lambda, metric,
+                                       mode, method, lambda, metric,
                                        class_weights, n_perm, scope,
                                        control, blocks,
-                                       parallel, verbose) {
+                                       parallel, verbose,
+                                       standardize_within_fold) {
   S <- length(fit$Btil)
   n_classes <- nrow(target$weight_matrix)
   rank_dim <- ncol(fit$U)
@@ -239,7 +317,6 @@ dkge_classify <- function(fit,
     stop("DKGE rank is zero; cannot run classification.")
   }
 
-  # Map subjects to folds
   subject_fold <- integer(S)
   for (fold in fold_info$folds) {
     subject_fold[fold$subjects] <- fold$index
@@ -252,6 +329,15 @@ dkge_classify <- function(fit,
   control <- control %||% list()
   lambda_grid <- control$lambda_grid %||% NULL
   lambda_fun <- control$lambda_fun %||% NULL
+
+  supported_metrics <- c("accuracy", "balanced_accuracy", "logloss", "brier")
+  unsupported <- setdiff(metric, supported_metrics)
+  if (length(unsupported)) {
+    warning(sprintf("Target '%s': metric(s) %s not supported in cell mode; returning NA.",
+                    target$name, paste(unsupported, collapse = ", ")),
+            call. = FALSE)
+  }
+  metric_eval <- intersect(metric, supported_metrics)
 
   row_data <- data.frame(
     row_id = seq_len(n_rows),
@@ -282,22 +368,61 @@ dkge_classify <- function(fit,
     Z
   }
 
+  make_scaler <- function(X) {
+    mu <- colMeans(X)
+    sigma <- apply(X, 2, stats::sd)
+    sigma[!is.finite(sigma) | sigma < 1e-8] <- 1
+    list(center = mu, scale = sigma)
+  }
+
+  apply_scaler <- function(X, scaler) {
+    centered <- sweep(X, 2, scaler$center, "-")
+    sweep(centered, 2, scaler$scale, "/")
+  }
+
   run_cv <- function(labels_vec, record = FALSE, lambda_value = NULL) {
     pred_class <- if (record) rep(NA_character_, n_rows) else NULL
     prob_mat <- if (record) matrix(NA_real_, n_rows, n_classes) else NULL
-    if (record) colnames(prob_mat) <- class_labels
+    if (record && length(prob_mat)) colnames(prob_mat) <- class_labels
 
     obs_truth <- character(0)
     obs_pred <- character(0)
     obs_prob <- NULL
 
     folds <- fold_info$folds
+    fold_diag <- if (record) vector("list", length(folds)) else NULL
+
     for (fold in folds) {
+      idx <- fold$index
       holdout <- fold$subjects
       train_subjects <- setdiff(seq_len(S), holdout)
       train_rows <- which(row_data$subject_idx %in% train_subjects)
       test_rows <- which(row_data$subject_idx %in% holdout)
-      if (!length(train_rows) || !length(test_rows)) next
+
+      diag_entry <- NULL
+      if (record) {
+        diag_entry <- list(
+          fold = idx,
+          mode = mode,
+          standardized = standardize_within_fold,
+          holdout_subjects = subject_labels[holdout],
+          lambda = NA_real_,
+          class_counts_train = setNames(rep(0L, n_classes), class_labels),
+          class_counts_test = setNames(rep(0L, n_classes), class_labels),
+          confusion = NULL,
+          skipped = FALSE,
+          reason = NULL
+        )
+      }
+
+      if (!length(train_rows) || !length(test_rows)) {
+        if (record) {
+          diag_entry$skipped <- TRUE
+          diag_entry$reason <- "empty_split"
+          fold_diag[[idx]] <- diag_entry
+        }
+        next
+      }
 
       X_train <- matrix(0, length(train_rows), rank_dim)
       for (i in seq_along(train_rows)) {
@@ -308,8 +433,22 @@ dkge_classify <- function(fit,
         X_train[i, ] <- Z[c_idx, ]
       }
       y_train <- factor(labels_vec[train_rows], levels = class_labels)
+      train_counts <- table(factor(y_train, levels = class_labels))
+      if (record) {
+        diag_entry$class_counts_train <- as.integer(train_counts)
+        names(diag_entry$class_counts_train) <- class_labels
+      }
+
       available_classes <- levels(droplevels(y_train))
       if (length(available_classes) < length(class_labels)) {
+        if (record) {
+          diag_entry$skipped <- TRUE
+          diag_entry$reason <- "missing_training_classes"
+          test_counts <- table(factor(labels_vec[test_rows], levels = class_labels))
+          diag_entry$class_counts_test <- as.integer(test_counts)
+          names(diag_entry$class_counts_test) <- class_labels
+          fold_diag[[idx]] <- diag_entry
+        }
         next
       }
 
@@ -322,9 +461,24 @@ dkge_classify <- function(fit,
         X_test[i, ] <- Z[c_idx, ]
       }
       y_test <- factor(labels_vec[test_rows], levels = class_labels)
+      if (record) {
+        test_counts <- table(factor(y_test, levels = class_labels))
+        diag_entry$class_counts_test <- as.integer(test_counts)
+        names(diag_entry$class_counts_test) <- class_labels
+      }
+
+      if (standardize_within_fold) {
+        scaler <- make_scaler(X_train)
+        X_train <- apply_scaler(X_train, scaler)
+        X_test <- apply_scaler(X_test, scaler)
+      }
 
       lambda_fold <- lambda_value %||% lambda
-      lambda_fold <- .dkge_resolve_lambda(lambda_fold, lambda_fun, target$name, fold$index, method, lambda_fold)
+      lambda_fold <- .dkge_resolve_lambda(lambda_fold, lambda_fun, target$name,
+                                          fold$index, method, lambda_fold)
+      if (record) {
+        diag_entry$lambda <- lambda_fold
+      }
       classifier <- switch(method,
         lda = .dkge_fit_lda_classifier(X_train, y_train, lambda = lambda_fold, class_weights = class_weights),
         logit = .dkge_fit_logit_classifier(X_train, y_train, lambda = lambda_fold, class_weights = class_weights)
@@ -334,18 +488,25 @@ dkge_classify <- function(fit,
       if (record) {
         pred_class[test_rows] <- as.character(pred$class)
         prob_mat[test_rows, ] <- pred$prob
+        confusion_tbl <- table(factor(y_test, levels = class_labels),
+                               factor(pred$class, levels = class_labels))
+        diag_entry$confusion <- matrix(as.integer(confusion_tbl),
+                                       nrow = nrow(confusion_tbl),
+                                       dimnames = dimnames(confusion_tbl))
+        fold_diag[[idx]] <- diag_entry
       }
+
       obs_truth <- c(obs_truth, as.character(y_test))
       obs_pred <- c(obs_pred, as.character(pred$class))
-      obs_prob <- rbind(obs_prob, pred$prob)
+      obs_prob <- if (is.null(obs_prob)) pred$prob else rbind(obs_prob, pred$prob)
     }
 
-    if (!length(obs_pred)) {
-      metrics <- setNames(rep(NA_real_, length(metric)), metric)
+    if (!length(obs_pred) || !length(metric_eval)) {
+      metrics <- setNames(rep(NA_real_, length(metric_eval)), metric_eval)
     } else {
-      metrics <- setNames(numeric(length(metric)), metric)
-      for (j in seq_along(metric)) {
-        metrics[[j]] <- .dkge_compute_metric(metric[[j]], obs_truth, obs_pred,
+      metrics <- setNames(numeric(length(metric_eval)), metric_eval)
+      for (j in seq_along(metric_eval)) {
+        metrics[[j]] <- .dkge_compute_metric(metric_eval[[j]], obs_truth, obs_pred,
                                              prob = obs_prob,
                                              class_levels = class_labels,
                                              weights = NULL)
@@ -355,15 +516,19 @@ dkge_classify <- function(fit,
     if (record) {
       list(metrics = metrics,
            pred = pred_class,
-           prob = prob_mat)
+           prob = prob_mat,
+           fold_diag = fold_diag)
     } else {
       list(metrics = metrics)
     }
   }
 
   lambda_selected <- lambda
-  if (!is.null(lambda_grid)) {
+  if (!is.null(lambda_grid) && length(metric_eval)) {
     metric_primary <- metric[[1]]
+    if (!metric_primary %in% metric_eval) {
+      metric_primary <- metric_eval[[1]]
+    }
     metric_direction <- if (metric_primary %in% c("logloss", "brier")) "min" else "max"
     scores <- numeric(length(lambda_grid))
     for (idx_lambda in seq_along(lambda_grid)) {
@@ -380,7 +545,12 @@ dkge_classify <- function(fit,
   }
 
   observed <- run_cv(row_data$class_label, record = TRUE, lambda_value = lambda_selected)
-  perm_matrix <- matrix(NA_real_, n_perm, length(metric))
+  metrics_out <- setNames(rep(NA_real_, length(metric)), metric)
+  if (length(metric_eval)) {
+    metrics_out[metric_eval] <- observed$metrics
+  }
+
+  perm_matrix <- matrix(NA_real_, n_perm, length(metric), dimnames = list(NULL, metric))
   if (n_perm > 0) {
     scope_use <- scope %||% "within_subject"
     for (b in seq_len(n_perm)) {
@@ -389,39 +559,50 @@ dkge_classify <- function(fit,
                                           subjects = row_data$subject_idx,
                                           blocks = if (!is.null(blocks)) row_data$block else NULL)
       perm_res <- run_cv(perm_labels, record = FALSE, lambda_value = lambda_selected)
-      perm_matrix[b, ] <- perm_res$metrics
+      if (length(metric_eval)) {
+        perm_matrix[b, metric_eval] <- perm_res$metrics
+      }
     }
-    colnames(perm_matrix) <- metric
   }
 
-  p_values <- if (n_perm > 0) {
-    setNames(numeric(length(metric)), metric)
-  } else NULL
-  if (!is.null(p_values)) {
-    for (j in seq_along(metric)) {
-      tail_dir <- if (metric[[j]] %in% c("logloss", "brier")) "less" else "greater"
-      p_values[[j]] <- .dkge_empirical_pval(observed$metrics[[metric[[j]]]],
-                                            perm_matrix[, j],
-                                            tail = tail_dir)
+  p_values <- if (n_perm > 0) setNames(rep(NA_real_, length(metric)), metric) else NULL
+  if (!is.null(p_values) && length(metric_eval)) {
+    for (nm in metric_eval) {
+      obs_val <- metrics_out[[nm]]
+      if (is.na(obs_val)) {
+        p_values[[nm]] <- NA_real_
+      } else {
+        tail_dir <- if (nm %in% c("logloss", "brier")) "less" else "greater"
+        col_idx <- match(nm, metric)
+        p_values[[nm]] <- .dkge_empirical_pval(obs_val, perm_matrix[, col_idx], tail = tail_dir)
+      }
     }
   }
+
+  diagnostics <- list(
+    folds = observed$fold_diag,
+    standardize_within_fold = standardize_within_fold,
+    metric_eval = metric_eval
+  )
 
   list(
     target = target,
-    mode = "cell",
-    metrics = observed$metrics,
+    mode = mode,
+    metrics = metrics_out,
     permutations = perm_matrix,
     p_values = p_values,
     predictions = observed$pred,
     probabilities = observed$prob,
     row_data = row_data,
-    lambda = lambda_selected
+    lambda = lambda_selected,
+    diagnostics = diagnostics
   )
 }
 
 .dkge_classify_delta_target <- function(fit, target, fold_info,
                                         lambda, metric, n_perm,
-                                        scope, control, verbose) {
+                                        scope, control, verbose,
+                                        y = NULL, subject_ids = NULL) {
   S <- length(fit$Btil)
   n_classes <- nrow(target$weight_matrix)
   rank_dim <- ncol(fit$U)
@@ -433,12 +614,95 @@ dkge_classify <- function(fit,
     return(NULL)
   }
 
+  class_labels <- target$class_labels
+  positive_class <- class_labels[[1]]
+
+  label_vec <- y %||% target$y
+  y_factor <- NULL
+  if (!is.null(label_vec)) {
+    if (is.data.frame(label_vec)) {
+      if (ncol(label_vec) != 1) {
+        stop(sprintf("Target '%s': subject labels must be a single column.", target$name))
+      }
+      label_vec <- label_vec[[1]]
+    }
+    if (is.matrix(label_vec)) {
+      if (ncol(label_vec) != 1) {
+        stop(sprintf("Target '%s': subject labels must be a single column.", target$name))
+      }
+      label_vec <- label_vec[, 1]
+    }
+    if (is.list(label_vec) && !is.factor(label_vec)) {
+      stop(sprintf("Target '%s': subject labels must be an atomic vector or factor.", target$name))
+    }
+    if (length(label_vec) != S) {
+      stop(sprintf("Target '%s': subject labels must have length %d (got %d).",
+                   target$name, S, length(label_vec)))
+    }
+    y_factor <- factor(label_vec, levels = class_labels)
+    if (anyNA(y_factor)) {
+      bad_idx <- which(is.na(y_factor))
+      offending <- unique(label_vec[bad_idx])
+      stop(sprintf("Target '%s': subject labels contain unknown levels: %s",
+                   target$name, paste(offending, collapse = ", ")))
+    }
+  }
+  if (!is.null(subject_ids) && !is.null(y_factor)) {
+    names(y_factor) <- subject_ids
+  }
+
   control <- control %||% list()
   lambda_fun <- control$lambda_fun %||% NULL
   lambda_dir <- lambda %||% 1e-3
-  lambda_dir <- .dkge_resolve_lambda(lambda_dir, lambda_fun, target$name, fold_idx = NA_integer_, method = "delta", fallback = lambda_dir)
+  lambda_dir <- .dkge_resolve_lambda(lambda_dir, lambda_fun, target$name,
+                                     fold_idx = NA_integer_, method = "delta",
+                                     fallback = lambda_dir)
   if (is.null(lambda_dir)) lambda_dir <- 1e-3
   folds <- fold_info$folds
+
+  supported_metrics <- c("accuracy", "logloss", "brier", "auroc", "ece")
+  unsupported <- setdiff(metric, supported_metrics)
+  if (length(unsupported)) {
+    warning(sprintf("Target '%s': metric(s) %s not supported in delta mode; returning NA.",
+                    target$name, paste(unsupported, collapse = ", ")),
+            call. = FALSE)
+  }
+  metric_eval <- intersect(metric, supported_metrics)
+
+  compute_delta_metrics <- function(scores, probs, labels, metrics) {
+    out <- setNames(rep(NA_real_, length(metrics)), metrics)
+    if (!length(metrics) || is.null(labels)) {
+      return(out)
+    }
+    valid_idx <- which(!is.na(scores) & !is.na(probs) & !is.na(labels))
+    if (!length(valid_idx)) {
+      return(out)
+    }
+    scores <- scores[valid_idx]
+    probs <- probs[valid_idx]
+    labels <- labels[valid_idx]
+    truth_pos <- as.numeric(labels == positive_class)
+
+    if ("accuracy" %in% metrics) {
+      pred_pos <- as.numeric(scores >= 0)
+      out["accuracy"] <- mean(pred_pos == truth_pos)
+    }
+    if ("logloss" %in% metrics) {
+      p <- ifelse(truth_pos == 1, probs, 1 - probs)
+      p <- pmin(pmax(p, 1e-12), 1 - 1e-12)
+      out["logloss"] <- mean(-log(p))
+    }
+    if ("brier" %in% metrics) {
+      out["brier"] <- mean((probs - truth_pos)^2)
+    }
+    if ("auroc" %in% metrics) {
+      out["auroc"] <- .dkge_metric_auc_binary(probs, labels, positive_class)
+    }
+    if ("ece" %in% metrics) {
+      out["ece"] <- .dkge_metric_ece(probs, labels, positive_class)
+    }
+    out
+  }
 
   delta_cache <- lapply(folds, function(fold) {
     out <- vector("list", S)
@@ -463,11 +727,7 @@ dkge_classify <- function(fit,
       train_delta <- do.call(rbind, lapply(train_idx, function(s) signs[s] * delta_cache[[idx]][[s]]))
       if (nrow(train_delta) == 0) next
       mu <- colMeans(train_delta)
-      if (nrow(train_delta) <= 1) {
-        cov_mat <- diag(rank_dim)
-      } else {
-        cov_mat <- stats::cov(train_delta)
-      }
+      cov_mat <- if (nrow(train_delta) <= 1) diag(rank_dim) else stats::cov(train_delta)
       cov_mat <- cov_mat + lambda_dir * diag(rank_dim)
       direction <- tryCatch({
         qr.solve(cov_mat, mu)
@@ -485,66 +745,63 @@ dkge_classify <- function(fit,
   }
 
   observed <- run_delta(rep(1, S))
-
-  supported_metrics <- c("accuracy", "logloss", "brier")
-  unsupported <- setdiff(metric, supported_metrics)
-  if (length(unsupported)) {
-    warning(sprintf("Metric(s) %s not supported in delta mode; returning NA.",
-                    paste(unsupported, collapse = ", ")))
+  if (!is.null(subject_ids)) {
+    names(observed$scores) <- subject_ids
+    names(observed$probs) <- subject_ids
   }
 
   metrics_out <- setNames(rep(NA_real_, length(metric)), metric)
-  valid_idx <- which(!is.na(observed$scores))
-  if (length(valid_idx)) {
-    if ("accuracy" %in% metric) {
-      metrics_out["accuracy"] <- mean(observed$scores[valid_idx] > 0)
-    }
-    if ("logloss" %in% metric) {
-      metrics_out["logloss"] <- mean(-log(pmax(observed$probs[valid_idx], 1e-8)))
-    }
-    if ("brier" %in% metric) {
-      metrics_out["brier"] <- mean((observed$probs[valid_idx] - 1)^2)
-    }
+  if (!is.null(y_factor)) {
+    metrics_eval <- compute_delta_metrics(observed$scores, observed$probs, y_factor, metric_eval)
+    metrics_out[names(metrics_eval)] <- metrics_eval
+  } else if (length(metric_eval)) {
+    warning(sprintf("Target '%s': delta mode requires subject labels; metrics set to NA.",
+                    target$name), call. = FALSE)
   }
 
-  perm_matrix <- matrix(NA_real_, n_perm, length(metric))
+  perm_matrix <- matrix(NA_real_, n_perm, length(metric), dimnames = list(NULL, metric))
   if (n_perm > 0) {
-    scope_use <- scope %||% "signflip"
-    if (!identical(scope_use, "signflip") && verbose) {
-      message("Delta mode permutations use subject-wise sign flips regardless of scope setting.")
+    if (!is.null(scope) && !identical(scope, "signflip")) {
+      stop("Delta mode permutations support only scope = 'signflip'.")
     }
+    perm_columns <- match(metric_eval, metric)
     for (b in seq_len(n_perm)) {
       signs <- sample(c(-1, 1), S, replace = TRUE)
       perm_res <- run_delta(signs)
-      perm_scores <- setNames(rep(NA_real_, length(metric)), metric)
-      if (length(valid_idx)) {
-        if ("accuracy" %in% metric) {
-          perm_scores["accuracy"] <- mean(perm_res$scores[valid_idx] > 0)
-        }
-        if ("logloss" %in% metric) {
-          perm_scores["logloss"] <- mean(-log(pmax(perm_res$probs[valid_idx], 1e-8)))
-        }
-        if ("brier" %in% metric) {
-          perm_scores["brier"] <- mean((perm_res$probs[valid_idx] - 1)^2)
-        }
+      if (length(metric_eval) && !is.null(y_factor)) {
+        perm_metrics <- compute_delta_metrics(perm_res$scores, perm_res$probs, y_factor, metric_eval)
+        perm_matrix[b, perm_columns] <- perm_metrics
       }
-      perm_matrix[b, ] <- perm_scores
-    }
-    colnames(perm_matrix) <- metric
-  }
-
-  p_values <- if (n_perm > 0) setNames(numeric(length(metric)), metric) else NULL
-  if (!is.null(p_values)) {
-    for (j in seq_along(metric)) {
-      tail_dir <- if (metric[[j]] %in% c("logloss", "brier")) "less" else "greater"
-      p_values[[j]] <- .dkge_empirical_pval(metrics_out[[metric[[j]]]],
-                                            perm_matrix[, j],
-                                            tail = tail_dir)
     }
   }
 
-  class_labels <- target$class_labels
-  predictions <- ifelse(observed$scores > 0, class_labels[1], class_labels[2])
+  p_values <- if (n_perm > 0) setNames(rep(NA_real_, length(metric)), metric) else NULL
+  if (!is.null(p_values) && length(metric_eval) && !is.null(y_factor)) {
+    tails <- setNames(rep("greater", length(metric_eval)), metric_eval)
+    tails[c("logloss", "brier", "ece")] <- "less"
+    for (nm in metric_eval) {
+      obs_val <- metrics_out[[nm]]
+      if (is.na(obs_val)) {
+        p_values[[nm]] <- NA_real_
+      } else {
+        col_idx <- match(nm, metric)
+        p_values[[nm]] <- .dkge_empirical_pval(obs_val, perm_matrix[, col_idx], tail = tails[[nm]])
+      }
+    }
+  }
+
+  predictions <- rep(class_labels[2], S)
+  pos_idx <- !is.na(observed$scores) & observed$scores >= 0
+  predictions[pos_idx] <- positive_class
+  predictions <- factor(predictions, levels = class_labels)
+  if (!is.null(subject_ids)) {
+    names(predictions) <- subject_ids
+  }
+
+  total_signflip <- if (S <= 30) 2^S else Inf
+  rng_state <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  } else NULL
 
   list(
     target = target,
@@ -555,7 +812,14 @@ dkge_classify <- function(fit,
     subject_scores = observed$scores,
     subject_probabilities = observed$probs,
     predictions = predictions,
-    lambda = lambda_dir
+    positive_class = positive_class,
+    subject_labels = y_factor,
+    lambda = lambda_dir,
+    permutation_scope = "signflip",
+    n_perm_requested = n_perm,
+    n_perm_performed = if (n_perm > 0 && !is.null(y_factor)) n_perm else 0L,
+    total_signflip_configurations = total_signflip,
+    rng_state = rng_state
   )
 }
 
@@ -730,6 +994,14 @@ dkge_classify <- function(fit,
   colnames(probs) <- class_levels
   match_idx <- match(classes, class_levels)
   probs[, match_idx] <- probs_partial
+  probs[!is.finite(probs)] <- 0
+  row_totals <- rowSums(probs)
+  zero_rows <- which(row_totals <= .Machine$double.eps)
+  if (length(zero_rows)) {
+    probs[zero_rows, ] <- 1 / length(class_levels)
+  }
+  row_totals <- rowSums(probs)
+  probs <- sweep(probs, 1, pmax(row_totals, .Machine$double.eps), "/")
   probs
 }
 
@@ -786,28 +1058,236 @@ print.dkge_classification <- function(x, ...) {
 }
 
 #' @export
-as.data.frame.dkge_classification <- function(x, row.names = NULL, optional = FALSE, ...) {
+as.data.frame.dkge_classification <- function(x, row.names = NULL, optional = FALSE, ...,
+                                           what = c("summary", "fold_counts", "confusion", "lambda")) {
+  stopifnot(inherits(x, "dkge_classification"))
+  what <- match.arg(what)
+  target_names <- names(x$results)
+
+  get_fold_diag <- function(res) {
+    diag <- res$diagnostics$folds
+    if (is.null(diag)) list() else diag
+  }
+
+  ensure_counts <- function(counts, classes) {
+    if (is.null(counts)) {
+      setNames(rep(NA_integer_, length(classes)), classes)
+    } else {
+      setNames(as.integer(counts), classes)
+    }
+  }
+
+  if (what == "summary") {
+    rows <- list()
+    for (nm in target_names) {
+      res <- x$results[[nm]]
+      if (is.null(res)) next
+      metrics <- res$metrics
+      for (metric_nm in names(metrics)) {
+        rows[[length(rows) + 1L]] <- data.frame(
+          target = nm,
+          metric = metric_nm,
+          value = metrics[[metric_nm]],
+          p_value = if (!is.null(res$p_values)) res$p_values[[metric_nm]] else NA_real_,
+          n_perm = x$n_perm,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    if (!length(rows)) {
+      df <- data.frame(target = character(0), metric = character(0), value = numeric(0),
+                       p_value = numeric(0), n_perm = integer(0), stringsAsFactors = FALSE)
+    } else {
+      df <- do.call(rbind, rows)
+    }
+    if (!is.null(row.names)) rownames(df) <- row.names else rownames(df) <- NULL
+    return(df)
+  }
+
+  if (what == "fold_counts") {
+    rows <- list()
+    for (nm in target_names) {
+      res <- x$results[[nm]]
+      if (is.null(res)) next
+      classes <- res$target$class_labels
+      diag_list <- get_fold_diag(res)
+      if (!length(diag_list)) next
+      for (entry in diag_list) {
+        if (is.null(entry)) next
+        fold_id <- entry$fold %||% NA_integer_
+        train_counts <- ensure_counts(entry$class_counts_train, classes)
+        test_counts <- ensure_counts(entry$class_counts_test, classes)
+        rows[[length(rows) + 1L]] <- data.frame(
+          target = nm,
+          fold = fold_id,
+          class = classes,
+          train = as.integer(train_counts[classes]),
+          test = as.integer(test_counts[classes]),
+          skipped = isTRUE(entry$skipped),
+          reason = entry$reason %||% NA_character_,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    if (!length(rows)) {
+      df <- data.frame(target = character(0), fold = integer(0), class = character(0),
+                       train = integer(0), test = integer(0), skipped = logical(0),
+                       reason = character(0), stringsAsFactors = FALSE)
+    } else {
+      df <- do.call(rbind, rows)
+    }
+    if (!is.null(row.names)) rownames(df) <- row.names else rownames(df) <- NULL
+    return(df)
+  }
+
+  if (what == "confusion") {
+    rows <- list()
+    for (nm in target_names) {
+      res <- x$results[[nm]]
+      if (is.null(res)) next
+      classes <- res$target$class_labels
+      diag_list <- get_fold_diag(res)
+      if (!length(diag_list)) next
+      for (entry in diag_list) {
+        if (is.null(entry) || isTRUE(entry$skipped) || is.null(entry$confusion)) next
+        fold_id <- entry$fold %||% NA_integer_
+        mat <- entry$confusion
+        truth_levels <- rownames(mat) %||% classes
+        pred_levels <- colnames(mat) %||% classes
+        for (truth in truth_levels) {
+          counts_row <- mat[truth, , drop = TRUE]
+          counts_row <- setNames(as.integer(counts_row), pred_levels)
+          rows[[length(rows) + 1L]] <- data.frame(
+            target = nm,
+            fold = fold_id,
+            truth = truth,
+            predicted = pred_levels,
+            count = counts_row[pred_levels],
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+    }
+    if (!length(rows)) {
+      df <- data.frame(target = character(0), fold = integer(0), truth = character(0),
+                       predicted = character(0), count = integer(0), stringsAsFactors = FALSE)
+    } else {
+      df <- do.call(rbind, rows)
+    }
+    if (!is.null(row.names)) rownames(df) <- row.names else rownames(df) <- NULL
+    return(df)
+  }
+
+  # what == "lambda"
   rows <- list()
-  for (nm in names(x$results)) {
+  for (nm in target_names) {
     res <- x$results[[nm]]
     if (is.null(res)) next
-    for (metric_nm in names(res$metrics)) {
+    diag_list <- get_fold_diag(res)
+    if (!length(diag_list)) next
+    for (entry in diag_list) {
+      if (is.null(entry)) next
       rows[[length(rows) + 1L]] <- data.frame(
         target = nm,
-        metric = metric_nm,
-        value = res$metrics[[metric_nm]],
-        p_value = if (!is.null(res$p_values)) res$p_values[[metric_nm]] else NA_real_,
-        n_perm = x$n_perm,
+        fold = entry$fold %||% NA_integer_,
+        lambda = entry$lambda %||% NA_real_,
+        skipped = isTRUE(entry$skipped),
+        reason = entry$reason %||% NA_character_,
+        standardized = entry$standardized %||% NA,
         stringsAsFactors = FALSE
       )
     }
   }
   if (!length(rows)) {
-    df <- data.frame(target = character(0), metric = character(0), value = numeric(0),
-                     p_value = numeric(0), n_perm = integer(0), stringsAsFactors = FALSE)
+    df <- data.frame(target = character(0), fold = integer(0), lambda = numeric(0),
+                     skipped = logical(0), reason = character(0), standardized = logical(0),
+                     stringsAsFactors = FALSE)
   } else {
     df <- do.call(rbind, rows)
   }
   if (!is.null(row.names)) rownames(df) <- row.names else rownames(df) <- NULL
   df
+}
+
+#' Fold-wise confusion matrices for DKGE classification
+#'
+#' @param x A \code{dkge_classification} object.
+#' @param target Optional target name or index. When \code{NULL}, all targets are returned.
+#' @param fold Optional fold identifier (index or numeric label). When \code{NULL},
+#'   confusion matrices are summed across folds.
+#' @return A confusion matrix (when a single target is requested) or a named list of matrices.
+#' @export
+dkge_confusion <- function(x, target = NULL, fold = NULL) {
+  stopifnot(inherits(x, "dkge_classification"))
+  target_names <- names(x$results)
+  if (is.null(target)) {
+    target_idx <- seq_along(target_names)
+  } else if (is.numeric(target)) {
+    if (any(target < 1) || any(target > length(target_names))) {
+      stop("`target` indices out of range.")
+    }
+    target_idx <- unique(as.integer(target))
+  } else {
+    match_idx <- match(as.character(target), target_names)
+    if (any(is.na(match_idx))) {
+      stop("Unknown target specified.")
+    }
+    target_idx <- unique(match_idx)
+  }
+
+  get_fold_diag <- function(res) {
+    diag <- res$diagnostics$folds
+    if (is.null(diag)) list() else diag
+  }
+
+  select_matrices <- function(diag_list, fold) {
+    diag_list <- diag_list[!vapply(diag_list, is.null, logical(1))]
+    if (!length(diag_list)) {
+      return(list())
+    }
+    available <- Filter(function(entry) {
+      !is.null(entry) && !isTRUE(entry$skipped) && !is.null(entry$confusion)
+    }, diag_list)
+    if (is.null(fold)) {
+      return(available)
+    }
+    fold_vec <- as.vector(fold)
+    fold_ids <- vapply(diag_list, function(entry) entry$fold %||% NA_integer_, integer(1))
+    select_idx <- integer(0)
+    if (is.numeric(fold_vec)) {
+      valid_pos <- fold_vec[fold_vec >= 1 & fold_vec <= length(diag_list)]
+      select_idx <- c(select_idx, as.integer(valid_pos))
+    }
+    select_idx <- unique(c(select_idx, which(fold_ids %in% fold_vec)))
+    select_idx <- select_idx[select_idx >= 1 & select_idx <= length(diag_list)]
+    chosen <- diag_list[select_idx]
+    Filter(function(entry) {
+      !is.null(entry) && !isTRUE(entry$skipped) && !is.null(entry$confusion)
+    }, chosen)
+  }
+
+  output <- vector("list", length(target_idx))
+  names(output) <- target_names[target_idx]
+
+  for (j in seq_along(target_idx)) {
+    res <- x$results[[target_idx[j]]]
+    if (is.null(res)) {
+      output[[j]] <- NULL
+      next
+    }
+    diag_list <- get_fold_diag(res)
+    chosen <- select_matrices(diag_list, fold)
+    if (!length(chosen)) {
+      output[[j]] <- NULL
+      next
+    }
+    mats <- lapply(chosen, `[[`, "confusion")
+    agg <- Reduce(`+`, mats)
+    output[[j]] <- agg
+  }
+
+  if (length(output) == 1) {
+    return(output[[1]])
+  }
+  output
 }

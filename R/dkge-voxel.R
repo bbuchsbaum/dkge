@@ -30,10 +30,11 @@ dkge_transport_to_voxels <- function(fit,
 
   mapped <- vector("list", length(values))
   for (s in seq_along(values)) {
+    sw <- if (is.null(sizes)) NULL else sizes[[s]]
     map_fit <- fit_mapper(mapper_spec,
                           source_feat = loadings[[s]],
                           target_feat = voxels[[s]],
-                          source_weights = sizes[[s]],
+                          source_weights = sw,
                           source_xyz = fit$centroids[[s]],
                           target_xyz = coords[[s]])
     mapped[[s]] <- predict_mapper(map_fit, values[[s]])

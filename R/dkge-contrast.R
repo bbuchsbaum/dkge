@@ -280,6 +280,25 @@ print.dkge_contrasts <- function(x, ...) {
     cat(sprintf("Ridge: %g\n", x$metadata$ridge))
   }
 
+  detail <- x$metadata$fallback_detail
+  if (!is.null(detail) && nrow(detail)) {
+    fallback_rows <- detail[is.na(detail$reason) | detail$reason != "analytic", , drop = FALSE]
+    fallback_count <- nrow(fallback_rows)
+    if (fallback_count > 0) {
+      cat(sprintf("Fallback triggered for %d/%d subject-contrast pairs (see metadata$fallback_detail).\n",
+                  fallback_count, nrow(detail)))
+      top_rows <- head(fallback_rows, 5)
+      for (k in seq_len(nrow(top_rows))) {
+        row <- top_rows[k, , drop = FALSE]
+        cat(sprintf("    subject=%s, contrast=%s, reason=%s\n",
+                    row$subject, row$contrast, row$reason))
+      }
+      if (fallback_count > nrow(top_rows)) {
+        cat("    ...\n")
+      }
+    }
+  }
+
   invisible(x)
 }
 
@@ -301,7 +320,10 @@ as.matrix.dkge_contrasts <- function(x, contrast = 1, ...) {
   unique_dims <- unique(dims)
 
   if (length(unique_dims) != 1) {
-    stop("Subject cluster counts differ; transport values before stacking.")
+    msg <- "Subject cluster counts differ; use dkge_transport_contrasts_to_medoid() before stacking."
+    cond <- structure(list(message = msg, call = sys.call()),
+                     class = c("dkge_transport_needed", "error", "condition"))
+    stop(cond)
   }
 
   do.call(rbind, value_list)

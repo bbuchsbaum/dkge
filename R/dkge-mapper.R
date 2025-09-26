@@ -281,20 +281,31 @@ apply_mapper.dkge_mapper_fit_sinkhorn <- function(fitted_mapper,
     plan <- Matrix::Matrix(plan, sparse = TRUE)
   }
 
-  if (ncol(vals) > 1) {
-    out <- matrix(0, nrow = fitted_mapper$Q, ncol = ncol(vals))
-    for (j in seq_len(ncol(vals))) {
-      out[, j] <- Recall(fitted_mapper,
-                         vals[, j],
-                         reliab = reliab,
-                         normalize_by_reliab = normalize_by_reliab)
+  plan_t <- Matrix::t(plan)
+
+  if (ncol(vals) == 1) {
+    if (!normalize_by_reliab) {
+      return(as.numeric(plan_t %*% vals))
     }
+
+    r <- reliab %||% fitted_mapper$reliab %||% fitted_mapper$mu
+    r <- as.numeric(r)
+    stopifnot(length(r) == fitted_mapper$P)
+    if (any(r < 0)) {
+      stop("Reliability weights must be non-negative for Sinkhorn mapper.")
+    }
+
+    numer <- as.numeric(plan_t %*% (vals * r))
+    denom_raw <- as.numeric(plan_t %*% r)
+    denom_safe <- pmax(denom_raw, 1e-12)
+    out <- numer / denom_safe
+    out[denom_raw <= 1e-12] <- 0
     return(out)
   }
 
-  values <- vals[, 1]
   if (!normalize_by_reliab) {
-    return(as.numeric(Matrix::t(plan) %*% values))
+    res <- plan_t %*% vals
+    return(as.matrix(res))
   }
 
   r <- reliab %||% fitted_mapper$reliab %||% fitted_mapper$mu
@@ -304,14 +315,14 @@ apply_mapper.dkge_mapper_fit_sinkhorn <- function(fitted_mapper,
     stop("Reliability weights must be non-negative for Sinkhorn mapper.")
   }
 
-  numer <- Matrix::t(plan) %*% (r * values)
-  denom <- Matrix::t(plan) %*% r
-  numer <- as.numeric(numer)
-  denom <- as.numeric(denom)
-  out <- numeric(length(numer))
-  ok <- denom > 1e-12
-  out[ok] <- numer[ok] / denom[ok]
-  out
+  numer <- plan_t %*% (vals * r)
+  denom_raw <- as.numeric(plan_t %*% r)
+  denom_safe <- pmax(denom_raw, 1e-12)
+  res <- sweep(as.matrix(numer), 1, denom_safe, "/")
+  if (any(denom_raw <= 1e-12)) {
+    res[denom_raw <= 1e-12, ] <- 0
+  }
+  res
 }
 
 #' @export
@@ -413,16 +424,17 @@ fit_mapper.dkge_mapper_spec_ridge <- function(spec, source_feat, source_vals = N
 
   A <- as.matrix(source_feat)
   B <- as.matrix(target_feat)
-  n <- nrow(A)
+  r <- ncol(A)
 
-  G <- A %*% t(A)
+  M <- crossprod(A)
   if (lambda > 0) {
-    G <- G + diag(lambda, n)
+    M <- M + diag(lambda, r)
   }
-  rhs <- A %*% t(B)  # n x Q
-  coeff <- tryCatch(qr.solve(G, rhs), error = function(e) {
-    qr.solve(G + 1e-8 * diag(n), rhs)
+
+  solve_rhs <- tryCatch(solve(M, t(B)), error = function(e) {
+    solve(M + 1e-8 * diag(r), t(B))
   })
+  coeff <- A %*% solve_rhs
 
   mapping <- list(operator = coeff,
                   strategy = "ridge",

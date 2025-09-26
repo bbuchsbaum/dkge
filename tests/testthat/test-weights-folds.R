@@ -59,3 +59,23 @@ test_that("time collapse in weights integrates with fold builder", {
   expect_true(is.list(fold_info$folds[[1]]$weights))
   expect_equal(mean(fold_info$folds[[1]]$weights$w_total), 1, tolerance = 1e-12)
 })
+
+test_that("short voxel weight vectors trigger recycling warning", {
+  fit <- toy_fold_fit(nsub = 3L, Q = 6L, V = 5L)
+  fit$subject_ids <- paste0("sub", seq_along(fit$Btil))
+  folds <- fit$folds_index
+  orig_ctx <- get(".dkge_fold_weight_context", envir = asNamespace("dkge"))
+  expect_warning(
+    res <- with_mocked_bindings(
+      dkge:::.dkge_build_fold_bases(fit, folds, ridge = 1e-6, align = FALSE),
+      .dkge_fold_weight_context = function(fit, train_ids, weight_spec = NULL, ridge = 0) {
+        ctx <- orig_ctx(fit, train_ids, weight_spec, ridge)
+        ctx$weights$total <- c(1, 2)  # shorter than number of clusters
+        ctx
+      }
+    ),
+    "recycled"
+  )
+  recycled <- attr(res, "recycled_weights_subjects")
+  expect_true(length(recycled) > 0)
+})

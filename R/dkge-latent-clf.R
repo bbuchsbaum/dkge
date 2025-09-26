@@ -198,7 +198,7 @@ dkge_cv_train_latent_classifier <- function(fit, y,
       .dkge_fit_lda(Z, y, ridge = ridge)
     }
   )
-  res$model <- model
+  res$model <- if (isTRUE(res$fallback)) "lda_fallback" else model
   res
 }
 
@@ -246,7 +246,10 @@ dkge_cv_train_latent_classifier <- function(fit, y,
 .dkge_fit_ridge_logit <- function(Z, y) {
   if (!requireNamespace("glmnet", quietly = TRUE)) {
     warning("glmnet not available; falling back to LDA.")
-    return(.dkge_fit_lda(Z, y, ridge = 1e-3))
+    lda_res <- .dkge_fit_lda(Z, y, ridge = 1e-3)
+    lda_res$fallback <- TRUE
+    lda_res$fallback_reason <- "glmnet_missing"
+    return(lda_res)
   }
   cls <- levels(y)
   ybin <- as.integer(y == cls[1])
@@ -258,6 +261,7 @@ dkge_cv_train_latent_classifier <- function(fit, y,
     Sigma = NULL,
     mu_pos = NULL,
     mu_neg = NULL,
-    classes = cls
+    classes = cls,
+    fallback = FALSE
   )
 }

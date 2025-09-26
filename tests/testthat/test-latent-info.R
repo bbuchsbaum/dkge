@@ -174,3 +174,20 @@ test_that("decoder accepts a single shared beta vector", {
   expect_length(info$subj_anchor, 4)
   expect_equal(info$meta$kind, "decoder")
 })
+
+test_that("ridge logit fallback toggles classifier label", {
+  fit <- make_demo_fit()
+  y <- factor(c("case", "case", "control", "control"))
+  folds <- structure(list(k = 2, assignments = list(c(1L, 3L), c(2L, 4L))),
+                     class = "dkge_folds")
+  base_fun <- get("dkge_cv_train_latent_classifier", envir = asNamespace("dkge"))
+  clf <- with_mocked_bindings(
+    base_fun(fit, y, folds = folds, model = "ridge_logit", standardize = TRUE),
+    .package = "base",
+    requireNamespace = function(pkg, ...) {
+      if (pkg == "glmnet") return(FALSE)
+      get("requireNamespace", envir = asNamespace("base"))(pkg, ...)
+    }
+  )
+  expect_true(all(vapply(clf$models_by_fold, function(m) m$model, character(1)) == "lda_fallback"))
+})

@@ -20,11 +20,11 @@ test_that("dkge_inference_spec records arguments", {
 })
 
 test_that("dkge_classification_spec stores metadata", {
-  spec <- dkge_classification_spec(targets = ~ condition,
-                                   method = "logit",
-                                   metric = c("accuracy", "logloss"),
-                                   mode = "cell",
-                                   n_perm = 10)
+  spec <- expect_no_warning(dkge_classification_spec(targets = ~ condition,
+                                                     method = "logit",
+                                                     metric = c("accuracy", "logloss"),
+                                                     mode = "cell",
+                                                     n_perm = 10))
   expect_s3_class(spec, "dkge_classification_spec")
   expect_equal(spec$method, "logit")
   expect_true("n_perm" %in% names(spec))
