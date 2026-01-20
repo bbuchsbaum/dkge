@@ -203,3 +203,87 @@ test_that("K-orthonormality holds with energy subject weights", {
   UtKU <- t(fit$U) %*% fit$K %*% fit$U
   expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
 })
+
+# -------------------------------------------------------------------------
+# Pooled design verification tests
+# -------------------------------------------------------------------------
+
+test_that("pooled Gram with heterogeneous T_s values", {
+  withr::local_seed(2001)
+  q <- 4
+  S <- 5
+  # Different T_s for each subject (heterogeneous time points)
+  T_values <- c(15, 20, 25, 18, 22)
+
+  betas <- replicate(S, matrix(rnorm(q * 6), q, 6), simplify = FALSE)
+  designs <- lapply(T_values, function(T_s) {
+    X <- matrix(rnorm(T_s * q), T_s, q)
+    qr.Q(qr(X))
+  })
+
+  ruler <- dkge:::.dkge_compute_shared_ruler(designs)
+
+  # G_pool = sum_s X_s^T X_s
+  G_manual <- Reduce(`+`, lapply(designs, crossprod))
+  expect_equal(ruler$G_pool, G_manual, tolerance = 1e-10)
+
+  # R^T R = G_pool (Cholesky decomposition property)
+  expect_equal(t(ruler$R) %*% ruler$R, ruler$G_pool, tolerance = 1e-10)
+})
+
+test_that("pooled Gram accumulation with many subjects", {
+
+  withr::local_seed(2002)
+  q <- 5
+  S <- 10  # Many subjects to verify accumulation doesn't drift
+  T_s <- 20
+  P <- 8
+
+  betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+  designs <- replicate(S, {
+    X <- matrix(rnorm(T_s * q), T_s, q)
+    qr.Q(qr(X))
+  }, simplify = FALSE)
+
+  ruler <- dkge:::.dkge_compute_shared_ruler(designs)
+
+  # Manual accumulation of G_pool
+  G_manual <- matrix(0, q, q)
+  for (s in seq_len(S)) {
+    G_manual <- G_manual + crossprod(designs[[s]])
+  }
+
+  expect_equal(ruler$G_pool, G_manual, tolerance = 1e-10)
+  expect_equal(t(ruler$R) %*% ruler$R, ruler$G_pool, tolerance = 1e-10)
+
+  # Verify PSD property of G_pool
+  eigs <- eigen(ruler$G_pool, symmetric = TRUE)$values
+  expect_true(all(eigs > 0))
+})
+
+test_that("row standardization produces expected scaling", {
+  withr::local_seed(2003)
+  q <- 4
+  S <- 3
+  T_s <- 18
+  P <- 5
+
+  betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+  designs <- replicate(S, {
+    X <- matrix(rnorm(T_s * q), T_s, q)
+    qr.Q(qr(X))
+  }, simplify = FALSE)
+
+  ruler <- dkge:::.dkge_compute_shared_ruler(designs)
+  Btil <- dkge:::.dkge_row_standardize(betas, ruler$R)
+
+  # B_tilde_s = R^T B_s for each subject
+  for (s in seq_len(S)) {
+    expected <- t(ruler$R) %*% betas[[s]]
+    expect_equal(Btil[[s]], expected, tolerance = 1e-10)
+  }
+
+  # Verify dimensions preserved
+  expect_equal(nrow(Btil[[1]]), q)
+  expect_equal(ncol(Btil[[1]]), P)
+})
