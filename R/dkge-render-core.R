@@ -74,8 +74,8 @@ dkge_anchor_graph <- function(anchors,
     )
   })
   W <- neighborweights::adjacency(graph)
-  # Ensure symmetry in case of floating point mismatches
-  W <- (W + Matrix::t(W)) / 2
+  # Force symmetry while keeping sparsity structure intact
+  W <- Matrix::forceSymmetric(0.5 * (W + Matrix::t(W)), uplo = "U")
   D <- Matrix::Diagonal(nrow(W), x = Matrix::rowSums(W))
   L <- neighborweights::laplacian(graph)
   list(graph = graph, W = W, D = D, L = L)
@@ -103,7 +103,9 @@ dkge_anchor_to_voxel_fit <- function(anchors, vox_xyz, k = 8, sigma = NULL) {
   knn <- FNN::get.knnx(anchors, vox_xyz, k = k)
   dist2 <- knn$nn.dist^2
   if (is.null(sigma)) {
-    sigma <- sqrt(stats::median(dist2))
+    sigma_est <- sqrt(stats::median(dist2))
+    if (!is.finite(sigma_est) || sigma_est <= 0) sigma_est <- 1
+    sigma <- max(sigma_est, 1e-6)
   }
   weights <- exp(-dist2 / (2 * sigma^2))
   weights <- weights / (rowSums(weights) + 1e-12)

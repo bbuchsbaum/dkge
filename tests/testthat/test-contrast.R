@@ -202,7 +202,7 @@ test_that("as.matrix method works for dkge_contrasts", {
 test_that("as.matrix requires transport when cluster counts differ", {
   data <- create_mismatched_data()
   fit <- dkge_fit(data$betas, data$designs, K = data$K, rank = 2)
-  contrast <- dkge_contrast(fit, c(1, -1, 0), method = "loso")
+  contrast <- suppressWarnings(dkge_contrast(fit, c(1, -1, 0), method = "loso"))
 
   expect_error(as.matrix(contrast, contrast = 1), "Subject cluster counts differ")
 })
@@ -212,7 +212,7 @@ test_that("ridge mapper aligns mismatched cluster sizes", {
   fit <- dkge_fit(data$betas, data$designs, K = data$K, rank = 2)
 
   mapper_spec <- dkge_mapper_spec("ridge", lambda = 1e-2)
-  contrast <- dkge_contrast(fit, c(1, -1, 0), method = "loso")
+  contrast <- suppressWarnings(dkge_contrast(fit, c(1, -1, 0), method = "loso"))
   mapped <- dkge_transport_contrasts_to_medoid(fit, contrast,
                                                medoid = 1L,
                                                centroids = data$centroids,

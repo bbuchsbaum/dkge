@@ -12,7 +12,8 @@ dkge_write_group_map(
 )
 }
 \arguments{
-\item{group_values}{Numeric vector of medoid-cluster values (length Q).}
+\item{group_values}{Numeric vector of medoid-cluster values (length Q). When
+named, entries are matched to label IDs before fallback to positional order.}
 
 \item{medoid_labels}{A `neuroim2::BrainVolume` containing integer medoid labels.}
 

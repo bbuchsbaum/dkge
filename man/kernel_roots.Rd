@@ -15,7 +15,7 @@ dkge_kernel_roots(K, jitter = 1e-10)
 \item{jitter}{Small diagonal jitter added before inversion.}
 }
 \value{
-List with `Khalf`, `Kihalf`, eigenvalues, and eigenvectors.
+List with `Khalf`, `Kihalf`, eigenvalues, eigenvectors, and basic diagnostics.
 }
 \description{
 Robust kernel roots

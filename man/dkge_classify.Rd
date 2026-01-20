@@ -7,11 +7,13 @@
 dkge_classify(
   fit,
   targets,
+  y = NULL,
   method = c("lda", "logit"),
   folds = NULL,
   lambda = NULL,
   metric = c("accuracy", "logloss"),
-  mode = c("auto", "cell", "delta"),
+  mode = c("auto", "cell", "cell_cross", "delta"),
+  standardize_within_fold = NULL,
   residualize = TRUE,
   collapse = NULL,
   restrict_factors = NULL,
@@ -32,18 +34,28 @@ dkge_classify(
 \item{targets}{Target specification consumed by [dkge_targets()] or a list of
 `dkge_target` objects.}
 
+\item{y}{Optional subject-level labels for delta-mode targets. Can be a vector
+(recycled across all delta targets) or a list matching `targets`; values are
+coerced to factors using each target's `class_labels`.}
+
 \item{method}{Classifier backend: "lda" (default) or "logit" (one-vs-rest
 ridge logistic regression).}
 
 \item{folds}{Cross-fitting specification. `NULL` (default) performs LOSO.
 Integer values request subject-level K-fold. A `dkge_folds` object is also
-accepted.}
+accepted. Other coercible inputs are routed through [as_dkge_folds()].}
 
 \item{lambda}{Optional ridge parameter passed to the classifier backend.}
 
 \item{metric}{Evaluation metric(s); defaults to c("accuracy", "logloss").}
 
-\item{mode}{Decoding mode: "auto" (default), "cell", or "delta".}
+\item{mode}{Decoding mode: "auto" (default), "cell", "cell_cross", or
+"delta". Cell-cross trains on held-in subjects and tests generalisation to
+the held-out subject.}
+
+\item{standardize_within_fold}{Logical indicating whether to z-score features
+using training data inside each fold. When `NULL` (default), standardisation
+is enabled automatically for `mode = "cell_cross"` and disabled otherwise.}
 
 \item{residualize}{Forwarded to [dkge_targets()].}
 
@@ -77,4 +89,12 @@ subjects in `fit` when supplied.}
 }
 \description{
 Cross-validated classification on DKGE effect patterns
+}
+\details{
+Anchor-based fits produced by [dkge_anchor_fit()] do not retain the
+design-factor metadata that `dkge_targets()` expects. In that setting you must
+supply explicit weight matrices (rows = classes, columns = effects) or
+ready-made [`dkge_target`] objects—helpers such as
+[dkge_anchor_targets_from_prototypes()] and
+[dkge_anchor_targets_from_directions()] can be used to construct them.
 }

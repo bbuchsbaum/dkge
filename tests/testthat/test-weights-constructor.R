@@ -24,3 +24,20 @@ test_that("prior sugar helpers build numeric vectors", {
   expect_true(all(p2[labs == 1] == 2))
   expect_true(all(p2[labs == 2] == 0.5))
 })
+
+test_that("ROI label priors yield uniform within-ROI weights", {
+  V <- 6L
+  labels <- factor(c("roi1", "roi1", "roi2", "roi2", "roi2", "roi3"))
+  w <- dkge:::.dkge_eval_prior(labels, V)
+  expect_length(w, V)
+  expect_true(all(is.finite(w)))
+  expect_equal(mean(w), 1, tolerance = 1e-8)
+  expect_equal(length(unique(w[labels == "roi1"])), 1L)
+  expect_equal(length(unique(w[labels == "roi2"])), 1L)
+  expect_equal(length(unique(w[labels == "roi3"])), 1L)
+
+  char_labels <- as.character(labels)
+  expect_equal(w, dkge:::.dkge_eval_prior(char_labels, V))
+  int_labels <- as.integer(labels)
+  expect_equal(w, dkge:::.dkge_eval_prior(int_labels, V))
+})

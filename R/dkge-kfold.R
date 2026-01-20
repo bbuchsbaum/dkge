@@ -191,8 +191,11 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 #' @keywords internal
 #' @noRd
 .dkge_contrast_kfold <- function(fit, contrast_list, folds, ridge,
-                                parallel, verbose, align = FALSE, ...) {
+                                parallel, verbose, align = FALSE,
+                                missingness = c("none", "rescale", "mask", "shrink"),
+                                miss_args = list(), ...) {
   # Prepare folds
+  missingness <- match.arg(missingness)
   if (is.numeric(folds) && length(folds) == 1) {
     folds <- dkge_define_folds(fit, type = "subject", k = folds)
   } else if (!inherits(folds, "dkge_folds")) {
@@ -221,7 +224,9 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
     ridge = ridge,
     align = align,
     loader_scope = "heldout",
-    verbose = verbose
+    verbose = verbose,
+    missingness = missingness,
+    miss_args = miss_args
   )
 
   folds_internal <- fold_info$folds
@@ -280,6 +285,9 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
     rotations = lapply(folds_internal, `[[`, "rotation"),
     fold_alphas = fold_alphas,
     ridge = ridge,
+    missingness = missingness,
+    miss_args = miss_args,
+    pair_counts = lapply(folds_internal, `[[`, "pair_counts"),
     procrustes = if (align) list(alignment = fold_info$alignment, consensus = fold_info$consensus) else NULL
   )
 

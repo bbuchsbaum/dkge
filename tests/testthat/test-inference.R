@@ -41,7 +41,7 @@ test_that("dkge_infer errors when cluster counts differ without transport", {
   fit <- dkge_fit(data$betas, data$designs, K = data$K, rank = 2)
 
   expect_error(
-    dkge_infer(fit, c(1, -1, 0)),
+    suppressWarnings(dkge_infer(fit, c(1, -1, 0))),
     "Subject cluster counts differ",
     fixed = FALSE
   )
@@ -58,7 +58,7 @@ test_that("dkge_infer applies mapper-based transport", {
     betas = data$betas
   )
 
-  res <- dkge_infer(fit, c(1, -1, 0), transport = transport_cfg)
+  res <- suppressWarnings(dkge_infer(fit, c(1, -1, 0), transport = transport_cfg))
 
   expect_true(is.list(res$transport))
   expect_equal(ncol(res$transport[[1]]$subj_values), nrow(data$centroids[[1]]))

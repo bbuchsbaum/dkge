@@ -6,6 +6,13 @@
 #' @param fit dkge object.
 #' @param targets Target specification consumed by [dkge_targets()] or a list of
 #'   `dkge_target` objects.
+#' @details
+#' Anchor-based fits produced by [dkge_anchor_fit()] do not retain the
+#' design-factor metadata that `dkge_targets()` expects. In that setting you must
+#' supply explicit weight matrices (rows = classes, columns = effects) or
+#' ready-made [`dkge_target`] objects—helpers such as
+#' [dkge_anchor_targets_from_prototypes()] and
+#' [dkge_anchor_targets_from_directions()] can be used to construct them.
 #' @param y Optional subject-level labels for delta-mode targets. Can be a vector
 #'   (recycled across all delta targets) or a list matching `targets`; values are
 #'   coerced to factors using each target's `class_labels`.
@@ -248,6 +255,12 @@ dkge_classify <- function(fit,
   } else if (is.matrix(targets)) {
     target_list <- list(.dkge_wrap_direct_target(targets))
   } else {
+    if (is.null(fit$kernel_info) || is.null(fit$kernel_info$map)) {
+      stop(
+        "Target specifications that rely on design formulas require `fit$kernel_info$map`. ",
+        "For anchor-based fits, supply a weight matrix (rows = classes, columns = effects) ",
+        "or explicit `dkge_target` objects (see `dkge_anchor_targets_from_prototypes()`).")
+    }
     target_list <- dkge_targets(fit, targets,
                                 residualize = residualize,
                                 collapse = collapse,
@@ -926,9 +939,10 @@ dkge_classify <- function(fit,
   penalty <- diag(c(0, rep(1, r - 1)), nrow = r)
 
   for (j in seq_len(k)) {
-    y_bin <- as.numeric(y == classes[[j]])
+    y_indicator <- y == classes[[j]]
+    y_bin <- as.numeric(y_indicator)
     beta <- rep(0, r)
-    if (!any(y_bin) || all(y_bin == 1)) {
+    if (!any(y_indicator) || all(y_indicator)) {
       next
     }
     for (iter in seq_len(max_iter)) {

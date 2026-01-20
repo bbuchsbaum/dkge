@@ -274,6 +274,18 @@ dkge_bootstrap_analytic <- function(fit,
   scheme <- match.arg(scheme)
   if (!is.null(seed)) set.seed(seed)
 
+  solver_type <- fit$solver
+  if (is.null(solver_type)) solver_type <- "pooled"
+  if (!identical(solver_type, "pooled")) {
+    warning("Analytic bootstrap requires solver = 'pooled'; falling back to q-space bootstrap.",
+            call. = FALSE)
+    return(dkge_bootstrap_qspace(fit, contrasts, B = B, scheme = scheme, ridge = ridge,
+                                 align = align, allow_reflection = allow_reflection,
+                                 seed = seed, transport_cache = transport_cache,
+                                 mapper = mapper, centroids = centroids, sizes = sizes,
+                                 medoid = medoid, voxel_operator = voxel_operator, ...))
+  }
+
   if (is.null(fit$eig_vectors_full) || is.null(fit$eig_values_full)) {
     warning("Full eigendecomposition not stored on fit; falling back to q-space bootstrap.",
             call. = FALSE)
@@ -456,4 +468,3 @@ dkge_bootstrap_analytic <- function(fit,
   V_ortho <- qr.Q(qr(V_new))
   fit$Kihalf %*% V_ortho
 }
-

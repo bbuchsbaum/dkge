@@ -310,7 +310,21 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
   }
 
   ids <- .normalize_subject_ids(subjects, provided = subject_ids)
-  effects_ref <- subjects[[1]]$effects
+  effects_list <- lapply(subjects, `[[`, "effects")
+  reference_effects <- as.character(effects_list[[1]])
+  identical_effects <- all(vapply(effects_list, function(e) identical(as.character(e), reference_effects), logical(1)))
+
+  provenance <- NULL
+  if (!identical_effects) {
+    aligned <- .dkge_align_subjects_to_union(subjects)
+    subjects <- aligned$subjects
+    provenance <- aligned$provenance
+    reference_effects <- provenance$effect_ids
+  } else {
+    provenance <- .dkge_full_coverage_provenance(subjects)
+  }
+
+  effects_ref <- as.character(reference_effects)
   for (i in seq_along(subjects)) {
     subj <- subjects[[i]]
     design_effects <- colnames(subj$design)
@@ -343,7 +357,8 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
     effects = effects_ref,
     q = length(effects_ref),
     n_subjects = length(subjects),
-    cluster_ids = lapply(subjects, `[[`, "cluster_ids")
+    cluster_ids = lapply(subjects, `[[`, "cluster_ids"),
+    provenance = provenance
   ), class = "dkge_data")
 }
 

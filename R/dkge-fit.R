@@ -183,6 +183,7 @@
       Bw %*% Omega %*% t(Bw)
     }
     S_s <- Khalf %*% right %*% Khalf
+    S_s <- (S_s + t(S_s)) / 2
     contribs[[s]] <- S_s
     Chat <- Chat + weights[s] * S_s
   }
@@ -232,6 +233,15 @@
 #'   by `w_method`, or a [`dkge_weights()`] specification controlling additional
 #'   voxel/anchor-level weighting. When supplied, it must inherit from
 #'   `dkge_weights` and is resolved via [dkge_weights()].
+#' @param solver Solver used for the q-space problem. `"pooled"` keeps the
+#'   original eigen-decomposition; `"jd"` performs joint diagonalisation using
+#'   [dkge_jd_control()] settings.
+#' @param jd_control Control parameters for the JD solver.
+#' @param jd_mask Optional mask (matrix or list of matrices) applied to the
+#'   off-diagonal penalty during JD. When supplied as a single matrix it is
+#'   recycled across subjects.
+#' @param jd_init Optional orthogonal initialiser for the JD solver expressed in
+#'   the whitened K^{1/2} metric (qxq matrix).
 #' @return A fitted `dkge` object. When the \pkg{multivarious} package is installed
 #'   the return value additionally inherits from `multiblock_biprojector`, making
 #'   it compatible with the multivarious multiblock interface.
@@ -246,9 +256,14 @@ dkge_fit <- function(data, designs = NULL, K = NULL, Omega_list = NULL,
                      cpca_T = NULL,
                      cpca_part = c("none", "design", "resid", "both"),
                      cpca_ridge = 0,
-                     weights = NULL) {
+                     weights = NULL,
+                     solver = c("pooled", "jd"),
+                     jd_control = dkge_jd_control(),
+                     jd_mask = NULL,
+                     jd_init = NULL) {
   w_method <- match.arg(w_method)
   cpca_part <- match.arg(cpca_part)
+  solver <- match.arg(solver)
 
   prepped <- .dkge_fit_prepare(data,
                                designs = designs,
@@ -268,7 +283,11 @@ dkge_fit <- function(data, designs = NULL, K = NULL, Omega_list = NULL,
                             cpca_blocks = cpca_blocks,
                             cpca_T = cpca_T,
                             cpca_ridge = cpca_ridge,
-                            ridge = ridge)
+                            ridge = ridge,
+                            solver = solver,
+                            jd_control = jd_control,
+                            jd_mask = jd_mask,
+                            jd_init = jd_init)
 
   .dkge_fit_assemble(prepped,
                      accum,

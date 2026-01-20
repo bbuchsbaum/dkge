@@ -1,6 +1,4 @@
 # test-dkge-kfold.R
-context("dkge_kfold: folds, equivalence to LOSO at k=S, permutation equivariance")
-
 library(testthat)
 
 # ------------------------- shared local helpers -------------------------

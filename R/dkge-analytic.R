@@ -62,6 +62,19 @@ dkge_analytic_loso <- function(fit, s, c, tol = 1e-6, fallback = TRUE, ridge = 0
   r <- ncol(fit$U)
   stopifnot(length(c) == q)
 
+  solver_type <- fit$solver
+  if (is.null(solver_type)) solver_type <- "pooled"
+  if (!identical(solver_type, "pooled")) {
+    diag_info <- list(reason = "solver_not_pooled",
+                      min_eigengap = NA_real_,
+                      max_abs_coeff = NA_real_,
+                      threshold_eigengap = NA_real_,
+                      threshold_coeff = NA_real_)
+    return(.dkge_analytic_fallback(fit, s, c, ridge,
+                                   reason = "solver_not_pooled",
+                                   diagnostic = diag_info))
+  }
+
   if (!is.null(fit$voxel_weights)) {
     uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
     if (!uniform) {

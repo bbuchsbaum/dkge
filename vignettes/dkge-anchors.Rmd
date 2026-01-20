@@ -1,0 +1,160 @@
+---
+title: "Feature-Anchored DKGE"
+author: "dkge team"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Feature-Anchored DKGE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+This vignette describes how to run DKGE when each subject is observed on a different set of stimuli but every item carries a feature vector in a shared space (e.g., a 100-dimensional embedding). The feature-anchored workflow replaces discrete-cell completion with a common anchor basis derived directly from the feature space.
+
+We will:
+
+1. build an anchor descriptor from subject-specific features and item kernels,
+2. fit DKGE through the shared `dkge_input` interface, and
+3. evaluate cross-fitted contrasts that operate in the anchor basis.
+
+```{r libraries}
+library(dkge)
+library(Matrix)
+set.seed(1)
+```
+
+## Simulated feature-aligned data
+
+In this example we simulate three subjects. Each subject has their own set of item features sampled around four latent prototypes. We generate subject-specific beta maps by projecting the item responses through SVD loadings and adding gaussian noise.
+
+```{r simulate-data}
+# Number of latent anchors and feature dimension
+d <- 20L
+anchors_true <- matrix(rnorm(4 * d), 4, d)
+
+make_subject <- function(n_items, n_vox, seed) {
+  set.seed(seed)
+  # Each subject observes item features around the latent anchors
+  centers <- anchors_true[sample.int(nrow(anchors_true)), , drop = FALSE]
+  features <- centers + matrix(rnorm(n_items * d, sd = 0.4), n_items, d)
+
+  # Build an item similarity kernel (e.g., RSA over betas)
+  latent <- matrix(rnorm(n_items * 3), n_items, 3)
+  beta_loadings <- matrix(rnorm(3 * n_vox), 3, n_vox)
+  betas <- latent %*% beta_loadings + matrix(rnorm(n_items * n_vox, sd = 0.2), n_items, n_vox)
+  item_kernel <- betas %*% t(betas)
+
+  list(features = features,
+       item_kernel = item_kernel)
+}
+
+subjects <- list(
+  s1 = make_subject(30, 120, seed = 11),
+  s2 = make_subject(45, 120, seed = 12),
+  s3 = make_subject(35, 120, seed = 13)
+)
+
+features_list <- lapply(subjects, `[[`, "features")
+K_item_list  <- lapply(subjects, `[[`, "item_kernel")
+```
+
+## Build an anchor descriptor
+
+We choose 16 anchors via the default d-kpp selector. The descriptor records both the anchor configuration and the DKGE options to be used after congruence.
+
+```{r build-descriptor}
+anchor_input <- dkge_input_anchor(
+  features_list = features_list,
+  K_item_list = K_item_list,
+  anchors = list(L = 16, method = "dkpp", seed = 99L),
+  dkge_args = list(w_method = "none")
+)
+```
+
+## Fit DKGE through the shared interface
+
+`dkge_fit_from_input()` converts the descriptor into aligned anchor kernels and calls the standard fitter. The resulting object is a regular `dkge` fit containing the anchor provenance.
+
+```{r fit-anchor}
+fit_anchor <- dkge_fit_from_input(anchor_input)
+fit_anchor
+fit_anchor$provenance$anchors$coverage
+```
+
+## Cross-fitted contrasts in the anchor basis
+
+Contrasts are vectors over the anchor index. For illustration we consider the first latent axis and compute LOSO contrasts.
+
+```{r contrasts-anchor}
+contrast_vec <- rep(0, fit_anchor$provenance$anchors$L)
+contrast_vec[1] <- 1
+
+res_contrast <- dkge_contrast(fit_anchor,
+                               contrasts = list(anchor1 = contrast_vec),
+                               method = "loso")
+res_contrast$values$anchor1
+```
+
+## Using the pipeline helper
+
+The same workflow integrates with `dkge_pipeline()` by supplying the descriptor via the new `input` argument. All downstream services (contrasts, classification, inference, transport) operate exactly as with design-level inputs.
+
+```{r pipeline}
+pipeline_res <- dkge_pipeline(input = anchor_input,
+                               contrasts = list(anchor1 = contrast_vec),
+                               method = "analytic",
+                               inference = NULL)
+summary(pipeline_res$contrasts)
+```
+
+## Classification targets
+
+Anchor-based fits do not store the design-factor mapping that
+`dkge_targets()` relies on. When you want to classify anchor effects you must
+provide explicit weight matrices (rows = classes, columns = anchors) or
+pre-built `dkge_target` objects. The helpers
+`dkge_anchor_targets_from_prototypes()` and
+`dkge_anchor_targets_from_directions()` turn feature-space prototypes or
+directions into the required matrices.
+
+```{r anchor-targets}
+anchors_mat <- fit_anchor$provenance$anchors$anchors
+proto_list <- list(
+  classA = anchors_mat[c(1, 2), , drop = FALSE],
+  classB = anchors_mat[c(3, 4), , drop = FALSE]
+)
+target_matrix <- dkge_anchor_targets_from_prototypes(anchors_mat, proto_list)
+target_matrix
+
+# Ready for classification
+cls <- dkge_classify(fit_anchor,
+                     targets = target_matrix,
+                     method = "lda",
+                     folds = 2)
+cls$summary
+```
+
+## Diagnostics and provenance
+
+Anchor coverage, leverage, and bandwidth settings are stored under `fit$provenance$anchors`. These diagnostics are useful for checking whether the median heuristic and chosen number of anchors provide adequate coverage across subjects.
+
+```{r diagnostics}
+dkge_anchor_diagnostics(fit_anchor)
+```
+
+## Summary
+
+The feature-anchored path allows DKGE to align subjects with disjoint item sets without imputing missing cells. By sampling a fold-safe set of anchors, whitening the anchor basis, and delegating back to the core DKGE routines, the approach keeps the computational core untouched while offering a modular front-end suitable for modern embedding-based experiments.
+
+### Special cases: shared and mixed item sets
+
+- **All subjects share the same items.** The anchor pipeline reduces to a re-basing of the common item kernel because every subject projects onto identical feature rows. You can keep the anchor path for consistency (the whitening step simply orthonormalises the shared basis) or, if preferred, fall back to `dkge_fit_from_kernels()` with the shared item kernel—both produce comparable PSD inputs for the core fitter.
+- **Subgroups with identical items.** When subsets of participants see the same stimulus sequence, they automatically receive identical anchor projections because `dkge_build_anchor_kernels()` selects anchors once per fold from the pooled training subjects. Coverage and leverage diagnostics in `fit$provenance$anchors` reveal these overlaps; large leverage spikes indicate anchors dominated by a subgroup and may motivate a smaller `L` or tighter bandwidth.

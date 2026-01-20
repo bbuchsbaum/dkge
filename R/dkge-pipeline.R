@@ -8,7 +8,11 @@
 #'
 #' @param fit Optional pre-computed `dkge` object. If `NULL`, provide `betas`,
 #'   `designs`, and `kernel` to fit inside the pipeline.
-#' @param betas,designs,kernel Inputs passed to [dkge()] when `fit` is `NULL`.
+#' @param input Optional DKGE input descriptor created with
+#'   [dkge_input_anchor()] or future helpers. When supplied (and `fit` is
+#'   `NULL`), `dkge_pipeline()` will build the fit via [dkge_fit_from_input()].
+#' @param betas,designs,kernel Inputs passed to [dkge()] when neither `fit` nor
+#'   `input` is supplied.
 #' @param omega Optional spatial weights forwarded to [dkge()].
 #' @param contrasts Contrast specification as accepted by [dkge_contrast()].
 #' @param transport Either a transport specification/service or `NULL`.
@@ -22,6 +26,7 @@
 #'   maps (if requested), and inference results.
 #' @export
 dkge_pipeline <- function(fit = NULL,
+                          input = NULL,
                           betas = NULL, designs = NULL, kernel = NULL, omega = NULL,
                           contrasts,
                           transport = NULL,
@@ -44,10 +49,17 @@ dkge_pipeline <- function(fit = NULL,
   }
 
   if (is.null(fit)) {
-    stopifnot(!is.null(betas), !is.null(designs), !is.null(kernel))
-    fit_args <- c(list(betas, designs = designs, kernel = kernel, omega = omega),
-                  extra_args)
-    fit <- do.call(dkge, fit_args)
+    if (!is.null(input)) {
+      if (!inherits(input, "dkge_input")) {
+        stop("`input` must be constructed with dkge_input_* helpers.", call. = FALSE)
+      }
+      fit <- do.call(dkge_fit_from_input, c(list(input = input), extra_args))
+    } else {
+      stopifnot(!is.null(betas), !is.null(designs), !is.null(kernel))
+      fit_args <- c(list(betas, designs = designs, kernel = kernel, omega = omega),
+                    extra_args)
+      fit <- do.call(dkge, fit_args)
+    }
   }
   stopifnot(inherits(fit, "dkge"))
 

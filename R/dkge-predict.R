@@ -32,15 +32,23 @@ dkge_freeze <- function(fit) {
   if (is.null(effects)) {
     return(B)
   }
-  stopifnot(nrow(B) == length(effects))
   if (!is.null(rownames(B))) {
     idx <- match(effects, rownames(B))
-    if (anyNA(idx)) {
-      stop("Row names of new betas must include all training effects.")
+    observed <- !is.na(idx)
+    aligned <- matrix(0, length(effects), ncol(B),
+                      dimnames = list(effects, colnames(B)))
+    if (any(observed)) {
+      aligned[observed, ] <- B[idx[observed], , drop = FALSE]
     }
-    B <- B[idx, , drop = FALSE]
+    attr(aligned, "coverage_rows") <- observed
+    return(aligned)
   }
-  B
+  if (nrow(B) == length(effects)) {
+    dimnames(B) <- list(effects, colnames(B))
+    attr(B, "coverage_rows") <- rep(TRUE, length(effects))
+    return(B)
+  }
+  stop("Row names required to align prediction betas with partial overlap.", call. = FALSE)
 }
 
 #' Predict DKGE loadings for new subjects (out-of-sample)
@@ -54,6 +62,9 @@ dkge_predict_loadings <- function(object, B_list) {
   mats <- lapply(B_list, .dkge_coerce_beta)
   lapply(mats, function(Bs) {
     Bs <- .dkge_align_effects(Bs, comps$effects)
+    if (!is.null(attr(Bs, "coverage_rows"))) {
+      attr(Bs, "coverage_rows") <- NULL
+    }
     Btil <- t(comps$R) %*% Bs
     project_cpp <- get0("dkge_project_loadings_cpp", mode = "function")
     if (is.function(project_cpp)) {
@@ -76,6 +87,16 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
   comps <- .dkge_components(object)
   mats <- lapply(B_list, .dkge_coerce_beta)
   mats <- lapply(mats, .dkge_align_effects, effects = comps$effects)
+  coverage_rows <- vector("list", length(mats))
+  for (i in seq_along(mats)) {
+    cov <- attr(mats[[i]], "coverage_rows")
+    if (is.null(cov)) {
+      coverage_rows[[i]] <- rep(TRUE, length(comps$effects))
+    } else {
+      coverage_rows[[i]] <- cov
+      attr(mats[[i]], "coverage_rows") <- NULL
+    }
+  }
   if (is.matrix(contrasts)) {
     Cmat <- contrasts; cn <- colnames(Cmat); if (is.null(cn)) cn <- paste0("c", seq_len(ncol(Cmat)))
     contrasts <- setNames(lapply(seq_len(ncol(Cmat)), function(j) Cmat[, j]), cn)
@@ -125,6 +146,7 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
   names(vals) <- subj_names
   out <- list(values = vals)
   if (return_loadings) out$A_list <- A_list
+  out$coverage_rows <- setNames(coverage_rows, subj_names)
   out
 }
 

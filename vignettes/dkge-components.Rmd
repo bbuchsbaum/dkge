@@ -50,9 +50,25 @@ designs <- replicate(S, {
   qr.Q(qr(X))
 }, simplify = FALSE)
 subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
- bundle <- dkge_data(subjects)
+bundle <- dkge_data(subjects)
 fit <- dkge(bundle, kernel = diag(q), rank = 3)
 ```
+
+By default `dkge()` pools the whitened subject covariances and diagonalises the result.  
+To enforce a joint diagonalisation across subjects—often yielding more stable components—
+set `solver = "jd"` (and optionally pass `jd_control = dkge_jd_control(...)` to tweak the
+optimiser):
+
+```{r fit-jd, eval=FALSE}
+fit_jd <- dkge(bundle,
+               kernel = diag(q),
+               rank = 3,
+               solver = "jd",
+               jd_control = dkge_jd_control(maxit = 200, tol = 1e-8))
+```
+
+Both solvers return the same object structure (`fit$U`, `fit$Chat`, projections, etc.), so the
+subsequent workflow in this vignette applies unchanged regardless of the solver choice.
 
 ## Inspect Loadings and Scores
 

@@ -29,6 +29,7 @@
   Omega_list <- dataset$omega
   subject_ids <- dataset$subject_ids
   effects <- dataset$effects
+  provenance <- dataset$provenance %||% NULL
   q <- dataset$q
   S <- dataset$n_subjects
 
@@ -68,6 +69,7 @@
     weight_eval = weight_eval,
     subject_ids = subject_ids,
     effects = effects,
+    provenance = provenance,
     rank = rank,
     rank_requested = rank_requested,
     q = q,
@@ -124,12 +126,21 @@
                             cpca_blocks,
                             cpca_T,
                             cpca_ridge,
-                            ridge) {
+                            ridge,
+                            solver = "pooled",
+                            jd_control,
+                            jd_mask,
+                            jd_init) {
+  solver <- match.arg(solver, c("pooled", "jd"))
   q <- prepped$q
   K <- prepped$K
   Chat <- accum$Chat
+  contribs <- accum$contribs
+  weights <- accum$subject_weights
 
   cpca_info <- NULL
+  contribs_design <- NULL
+  contribs_resid <- NULL
   if (cpca_part != "none") {
     if (!is.null(cpca_T)) {
       T_mat <- as.matrix(cpca_T)
@@ -162,18 +173,128 @@
     }
     if (cpca_part == "design") {
       Chat <- cpca_info$Chat_design
+      contribs_design <- lapply(contribs, function(S) {
+        M <- cpca_info$P_hat %*% S %*% cpca_info$P_hat
+        (M + t(M)) / 2
+      })
     } else if (cpca_part == "resid") {
       Chat <- cpca_info$Chat_resid
+      Iq <- diag(1, q)
+      P_resid <- Iq - cpca_info$P_hat
+      contribs_resid <- lapply(contribs, function(S) {
+        M <- P_resid %*% S %*% P_resid
+        (M + t(M)) / 2
+      })
     } else if (cpca_part == "both") {
       Chat <- cpca_info$Chat_design
+      Iq <- diag(1, q)
+      P_resid <- Iq - cpca_info$P_hat
+      contribs_design <- lapply(contribs, function(S) {
+        M <- cpca_info$P_hat %*% S %*% cpca_info$P_hat
+        (M + t(M)) / 2
+      })
+      contribs_resid <- lapply(contribs, function(S) {
+        M <- P_resid %*% S %*% P_resid
+        (M + t(M)) / 2
+      })
     }
   }
 
   if (ridge > 0) Chat <- Chat + ridge * diag(q)
+  Chat <- (Chat + t(Chat)) / 2
 
-  eigChat <- eigen((Chat + t(Chat)) / 2, symmetric = TRUE)
-  eig_vectors_full <- eigChat$vectors
-  eig_values_full <- eigChat$values
+  if (solver == "pooled") {
+    eigChat <- eigen(Chat, symmetric = TRUE)
+    eig_vectors_full <- eigChat$vectors
+    eig_values_full <- eigChat$values
+
+    eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
+    eig_values <- eig_values_full[seq_len(rank)]
+    pos_idx <- eig_values > 1e-12
+    if (!all(pos_idx)) {
+      eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
+      eig_values <- eig_values[pos_idx]
+      rank <- length(eig_values)
+    }
+
+    sdev <- sqrt(pmax(eig_values, 0))
+    U_hat <- eig_vectors
+    U <- prepped$kernels$Kihalf %*% U_hat
+
+    if (!is.null(cpca_info)) {
+      if (cpca_part %in% c("design", "both")) {
+        cpca_info$U_design <- U
+        cpca_info$evals_design <- eigChat$values
+      }
+      if (cpca_part == "resid") {
+        cpca_info$U_resid <- U
+        cpca_info$evals_resid <- eigChat$values
+      } else if (cpca_part == "both") {
+        eg_resid <- eigen(cpca_info$Chat_resid, symmetric = TRUE)
+        cpca_info$evals_resid <- eg_resid$values
+        cpca_info$U_resid <- prepped$kernels$Kihalf %*%
+          eg_resid$vectors[, seq_len(rank), drop = FALSE]
+      }
+    }
+
+    return(list(
+      Chat = Chat,
+      eig = eigChat,
+      eig_vectors_full = eig_vectors_full,
+      eig_values_full = eig_values_full,
+      U_hat = U_hat,
+      U = U,
+      sdev = sdev,
+      rank = rank,
+      cpca_info = cpca_info,
+      solver = solver,
+      jd = NULL
+    ))
+  }
+
+  # JD branch --------------------------------------------------------------
+
+  A_list_solver <- switch(
+    cpca_part,
+    design = contribs_design,
+    resid = contribs_resid,
+    both = contribs_design,
+    contribs
+  )
+  if (is.null(A_list_solver)) A_list_solver <- contribs
+
+  mask_list <- NULL
+  if (is.null(jd_mask)) {
+    mask_list <- replicate(length(A_list_solver), NULL, simplify = FALSE)
+  } else if (is.matrix(jd_mask)) {
+    mask_list <- replicate(length(A_list_solver), jd_mask, simplify = FALSE)
+  } else if (is.list(jd_mask)) {
+    if (length(jd_mask) != length(A_list_solver)) {
+      stop("jd_mask list must match the number of subject contributions.")
+    }
+    mask_list <- jd_mask
+  } else {
+    stop("jd_mask must be NULL, a matrix, or a list of matrices.")
+  }
+
+  Q_init <- NULL
+  if (!is.null(jd_init)) {
+    stopifnot(is.matrix(jd_init), nrow(jd_init) == q, ncol(jd_init) == q)
+    Q_init <- .dkge_jd_retract(jd_init)
+  }
+
+  jd_res <- dkge_jd_solve(
+    A_list = A_list_solver,
+    weights = weights,
+    rank = rank,
+    Q_init = Q_init,
+    mask_list = mask_list,
+    Chat = Chat,
+    control = jd_control
+  )
+
+  eig_vectors_full <- jd_res$Q
+  eig_values_full <- jd_res$diag_vals
 
   eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
   eig_values <- eig_values_full[seq_len(rank)]
@@ -191,30 +312,47 @@
   if (!is.null(cpca_info)) {
     if (cpca_part %in% c("design", "both")) {
       cpca_info$U_design <- U
-      cpca_info$evals_design <- eigChat$values
+      cpca_info$evals_design <- eig_values_full
+      cpca_info$jd_design <- jd_res
     }
     if (cpca_part == "resid") {
       cpca_info$U_resid <- U
-      cpca_info$evals_resid <- eigChat$values
+      cpca_info$evals_resid <- eig_values_full
+      cpca_info$jd_resid <- jd_res
     } else if (cpca_part == "both") {
-      eg_resid <- eigen((cpca_info$Chat_resid + t(cpca_info$Chat_resid)) / 2,
-                        symmetric = TRUE)
-      cpca_info$evals_resid <- eg_resid$values
-      cpca_info$U_resid <- prepped$kernels$Kihalf %*%
-        eg_resid$vectors[, seq_len(rank), drop = FALSE]
+      if (!is.null(contribs_resid)) {
+        jd_resid <- dkge_jd_solve(
+          A_list = contribs_resid,
+          weights = weights,
+          rank = rank,
+          Q_init = NULL,
+          mask_list = mask_list,
+          Chat = cpca_info$Chat_resid,
+          control = jd_control
+        )
+        cpca_info$evals_resid <- jd_resid$diag_vals
+        cpca_info$U_resid <- prepped$kernels$Kihalf %*%
+          jd_resid$Q[, seq_len(rank), drop = FALSE]
+        cpca_info$jd_resid <- jd_resid
+      } else {
+        cpca_info$evals_resid <- eig_values_full
+        cpca_info$U_resid <- U
+      }
     }
   }
 
   list(
     Chat = Chat,
-    eig = eigChat,
+    eig = list(values = eig_values_full, vectors = eig_vectors_full),
     eig_vectors_full = eig_vectors_full,
     eig_values_full = eig_values_full,
     U_hat = U_hat,
     U = U,
     sdev = sdev,
     rank = rank,
-    cpca_info = cpca_info
+    cpca_info = cpca_info,
+    solver = solver,
+    jd = jd_res
   )
 }
 
@@ -323,6 +461,7 @@
     Omega = Omega_list,
     subject_ids = prepped$subject_ids,
     effects = prepped$effects,
+    provenance = prepped$provenance,
     kernel_info = prepped$kernel_info,
     block_indices = block_indices,
     X_concat = X_store,
@@ -331,6 +470,8 @@
     eig_values_full = solved$eig_values_full,
     rank = rank,
     cpca = solved$cpca_info,
+    solver = solved$solver,
+    jd = solved$jd,
     weight_spec = prepped$weight_spec,
     voxel_weights = accum$voxel_weights,
     voxel_weights_subject = accum$voxel_weights_subject,

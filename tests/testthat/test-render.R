@@ -128,6 +128,15 @@ test_that("anchor-to-voxel decoder preserves aligned values", {
   expect_equal(vox_values, anchor_values, tolerance = 1e-10)
 })
 
+test_that("anchor-to-voxel fit guards tiny sigma estimates", {
+  anchors <- rbind(c(0, 0, 0), c(1, 0, 0))
+  vox_xyz <- anchors[c(1, 1, 2, 2), , drop = FALSE]  # repeated voxels -> zero median distance
+  decoder <- dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 2, sigma = NULL)
+  expect_true(decoder$params$sigma >= 1e-6)
+  expect_true(all(is.finite(decoder$weights)))
+  expect_equal(rowSums(decoder$weights), rep(1, nrow(vox_xyz)), tolerance = 1e-6)
+})
+
 test_that("sinkhorn renderer uses latent features and reports diagnostics", {
   fit_stub <- structure(list(Btil = list(matrix(0, 2, 1), matrix(0, 2, 1)),
                              weights = c(1, 1)),

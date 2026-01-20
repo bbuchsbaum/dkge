@@ -18,7 +18,7 @@ dkge_weights(
 }
 \arguments{
 \item{prior}{Optional prior weights: numeric vector of length V, logical mask,
-integer indices, or ROI labels (factor/integer) per voxel. Helpers
+integer indices, or ROI labels (factor/character/integer of length V) per voxel. Helpers
 [dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.}
 
 \item{adapt}{Adaptive weighting rule, one of `"none"`, `"kenergy"`,

@@ -4,7 +4,7 @@
 \alias{as.data.frame.dkge_inference}
 \title{Convert DKGE inference results to a tidy data frame}
 \usage{
-\method{as.data.frame}{dkge_inference}(x, ..., stringsAsFactors = FALSE)
+\method{as.data.frame}{dkge_inference}(x, row.names = NULL, optional = FALSE, ...)
 }
 \arguments{
 \item{x}{A `dkge_inference` object}

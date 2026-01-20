@@ -100,6 +100,7 @@ dkge_fit_streamed <- function(loader, K, rank = 6, ridge = 0, w_method = "mfa_si
       right <- Btil %*% Ωs %*% t(Btil)
     }
     S_s <- Khalf %*% right %*% Khalf
+    S_s <- (S_s + t(S_s)) / 2
 
     if (is.null(cache_dir)) {
       contribs[[s]] <- S_s

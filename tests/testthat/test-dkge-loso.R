@@ -1,6 +1,4 @@
 # test-dkge-loso.R
-context("dkge_loso_contrast: mathematical correctness, ridge behavior, permutation equivariance")
-
 library(testthat)
 
 # ------------------------- local helpers -------------------------

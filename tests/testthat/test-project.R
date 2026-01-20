@@ -62,7 +62,7 @@ test_that("preprocess recreates training blocks", {
                                   context_fixture$betas,
                                   fit_fixture$Omega,
                                   fit_fixture$weights)
-  expect_equal(X_new, fit_fixture$X_concat, tolerance = 1e-10, check.attributes = FALSE)
+  expect_equal(X_new, fit_fixture$X_concat, tolerance = 1e-10, ignore_attr = TRUE)
 })
 
 test_that("project blocks reproduces training scores", {
@@ -70,7 +70,7 @@ test_that("project blocks reproduces training scores", {
                                 context_fixture$betas,
                                 fit_fixture$Omega,
                                 fit_fixture$weights)
-  expect_equal(scores, fit_fixture$s, tolerance = 1e-10, check.attributes = FALSE)
+  expect_equal(scores, fit_fixture$s, tolerance = 1e-10, ignore_attr = TRUE)
 })
 
 test_that("cluster projection matches training loadings", {
@@ -83,7 +83,7 @@ test_that("cluster projection matches training loadings", {
                                    omega = omega_j,
                                    w = fit_fixture$weights[s])
   expect_equal(proj, fit_fixture$v[fit_fixture$block_indices[[s]][j], ],
-               tolerance = 1e-8, check.attributes = FALSE)
+               tolerance = 1e-8, ignore_attr = TRUE)
     }
   }
 })
@@ -91,14 +91,14 @@ test_that("cluster projection matches training loadings", {
 test_that("predict loadings reproduce training loadings", {
   preds <- dkge_predict_loadings(fit_fixture, context_fixture$betas)
   expected <- lapply(fit_fixture$Btil, function(Bts) t(Bts) %*% fit_fixture$K %*% fit_fixture$U)
-  expect_equal(preds, expected, tolerance = 1e-10, check.attributes = FALSE)
+  expect_equal(preds, expected, tolerance = 1e-10, ignore_attr = TRUE)
 })
 
 test_that("predict respects effect reordering", {
   shuffled <- lapply(context_fixture$betas, function(mat) mat[rev(seq_len(nrow(mat))), , drop = FALSE])
   preds_shuffled <- dkge_predict_loadings(fit_fixture, shuffled)
   preds <- dkge_predict_loadings(fit_fixture, context_fixture$betas)
-  expect_equal(preds_shuffled, preds, tolerance = 1e-10, check.attributes = FALSE)
+  expect_equal(preds_shuffled, preds, tolerance = 1e-10, ignore_attr = TRUE)
 })
 
 test_that("dkge_predict preserves subject identifiers", {
@@ -111,6 +111,23 @@ test_that("dkge_predict preserves subject identifiers", {
   res <- dkge_predict(fit_fixture, subjects, list(c1 = contrast))
   expect_equal(names(res$values), paste0("sub", seq_along(subjects)))
   expect_equal(names(res$A_list), paste0("sub", seq_along(subjects)))
+})
+
+test_that("dkge_predict zero-fills missing effects and reports coverage", {
+  partial_beta <- context_fixture$betas[[1]][-1, , drop = FALSE]
+  partial_design <- context_fixture$designs[[1]][, -1, drop = FALSE]
+  subj <- dkge_subject(partial_beta, design = partial_design, id = "partial")
+  contrast <- setNames(rep(0, length(context_fixture$effects)), context_fixture$effects)
+  contrast[1] <- 1
+  res <- dkge_predict(fit_fixture,
+                      B_list = list(subj),
+                      contrasts = list(main = contrast),
+                      return_loadings = FALSE)
+  expect_equal(names(res$coverage_rows), "partial")
+  cov_vec <- res$coverage_rows[["partial"]]
+  expect_false(cov_vec[1])
+  expect_true(all(cov_vec[-1]))
+  expect_equal(length(cov_vec), length(context_fixture$effects))
 })
 
 

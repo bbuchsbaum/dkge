@@ -157,7 +157,10 @@ dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
     ctil <- ctil * sqrt(as.numeric(omega))
   }
   x <- sqrt(max(as.numeric(w), 0)) * (fit$Khalf %*% ctil)
-  as.numeric(multivarious::project_vars(fit, x))
+  U_hat <- fit$Khalf %*% fit$U
+  inv_sdev <- if (length(fit$sdev)) ifelse(fit$sdev > 0, 1 / fit$sdev, 0) else numeric(0)
+  U_scaled <- if (length(inv_sdev)) sweep(U_hat, 2, inv_sdev, `*`) else U_hat
+  as.numeric(t(x) %*% U_scaled)
 }
 
 #' Project multiple cluster/voxel vectors
@@ -178,5 +181,8 @@ dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1) {
     ctil <- ctil * rep(sqrt(as.numeric(omega_vec)), each = nrow(ctil))
   }
   x <- sqrt(max(as.numeric(w), 0)) * (fit$Khalf %*% ctil)
-  t(multivarious::project_vars(fit, x))
+  U_hat <- fit$Khalf %*% fit$U
+  inv_sdev <- if (length(fit$sdev)) ifelse(fit$sdev > 0, 1 / fit$sdev, 0) else numeric(0)
+  U_scaled <- if (length(inv_sdev)) sweep(U_hat, 2, inv_sdev, `*`) else U_hat
+  t(x) %*% U_scaled
 }

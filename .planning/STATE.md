@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 1 of 6 (Data + Kernel Foundation)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-19 - Roadmap created
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 01-01-PLAN.md (data validation tests)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 8%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 4 min
+- Total execution time: 0.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-data-kernel-foundation | 1 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: N/A
+- Last 5 plans: 01-01 (4min)
+- Trend: N/A (first plan)
 
 *Updated after each plan completion*
 
@@ -45,6 +45,10 @@ Recent decisions affecting current work:
 - [Init]: Focus on core R/ only - `future/` is experimental, not exported
 - [Init]: R CMD check as success gate - standard R package quality bar
 - [Init]: Mathematical accuracy priority - publication requires trusted results
+- [01-01]: NA/Inf values in beta matrices are accepted (not rejected) - documented behavior
+- [01-01]: Effect order follows first subject's design column order
+- [01-01]: Zero-cluster subjects accepted without error
+- [01-01]: Duplicate effect names accepted - may need future hardening
 
 ### Pending Todos
 
@@ -54,9 +58,10 @@ None yet.
 
 - Current R CMD check status unknown - needs baseline run
 - GitHub-only dependencies may complicate CRAN submission
+- Pre-existing deprecation warning from multivarious::prep() - affects test output but not functionality
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Roadmap and state files created
+Last session: 2026-01-20
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None

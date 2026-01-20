@@ -36,10 +36,10 @@ test_that("dkge_pipeline uses mapper transport for mismatched clusters", {
     betas = data$betas
   )
 
-  res <- dkge_pipeline(fit = fit,
+  res <- suppressWarnings(dkge_pipeline(fit = fit,
                        contrasts = c(1, -1, 0),
                        transport = transport_cfg,
-                       inference = list(B = 100))
+                       inference = list(B = 100)))
 
   expect_false(is.null(res$transport))
   expect_equal(ncol(res$transport[[1]]$subj_values), nrow(data$centroids[[1]]))

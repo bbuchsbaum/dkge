@@ -68,8 +68,15 @@ test_that("short voxel weight vectors trigger recycling warning", {
   expect_warning(
     res <- with_mocked_bindings(
       dkge:::.dkge_build_fold_bases(fit, folds, ridge = 1e-6, align = FALSE),
-      .dkge_fold_weight_context = function(fit, train_ids, weight_spec = NULL, ridge = 0) {
-        ctx <- orig_ctx(fit, train_ids, weight_spec, ridge)
+      .dkge_fold_weight_context = function(fit,
+                                           train_ids,
+                                           weight_spec = NULL,
+                                           ridge = 0,
+                                           missingness = c("none", "rescale", "mask", "shrink"),
+                                           miss_args = list()) {
+        miss <- match.arg(missingness)
+        ctx <- orig_ctx(fit, train_ids, weight_spec, ridge,
+                         missingness = miss, miss_args = miss_args)
         ctx$weights$total <- c(1, 2)  # shorter than number of clusters
         ctx
       }

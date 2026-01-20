@@ -35,10 +35,13 @@
                                    align = TRUE,
                                    loader_scope = c("heldout", "all"),
                                    verbose = FALSE,
-                                   weights = NULL) {
+                                   weights = NULL,
+                                   missingness = c("none", "rescale", "mask", "shrink"),
+                                   miss_args = list()) {
   stopifnot(inherits(fit, "dkge"))
   stopifnot(is.list(assignments), length(assignments) >= 1)
   loader_scope <- match.arg(loader_scope)
+  missingness <- match.arg(missingness)
 
   S <- length(fit$Btil)
   q <- nrow(fit$U)
@@ -65,6 +68,7 @@
   fold_evals <- vector("list", n_folds)
   fold_loaders <- vector("list", n_folds)
   fold_weight_info <- vector("list", n_folds)
+  fold_pair_counts <- vector("list", n_folds)
   recycled_subjects <- character(0)
 
   for (fold_idx in seq_len(n_folds)) {
@@ -77,7 +81,12 @@
                       paste(subject_ids[holdout], collapse = ", ")))
     }
 
-    ctx <- .dkge_fold_weight_context(fit, train_ids, weight_spec, ridge = ridge)
+    ctx <- .dkge_fold_weight_context(fit,
+                                     train_ids,
+                                     weight_spec,
+                                     ridge = ridge,
+                                     missingness = missingness,
+                                     miss_args = miss_args)
     Chat_minus <- ctx$Chat
     weight_eval <- ctx$weights
 
@@ -137,6 +146,7 @@
       w_total_subject = weight_eval$total_subject,
       weight_spec = weight_spec
     )
+    fold_pair_counts[fold_idx] <- list(ctx$pair_counts)
   }
 
   aligned_bases <- fold_bases
@@ -171,7 +181,10 @@
       loaders = fold_loaders[[fold_idx]],
       weights = fold_weight_info[[fold_idx]],
       U_minus = fold_bases[[fold_idx]],
-      D_minus = fold_evals[[fold_idx]]
+      D_minus = fold_evals[[fold_idx]],
+      pair_counts = fold_pair_counts[[fold_idx]],
+      missingness = missingness,
+      miss_args = miss_args
     )
   }
 
@@ -182,7 +195,9 @@
     consensus = consensus,
     alignment = alignment,
     loader_scope = loader_scope,
-    weight_spec = weight_spec
+    weight_spec = weight_spec,
+    missingness = missingness,
+    miss_args = miss_args
   ) -> result
 
   if (length(recycled_subjects)) {

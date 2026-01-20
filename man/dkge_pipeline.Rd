@@ -6,6 +6,7 @@
 \usage{
 dkge_pipeline(
   fit = NULL,
+  input = NULL,
   betas = NULL,
   designs = NULL,
   kernel = NULL,
@@ -23,7 +24,12 @@ dkge_pipeline(
 \item{fit}{Optional pre-computed `dkge` object. If `NULL`, provide `betas`,
 `designs`, and `kernel` to fit inside the pipeline.}
 
-\item{betas, designs, kernel}{Inputs passed to [dkge()] when `fit` is `NULL`.}
+\item{input}{Optional DKGE input descriptor created with
+[dkge_input_anchor()] or future helpers. When supplied (and `fit` is
+`NULL`), `dkge_pipeline()` will build the fit via [dkge_fit_from_input()].}
+
+\item{betas, designs, kernel}{Inputs passed to [dkge()] when neither `fit` nor
+`input` is supplied.}
 
 \item{omega}{Optional spatial weights forwarded to [dkge()].}
 

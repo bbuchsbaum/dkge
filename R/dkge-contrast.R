@@ -96,6 +96,9 @@ dkge_contrast <- function(fit, contrasts,
   if (is.null(result$metadata)) {
     result$metadata <- list()
   }
+  if (is.null(result$metadata$provenance) && !is.null(fit$provenance)) {
+    result$metadata$provenance <- fit$provenance
+  }
   if (length(result$values) > 0) {
     first_values <- result$values[[1]]
     subject_ids <- names(first_values)
