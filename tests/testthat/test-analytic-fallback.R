@@ -146,3 +146,82 @@ test_that("Analytic LOSO does NOT fall back when voxel_weights are uniform", {
 
   expect_equal(result$method, "analytic")
 })
+
+# ---------- Test 4: Fallback when eig_vectors_full is NULL ----------
+test_that("Analytic LOSO falls back when eig_vectors_full is NULL", {
+  skip_on_cran()
+  fit <- .make_fit(seed = 104, q = 8, r = 3, S = 8, P = 10)
+  fit$eig_vectors_full <- NULL
+
+  cvec <- rnorm(nrow(fit$U))
+  result <- dkge_analytic_loso(fit, s = 1, c = cvec)
+
+  expect_equal(result$method, "fallback")
+  expect_equal(result$diagnostic$reason, "missing_full_decomposition")
+})
+
+# ---------- Test 5: Fallback when eig_values_full is NULL ----------
+test_that("Analytic LOSO falls back when eig_values_full is NULL", {
+  skip_on_cran()
+  fit <- .make_fit(seed = 105, q = 8, r = 3, S = 8, P = 10)
+  fit$eig_values_full <- NULL
+
+  cvec <- rnorm(nrow(fit$U))
+  result <- dkge_analytic_loso(fit, s = 1, c = cvec)
+
+  expect_equal(result$method, "fallback")
+  expect_equal(result$diagnostic$reason, "missing_full_decomposition")
+})
+
+# ---------- Test 6: Fallback when perturbation magnitude is large ----------
+test_that("Analytic LOSO falls back when perturbation magnitude is large", {
+  skip_on_cran()
+
+  # This test triggers the perturbation_magnitude fallback condition.
+  # The fallback triggers when: |coeffs[-j]| = |w_s * H[-j, j] / gaps[-j]| > 0.1
+  # where H = V^T S_s V is the coupling matrix of subject contribution S_s.
+  #
+  # Strategy:
+  # 1. Create a fit object with well-separated eigenvalues
+  # 2. Manipulate stored eigenvalues to have very small gaps (but > eigengap tol)
+  # 3. Construct subject 1 contribution S_s that has large off-diagonal coupling
+  #    with respect to the Chat eigenvectors
+
+  fit <- .make_fit(seed = 206, q = 6, r = 3, S = 4, P = 8)
+
+  # Step 1: Get the V_full basis and create nearly-degenerate eigenvalues
+  V_full <- fit$eig_vectors_full
+  q <- nrow(V_full)
+
+  # Create eigenvalues with tiny gaps (above eigengap tol but small)
+  # Gap must be > 1e-6 (default eigengap tol) but small enough that w_s * H / gap > 0.1
+  # Gap = 0.001, H = 1, w_s = 0.5 => coeff = 0.5 * 1 / 0.001 = 500 >> 0.1
+  new_lambda <- c(100.0, 99.999, 99.998, 10, 5, 1)  # Top 3 very close
+  fit$eig_values_full <- new_lambda
+  fit$evals <- new_lambda
+
+  # Step 2: Construct subject 1 contribution with large off-diagonal coupling
+  # S_s = w w^T where w mixes eigenvectors v_1 and v_2
+  w_vec <- V_full[, 1] + 2 * V_full[, 2]  # Linear combo of v_1 and v_2
+  S_new <- w_vec %*% t(w_vec)
+  S_new <- (S_new + t(S_new)) / 2  # Symmetrize
+
+  fit$contribs[[1]] <- S_new
+  fit$weights[1] <- 0.5  # Moderate weight
+
+  # Verify setup: check that H has large off-diagonal
+  H <- t(V_full) %*% S_new %*% V_full
+  # H[1, 2] should be ~ 2 (from the mix of v_1 + 2*v_2)
+  expect_gt(abs(H[1, 2]), 1.5)
+
+  cvec <- rnorm(nrow(fit$U))
+  result <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+
+  # Should fall back due to perturbation magnitude (coeff >> 0.1)
+  expect_equal(result$method, "fallback")
+  expect_equal(result$diagnostic$reason, "perturbation_magnitude")
+
+  # Verify fallback produces valid result (same as direct LOSO)
+  exact <- dkge_loso_contrast(fit, s = 1, c = cvec)
+  expect_lt(max(abs(result$v - exact$v)), 1e-12)
+})
