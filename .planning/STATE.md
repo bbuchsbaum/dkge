@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 5 of 6 (Transport + Inference)
-Plan: 2 of 2 in current phase
-Status: Phase 5 complete
-Last activity: 2026-01-20 - Completed 05-02-PLAN.md
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 05-01-PLAN.md (re-executed with updated tests)
 
 Progress: [████████░░] 83%
 
@@ -34,8 +34,8 @@ Progress: [████████░░] 83%
 | 05-transport-inference | 2 | 11min | 5.5min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (4min), 04-01 (6min), 04-02 (5min), 05-01 (5min), 05-02 (6min)
-- Trend: Stable at ~5-6min per plan for testing phases
+- Last 5 plans: 03-02 (4min), 04-01 (6min), 04-02 (5min), 05-01 (7min re-executed)
+- Trend: Stable at ~5-7min per plan for testing phases
 
 *Updated after each plan completion*
 
@@ -71,7 +71,9 @@ Recent decisions affecting current work:
 - [04-02]: Use nominal kernels for multi-rank recovery (better conditioned than ordinal)
 - [04-02]: CV threshold 10% for recovery stability, 15-25% for multi-rank
 - [05-01]: Sinkhorn tolerance 1e-6 for marginal convergence tests
-- [05-01]: Non-convergence returns best-effort result without error (documented behavior)
+- [05-01]: R/CPP equivalence at 1e-7 tolerance (accounts for floating-point accumulation)
+- [05-01]: Non-convergence returns best-effort result without warning (documented actual behavior)
+- [05-01]: Near-diagonal threshold: >0.8-0.9 diagonal mass for similar embeddings
 - [05-02]: Test FWER control instead of per-cluster uniformity for max-T procedure
 
 ### Pending Todos
@@ -87,5 +89,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Phase 5 complete
+Stopped at: Completed 05-01-PLAN.md (re-executed with updated tests)
 Resume file: None
