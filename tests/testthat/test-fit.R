@@ -87,3 +87,119 @@ test_that("dkge_fit detects dimension mismatches", {
   bad_designs[[1]] <- bad_designs[[1]][, -1]
   expect_error(dkge_fit(fixture$betas, bad_designs, K = fixture$K, rank = 2))
 })
+
+# -------------------------------------------------------------------------
+# K-orthonormality property tests
+# -------------------------------------------------------------------------
+
+test_that("K-orthonormality holds with identity kernel", {
+  withr::local_seed(1001)
+  fixture <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 3,
+                  w_method = "none")
+
+  # U^T K U = I_r (identity kernel K=I so this is simply orthonormality)
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds with RBF (ordinal) kernel", {
+  withr::local_seed(1002)
+  q <- 5
+  # Construct an RBF kernel for ordinal data
+  dists <- as.matrix(dist(1:q))
+  sigma <- 1.5
+  K <- exp(-dists^2 / (2 * sigma^2))
+  K <- (K + t(K)) / 2  # ensure symmetric
+
+  fixture <- make_fit_fixture(S = 4, q = q, P = 6, T = 25)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = K, rank = 3,
+                  w_method = "none")
+
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds with multi-factor kernel", {
+  withr::local_seed(1003)
+  q <- 6
+  # Multi-factor kernel: block diagonal with 2 factors
+  K <- matrix(0, q, q)
+  K[1:3, 1:3] <- 1
+  K[4:6, 4:6] <- 1
+  diag(K) <- 1
+  K <- K + 0.1 * diag(q)  # ensure PSD
+
+  fixture <- make_fit_fixture(S = 3, q = q, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = K, rank = 4,
+                  w_method = "none")
+
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds for rank=1 edge case", {
+  withr::local_seed(1004)
+  fixture <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 1,
+                  w_method = "none")
+
+  expect_equal(fit$rank, 1)
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds for full rank (rank=q)", {
+  withr::local_seed(1005)
+  q <- 4
+  fixture <- make_fit_fixture(S = 3, q = q, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = q,
+                  w_method = "none")
+
+  # May be less than q if some eigenvalues are near zero
+  expect_lte(fit$rank, q)
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds for near-full rank (rank=q-1)", {
+  withr::local_seed(1006)
+  q <- 5
+  fixture <- make_fit_fixture(S = 3, q = q, P = 6, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = q - 1,
+                  w_method = "none")
+
+  expect_lte(fit$rank, q - 1)
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds with ridge > 0", {
+  withr::local_seed(1007)
+  fixture <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 3,
+                  ridge = 0.5, w_method = "none")
+
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds with MFA subject weights", {
+  withr::local_seed(1008)
+  fixture <- make_fit_fixture(S = 4, q = 4, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 3,
+                  w_method = "mfa_sigma1", w_tau = 0.3)
+
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
+
+test_that("K-orthonormality holds with energy subject weights", {
+  withr::local_seed(1009)
+  fixture <- make_fit_fixture(S = 4, q = 4, P = 5, T = 20)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 3,
+                  w_method = "energy", w_tau = 0.5)
+
+  UtKU <- t(fit$U) %*% fit$K %*% fit$U
+  expect_lt(max(abs(UtKU - diag(fit$rank))), 1e-8)
+})
