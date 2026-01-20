@@ -10,28 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 2 of 6 (Fit Layer Correctness)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-19 - Phase 1 verified and complete
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 02-01-PLAN.md (K-orthonormality + pooled design tests)
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 4 min
-- Total execution time: 0.13 hours
+- Total plans completed: 3
+- Average duration: 3.3 min
+- Total execution time: 0.17 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-data-kernel-foundation | 2 | 8min | 4min |
+| 02-fit-layer-correctness | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 01-02 (4min)
-- Trend: Stable
+- Last 5 plans: 01-01 (4min), 01-02 (4min), 02-01 (2min)
+- Trend: Accelerating
 
 *Updated after each plan completion*
 
@@ -51,6 +52,8 @@ Recent decisions affecting current work:
 - [01-01]: Duplicate effect names accepted - may need future hardening
 - [01-02]: Circular kernels use l=0.5 in PSD tests (short length-scale ensures PSD)
 - [01-02]: Use pmin instead of min for vectorized circular distance computation (bug fix)
+- [02-01]: K-orthonormality tolerance: 1e-8 (consistent with Phase 1)
+- [02-01]: Gram matrix verification tolerance: 1e-10 (tighter for exact linear algebra)
 
 ### Pending Todos
 
@@ -64,6 +67,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Phase 1 complete, Phase 2 ready to plan
+Last session: 2026-01-20
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
