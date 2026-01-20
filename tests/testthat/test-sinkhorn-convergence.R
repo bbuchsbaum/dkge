@@ -367,3 +367,185 @@ test_that("Zero or negative weights produce error", {
   mu_neg <- c(0.6, -0.1, 0.5)
   expect_error(dkge:::.dkge_sinkhorn_plan(C, mu_neg, nu, epsilon = 0.1))
 })
+
+# =============================================================================
+# Test 6: Convergence failure detection and behavior
+# =============================================================================
+
+test_that("Non-convergence returns valid best-effort result without error", {
+  set.seed(42)
+  n <- 8
+  m <- 8
+
+  # Create a difficult problem: high dynamic range cost, very small epsilon
+  # This combination often causes slow convergence
+  C <- matrix(runif(n * m, 0, 100), n, m)
+  mu <- rep(1 / n, n)
+  nu <- rep(1 / m, m)
+
+  # Use very few iterations with tight tolerance - guaranteed non-convergence
+  plan <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.001, max_iter = 3, tol = 1e-12)
+
+  # The function should NOT error - it returns best-effort result
+  expect_true(is.matrix(plan))
+  expect_equal(dim(plan), c(n, m))
+
+  # Result should still be a valid transport plan (non-negative)
+  expect_true(all(plan >= 0))
+
+  # Mass should be approximately preserved even without full convergence
+  # (may have looser tolerance)
+  expect_equal(sum(plan), 1, tolerance = 0.5)
+
+  # Document behavior: current implementation returns last plan WITHOUT warning
+  # This is accepted behavior per RESEARCH.md findings
+})
+
+test_that("Tighter tolerance achieves closer marginal match", {
+  set.seed(42)
+  n <- 5
+  m <- 5
+  C <- matrix(runif(n * m, 0, 5), n, m)
+  mu <- rep(1 / n, n)
+  nu <- rep(1 / n, n)
+
+  # Run with looser tolerance (1e-4)
+  plan_loose <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 500, tol = 1e-4)
+  err_loose_row <- max(abs(rowSums(plan_loose) - mu))
+  err_loose_col <- max(abs(colSums(plan_loose) - nu))
+
+  # Run with tighter tolerance (1e-8)
+  plan_tight <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 500, tol = 1e-8)
+  err_tight_row <- max(abs(rowSums(plan_tight) - mu))
+  err_tight_col <- max(abs(colSums(plan_tight) - nu))
+
+  # Tighter tolerance should achieve smaller marginal errors
+  expect_lt(err_tight_row, err_loose_row + 1e-5)
+  expect_lt(err_tight_col, err_loose_col + 1e-5)
+
+  # Tight tolerance should actually meet target
+  expect_lt(err_tight_row, 1e-6)
+  expect_lt(err_tight_col, 1e-6)
+})
+
+test_that("Looser tolerance converges with fewer iterations", {
+  set.seed(42)
+  n <- 4
+  m <- 4
+  C <- matrix(runif(n * m, 0, 3), n, m)
+  mu <- rep(1 / n, n)
+  nu <- rep(1 / m, m)
+
+  # With loose tolerance (1e-3) and moderate iterations
+  plan_loose <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 50, tol = 1e-3)
+  err_loose <- max(abs(rowSums(plan_loose) - mu), abs(colSums(plan_loose) - nu))
+
+  # Loose tolerance should converge within 50 iterations (error < tolerance)
+  expect_lt(err_loose, 1e-2)
+
+  # Should be valid doubly-stochastic plan (to tolerance)
+  expect_equal(sum(plan_loose), 1, tolerance = 0.01)
+})
+
+test_that("Tolerance affects marginal accuracy as expected", {
+  set.seed(123)
+  n <- 4
+  m <- 4
+  C <- matrix(runif(n * m, 0.5, 2), n, m)
+  mu <- rep(1 / n, n)
+  nu <- rep(1 / n, n)
+
+  tolerances <- c(1e-3, 1e-5, 1e-7)
+  errors <- numeric(length(tolerances))
+
+  for (i in seq_along(tolerances)) {
+    plan <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 1000, tol = tolerances[i])
+    errors[i] <- max(abs(rowSums(plan) - mu), abs(colSums(plan) - nu))
+  }
+
+  # Errors should decrease with tighter tolerance
+  expect_true(errors[2] <= errors[1] + 1e-10)
+  expect_true(errors[3] <= errors[2] + 1e-10)
+})
+
+# =============================================================================
+# Test 7: Warm-start caching verification
+# =============================================================================
+
+test_that("Cache stores and retrieves dual variables", {
+  skip_if_not(exists("sinkhorn_plan_cpp", envir = asNamespace("dkge"), inherits = FALSE))
+
+  # Clear cache first
+  dkge_clear_sinkhorn_cache()
+  env <- dkge:::.dkge_sinkhorn_cache
+
+  # Verify cache is empty
+  cached_keys <- setdiff(ls(env, all.names = TRUE), ".order")
+  expect_equal(length(cached_keys), 0)
+
+  # Run Sinkhorn - should populate cache
+  C <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), 3, 3)
+  mu <- rep(1 / 3, 3)
+  nu <- rep(1 / 3, 3)
+  plan1 <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 100)
+
+  # Verify cache now has entry
+  cached_keys <- setdiff(ls(env, all.names = TRUE), ".order")
+  expect_gt(length(cached_keys), 0)
+
+  # Run same problem again - should use cached warm-start
+  plan2 <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 100)
+
+  # Results should be identical (same inputs, same/warm-started algorithm)
+  expect_equal(plan1, plan2, tolerance = 1e-12)
+
+  # Cleanup
+  dkge_clear_sinkhorn_cache()
+})
+
+test_that("Different inputs create separate cache entries", {
+  skip_if_not(exists("sinkhorn_plan_cpp", envir = asNamespace("dkge"), inherits = FALSE))
+
+  dkge_clear_sinkhorn_cache()
+  env <- dkge:::.dkge_sinkhorn_cache
+
+  # First problem
+  C1 <- matrix(c(1, 2, 2, 1), 2, 2)
+  mu1 <- c(0.5, 0.5)
+  nu1 <- c(0.5, 0.5)
+  dkge:::.dkge_sinkhorn_plan(C1, mu1, nu1, epsilon = 0.1, max_iter = 50)
+
+  entries_after_first <- length(setdiff(ls(env, all.names = TRUE), ".order"))
+
+  # Second problem (different cost matrix)
+  C2 <- matrix(c(3, 1, 1, 3), 2, 2)
+  dkge:::.dkge_sinkhorn_plan(C2, mu1, nu1, epsilon = 0.1, max_iter = 50)
+
+  entries_after_second <- length(setdiff(ls(env, all.names = TRUE), ".order"))
+
+  # Should have two separate cache entries
+  expect_gt(entries_after_second, entries_after_first)
+
+  # Cleanup
+  dkge_clear_sinkhorn_cache()
+})
+
+test_that("Cache isolation between tests via dkge_clear_sinkhorn_cache", {
+  skip_if_not(exists("sinkhorn_plan_cpp", envir = asNamespace("dkge"), inherits = FALSE))
+
+  env <- dkge:::.dkge_sinkhorn_cache
+
+  # Add some entries
+  C <- matrix(runif(4), 2, 2)
+  mu <- c(0.5, 0.5)
+  nu <- c(0.5, 0.5)
+  dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 50)
+
+  # Clear cache
+  dkge_clear_sinkhorn_cache()
+
+  # Verify empty
+  cached_keys <- setdiff(ls(env, all.names = TRUE), ".order")
+  expect_equal(length(cached_keys), 0)
+  expect_equal(length(get(".order", envir = env, inherits = FALSE)), 0)
+})
