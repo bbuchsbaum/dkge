@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 4 of 6 (Numerical Edge Cases)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-19 - Phase 3 verified and complete
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 04-01-PLAN.md (numerical robustness)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 3.2 min
-- Total execution time: 0.32 hours
+- Total plans completed: 7
+- Average duration: 3.6 min
+- Total execution time: 0.42 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [█████░░░░░] 50%
 | 01-data-kernel-foundation | 2 | 8min | 4min |
 | 02-fit-layer-correctness | 2 | 4min | 2min |
 | 03-cross-fitting-validation | 2 | 7min | 3.5min |
+| 04-numerical-edge-cases | 1 | 6min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2min), 02-02 (2min), 03-01 (3min), 03-02 (4min)
-- Trend: Steady (analytic fallback tests slightly more complex)
+- Last 5 plans: 02-02 (2min), 03-01 (3min), 03-02 (4min), 04-01 (6min)
+- Trend: Slightly increasing (edge case tests require more thorough verification)
 
 *Updated after each plan completion*
 
@@ -61,6 +62,10 @@ Recent decisions affecting current work:
 - [03-01]: Basis comparison via cosine similarity for sign-flip invariance
 - [03-02]: Basis rotation ambiguity - use K-orthonormality check instead of per-column cosine
 - [03-02]: Perturbation magnitude test requires small gaps + large off-diagonal coupling
+- [04-01]: Minimum 2 subjects required for group analysis (error on single subject)
+- [04-01]: Condition number threshold 1e8 for ill-conditioning warnings
+- [04-01]: Sparse subject threshold >50% missing effects for warnings
+- [04-01]: effective_rank and rank_reduced metadata stored in fit objects
 
 ### Pending Todos
 
@@ -75,5 +80,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Phase 3 complete, ready for Phase 4
+Stopped at: Completed 04-01-PLAN.md (numerical robustness infrastructure)
 Resume file: None
