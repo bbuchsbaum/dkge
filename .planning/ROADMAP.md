@@ -12,7 +12,7 @@ This roadmap transforms the dkge R package from "works for developer" to "public
 
 - [x] **Phase 1: Data + Kernel Foundation** - Verify data constructors and kernel operations ✓
 - [x] **Phase 2: Fit Layer Correctness** - Verify K-orthonormality, eigendecomposition, pooled design ✓
-- [ ] **Phase 3: Cross-Fitting Validation** - Verify LOSO/K-fold mechanics and analytic fallback
+- [x] **Phase 3: Cross-Fitting Validation** - Verify LOSO/K-fold mechanics and analytic fallback ✓
 - [ ] **Phase 4: Numerical Edge Cases** - Verify robustness to degenerate inputs
 - [ ] **Phase 5: Transport + Inference** - Verify Sinkhorn convergence and null calibration
 - [ ] **Phase 6: Integration + S3 Contracts** - Verify end-to-end pipelines and API contracts
@@ -62,8 +62,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — LOSO data leakage prevention and K-fold equivalence tests
-- [ ] 03-02-PLAN.md — Analytic LOSO fallback path coverage tests
+- [x] 03-01-PLAN.md — LOSO data leakage prevention and K-fold equivalence tests ✓
+- [x] 03-02-PLAN.md — Analytic LOSO fallback path coverage tests ✓
 
 ### Phase 4: Numerical Edge Cases
 **Goal**: Package handles degenerate inputs gracefully without silent failures
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
 | 2. Fit Layer Correctness | 2/2 | Complete ✓ | 2026-01-19 |
-| 3. Cross-Fitting Validation | 0/2 | Planned | - |
+| 3. Cross-Fitting Validation | 2/2 | Complete ✓ | 2026-01-19 |
 | 4. Numerical Edge Cases | 0/2 | Not started | - |
 | 5. Transport + Inference | 0/2 | Not started | - |
 | 6. Integration + S3 Contracts | 0/3 | Not started | - |
@@ -149,3 +149,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 2 planned: 2026-01-19*
 *Phase 2 complete: 2026-01-19*
 *Phase 3 planned: 2026-01-19*
+*Phase 3 complete: 2026-01-19*
