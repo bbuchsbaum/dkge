@@ -287,3 +287,111 @@ test_that("row standardization produces expected scaling", {
   expect_equal(nrow(Btil[[1]]), q)
   expect_equal(ncol(Btil[[1]]), P)
 })
+
+# -------------------------------------------------------------------------
+# Determinism tests
+# -------------------------------------------------------------------------
+
+test_that("dkge_fit is deterministic with same seed (w_method='none')", {
+  # First run
+  fixture1 <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20, seed = 4001)
+  fit1 <- dkge_fit(fixture1$betas, fixture1$designs, K = fixture1$K, rank = 2,
+                   w_method = "none")
+
+  # Second run with identical inputs
+
+  fixture2 <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20, seed = 4001)
+  fit2 <- dkge_fit(fixture2$betas, fixture2$designs, K = fixture2$K, rank = 2,
+                   w_method = "none")
+
+  # All key outputs must be identical
+  expect_equal(fit1$U, fit2$U, tolerance = 0)
+  expect_equal(fit1$Chat, fit2$Chat, tolerance = 0)
+  expect_equal(fit1$R, fit2$R, tolerance = 0)
+  expect_equal(fit1$weights, fit2$weights, tolerance = 0)
+  expect_equal(fit1$eigenvalues, fit2$eigenvalues, tolerance = 0)
+})
+
+test_that("dkge_fit is deterministic with w_method='mfa_sigma1'", {
+  # MFA weighting uses power iteration which has random init
+  # but the fixture provides consistent data, so results should match
+
+  fixture1 <- make_fit_fixture(S = 4, q = 4, P = 6, T = 20, seed = 4002)
+  withr::local_seed(100)
+  fit1 <- dkge_fit(fixture1$betas, fixture1$designs, K = fixture1$K, rank = 2,
+                   w_method = "mfa_sigma1", w_tau = 0.3)
+
+  fixture2 <- make_fit_fixture(S = 4, q = 4, P = 6, T = 20, seed = 4002)
+  withr::local_seed(100)
+  fit2 <- dkge_fit(fixture2$betas, fixture2$designs, K = fixture2$K, rank = 2,
+                   w_method = "mfa_sigma1", w_tau = 0.3)
+
+  expect_equal(fit1$U, fit2$U, tolerance = 0)
+  expect_equal(fit1$Chat, fit2$Chat, tolerance = 0)
+  expect_equal(fit1$R, fit2$R, tolerance = 0)
+  expect_equal(fit1$weights, fit2$weights, tolerance = 0)
+  expect_equal(fit1$eigenvalues, fit2$eigenvalues, tolerance = 0)
+})
+
+test_that("dkge_fit is deterministic with w_method='energy'", {
+  fixture1 <- make_fit_fixture(S = 4, q = 4, P = 6, T = 20, seed = 4003)
+  fit1 <- dkge_fit(fixture1$betas, fixture1$designs, K = fixture1$K, rank = 2,
+                   w_method = "energy", w_tau = 0.5)
+
+  fixture2 <- make_fit_fixture(S = 4, q = 4, P = 6, T = 20, seed = 4003)
+  fit2 <- dkge_fit(fixture2$betas, fixture2$designs, K = fixture2$K, rank = 2,
+                   w_method = "energy", w_tau = 0.5)
+
+  expect_equal(fit1$U, fit2$U, tolerance = 0)
+  expect_equal(fit1$Chat, fit2$Chat, tolerance = 0)
+  expect_equal(fit1$R, fit2$R, tolerance = 0)
+  expect_equal(fit1$weights, fit2$weights, tolerance = 0)
+  expect_equal(fit1$eigenvalues, fit2$eigenvalues, tolerance = 0)
+})
+
+test_that("dkge_fit with solver='pooled' is deterministic", {
+  fixture1 <- make_fit_fixture(S = 3, q = 5, P = 6, T = 20, seed = 4004)
+  fit1 <- dkge_fit(fixture1$betas, fixture1$designs, K = fixture1$K, rank = 3,
+                   solver = "pooled", w_method = "none")
+
+  fixture2 <- make_fit_fixture(S = 3, q = 5, P = 6, T = 20, seed = 4004)
+  fit2 <- dkge_fit(fixture2$betas, fixture2$designs, K = fixture2$K, rank = 3,
+                   solver = "pooled", w_method = "none")
+
+  expect_equal(fit1$U, fit2$U, tolerance = 0)
+  expect_equal(fit1$Chat, fit2$Chat, tolerance = 0)
+  expect_equal(fit1$eigenvalues, fit2$eigenvalues, tolerance = 0)
+})
+
+test_that("dkge_fit determinism holds with ridge regularization", {
+  fixture1 <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20, seed = 4005)
+  fit1 <- dkge_fit(fixture1$betas, fixture1$designs, K = fixture1$K, rank = 2,
+                   ridge = 0.1, w_method = "none")
+
+  fixture2 <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20, seed = 4005)
+  fit2 <- dkge_fit(fixture2$betas, fixture2$designs, K = fixture2$K, rank = 2,
+                   ridge = 0.1, w_method = "none")
+
+  expect_equal(fit1$U, fit2$U, tolerance = 0)
+  expect_equal(fit1$Chat, fit2$Chat, tolerance = 0)
+  expect_equal(fit1$R, fit2$R, tolerance = 0)
+})
+
+test_that("dkge_fit determinism holds with Omega_list spatial weights", {
+  fixture1 <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20, seed = 4006)
+  set.seed(4006)
+  Omega1 <- lapply(fixture1$betas, function(B) runif(ncol(B)))
+
+  fixture2 <- make_fit_fixture(S = 3, q = 4, P = 5, T = 20, seed = 4006)
+  set.seed(4006)
+  Omega2 <- lapply(fixture2$betas, function(B) runif(ncol(B)))
+
+  fit1 <- dkge_fit(fixture1$betas, fixture1$designs, K = fixture1$K, rank = 2,
+                   Omega_list = Omega1, w_method = "none")
+  fit2 <- dkge_fit(fixture2$betas, fixture2$designs, K = fixture2$K, rank = 2,
+                   Omega_list = Omega2, w_method = "none")
+
+  expect_equal(fit1$U, fit2$U, tolerance = 0)
+  expect_equal(fit1$Chat, fit2$Chat, tolerance = 0)
+  expect_equal(fit1$R, fit2$R, tolerance = 0)
+})
