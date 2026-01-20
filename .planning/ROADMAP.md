@@ -105,12 +105,12 @@ Plans:
   3. `R CMD check` passes with 0 errors, 0 warnings, 0 notes
   4. All exported functions have working `@examples`
   5. Test coverage on exported functions exceeds 80%
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Pipeline integration tests
-- [ ] 06-02: S3 method and API contract tests
-- [ ] 06-03: R CMD check compliance
+- [ ] 06-01-PLAN.md — Pipeline integration tests (full workflow verification)
+- [ ] 06-02-PLAN.md — S3 method contract tests (print, predict, as.data.frame)
+- [ ] 06-03-PLAN.md — R CMD check compliance (documentation, imports, build)
 
 ## Requirement Mapping
 
@@ -154,3 +154,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 4 complete: 2026-01-20*
 *Phase 5 planned: 2026-01-20*
 *Phase 5 complete: 2026-01-20*
+*Phase 6 planned: 2026-01-20*
