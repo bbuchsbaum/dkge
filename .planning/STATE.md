@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 1 of 6 (Data + Kernel Foundation)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-20 - Completed 01-01-PLAN.md (data validation tests)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 01-02-PLAN.md (kernel invariant tests)
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 4 min
-- Total execution time: 0.07 hours
+- Total execution time: 0.13 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-data-kernel-foundation | 1 | 4min | 4min |
+| 01-data-kernel-foundation | 2 | 8min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min)
-- Trend: N/A (first plan)
+- Last 5 plans: 01-01 (4min), 01-02 (4min)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -49,10 +49,12 @@ Recent decisions affecting current work:
 - [01-01]: Effect order follows first subject's design column order
 - [01-01]: Zero-cluster subjects accepted without error
 - [01-01]: Duplicate effect names accepted - may need future hardening
+- [01-02]: Circular kernels use l=0.5 in PSD tests (short length-scale ensures PSD)
+- [01-02]: Use pmin instead of min for vectorized circular distance computation (bug fix)
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
@@ -63,5 +65,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 01-01-PLAN.md
+Stopped at: Completed 01-02-PLAN.md (Phase 1 complete)
 Resume file: None
