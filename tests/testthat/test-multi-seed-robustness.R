@@ -186,3 +186,104 @@ test_that("different w_methods produce stable results across seeds", {
               label = paste("w_method:", wm, "- CV:", round(cv, 3)))
   }
 })
+
+# -------------------------------------------------------------------------
+# Section 3: Edge case handling is seed-independent -------------------------
+# -------------------------------------------------------------------------
+
+test_that("minimum subjects error is seed-independent", {
+  seeds <- c(1, 42, 999)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+    beta <- matrix(rnorm(6), 3, 2, dimnames = list(c("e1", "e2", "e3"), NULL))
+    design <- matrix(rnorm(15), 5, 3, dimnames = list(NULL, c("e1", "e2", "e3")))
+
+    expect_error(
+      dkge_data(list(beta), list(design)),
+      "2 subjects",
+      info = paste("Seed:", seed)
+    )
+  }
+})
+
+test_that("ill-conditioned warning consistent across seeds", {
+  seeds <- c(1, 42, 999)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+    q <- 3
+    P <- 20
+    T_s <- 100
+
+    # Create design matrix with very different column scales
+    design1 <- matrix(0, T_s, q, dimnames = list(NULL, paste0("e", 1:q)))
+    design1[, 1] <- rnorm(T_s) * 1e5  # Very large scale
+    design1[, 2] <- rnorm(T_s)        # Normal scale
+    design1[, 3] <- rnorm(T_s) * 1e-5 # Very small scale
+
+    design2 <- design1 + matrix(rnorm(T_s * q, sd = 0.01), T_s, q)
+
+    beta1 <- matrix(rnorm(q * P), q, P, dimnames = list(paste0("e", 1:q), NULL))
+    beta2 <- matrix(rnorm(q * P), q, P, dimnames = list(paste0("e", 1:q), NULL))
+
+    K <- diag(q)
+
+    # Should warn about ill-conditioning consistently
+    expect_warning(
+      result <- dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2),
+      "ill-conditioned",
+      info = paste("Seed:", seed)
+    )
+  }
+})
+
+test_that("NaN exclusion consistent across seeds", {
+  seeds <- c(1, 42, 999)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+    q <- 3
+    P <- 10
+
+    # Create beta with NA values at fixed positions (always cols 2 and 5)
+    beta1 <- matrix(rnorm(q * P), q, P, dimnames = list(paste0("e", 1:q), NULL))
+    beta1[1, c(2, 5)] <- NA  # Fixed NA positions
+
+    beta2 <- matrix(rnorm(q * P), q, P, dimnames = list(paste0("e", 1:q), NULL))
+
+    # Test .dkge_voxel_exclusion_mask directly
+    expect_warning(
+      result <- .dkge_voxel_exclusion_mask(list(beta1, beta2), c("sub1", "sub2")),
+      "excluded due to NA/NaN/Inf",
+      info = paste("Seed:", seed)
+    )
+
+    # Same voxels should be excluded regardless of seed
+    expect_equal(sort(result$excluded_voxels[[1]]), c(2, 5),
+                 info = paste("Seed:", seed))
+    expect_equal(result$excluded_counts[1], 2,
+                 info = paste("Seed:", seed))
+  }
+})
+
+test_that("sparse subject warning consistent across seeds", {
+  seeds <- c(1, 42, 999)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+
+    # Subject 1 has 4 effects, subject 2 has only 1 (25% of union)
+    beta1 <- matrix(rnorm(4 * 10), 4, 10, dimnames = list(c("e1", "e2", "e3", "e4"), NULL))
+    beta2 <- matrix(rnorm(1 * 10), 1, 10, dimnames = list(c("e1"), NULL))
+
+    design1 <- matrix(rnorm(30 * 4), 30, 4, dimnames = list(NULL, c("e1", "e2", "e3", "e4")))
+    design2 <- matrix(rnorm(30 * 1), 30, 1, dimnames = list(NULL, c("e1")))
+
+    expect_warning(
+      result <- dkge_data(list(beta1, beta2), list(design1, design2)),
+      "sparse effect coverage",
+      info = paste("Seed:", seed)
+    )
+  }
+})
