@@ -207,3 +207,141 @@ test_that("LOSO: different subjects get different held-out bases", {
   expect_gt(diff_23, 1e-8,
             label = "U_minus for subjects 2 and 3 should differ")
 })
+
+# ========================== Test 4: K-fold with k=S equals LOSO exactly ==========================
+
+test_that("KFOLD: k=S produces identical per-subject values to LOSO", {
+  skip_on_cran()
+
+  set.seed(101)
+
+  # Use dkge_sim_toy to create data with known ground truth
+  # S=5 subjects (more than existing S=3 test)
+  factors <- list(A = list(L = 2), B = list(L = 2))
+  sim <- dkge_sim_toy(factors, active_terms = c("A", "B"), S = 5, P = 12, snr = 9)
+
+  fit <- dkge_fit(sim$B_list,
+                  designs = sim$X_list,
+                  K = sim$K,
+                  w_method = "none",
+                  rank = 2)
+
+  # Use the true contrast
+  c_true <- as.numeric(sim$U_true[, 1])
+
+  # Run LOSO
+  loso <- dkge_contrast(fit, c_true, method = "loso", align = FALSE)
+
+  # Run K-fold with k=S (should equal LOSO)
+  S <- length(sim$B_list)
+  kf <- dkge_contrast(fit, c_true, method = "kfold", folds = S, align = FALSE)
+
+  # Compare per-subject values with tighter tolerance (1e-10)
+  for (s in seq_len(S)) {
+    subj_id <- fit$subject_ids[s]
+    v_loso <- loso$values[[1]][[subj_id]]
+    v_kf <- kf$values[[1]][[subj_id]]
+
+    rmse <- sqrt(mean((v_loso - v_kf)^2))
+    expect_lt(rmse, 1e-10,
+              label = sprintf("Subject %s: K-fold values should match LOSO", subj_id))
+  }
+})
+
+# ========================== Test 5: K-fold vs LOSO basis comparison ==========================
+
+test_that("KFOLD: held-out bases match between k=S K-fold and LOSO", {
+  skip_on_cran()
+
+  set.seed(202)
+
+  # Smaller test to examine bases directly
+  factors <- list(A = list(L = 2))
+  sim <- dkge_sim_toy(factors, active_terms = "A", S = 4, P = 10, snr = 8)
+
+  fit <- dkge_fit(sim$B_list,
+                  designs = sim$X_list,
+                  K = sim$K,
+                  w_method = "none",
+                  rank = 1)
+
+  c_true <- as.numeric(sim$U_true[, 1])
+
+  # Run both methods without alignment
+  loso <- dkge_contrast(fit, c_true, method = "loso", align = FALSE)
+  S <- length(sim$B_list)
+  kf <- dkge_contrast(fit, c_true, method = "kfold", folds = S, align = FALSE)
+
+  # Extract bases from metadata
+  loso_bases <- loso$metadata$bases
+  kf_bases <- kf$metadata$fold_bases
+
+  # Verify bases match (accounting for possible sign flips)
+  for (s in seq_len(S)) {
+    basis_loso <- loso_bases[[s]]
+    basis_kf <- kf_bases[[s]]
+
+    # Check dimensions match
+    expect_equal(dim(basis_loso), dim(basis_kf),
+                 label = sprintf("Subject %d: basis dimensions should match", s))
+
+    # Use cosine similarity to account for sign flips
+    # For rank-1, |cosine| should be exactly 1
+    # For higher rank, use Frobenius norm after sign alignment
+    if (ncol(basis_loso) == 1) {
+      cosine <- abs(sum(basis_loso * basis_kf))
+      expect_gt(cosine, 1 - 1e-10,
+                label = sprintf("Subject %d: basis cosine should be ~1", s))
+    } else {
+      # For multi-column basis, check subspace agreement via SVD
+      gram <- t(basis_loso) %*% fit$K %*% basis_kf
+      svals <- svd(gram, nu = 0, nv = 0)$d
+      # All singular values should be ~1 for matching subspaces
+      expect_lt(max(abs(svals - 1)), 1e-8,
+                label = sprintf("Subject %d: subspace singular values should be ~1", s))
+    }
+  }
+})
+
+# ========================== Test 6: LOSO includes all-but-one subject ==========================
+
+test_that("LOSO: Chat_minus equals Chat minus held-out contribution", {
+  skip_on_cran()
+
+  fit <- .make_fit(seed = 303, q = 8, r = 3, S = 6, P = 10)
+  q <- nrow(fit$U)
+
+  # Test for multiple subjects
+  for (s in c(1L, 3L, 6L)) {
+    # Manual Chat_minus computation
+    Chat_minus_manual <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
+    Chat_minus_manual <- (Chat_minus_manual + t(Chat_minus_manual)) / 2
+
+    # Verify sum of remaining subject weights
+    remaining_weight <- sum(fit$weights[-s])
+    total_weight <- sum(fit$weights)
+    expect_equal(remaining_weight, total_weight - fit$weights[s],
+                 label = sprintf("Subject %d: remaining weights should sum correctly", s))
+
+    # Verify Chat_minus can be reconstructed from remaining subjects
+    Chat_from_remaining <- matrix(0, q, q)
+    for (j in seq_along(fit$Btil)) {
+      if (j != s) {
+        Chat_from_remaining <- Chat_from_remaining + fit$weights[j] * fit$contribs[[j]]
+      }
+    }
+    Chat_from_remaining <- (Chat_from_remaining + t(Chat_from_remaining)) / 2
+
+    expect_lt(.max_abs(Chat_minus_manual - Chat_from_remaining), 1e-10,
+              label = sprintf("Subject %d: Chat_minus should match reconstruction from remaining subjects", s))
+
+    # Verify LOSO function uses correct Chat_minus by comparing eigenvalues
+    cvec <- rnorm(q)
+    out <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+
+    # Eigenvalues of manual Chat_minus should match returned evals
+    manual_eig <- eigen(Chat_minus_manual, symmetric = TRUE)$values
+    expect_lt(.max_abs(out$evals - manual_eig), 1e-10,
+              label = sprintf("Subject %d: LOSO eigenvalues should match manual Chat_minus", s))
+  }
+})
