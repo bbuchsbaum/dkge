@@ -43,11 +43,11 @@ Plans:
   2. Pooled design computation aggregates subject data correctly (verified by recovery test)
   3. Recovery test with known ground truth achieves expected reconstruction error
   4. Results are deterministic across runs with same seed
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: K-orthonormality invariant tests
-- [ ] 02-02: Recovery tests with synthetic data
+- [ ] 02-01-PLAN.md — K-orthonormality property tests and pooled design verification
+- [ ] 02-02-PLAN.md — Recovery tests with synthetic ground truth and determinism tests
 
 ### Phase 3: Cross-Fitting Validation
 **Goal**: LOSO and K-fold cross-fitting are unbiased with no data leakage
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
-| 2. Fit Layer Correctness | 0/2 | Not started | - |
+| 2. Fit Layer Correctness | 0/2 | Planned | - |
 | 3. Cross-Fitting Validation | 0/2 | Not started | - |
 | 4. Numerical Edge Cases | 0/2 | Not started | - |
 | 5. Transport + Inference | 0/2 | Not started | - |
@@ -146,3 +146,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Created: 2026-01-19*
 *Phase 1 planned: 2026-01-19*
 *Phase 1 complete: 2026-01-19*
+*Phase 2 planned: 2026-01-19*
