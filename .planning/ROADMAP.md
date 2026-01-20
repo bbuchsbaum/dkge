@@ -74,11 +74,11 @@ Plans:
   2. Near-singular matrices do not cause NaN propagation
   3. Tests pass with multiple different random seeds (not seed-dependent)
   4. Effect alignment handles partial overlap between subjects correctly
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Rank-deficient and ill-conditioned inputs
-- [ ] 04-02: Multi-seed robustness tests
+- [ ] 04-01-PLAN.md — Numerical robustness infrastructure and edge case tests
+- [ ] 04-02-PLAN.md — Multi-seed robustness tests
 
 ### Phase 5: Transport + Inference
 **Goal**: Sinkhorn transport converges correctly and permutation tests are calibrated
@@ -138,7 +138,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
 | 2. Fit Layer Correctness | 2/2 | Complete ✓ | 2026-01-19 |
 | 3. Cross-Fitting Validation | 2/2 | Complete ✓ | 2026-01-19 |
-| 4. Numerical Edge Cases | 0/2 | Not started | - |
+| 4. Numerical Edge Cases | 0/2 | Planned | - |
 | 5. Transport + Inference | 0/2 | Not started | - |
 | 6. Integration + S3 Contracts | 0/3 | Not started | - |
 
@@ -150,3 +150,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 2 complete: 2026-01-19*
 *Phase 3 planned: 2026-01-19*
 *Phase 3 complete: 2026-01-19*
+*Phase 4 planned: 2026-01-20*
