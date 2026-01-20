@@ -89,11 +89,11 @@ Plans:
   2. Deterministic transport cases (identity mapping) produce expected exact results
   3. Null distribution p-values are uniform under permutation (chi-square test passes)
   4. `parallel=TRUE` produces identical results to sequential execution
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: Sinkhorn convergence tests
-- [ ] 05-02: Null calibration tests
+- [ ] 05-01-PLAN.md — Sinkhorn convergence and doubly-stochastic property tests
+- [ ] 05-02-PLAN.md — Null calibration and parallel equivalence tests
 
 ### Phase 6: Integration + S3 Contracts
 **Goal**: End-to-end workflows and user-facing API behave as documented
@@ -139,7 +139,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Fit Layer Correctness | 2/2 | Complete ✓ | 2026-01-19 |
 | 3. Cross-Fitting Validation | 2/2 | Complete ✓ | 2026-01-19 |
 | 4. Numerical Edge Cases | 2/2 | Complete ✓ | 2026-01-20 |
-| 5. Transport + Inference | 0/2 | Not started | - |
+| 5. Transport + Inference | 0/2 | Planned | - |
 | 6. Integration + S3 Contracts | 0/3 | Not started | - |
 
 ---
@@ -152,3 +152,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 3 complete: 2026-01-19*
 *Phase 4 planned: 2026-01-20*
 *Phase 4 complete: 2026-01-20*
+*Phase 5 planned: 2026-01-20*
