@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Implementation must faithfully match the mathematical specification in `algo.md` - users need to trust the results before publishing research based on them.
-**Current focus:** Phase 2 - Fit Layer Correctness
+**Current focus:** Phase 2 Complete - Ready for Phase 3 (Contrast + Inference Correctness)
 
 ## Current Position
 
-Phase: 2 of 6 (Fit Layer Correctness)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-20 - Completed 02-01-PLAN.md (K-orthonormality + pooled design tests)
+Phase: 2 of 6 (Fit Layer Correctness) - COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 02-02-PLAN.md (Recovery + Determinism tests)
 
-Progress: [███░░░░░░░] 25%
+Progress: [████░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 3.3 min
-- Total execution time: 0.17 hours
+- Total plans completed: 4
+- Average duration: 3.0 min
+- Total execution time: 0.20 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-data-kernel-foundation | 2 | 8min | 4min |
-| 02-fit-layer-correctness | 1 | 2min | 2min |
+| 02-fit-layer-correctness | 2 | 4min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 01-02 (4min), 02-01 (2min)
-- Trend: Accelerating
+- Last 5 plans: 01-01 (4min), 01-02 (4min), 02-01 (2min), 02-02 (2min)
+- Trend: Accelerating (fit layer tests faster due to established patterns)
 
 *Updated after each plan completion*
 
@@ -54,6 +54,8 @@ Recent decisions affecting current work:
 - [01-02]: Use pmin instead of min for vectorized circular distance computation (bug fix)
 - [02-01]: K-orthonormality tolerance: 1e-8 (consistent with Phase 1)
 - [02-01]: Gram matrix verification tolerance: 1e-10 (tighter for exact linear algebra)
+- [02-02]: SNR thresholds for recovery: 20->0.98, 8->0.90, 2->0.70
+- [02-02]: Graceful degradation allows 0.05 tolerance for sampling variance
 
 ### Pending Todos
 
@@ -68,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
 Resume file: None
