@@ -225,3 +225,57 @@ test_that("Analytic LOSO falls back when perturbation magnitude is large", {
   exact <- dkge_loso_contrast(fit, s = 1, c = cvec)
   expect_lt(max(abs(result$v - exact$v)), 1e-12)
 })
+
+# ---------- Test 7: Analytic matches iterative within tolerance ----------
+test_that("Analytic matches iterative LOSO within tolerance for stable input", {
+  skip_on_cran()
+
+  # Low-leverage subject = stable regime for perturbation
+  # This tests the canonical accuracy requirement: cosine(v, v_exact) > 0.98
+  fit <- .make_fit(seed = 107, q = 10, r = 3, S = 12, P = 12,
+                   low_leverage_subject = 1, low_scale = 1e-4)
+
+  cvec <- rnorm(nrow(fit$U))
+
+  exact <- dkge_loso_contrast(fit, s = 1, c = cvec)
+  approx <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+
+  expect_equal(approx$method, "analytic")
+
+  # Value comparison: cosine similarity > 0.98 (canonical threshold from Phase 3 criteria)
+  cosine_v <- sum(approx$v * exact$v) / (sqrt(sum(approx$v^2)) * sqrt(sum(exact$v^2)))
+  expect_gt(abs(cosine_v), 0.98)
+
+  # Relative error on values (complementary check)
+  rel_err_v <- sqrt(sum((approx$v - exact$v)^2)) / sqrt(sum(exact$v^2))
+  expect_lt(rel_err_v, 0.01)  # < 1% relative error
+
+  # Eigenvalue comparison: relative error < 1%
+  approx_evals <- approx$evals
+  exact_evals <- exact$evals[seq_len(length(approx_evals))]
+  rel_err_lambda <- max(abs(approx_evals - exact_evals)) / max(abs(exact_evals))
+  expect_lt(rel_err_lambda, 0.01)
+
+  # Basis K-orthonormality check (basis is valid even if rotated)
+  G <- t(approx$basis) %*% fit$K %*% approx$basis
+  expect_lt(max(abs(G - diag(ncol(approx$basis)))), 1e-6)
+})
+
+# ---------- Test 8: Diagnostic information is populated correctly ----------
+test_that("Analytic LOSO populates diagnostic information", {
+  skip_on_cran()
+
+  fit <- .make_fit(seed = 108, q = 8, r = 3, S = 10, P = 10,
+                   low_leverage_subject = 1, low_scale = 1e-3)
+  cvec <- rnorm(nrow(fit$U))
+
+  result <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+
+  expect_equal(result$method, "analytic")
+  expect_true(!is.null(result$diagnostic))
+  expect_equal(result$diagnostic$reason, "analytic")
+  expect_true(is.numeric(result$diagnostic$min_eigengap))
+  expect_true(is.numeric(result$diagnostic$max_abs_coeff))
+  expect_true(is.numeric(result$diagnostic$threshold_eigengap))
+  expect_true(is.numeric(result$diagnostic$threshold_coeff))
+})
