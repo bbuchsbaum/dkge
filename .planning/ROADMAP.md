@@ -28,11 +28,11 @@ This roadmap transforms the dkge R package from "works for developer" to "public
   2. Effect alignment produces identical results regardless of effect ordering across subjects
   3. `design_kernel()` output is symmetric and positive semidefinite for all valid inputs
   4. Kernel root reconstruction satisfies `Khalf %*% Khalf = K` within numerical tolerance
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Data constructor tests
-- [ ] 01-02: Kernel operation tests
+- [ ] 01-01-PLAN.md — Data constructor input validation and ordering invariance tests
+- [ ] 01-02-PLAN.md — Kernel mathematical invariant and edge case tests
 
 ### Phase 2: Fit Layer Correctness
 **Goal**: Core algorithm produces mathematically valid K-orthonormal bases
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data + Kernel Foundation | 0/2 | Not started | - |
+| 1. Data + Kernel Foundation | 0/2 | Planned | - |
 | 2. Fit Layer Correctness | 0/2 | Not started | - |
 | 3. Cross-Fitting Validation | 0/2 | Not started | - |
 | 4. Numerical Edge Cases | 0/2 | Not started | - |
@@ -144,3 +144,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 ---
 *Created: 2026-01-19*
+*Phase 1 planned: 2026-01-19*
