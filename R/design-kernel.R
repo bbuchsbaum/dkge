@@ -95,7 +95,7 @@ design_kernel <- function(factors,
       idx <- seq_len(L)
       D2 <- outer(idx, idx, function(i, j) {
         d <- abs(i - j)
-        dd <- min(d, L - d)
+        dd <- pmin(d, L - d)  # pmin is vectorized, min is not
         dd * dd
       })
       exp(- D2 / (2 * l * l))
