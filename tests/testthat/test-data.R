@@ -53,6 +53,25 @@ test_that("dkge_data bundles raw matrices and normalises ids", {
   expect_true(all(grepl("sub", dat$subject_ids)))
 })
 
+test_that("dkge_data aligns partial effect overlaps and records provenance", {
+  beta1 <- matrix(1:4, 2, 2, dimnames = list(c("eff1", "eff2"), NULL))
+  beta2 <- matrix(5:10, 2, 3, dimnames = list(c("eff2", "eff3"), NULL))
+  design1 <- matrix(seq_len(10), 5, 2)
+  design2 <- matrix(seq_len(10), 5, 2)
+  colnames(design1) <- c("eff1", "eff2")
+  colnames(design2) <- c("eff2", "eff3")
+  dat <- dkge_data(list(beta1, beta2), list(design1, design2))
+  expect_equal(dat$effects, c("eff1", "eff2", "eff3"))
+  expect_equal(nrow(dat$betas[[1]]), 3)
+  expect_equal(nrow(dat$betas[[2]]), 3)
+  prov <- dat$provenance
+  expect_true(is.list(prov))
+  expect_equal(length(prov$effect_ids), 3)
+  expect_false(prov$obs_mask[[1]][3])
+  expect_false(prov$obs_mask[[2]][1])
+  expect_equal(unname(diag(prov$pair_counts)), c(1L, 2L, 1L))
+})
+
 test_that("dkge_data respects provided subject ids and omega", {
   fx <- make_subject_fixture()
   betas <- replicate(2, fx$beta, simplify = FALSE)
@@ -103,4 +122,87 @@ test_that("dkge accepts dkge_data and omega overrides", {
   fit <- dkge(data_bundle, kernel = kernel, omega = override, rank = 2)
   expect_equal(length(fit$Omega), length(override))
   expect_equal(fit$Omega[[1]], override[[1]])
+})
+
+# -------------------------------------------------------------------------
+# Ordering invariance tests -----------------------------------------------
+# -------------------------------------------------------------------------
+
+test_that("dkge_data produces identical aligned effects regardless of input effect order", {
+  withr::local_seed(999)
+  # Create two subjects with permuted effect ordering
+  effects_order1 <- c("eff1", "eff2", "eff3")
+  effects_order2 <- c("eff3", "eff1", "eff2")  # permuted
+
+  beta1 <- matrix(rnorm(3 * 10), 3, 10, dimnames = list(effects_order1, NULL))
+  beta2 <- matrix(rnorm(3 * 10), 3, 10, dimnames = list(effects_order2, NULL))
+
+  design1 <- matrix(rnorm(20 * 3), 20, 3, dimnames = list(NULL, effects_order1))
+  design2 <- matrix(rnorm(20 * 3), 20, 3, dimnames = list(NULL, effects_order2))
+
+  data <- dkge_data(list(beta1, beta2), list(design1, design2))
+
+  # All outputs should have consistent effect ordering
+  expect_identical(rownames(data$betas[[1]]), rownames(data$betas[[2]]))
+  expect_identical(colnames(data$designs[[1]]), colnames(data$designs[[2]]))
+  expect_identical(data$effects, rownames(data$betas[[1]]))
+})
+
+test_that("dkge_data is invariant to subject list ordering", {
+  withr::local_seed(888)
+  beta_a <- matrix(rnorm(3 * 10), 3, 10, dimnames = list(c("e1", "e2", "e3"), NULL))
+  beta_b <- matrix(rnorm(3 * 10), 3, 10, dimnames = list(c("e1", "e2", "e3"), NULL))
+  design_a <- matrix(rnorm(20 * 3), 20, 3, dimnames = list(NULL, c("e1", "e2", "e3")))
+  design_b <- matrix(rnorm(20 * 3), 20, 3, dimnames = list(NULL, c("e1", "e2", "e3")))
+
+  data1 <- dkge_data(list(beta_a, beta_b), list(design_a, design_b),
+                     subject_ids = c("A", "B"))
+  data2 <- dkge_data(list(beta_b, beta_a), list(design_b, design_a),
+                     subject_ids = c("B", "A"))
+
+  # Effects should be identical
+  expect_identical(data1$effects, data2$effects)
+  # Subject A's data should be identical in both
+  idx1 <- which(data1$subject_ids == "A")
+  idx2 <- which(data2$subject_ids == "A")
+  expect_equal(data1$betas[[idx1]], data2$betas[[idx2]])
+})
+
+test_that("provenance correctly tracks effect coverage with partial overlap", {
+  beta1 <- matrix(1:6, 2, 3, dimnames = list(c("e1", "e2"), NULL))
+  beta2 <- matrix(1:6, 2, 3, dimnames = list(c("e2", "e3"), NULL))
+  design1 <- matrix(1:10, 5, 2, dimnames = list(NULL, c("e1", "e2")))
+  design2 <- matrix(1:10, 5, 2, dimnames = list(NULL, c("e2", "e3")))
+
+  data <- dkge_data(list(beta1, beta2), list(design1, design2))
+  prov <- data$provenance
+
+  # e1: only subject 1, e2: both, e3: only subject 2
+  expect_equal(prov$pair_counts["e1", "e1"], 1L)
+  expect_equal(prov$pair_counts["e2", "e2"], 2L)
+  expect_equal(prov$pair_counts["e3", "e3"], 1L)
+  expect_equal(prov$pair_counts["e1", "e3"], 0L)  # No subject has both
+})
+
+test_that("effect alignment produces correct values after reordering", {
+  withr::local_seed(777)
+  # Create a beta with known values in specific effect positions
+  beta_orig <- matrix(1:9, 3, 3, dimnames = list(c("A", "B", "C"), NULL))
+  # Create the same beta with permuted row order
+  beta_perm <- beta_orig[c("C", "A", "B"), ]
+
+  design_orig <- matrix(rnorm(20 * 3), 20, 3, dimnames = list(NULL, c("A", "B", "C")))
+  design_perm <- design_orig[, c("C", "A", "B")]
+  colnames(design_perm) <- c("C", "A", "B")
+
+  data1 <- dkge_data(list(beta_orig), list(design_orig))
+  data2 <- dkge_data(list(beta_perm), list(design_perm))
+
+  # Effect order follows first subject's design column order
+  # Both should preserve all effects, though order may differ
+  expect_setequal(data1$effects, data2$effects)
+  # Values for each effect should be the same regardless of input order
+  expect_equal(data1$betas[[1]]["A", ], data2$betas[[1]]["A", ])
+  expect_equal(data1$betas[[1]]["B", ], data2$betas[[1]]["B", ])
+  expect_equal(data1$betas[[1]]["C", ], data2$betas[[1]]["C", ])
 })
