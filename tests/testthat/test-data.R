@@ -186,17 +186,20 @@ test_that("provenance correctly tracks effect coverage with partial overlap", {
 
 test_that("effect alignment produces correct values after reordering", {
   withr::local_seed(777)
-  # Create a beta with known values in specific effect positions
+  # Create two subjects with known values in specific effect positions
   beta_orig <- matrix(1:9, 3, 3, dimnames = list(c("A", "B", "C"), NULL))
   # Create the same beta with permuted row order
   beta_perm <- beta_orig[c("C", "A", "B"), ]
+
+  # Second subject (normal beta) to meet minimum 2-subject requirement
+  beta_other <- matrix(10:18, 3, 3, dimnames = list(c("A", "B", "C"), NULL))
 
   design_orig <- matrix(rnorm(20 * 3), 20, 3, dimnames = list(NULL, c("A", "B", "C")))
   design_perm <- design_orig[, c("C", "A", "B")]
   colnames(design_perm) <- c("C", "A", "B")
 
-  data1 <- dkge_data(list(beta_orig), list(design_orig))
-  data2 <- dkge_data(list(beta_perm), list(design_perm))
+  data1 <- dkge_data(list(beta_orig, beta_other), list(design_orig, design_orig))
+  data2 <- dkge_data(list(beta_perm, beta_other), list(design_perm, design_orig))
 
   # Effect order follows first subject's design column order
   # Both should preserve all effects, though order may differ
