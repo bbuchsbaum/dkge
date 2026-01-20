@@ -13,7 +13,7 @@ This roadmap transforms the dkge R package from "works for developer" to "public
 - [x] **Phase 1: Data + Kernel Foundation** - Verify data constructors and kernel operations ✓
 - [x] **Phase 2: Fit Layer Correctness** - Verify K-orthonormality, eigendecomposition, pooled design ✓
 - [x] **Phase 3: Cross-Fitting Validation** - Verify LOSO/K-fold mechanics and analytic fallback ✓
-- [ ] **Phase 4: Numerical Edge Cases** - Verify robustness to degenerate inputs
+- [x] **Phase 4: Numerical Edge Cases** - Verify robustness to degenerate inputs ✓
 - [ ] **Phase 5: Transport + Inference** - Verify Sinkhorn convergence and null calibration
 - [ ] **Phase 6: Integration + S3 Contracts** - Verify end-to-end pipelines and API contracts
 
@@ -77,8 +77,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Numerical robustness infrastructure and edge case tests
-- [ ] 04-02-PLAN.md — Multi-seed robustness tests
+- [x] 04-01-PLAN.md — Numerical robustness infrastructure and edge case tests ✓
+- [x] 04-02-PLAN.md — Multi-seed robustness tests ✓
 
 ### Phase 5: Transport + Inference
 **Goal**: Sinkhorn transport converges correctly and permutation tests are calibrated
@@ -138,7 +138,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
 | 2. Fit Layer Correctness | 2/2 | Complete ✓ | 2026-01-19 |
 | 3. Cross-Fitting Validation | 2/2 | Complete ✓ | 2026-01-19 |
-| 4. Numerical Edge Cases | 0/2 | Planned | - |
+| 4. Numerical Edge Cases | 2/2 | Complete ✓ | 2026-01-20 |
 | 5. Transport + Inference | 0/2 | Not started | - |
 | 6. Integration + S3 Contracts | 0/3 | Not started | - |
 
@@ -151,3 +151,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 3 planned: 2026-01-19*
 *Phase 3 complete: 2026-01-19*
 *Phase 4 planned: 2026-01-20*
+*Phase 4 complete: 2026-01-20*

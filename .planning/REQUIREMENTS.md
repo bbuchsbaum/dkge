@@ -52,8 +52,8 @@ Quality assurance requirements for the dkge R package to achieve publication rea
 | COV-01 | 1, 3, 6 | Pending |
 | PROP-01 | 2, 5 | Pending |
 | REG-01 | 2 | Pending |
-| EDGE-01 | 4 | Pending |
-| FRAG-01 | 1, 3, 4 | Pending |
+| EDGE-01 | 4 | Complete |
+| FRAG-01 | 1, 3, 4 | Complete |
 
 ---
 *Created: 2026-01-19*
