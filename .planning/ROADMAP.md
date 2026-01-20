@@ -10,7 +10,7 @@ This roadmap transforms the dkge R package from "works for developer" to "public
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Data + Kernel Foundation** - Verify data constructors and kernel operations
+- [x] **Phase 1: Data + Kernel Foundation** - Verify data constructors and kernel operations ✓
 - [ ] **Phase 2: Fit Layer Correctness** - Verify K-orthonormality, eigendecomposition, pooled design
 - [ ] **Phase 3: Cross-Fitting Validation** - Verify LOSO/K-fold mechanics and analytic fallback
 - [ ] **Phase 4: Numerical Edge Cases** - Verify robustness to degenerate inputs
@@ -31,8 +31,8 @@ This roadmap transforms the dkge R package from "works for developer" to "public
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Data constructor input validation and ordering invariance tests
-- [ ] 01-02-PLAN.md — Kernel mathematical invariant and edge case tests
+- [x] 01-01-PLAN.md — Data constructor input validation and ordering invariance tests ✓
+- [x] 01-02-PLAN.md — Kernel mathematical invariant and edge case tests ✓
 
 ### Phase 2: Fit Layer Correctness
 **Goal**: Core algorithm produces mathematically valid K-orthonormal bases
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data + Kernel Foundation | 0/2 | Planned | - |
+| 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
 | 2. Fit Layer Correctness | 0/2 | Not started | - |
 | 3. Cross-Fitting Validation | 0/2 | Not started | - |
 | 4. Numerical Edge Cases | 0/2 | Not started | - |
@@ -145,3 +145,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 ---
 *Created: 2026-01-19*
 *Phase 1 planned: 2026-01-19*
+*Phase 1 complete: 2026-01-19*

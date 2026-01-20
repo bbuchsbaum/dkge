@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Implementation must faithfully match the mathematical specification in `algo.md` - users need to trust the results before publishing research based on them.
-**Current focus:** Phase 1 - Data + Kernel Foundation
+**Current focus:** Phase 2 - Fit Layer Correctness
 
 ## Current Position
 
-Phase: 1 of 6 (Data + Kernel Foundation)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 01-02-PLAN.md (kernel invariant tests)
+Phase: 2 of 6 (Fit Layer Correctness)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-01-19 - Phase 1 verified and complete
 
 Progress: [██░░░░░░░░] 17%
 
@@ -64,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Completed 01-02-PLAN.md (Phase 1 complete)
+Last session: 2026-01-19
+Stopped at: Phase 1 complete, Phase 2 ready to plan
 Resume file: None
