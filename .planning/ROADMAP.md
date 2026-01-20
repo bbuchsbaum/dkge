@@ -59,11 +59,11 @@ Plans:
   3. K-fold with k=S subjects produces identical results to LOSO
   4. All analytic LOSO fallback paths (eigengap, perturbation_magnitude, solver_not_pooled) have test coverage
   5. Analytic approximation matches iterative LOSO within specified tolerance
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: LOSO mechanics and leakage tests
-- [ ] 03-02: Analytic fallback path coverage
+- [ ] 03-01-PLAN.md — LOSO data leakage prevention and K-fold equivalence tests
+- [ ] 03-02-PLAN.md — Analytic LOSO fallback path coverage tests
 
 ### Phase 4: Numerical Edge Cases
 **Goal**: Package handles degenerate inputs gracefully without silent failures
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
 | 2. Fit Layer Correctness | 2/2 | Complete ✓ | 2026-01-19 |
-| 3. Cross-Fitting Validation | 0/2 | Not started | - |
+| 3. Cross-Fitting Validation | 0/2 | Planned | - |
 | 4. Numerical Edge Cases | 0/2 | Not started | - |
 | 5. Transport + Inference | 0/2 | Not started | - |
 | 6. Integration + S3 Contracts | 0/3 | Not started | - |
@@ -148,3 +148,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 1 complete: 2026-01-19*
 *Phase 2 planned: 2026-01-19*
 *Phase 2 complete: 2026-01-19*
+*Phase 3 planned: 2026-01-19*
