@@ -100,6 +100,9 @@ dkge_subject.matrix <- function(x, design, id = NULL, omega = NULL, ...) {
   effects <- aligned$effects
   P <- ncol(beta)
   omega <- .validate_omega(omega, P)
+
+  # Check for rank deficiency (warnings only, does not block construction)
+  .dkge_check_rank(design, beta, subject_id = id)
   if (is.null(colnames(beta))) {
     colnames(beta) <- paste0("cluster_", seq_len(P))
   }
@@ -307,6 +310,11 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
       id <- if (is.null(subject_ids)) NULL else subject_ids[[i]]
       subjects[[i]] <- dkge_subject(betas[[i]], design = designs[[i]], id = id, omega = omega[[i]])
     }
+  }
+
+  # Require minimum 2 subjects for group analysis
+  if (length(subjects) < 2) {
+    stop("At least 2 subjects required for group analysis.", call. = FALSE)
   }
 
   ids <- .normalize_subject_ids(subjects, provided = subject_ids)

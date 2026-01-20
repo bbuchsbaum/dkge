@@ -21,6 +21,10 @@
     G_pool <- G_pool + crossprod(Xs)
   }
   diag(G_pool) <- diag(G_pool) + jitter
+
+  # Check condition number before Cholesky
+  .dkge_check_condition(G_pool, threshold = 1e8, name = "pooled Gram matrix")
+
   list(R = chol(G_pool), G_pool = G_pool)
 }
 

@@ -208,6 +208,20 @@
     eig_vectors_full <- eigChat$vectors
     eig_values_full <- eigChat$values
 
+    # Track effective rank (eigenvalues > 1e-12)
+    effective_rank <- sum(eig_values_full > 1e-12)
+    rank_reduced <- FALSE
+
+    # Warn if requested rank exceeds effective rank
+    if (rank > effective_rank) {
+      warning(sprintf(
+        "Requested rank %d exceeds effective rank %d. Reducing to %d components.",
+        rank, effective_rank, effective_rank
+      ), call. = FALSE)
+      rank <- effective_rank
+      rank_reduced <- TRUE
+    }
+
     eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
     eig_values <- eig_values_full[seq_len(rank)]
     pos_idx <- eig_values > 1e-12
@@ -215,6 +229,7 @@
       eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
       eig_values <- eig_values[pos_idx]
       rank <- length(eig_values)
+      rank_reduced <- TRUE
     }
 
     sdev <- sqrt(pmax(eig_values, 0))
@@ -246,6 +261,8 @@
       U = U,
       sdev = sdev,
       rank = rank,
+      effective_rank = effective_rank,
+      rank_reduced = rank_reduced,
       cpca_info = cpca_info,
       solver = solver,
       jd = NULL
@@ -296,6 +313,20 @@
   eig_vectors_full <- jd_res$Q
   eig_values_full <- jd_res$diag_vals
 
+  # Track effective rank (eigenvalues > 1e-12)
+  effective_rank <- sum(eig_values_full > 1e-12)
+  rank_reduced <- FALSE
+
+  # Warn if requested rank exceeds effective rank
+  if (rank > effective_rank) {
+    warning(sprintf(
+      "Requested rank %d exceeds effective rank %d. Reducing to %d components.",
+      rank, effective_rank, effective_rank
+    ), call. = FALSE)
+    rank <- effective_rank
+    rank_reduced <- TRUE
+  }
+
   eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
   eig_values <- eig_values_full[seq_len(rank)]
   pos_idx <- eig_values > 1e-12
@@ -303,6 +334,7 @@
     eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
     eig_values <- eig_values[pos_idx]
     rank <- length(eig_values)
+    rank_reduced <- TRUE
   }
 
   sdev <- sqrt(pmax(eig_values, 0))
@@ -350,6 +382,8 @@
     U = U,
     sdev = sdev,
     rank = rank,
+    effective_rank = effective_rank,
+    rank_reduced = rank_reduced,
     cpca_info = cpca_info,
     solver = solver,
     jd = jd_res
@@ -480,7 +514,9 @@
     w_method = w_method,
     w_tau = w_tau,
     ridge_input = ridge,
-    rank_requested = prepped$rank_requested
+    rank_requested = prepped$rank_requested,
+    effective_rank = solved$effective_rank,
+    rank_reduced = solved$rank_reduced
   )
 
   fit$Chat_sym <- accum$Chat_sym

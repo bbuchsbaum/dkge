@@ -79,6 +79,18 @@
     stringsAsFactors = FALSE
   )
 
+  # Warn about sparse subjects (>50% missing effects)
+  for (i in seq_along(obs_mask)) {
+    mask <- obs_mask[[i]]
+    pct_present <- 100 * sum(mask) / length(mask)
+    if (pct_present < 50) {
+      warning(sprintf(
+        "Subject '%s': sparse effect coverage (%.1f%% of effects present). Consider excluding.",
+        subject_ids[i], pct_present
+      ), call. = FALSE)
+    }
+  }
+
   list(
     subjects = subjects,
     provenance = list(
