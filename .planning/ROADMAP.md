@@ -11,7 +11,7 @@ This roadmap transforms the dkge R package from "works for developer" to "public
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Data + Kernel Foundation** - Verify data constructors and kernel operations ✓
-- [ ] **Phase 2: Fit Layer Correctness** - Verify K-orthonormality, eigendecomposition, pooled design
+- [x] **Phase 2: Fit Layer Correctness** - Verify K-orthonormality, eigendecomposition, pooled design ✓
 - [ ] **Phase 3: Cross-Fitting Validation** - Verify LOSO/K-fold mechanics and analytic fallback
 - [ ] **Phase 4: Numerical Edge Cases** - Verify robustness to degenerate inputs
 - [ ] **Phase 5: Transport + Inference** - Verify Sinkhorn convergence and null calibration
@@ -46,8 +46,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — K-orthonormality property tests and pooled design verification
-- [ ] 02-02-PLAN.md — Recovery tests with synthetic ground truth and determinism tests
+- [x] 02-01-PLAN.md — K-orthonormality property tests and pooled design verification ✓
+- [x] 02-02-PLAN.md — Recovery tests with synthetic ground truth and determinism tests ✓
 
 ### Phase 3: Cross-Fitting Validation
 **Goal**: LOSO and K-fold cross-fitting are unbiased with no data leakage
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data + Kernel Foundation | 2/2 | Complete ✓ | 2026-01-19 |
-| 2. Fit Layer Correctness | 0/2 | Planned | - |
+| 2. Fit Layer Correctness | 2/2 | Complete ✓ | 2026-01-19 |
 | 3. Cross-Fitting Validation | 0/2 | Not started | - |
 | 4. Numerical Edge Cases | 0/2 | Not started | - |
 | 5. Transport + Inference | 0/2 | Not started | - |
@@ -147,3 +147,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 1 planned: 2026-01-19*
 *Phase 1 complete: 2026-01-19*
 *Phase 2 planned: 2026-01-19*
+*Phase 2 complete: 2026-01-19*
