@@ -287,3 +287,59 @@ test_that("sparse subject warning consistent across seeds", {
     )
   }
 })
+
+# -------------------------------------------------------------------------
+# Section 4: Numerical tolerance checks across seeds ------------------------
+# -------------------------------------------------------------------------
+
+test_that("K-orthonormality holds across seeds", {
+  seeds <- c(1, 42, 123, 999, 2024)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+    factors <- list(A = list(L = 5, type = "ordinal", l = 1.0))
+    sim <- dkge_sim_toy(factors, active_terms = "A", S = 4, P = 50, snr = 8, seed = seed)
+    data <- dkge_data(sim$B_list, sim$X_list)
+    K <- sim$K
+    fit <- dkge_fit(data, K = K, rank = 3, w_method = "none")
+
+    # K-orthonormality: t(U) %*% K %*% U = I
+    UtKU <- t(fit$U) %*% K %*% fit$U
+    expect_equal(UtKU, diag(ncol(fit$U)), tolerance = 1e-8,
+                 info = paste("Seed:", seed))
+  }
+})
+
+test_that("kernel root reconstruction holds across seeds", {
+  seeds <- c(1, 42, 123, 999, 2024)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+    # Generate random PSD kernel
+    L <- matrix(rnorm(25), 5, 5)
+    K <- crossprod(L)
+    K <- (K + t(K)) / 2
+
+    roots <- kernel_roots(K)
+    reconstructed <- roots$Khalf %*% roots$Khalf
+
+    expect_equal(reconstructed, K, tolerance = 1e-8,
+                 info = paste("Seed:", seed))
+  }
+})
+
+test_that("Chat symmetry holds across seeds", {
+  seeds <- c(1, 42, 123, 999, 2024)
+
+  for (seed in seeds) {
+    withr::local_seed(seed)
+    factors <- list(A = list(L = 4, type = "ordinal", l = 1.0))
+    sim <- dkge_sim_toy(factors, active_terms = "A", S = 4, P = 50, snr = 10, seed = seed)
+    data <- dkge_data(sim$B_list, sim$X_list)
+    K <- sim$K
+    fit <- dkge_fit(data, K = K, rank = 2, w_method = "none")
+
+    expect_true(isSymmetric(fit$Chat, tol = 1e-10),
+                info = paste("Seed:", seed))
+  }
+})
