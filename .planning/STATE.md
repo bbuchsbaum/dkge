@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 3 of 6 (Cross-Fitting Validation)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-19 - Phase 2 verified and complete
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 03-01-PLAN.md
 
-Progress: [████░░░░░░] 33%
+Progress: [████▓░░░░░] 42%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 3.0 min
-- Total execution time: 0.20 hours
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [████░░░░░░] 33%
 |-------|-------|-------|----------|
 | 01-data-kernel-foundation | 2 | 8min | 4min |
 | 02-fit-layer-correctness | 2 | 4min | 2min |
+| 03-cross-fitting-validation | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 01-02 (4min), 02-01 (2min), 02-02 (2min)
-- Trend: Accelerating (fit layer tests faster due to established patterns)
+- Last 5 plans: 01-02 (4min), 02-01 (2min), 02-02 (2min), 03-01 (3min)
+- Trend: Steady (cross-fitting tests similar complexity to prior phases)
 
 *Updated after each plan completion*
 
@@ -56,6 +57,8 @@ Recent decisions affecting current work:
 - [02-01]: Gram matrix verification tolerance: 1e-10 (tighter for exact linear algebra)
 - [02-02]: SNR thresholds for recovery: 20->0.98, 8->0.90, 2->0.70
 - [02-02]: Graceful degradation allows 0.05 tolerance for sampling variance
+- [03-01]: Chat_minus tolerance 1e-7 due to floating-point accumulation
+- [03-01]: Basis comparison via cosine similarity for sign-flip invariance
 
 ### Pending Todos
 
@@ -69,6 +72,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-19
-Stopped at: Phase 2 complete, Phase 3 ready to plan
+Last session: 2026-01-20
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
