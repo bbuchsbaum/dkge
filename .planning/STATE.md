@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Implementation must faithfully match the mathematical specification in `algo.md` - users need to trust the results before publishing research based on them.
-**Current focus:** Phase 3 - Cross-Fitting Validation
+**Current focus:** Phase 3 - Cross-Fitting Validation (complete)
 
 ## Current Position
 
 Phase: 3 of 6 (Cross-Fitting Validation)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-20 - Completed 03-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 - Completed 03-02-PLAN.md
 
-Progress: [████▓░░░░░] 42%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 3.0 min
-- Total execution time: 0.25 hours
+- Total plans completed: 6
+- Average duration: 3.2 min
+- Total execution time: 0.32 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████▓░░░░░] 42%
 |-------|-------|-------|----------|
 | 01-data-kernel-foundation | 2 | 8min | 4min |
 | 02-fit-layer-correctness | 2 | 4min | 2min |
-| 03-cross-fitting-validation | 1 | 3min | 3min |
+| 03-cross-fitting-validation | 2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (4min), 02-01 (2min), 02-02 (2min), 03-01 (3min)
-- Trend: Steady (cross-fitting tests similar complexity to prior phases)
+- Last 5 plans: 02-01 (2min), 02-02 (2min), 03-01 (3min), 03-02 (4min)
+- Trend: Steady (analytic fallback tests slightly more complex)
 
 *Updated after each plan completion*
 
@@ -59,6 +59,8 @@ Recent decisions affecting current work:
 - [02-02]: Graceful degradation allows 0.05 tolerance for sampling variance
 - [03-01]: Chat_minus tolerance 1e-7 due to floating-point accumulation
 - [03-01]: Basis comparison via cosine similarity for sign-flip invariance
+- [03-02]: Basis rotation ambiguity - use K-orthonormality check instead of per-column cosine
+- [03-02]: Perturbation magnitude test requires small gaps + large off-diagonal coupling
 
 ### Pending Todos
 
@@ -73,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Phase 3 complete, ready for Phase 4
 Resume file: None
