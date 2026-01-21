@@ -105,14 +105,16 @@ Plans:
   3. `R CMD check` passes with 0 errors, 0 warnings, 0 notes
   4. All exported functions have working `@examples`
   5. Test coverage on exported functions exceeds 80%
-**Plans**: 5 plans
+**Plans**: 7 plans
 
 Plans:
 - [x] 06-01-PLAN.md — Pipeline integration tests (full workflow verification) ✓
 - [x] 06-02-PLAN.md — S3 method contract tests (print, predict, as.data.frame) ✓
 - [x] 06-03-PLAN.md — R CMD check compliance (documentation, imports, build) ✓
 - [x] 06-04-PLAN.md — Example audit and test coverage closure (>80%) ✓
-- [ ] 06-05-PLAN.md — Gap closure: Replace \dontrun{} with \donttest{} and add missing @examples
+- [x] 06-05-PLAN.md — Gap closure: Replace \dontrun{} with \donttest{} and add 7 @examples ✓
+- [ ] 06-06-PLAN.md — Gap closure: Add @examples to remaining 17 files
+- [ ] 06-07-PLAN.md — Gap closure: Fix vignette build warnings
 
 ## Requirement Mapping
 
@@ -142,7 +144,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Cross-Fitting Validation | 2/2 | Complete ✓ | 2026-01-19 |
 | 4. Numerical Edge Cases | 2/2 | Complete ✓ | 2026-01-20 |
 | 5. Transport + Inference | 2/2 | Complete ✓ | 2026-01-20 |
-| 6. Integration + S3 Contracts | 4/5 | Gap closure | - |
+| 6. Integration + S3 Contracts | 5/7 | Gap closure | - |
 
 ---
 *Created: 2026-01-19*
@@ -159,3 +161,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 6 planned: 2026-01-20*
 *Phase 6 revised: 2026-01-20*
 *Phase 6 gap closure: 2026-01-21*
+*Phase 6 gap closure plans 06-06, 06-07: 2026-01-21*
