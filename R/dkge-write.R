@@ -11,6 +11,7 @@
 #'   painted volume is returned without writing to disk.
 #' @return Either the output path (when `out_file` is supplied) or a
 #'   `neuroim2::BrainVolume`.
+#' @importFrom utils capture.output
 #' @export
 dkge_write_group_map <- function(group_values, medoid_labels, label_table = NULL, out_file = NULL) {
   if (!requireNamespace("neuroim2", quietly = TRUE)) {

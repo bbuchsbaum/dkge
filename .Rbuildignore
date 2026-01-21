@@ -7,6 +7,8 @@
 ^docs$
 ^future$
 ^repomix-output\.xml$
+^repomix-output\.txt$
 ^_pkgdown\.yml$
 ^pkgdown$
 ^\.github$
+^\.planning$
