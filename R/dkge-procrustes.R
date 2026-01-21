@@ -22,6 +22,12 @@
 #' @param Kroots optional precomputed kernel roots from `.dkge_kernel_roots`
 #' @return qxr matrix with K-orthonormal columns
 #' @export
+#' @examples
+#' K <- diag(5)
+#' W <- matrix(rnorm(10), 5, 2)
+#' U <- dkge_k_orthonormalize(W, K)
+#' # Verify K-orthonormality
+#' round(t(U) %*% K %*% U, 10)
 dkge_k_orthonormalize <- function(W, K, Kroots = NULL) {
   stopifnot(is.matrix(W), is.matrix(K), nrow(K) == nrow(W))
   Kroots <- Kroots %||% .dkge_kernel_roots(K)

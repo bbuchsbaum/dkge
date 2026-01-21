@@ -20,6 +20,11 @@
 #' @return List with entries `P_K` (effect-space projector) and `P_hat`
 #'   (projector in the \eqn{K^{1/2}} metric).
 #' @export
+#' @examples
+#' K <- diag(5)
+#' T <- matrix(rnorm(10), 5, 2)
+#' P <- dkge_projector_K(T, K)
+#' dim(P$P_K)
 dkge_projector_K <- function(T, K) {
   stopifnot(is.matrix(T), is.matrix(K), nrow(T) == nrow(K))
   M <- crossprod(T, K %*% T)

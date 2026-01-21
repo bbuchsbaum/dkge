@@ -101,6 +101,11 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @return List of Pxrank matrices; returns a single matrix when `Btil` is a matrix.
 #' @describeIn dkge_project_block Project subject-standardised betas into component space
 #' @export
+#' @examples
+#' toy <- dkge_sim_toy(n_subjects = 3, q = 5, P = 20)
+#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' A <- dkge_project_btil(fit, fit$Btil[[1]])
+#' dim(A)
 dkge_project_btil <- function(fit, Btil) {
   stopifnot(inherits(fit, "dkge"))
   KsU <- fit$K %*% fit$U

@@ -10,6 +10,13 @@
 #' @param ridge Optional ridge when recomputing the held-out compressed matrix
 #' @return List with fields `v`, `alpha`, and `basis`
 #' @export
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(n_subjects = 4, q = 5, P = 20)
+#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' c_vec <- c(1, -1, rep(0, 3))
+#' result <- dkge_loso_contrast(fit, s = 1, c = c_vec)
+#' }
 dkge_loso_contrast <- function(fit, s, c, ridge = 0) {
   stopifnot(inherits(fit, "dkge"), s >= 1L, s <= length(fit$Btil))
   q <- nrow(fit$U)

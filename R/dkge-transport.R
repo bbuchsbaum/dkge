@@ -115,6 +115,8 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
 #'
 #' @return Logical `TRUE` invisibly.
 #' @export
+#' @examples
+#' dkge_clear_sinkhorn_cache()
 dkge_clear_sinkhorn_cache <- function() {
   keys <- setdiff(ls(.dkge_sinkhorn_cache, all.names = TRUE), ".order")
   if (length(keys)) {

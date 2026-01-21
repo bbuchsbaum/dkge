@@ -24,6 +24,12 @@
 #' @return A list containing bootstrap summaries (`mean`, `sd`, `z`, confidence
 #'   intervals), and optionally the raw bootstrap draws (medoid and voxel space).
 #' @export
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(n_subjects = 5, q = 5, P = 20)
+#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' # Bootstrap requires transport setup - example shows API
+#' }
 dkge_bootstrap_projected <- function(values_medoid,
                                      B = 1000L,
                                      aggregate = c("mean", "median"),

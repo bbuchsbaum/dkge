@@ -6,6 +6,11 @@
 #' @param fit a dkge or dkge_stream object
 #' @return list with U, K, R and class 'dkge_model'
 #' @export
+#' @examples
+#' toy <- dkge_sim_toy(n_subjects = 3, q = 5, P = 20)
+#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' model <- dkge_freeze(fit)
+#' print(model)
 dkge_freeze <- function(fit) {
   stopifnot(is.list(fit), !is.null(fit$U), !is.null(fit$K), !is.null(fit$R))
   model <- list(U = fit$U, K = fit$K, R = fit$R, effects = fit$effects)
