@@ -7,8 +7,11 @@
 #' @return list with U, K, R and class 'dkge_model'
 #' @export
 #' @examples
-#' toy <- dkge_sim_toy(n_subjects = 3, q = 5, P = 20)
-#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 20, snr = 5
+#' )
+#' fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 #' model <- dkge_freeze(fit)
 #' print(model)
 dkge_freeze <- function(fit) {

@@ -102,8 +102,11 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @describeIn dkge_project_block Project subject-standardised betas into component space
 #' @export
 #' @examples
-#' toy <- dkge_sim_toy(n_subjects = 3, q = 5, P = 20)
-#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 20, snr = 5
+#' )
+#' fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 #' A <- dkge_project_btil(fit, fit$Btil[[1]])
 #' dim(A)
 dkge_project_btil <- function(fit, Btil) {

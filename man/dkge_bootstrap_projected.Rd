@@ -46,8 +46,11 @@ group basis.
 }
 \examples{
 \donttest{
-toy <- dkge_sim_toy(n_subjects = 5, q = 5, P = 20)
-fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 5, P = 20, snr = 5
+)
+fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 # Bootstrap requires transport setup - example shows API
 }
 }

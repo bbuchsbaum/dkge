@@ -12,8 +12,11 @@
 #' @export
 #' @examples
 #' \donttest{
-#' toy <- dkge_sim_toy(n_subjects = 4, q = 5, P = 20)
-#' fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 4, P = 20, snr = 5
+#' )
+#' fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 #' c_vec <- c(1, -1, rep(0, 3))
 #' result <- dkge_loso_contrast(fit, s = 1, c = c_vec)
 #' }
