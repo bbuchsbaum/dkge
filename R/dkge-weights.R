@@ -29,6 +29,13 @@
 #'   `list(time = "mean")` or `list(time = list(method = "mean", window = 3:8))`).
 #' @param roi Optional ROI labels used when `shrink$roi_smooth = TRUE`.
 #' @return Object of class `"dkge_weights"`.
+#' @examples
+#' # Default specification with adaptive k-energy weighting
+#' w <- dkge_weights(adapt = "kenergy")
+#' print(w)
+#'
+#' # Uniform (no adaptive) weights
+#' w_uniform <- dkge_weights(adapt = "none")
 #' @export
 dkge_weights <- function(prior = NULL,
                          adapt = c("none", "kenergy", "precision", "kenergy_prec", "reliability"),

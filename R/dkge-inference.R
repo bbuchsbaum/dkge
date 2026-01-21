@@ -112,25 +112,17 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
 #' For parametric inference, FDR may be more appropriate for exploratory analyses.
 #'
 #' @examples
-#' \dontrun{
-#' # Standard LOSO with sign-flip and maxT correction
-#' results <- dkge_infer(fit, c(1, -1, 0, 0, 0))
-#'
-#' # K-fold with parametric test and FDR
-#' results <- dkge_infer(fit, c(1, -1, 0, 0, 0),
-#'                      method = "kfold", folds = 5,
-#'                      inference = "parametric",
-#'                      correction = "fdr")
-#'
-#' # Multiple contrasts with analytic approximation
-#' contrasts <- list(
-#'   main1 = c(1, -1, 0, 0, 0),
-#'   main2 = c(0, 0, 1, -1, 0)
+#' # Simulate and fit
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 6, P = 15, snr = 5
 #' )
-#' results <- dkge_infer(fit, contrasts, method = "analytic")
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 #'
-#' # Extract significant clusters for first contrast
-#' sig_clusters <- which(results$significant[[1]])
+#' # LOSO with sign-flip and maxT correction (fast with few perms for example)
+#' \donttest{
+#' results <- dkge_infer(fit, c(1, rep(0, 4)), n_perm = 100)
+#' results
 #' }
 #'
 #' @seealso [dkge_contrast()], [dkge_signflip_maxT()], [dkge_freedman_lane()]
@@ -364,8 +356,10 @@ print.dkge_inference <- function(x, ...) {
 #' Convert DKGE inference results to a tidy data frame
 #'
 #' @param x A `dkge_inference` object
-#' @param ... Additional arguments passed to [base::data.frame()]
-#' @param stringsAsFactors Logical; forwarded to [base::data.frame()]
+#' @param row.names NULL or a character vector giving the row names
+#' @param optional Logical; if TRUE, setting row names is optional
+#' @param ... Additional arguments passed to [base::data.frame()], including
+#'   `stringsAsFactors`
 #' @return Data frame with columns `contrast`, `cluster`, `statistic`, `p_value`,
 #'   `p_adjusted`, and `significant`
 #' @export

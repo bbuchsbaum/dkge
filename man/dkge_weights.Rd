@@ -55,3 +55,11 @@ resolved and applied when building weighted second moments inside DKGE. The
 specification is attached to fits and reused by fold builders to ensure
 cross-fitting remains leak-free.
 }
+\examples{
+# Default specification with adaptive k-energy weighting
+w <- dkge_weights(adapt = "kenergy")
+print(w)
+
+# Uniform (no adaptive) weights
+w_uniform <- dkge_weights(adapt = "none")
+}

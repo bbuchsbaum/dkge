@@ -245,10 +245,21 @@
 #'   off-diagonal penalty during JD. When supplied as a single matrix it is
 #'   recycled across subjects.
 #' @param jd_init Optional orthogonal initialiser for the JD solver expressed in
-#'   the whitened K^{1/2} metric (qxq matrix).
+#'   the whitened \eqn{K^{1/2}} metric (qxq matrix).
 #' @return A fitted `dkge` object. When the \pkg{multivarious} package is installed
 #'   the return value additionally inherits from `multiblock_biprojector`, making
 #'   it compatible with the multivarious multiblock interface.
+#' @examples
+#' # Simulate toy data with known structure
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 4, P = 30, snr = 5
+#' )
+#'
+#' # Bundle into dkge_data and fit
+#' data <- dkge_data(toy$B_list, toy$X_list)
+#' fit <- dkge_fit(data, K = toy$K, rank = 2)
+#' fit$rank
 #' @export
 dkge_fit <- function(data, designs = NULL, K = NULL, Omega_list = NULL,
                      w_method = c("mfa_sigma1", "energy", "none"),

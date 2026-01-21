@@ -56,3 +56,20 @@ List containing the fit, diagnostics, raw contrast values, transported
 Fits DKGE (if needed), computes cross-fitted contrasts, optionally transports
 them to a medoid parcellation, and performs sign-flip inference.
 }
+\examples{
+# Simulate toy data
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 5, P = 25, snr = 5
+)
+
+# Run pipeline with LOSO contrasts
+result <- dkge_pipeline(
+  betas = toy$B_list,
+  designs = toy$X_list,
+  kernel = toy$K,
+  contrasts = c(1, rep(0, 4)),  # first effect
+  method = "loso"
+)
+names(result)
+}

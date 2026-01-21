@@ -76,3 +76,14 @@ where `U_true` lies inside the requested design-term blocks, `M_s` encodes the
 subject-specific spatial loadings, and `E_s` is Gaussian noise adjusted to hit
 the requested Frobenius SNR.
 }
+\examples{
+# Generate 3-subject toy data with 2x3 factorial design
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"),
+  S = 3, P = 20, snr = 5
+)
+length(toy$B_list)   # 3 subjects
+dim(toy$B_list[[1]]) # 5 effects x 20 clusters
+dim(toy$K)           # 5x5 kernel
+}

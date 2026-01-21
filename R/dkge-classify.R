@@ -47,6 +47,19 @@
 #' @param parallel Logical; reserved for future parallelism hooks.
 #' @param verbose Logical; print progress messages.
 #' @param seed Optional random seed applied before permutations.
+#' @examples
+#' # Simulate toy data
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 6, P = 20, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#'
+#' # Decode factor A using cell-mode classification
+#' \donttest{
+#' clf <- dkge_classify(fit, targets = ~A, method = "lda")
+#' clf
+#' }
 #' @export
 dkge_classify <- function(fit,
                           targets,

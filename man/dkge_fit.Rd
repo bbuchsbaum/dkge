@@ -18,7 +18,11 @@ dkge_fit(
   cpca_T = NULL,
   cpca_part = c("none", "design", "resid", "both"),
   cpca_ridge = 0,
-  weights = NULL
+  weights = NULL,
+  solver = c("pooled", "jd"),
+  jd_control = dkge_jd_control(),
+  jd_mask = NULL,
+  jd_init = NULL
 )
 }
 \arguments{
@@ -72,6 +76,19 @@ eigen-decomposition.}
 by `w_method`, or a [`dkge_weights()`] specification controlling additional
 voxel/anchor-level weighting. When supplied, it must inherit from
 `dkge_weights` and is resolved via [dkge_weights()].}
+
+\item{solver}{Solver used for the q-space problem. `"pooled"` keeps the
+original eigen-decomposition; `"jd"` performs joint diagonalisation using
+[dkge_jd_control()] settings.}
+
+\item{jd_control}{Control parameters for the JD solver.}
+
+\item{jd_mask}{Optional mask (matrix or list of matrices) applied to the
+off-diagonal penalty during JD. When supplied as a single matrix it is
+recycled across subjects.}
+
+\item{jd_init}{Optional orthogonal initialiser for the JD solver expressed in
+the whitened \eqn{K^{1/2}} metric (qxq matrix).}
 }
 \value{
 A fitted `dkge` object. When the \pkg{multivarious} package is installed
@@ -80,4 +97,16 @@ A fitted `dkge` object. When the \pkg{multivarious} package is installed
 }
 \description{
 Fit a Design-Kernel Group Embedding (DKGE) model
+}
+\examples{
+# Simulate toy data with known structure
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 4, P = 30, snr = 5
+)
+
+# Bundle into dkge_data and fit
+data <- dkge_data(toy$B_list, toy$X_list)
+fit <- dkge_fit(data, K = toy$K, rank = 2)
+fit$rank
 }

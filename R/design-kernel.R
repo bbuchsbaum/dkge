@@ -38,6 +38,19 @@
 #' @return A list with elements `K` (kernel in requested basis), `K_cell` (always
 #'   returned), and `info` containing metadata such as factor/term names, mapping
 #'   matrix, and block indices.
+#' @examples
+#' # Simple 2x3 factorial design
+#' kern <- design_kernel(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   basis = "effect"
+#' )
+#' dim(kern$K)  # 5x5 effect-space kernel
+#'
+#' # Ordinal factor with RBF smoothing
+#' kern_ord <- design_kernel(
+#'   factors = list(time = list(L = 5, type = "ordinal", l = 1.5)),
+#'   basis = "effect"
+#' )
 #' @export
 
 design_kernel <- function(factors,

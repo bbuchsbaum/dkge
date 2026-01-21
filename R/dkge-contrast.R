@@ -52,22 +52,20 @@
 #' throughout. Multiple contrasts can be evaluated simultaneously for efficiency.
 #'
 #' @examples
-#' \dontrun{
-#' # Single contrast with LOSO
-#' c1 <- c(1, -1, 0, 0, 0)  # Main effect difference
-#' result <- dkge_contrast(fit, c1, method = "loso")
-#'
-#' # Multiple contrasts with K-fold
-#' contrasts <- list(
-#'   main1 = c(1, -1, 0, 0, 0),
-#'   main2 = c(0, 0, 1, -1, 0),
-#'   interaction = c(1, -1, -1, 1, 0)
+#' # Simulate and fit
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 4, P = 20, snr = 5
 #' )
-#' result <- dkge_contrast(fit, contrasts, method = "kfold", folds = 5)
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#'
+#' # Single contrast with LOSO cross-fitting
+#' c1 <- c(1, rep(0, 4))
+#' result <- dkge_contrast(fit, c1, method = "loso")
+#' result
 #'
 #' # Fast analytic approximation
-#' result <- dkge_contrast(fit, c1, method = "analytic")
-#' }
+#' result_fast <- dkge_contrast(fit, c1, method = "analytic")
 #'
 #' @seealso [dkge_loso_contrast()], [dkge_define_folds()], [dkge_infer()]
 #' @export

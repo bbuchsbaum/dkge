@@ -44,6 +44,16 @@
 #'       column indices in the effect basis.}
 #'     \item{subject_ids}{Character vector of subject identifiers.}
 #'   }
+#' @examples
+#' # Generate 3-subject toy data with 2x3 factorial design
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"),
+#'   S = 3, P = 20, snr = 5
+#' )
+#' length(toy$B_list)   # 3 subjects
+#' dim(toy$B_list[[1]]) # 5 effects x 20 clusters
+#' dim(toy$K)           # 5x5 kernel
 #' @export
 dkge_sim_toy <- function(factors,
                          terms = NULL,

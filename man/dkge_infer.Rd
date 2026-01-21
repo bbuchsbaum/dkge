@@ -86,25 +86,17 @@ For sign-flip inference, the max-T correction provides strong FWER control.
 For parametric inference, FDR may be more appropriate for exploratory analyses.
 }
 \examples{
-\dontrun{
-# Standard LOSO with sign-flip and maxT correction
-results <- dkge_infer(fit, c(1, -1, 0, 0, 0))
-
-# K-fold with parametric test and FDR
-results <- dkge_infer(fit, c(1, -1, 0, 0, 0),
-                     method = "kfold", folds = 5,
-                     inference = "parametric",
-                     correction = "fdr")
-
-# Multiple contrasts with analytic approximation
-contrasts <- list(
-  main1 = c(1, -1, 0, 0, 0),
-  main2 = c(0, 0, 1, -1, 0)
+# Simulate and fit
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 6, P = 15, snr = 5
 )
-results <- dkge_infer(fit, contrasts, method = "analytic")
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 
-# Extract significant clusters for first contrast
-sig_clusters <- which(results$significant[[1]])
+# LOSO with sign-flip and maxT correction (fast with few perms for example)
+\donttest{
+results <- dkge_infer(fit, c(1, rep(0, 4)), n_perm = 100)
+results
 }
 
 }
