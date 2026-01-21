@@ -20,3 +20,10 @@ qxr matrix with K-orthonormal columns
 Ensures the columns of `W` are orthonormal with respect to the
 design kernel metric: U^T K U = I.
 }
+\examples{
+K <- diag(5)
+W <- matrix(rnorm(10), 5, 2)
+U <- dkge_k_orthonormalize(W, K)
+# Verify K-orthonormality
+round(t(U) \%*\% K \%*\% U, 10)
+}

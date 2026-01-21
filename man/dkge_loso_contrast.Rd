@@ -21,3 +21,11 @@ List with fields `v`, `alpha`, and `basis`
 \description{
 Leave-one-subject-out DKGE contrast
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(n_subjects = 4, q = 5, P = 20)
+fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+c_vec <- c(1, -1, rep(0, 3))
+result <- dkge_loso_contrast(fit, s = 1, c = c_vec)
+}
+}

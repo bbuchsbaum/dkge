@@ -42,7 +42,7 @@ maps to anchors, aggregates across subjects, and optionally performs
 inference.
 }
 \examples{
-\dontrun{
+\donttest{
 info <- dkge_info_map_from_classifier(fit, clf$beta_by_subject, renderer)
 }
 }

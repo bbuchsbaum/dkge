@@ -44,7 +44,7 @@ identity design matrix so the resulting DKGE fit matches the supplied
 kernels.
 }
 \examples{
-\dontrun{
+\donttest{
 q <- 5
 Ks <- replicate(3, {
   X <- matrix(rnorm(q * q), q)

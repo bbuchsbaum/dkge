@@ -54,7 +54,7 @@ per held-out subject so downstream information-map routines can construct
 bias-aware decoder or Haufe maps.
 }
 \examples{
-\dontrun{
+\donttest{
 clf <- dkge_cv_train_latent_classifier(fit, y, folds = 5)
 length(clf$beta_by_subject)
 }

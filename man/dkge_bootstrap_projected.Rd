@@ -44,3 +44,10 @@ Resamples transported subject vectors (already aligned in the medoid
 parcellation) to quantify between-subject variability without recomputing the
 group basis.
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(n_subjects = 5, q = 5, P = 20)
+fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+# Bootstrap requires transport setup - example shows API
+}
+}

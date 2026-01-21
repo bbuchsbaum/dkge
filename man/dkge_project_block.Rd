@@ -47,3 +47,9 @@ Convenience wrapper for projecting row-standardised betas onto DKGE components.
 \item \code{dkge_project_btil()}: Project subject-standardised betas into component space
 
 }}
+\examples{
+toy <- dkge_sim_toy(n_subjects = 3, q = 5, P = 20)
+fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+A <- dkge_project_btil(fit, fit$Btil[[1]])
+dim(A)
+}

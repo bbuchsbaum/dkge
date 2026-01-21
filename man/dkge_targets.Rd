@@ -46,7 +46,7 @@ can be multiplied with subject effect coefficients to obtain class-specific
 patterns for decoding.
 }
 \examples{
-\dontrun{
+\donttest{
 tg <- dkge_targets(fit, ~ A + B + A:B, collapse = list(time = list(method = "mean", window = 3:8)))
 }
 }

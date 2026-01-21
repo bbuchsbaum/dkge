@@ -15,3 +15,9 @@ list with U, K, R and class 'dkge_model'
 \description{
 Freeze a DKGE fit into a compact model for prediction
 }
+\examples{
+toy <- dkge_sim_toy(n_subjects = 3, q = 5, P = 20)
+fit <- dkge_fit(toy$betas, toy$designs, toy$kernel, rank = 2)
+model <- dkge_freeze(fit)
+print(model)
+}

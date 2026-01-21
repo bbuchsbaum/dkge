@@ -13,3 +13,6 @@ Logical `TRUE` invisibly.
 Releases memory held by the internal Sinkhorn cache. Call this after large
 transport batches or before serialising objects.
 }
+\examples{
+dkge_clear_sinkhorn_cache()
+}

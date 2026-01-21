@@ -29,3 +29,9 @@ subspace is not well represented by coordinate axes, supply `cpca_T` with
 columns that already capture the kernel geometry so the CPCA basis respects
 those relationships.
 }
+\examples{
+K <- diag(5)
+T <- matrix(rnorm(10), 5, 2)
+P <- dkge_projector_K(T, K)
+dim(P$P_K)
+}

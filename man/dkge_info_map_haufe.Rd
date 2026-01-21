@@ -44,7 +44,7 @@ space using the Haufe transform \eqn{a_z = \Sigma_{zz} \beta}, then projects
 them to subject cluster space and through the renderer pipeline.
 }
 \examples{
-\dontrun{
+\donttest{
 enc <- dkge_info_map_haufe(fit, clf, renderer, inference = "signflip")
 }
 }

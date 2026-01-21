@@ -50,7 +50,7 @@ When these conditions are violated (detected via condition number or
 eigenvalue gaps), the function can fall back to full eigen-decomposition.
 }
 \examples{
-\dontrun{
+\donttest{
 # Fast analytic approximation for single subject
 result <- dkge_analytic_loso(fit, s = 1, c = c(1, -1, 0, 0, 0))
 
