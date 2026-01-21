@@ -27,7 +27,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' q <- 5
 #' Ks <- replicate(3, {
 #'   X <- matrix(rnorm(q * q), q)

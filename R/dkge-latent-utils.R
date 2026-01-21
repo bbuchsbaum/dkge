@@ -19,7 +19,7 @@ NULL
 #'   clusters.
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' Z_list <- dkge_project_clusters_to_latent(fit)
 #' str(Z_list[[1]])  # P_1 x r matrix
 #' }

@@ -28,7 +28,7 @@ NULL
 #'   requested).
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' info <- dkge_info_map_from_classifier(fit, clf$beta_by_subject, renderer)
 #' }
 dkge_info_map_from_classifier <- function(fit,
@@ -88,7 +88,7 @@ dkge_info_map_from_classifier <- function(fit,
 #'   `meta$kind = "haufe"`.
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' enc <- dkge_info_map_haufe(fit, clf, renderer, inference = "signflip")
 #' }
 dkge_info_map_haufe <- function(fit,

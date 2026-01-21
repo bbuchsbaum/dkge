@@ -29,7 +29,7 @@
 #' @importFrom glmnet cv.glmnet
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' clf <- dkge_cv_train_latent_classifier(fit, y, folds = 5)
 #' length(clf$beta_by_subject)
 #' }

@@ -28,7 +28,7 @@
 #'   `collapse`, and `scope` fields.
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tg <- dkge_targets(fit, ~ A + B + A:B, collapse = list(time = list(method = "mean", window = 3:8)))
 #' }
 dkge_targets <- function(fit,

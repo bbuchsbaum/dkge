@@ -44,7 +44,7 @@
 #' Supply a list where each element specifies indices for that fold.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Random subject-level 5-fold
 #' folds <- dkge_define_folds(fit, type = "subject", k = 5)
 #'
