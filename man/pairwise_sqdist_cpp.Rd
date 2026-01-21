@@ -7,12 +7,12 @@
 pairwise_sqdist_cpp(A, B)
 }
 \arguments{
-\item{A}{nxd}
+\item{A}{n×d}
 
-\item{B}{mxd}
+\item{B}{m×d}
 }
 \value{
-nxm matrix of ||a_i - b_j||^2
+n×m matrix of ||a_i - b_j||^2
 }
 \description{
 Pairwise squared distances between two point sets (rows)
