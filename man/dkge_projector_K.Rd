@@ -13,11 +13,11 @@ dkge_projector_K(T, K)
 }
 \value{
 List with entries `P_K` (effect-space projector) and `P_hat`
-  (projector in the K^{1/2} metric).
+  (projector in the \eqn{K^{1/2}} metric).
 }
 \description{
 Builds both the K-selfadjoint projector operating in effect coordinates and
-the Euclidean projector in the K^{1/2} metric. These projectors are useful
+the Euclidean projector in the \eqn{K^{1/2}} metric. These projectors are useful
 for CPCA-style splits of the compressed covariance.
 }
 \details{

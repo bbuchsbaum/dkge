@@ -22,8 +22,8 @@
 #'   optional `ctx` argument to receive fold-specific context objects.
 #' @param engine Regression engine. One of "glmnet" (default ridge multi-output
 #'   regression), "lm" (ordinary least squares solved jointly across outputs),
-#'   or a list with `fit`/`predict` closures: `list(fit = function(X, Y) {...},
-#'   predict = function(model, X) {...})`.
+#'   or a list with `fit`/`predict` closures: `list(fit = function(X, Y) \{...\},
+#'   predict = function(model, X) \{...\})`.
 #' @param alpha Elastic-net mixing parameter passed to \pkg{glmnet} (0 for ridge,
 #'   1 for lasso).
 #' @param standardize Logical; when `TRUE` (default) the \pkg{glmnet} engine

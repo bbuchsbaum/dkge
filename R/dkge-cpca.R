@@ -4,7 +4,7 @@
 #' K-orthogonal projector onto span(T) in effect space
 #'
 #' Builds both the K-selfadjoint projector operating in effect coordinates and
-#' the Euclidean projector in the K^{1/2} metric. These projectors are useful
+#' the Euclidean projector in the \eqn{K^{1/2}} metric. These projectors are useful
 #' for CPCA-style splits of the compressed covariance.
 #'
 #' All computations take place in the metric induced by the design kernel
@@ -18,7 +18,7 @@
 #' @param T qxq0 matrix whose columns span the subspace of interest.
 #' @param K qxq positive semi-definite design kernel.
 #' @return List with entries `P_K` (effect-space projector) and `P_hat`
-#'   (projector in the K^{1/2} metric).
+#'   (projector in the \eqn{K^{1/2}} metric).
 #' @export
 dkge_projector_K <- function(T, K) {
   stopifnot(is.matrix(T), is.matrix(K), nrow(T) == nrow(K))
@@ -43,7 +43,7 @@ dkge_projector_K <- function(T, K) {
 
 #' Split compressed covariance into design/residual parts (CPCA inside-span)
 #'
-#' @param Chat qxq compressed covariance expressed in the K^{1/2} metric.
+#' @param Chat qxq compressed covariance expressed in the \eqn{K^{1/2}} metric.
 #' @param T qxq0 matrix describing the design-aligned subspace.
 #' @param K qxq design kernel.
 #' @return List with `Chat_design`, `Chat_resid`, and the projector `P_hat`.

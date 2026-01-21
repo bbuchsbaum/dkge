@@ -7,7 +7,7 @@
 dkge_cpca_split_chat(Chat, T, K)
 }
 \arguments{
-\item{Chat}{qxq compressed covariance expressed in the K^{1/2} metric.}
+\item{Chat}{qxq compressed covariance expressed in the \eqn{K^{1/2}} metric.}
 
 \item{T}{qxq0 matrix describing the design-aligned subspace.}
 

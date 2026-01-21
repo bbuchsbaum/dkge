@@ -101,7 +101,7 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' LOSO cross-validation for rank selection
 #'
 #' Evaluates candidate ranks by recomputing LOSO bases and measuring explained
-#' variance on the held-out subject in the K^{1/2} metric.
+#' variance on the held-out subject in the \eqn{K^{1/2}} metric.
 #'
 #' @param B_list List of qxP subject beta matrices.
 #' @param X_list List of Txq subject design matrices.

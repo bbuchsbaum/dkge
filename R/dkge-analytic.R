@@ -27,7 +27,7 @@
 #'
 #' The eigenvalues and eigenvectors are updated using:
 #' - deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
-#' - deltav_j = -w_s Sigma_{k!=j} (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
+#' - deltav_j = -w_s Sum over k!=j of (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
 #'
 #' This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r) operations
 #' where r is the rank. The approximation is accurate when:

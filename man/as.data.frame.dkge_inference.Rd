@@ -9,9 +9,12 @@
 \arguments{
 \item{x}{A `dkge_inference` object}
 
-\item{...}{Additional arguments passed to [base::data.frame()]}
+\item{row.names}{NULL or a character vector giving the row names}
 
-\item{stringsAsFactors}{Logical; forwarded to [base::data.frame()]}
+\item{optional}{Logical; if TRUE, setting row names is optional}
+
+\item{...}{Additional arguments passed to [base::data.frame()], including
+`stringsAsFactors`}
 }
 \value{
 Data frame with columns `contrast`, `cluster`, `statistic`, `p_value`,

@@ -14,9 +14,9 @@ dkge_input_anchor(
 )
 }
 \arguments{
-\item{features_list}{List of subject feature matrices (`n_s \times d`).}
+\item{features_list}{List of subject feature matrices (n_s x d).}
 
-\item{K_item_list}{List of subject item kernels (`n_s \times n_s` PSD).}
+\item{K_item_list}{List of subject item kernels (n_s x n_s PSD).}
 
 \item{folds}{Optional fold structure passed to
 [dkge_build_anchor_kernels()].}

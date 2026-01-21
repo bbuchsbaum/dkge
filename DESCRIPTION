@@ -17,6 +17,7 @@ Imports:
     FNN,
     future.apply,
     Matrix,
+    methods,
     neighborweights,
     neuroim2,
     stats,

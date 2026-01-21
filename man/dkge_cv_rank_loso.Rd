@@ -38,5 +38,5 @@ List containing the one-SE selection (`pick`), the best rank, and the
 }
 \description{
 Evaluates candidate ranks by recomputing LOSO bases and measuring explained
-variance on the held-out subject in the K^{1/2} metric.
+variance on the held-out subject in the \eqn{K^{1/2}} metric.
 }

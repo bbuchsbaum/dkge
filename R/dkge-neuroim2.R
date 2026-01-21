@@ -1,6 +1,9 @@
 # dkge-neuroim2.R
 # Helpers integrating DKGE with neuroim2 objects and streaming loaders.
 
+#' @importFrom methods slot
+NULL
+
 #' Aggregate voxel time series into cluster means
 #'
 #' @param bv A `neuroim2::NeuroVec` object (4D time-series data, TxXxYxZ).
@@ -163,11 +166,11 @@ dkge_neuro_loader <- function(design_objs, bv_list,
         } else {
           # Use cluster sizes from ClusteredNeuroVec (guard S4 access)
           cluster_sizes <- tryCatch({
-            if (methods::hasSlot(bv, "cl_map")) {
-              cl_map <- methods::slot(bv, "cl_map")
-            } else {
-              stop("ClusteredNeuroVec object lacks slot 'cl_map'.", call. = FALSE)
-            }
+            # Try to access the cl_map slot; will error if not present
+            cl_map <- tryCatch(
+              slot(bv, "cl_map"),
+              error = function(e) stop("ClusteredNeuroVec object lacks slot 'cl_map'.", call. = FALSE)
+            )
             tab <- table(cl_map[cl_map > 0])
             tab[order(as.integer(names(tab)))]
           }, error = function(e) {

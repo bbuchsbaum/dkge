@@ -9,8 +9,8 @@
 #' argument. The descriptor is immutable; downstream calls may extend its
 #' `dkge_args` field with additional DKGE fitting options.
 #'
-#' @param features_list List of subject feature matrices (`n_s \times d`).
-#' @param K_item_list List of subject item kernels (`n_s \times n_s` PSD).
+#' @param features_list List of subject feature matrices (n_s x d).
+#' @param K_item_list List of subject item kernels (n_s x n_s PSD).
 #' @param folds Optional fold structure passed to
 #'   [dkge_build_anchor_kernels()].
 #' @param anchors Optional list overriding anchor selection defaults (see

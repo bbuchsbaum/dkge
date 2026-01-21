@@ -43,7 +43,7 @@ normalisation.}
 
 \item{w_method}{Subject-level weighting scheme.
 * `"mfa_sigma1"` (default): inverse squared leading singular value of
-  `K^{1/2} Btil_s Omega_s^{1/2}` (Multiple Factor Analysis scaling).
+  \eqn{K^{1/2} Btil_s \Omega_s^{1/2}} (Multiple Factor Analysis scaling).
 * `"energy"`: inverse Frobenius norm squared of the same block.
 * `"none"`: disable block scaling (all weights = 1).}
 
