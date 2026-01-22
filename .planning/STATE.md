@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 6 (Integration + S3 Contracts)
-Plan: 6 of 6 in current phase
+Plan: 7 of 7 in current phase
 Status: Phase complete
-Last activity: 2026-01-22 - Completed 06-06-PLAN.md (gap closure)
+Last activity: 2026-01-22 - Completed 06-07-PLAN.md (gap closure: vignettes)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 5.1 min
-- Total execution time: 1.38 hours
+- Total plans completed: 17
+- Average duration: 5.2 min
+- Total execution time: 1.47 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [██████████] 100%
 | 03-cross-fitting-validation | 2 | 7min | 3.5min |
 | 04-numerical-edge-cases | 2 | 11min | 5.5min |
 | 05-transport-inference | 2 | 11min | 5.5min |
-| 06-integration-s3-contracts | 6 | 38min | 6.3min |
+| 06-integration-s3-contracts | 7 | 44min | 6.3min |
 
 **Recent Trend:**
-- Last 5 plans: 06-03 (est), 06-04 (25min), 06-05 (5min), 06-06 (2min)
-- Trend: Documentation/example plans take longer than pure test plans
+- Last 5 plans: 06-04 (25min), 06-05 (5min), 06-06 (2min), 06-07 (6min)
+- Trend: Gap closure plans are fast (2-6min) vs initial plans (25min)
 
 *Updated after each plan completion*
 
@@ -88,6 +88,8 @@ Recent decisions affecting current work:
 - [06-04]: dkge_classify example requires design_kernel() for targets formula
 - [06-05]: Use dkge_sim_toy factorial API (factors/active_terms/S/P) for examples
 - [06-05]: Wrap slow examples in \donttest{} instead of \dontrun{}
+- [06-07]: Vignettes build automatically via R CMD build - no .Rbuildignore exclusion needed
+- [06-07]: Fixed sample.int bug causes non-conformable arrays error
 
 ### Pending Todos
 
@@ -95,23 +97,25 @@ None.
 
 ### Blockers/Concerns
 
-- R CMD check: 0 errors, 3 warnings (vignettes), 0 notes on examples
+- R CMD check: 0 errors, 1 WARNING (system compiler only), 0 notes - RESOLVED
 - GitHub-only dependencies may complicate CRAN submission
 - Pre-existing deprecation warning from multivarious::prep() - affects test output but not functionality
-- Vignette dkge-anchors.Rmd has pre-existing error (non-conformable arrays)
 - covr instrumentation fails on this setup - actual coverage unknown but 1382 tests pass
+- 17/43 exported functions still lack @examples (60% coverage)
 
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 06-06-PLAN.md - Complete @examples coverage
+Stopped at: Completed 06-07-PLAN.md - Fix vignette build warnings
 Resume file: None
 
 ## Project Completion
 
-All 6 phases complete (16 plans total including gap closure):
+All 6 phases complete (17 plans total including gap closure):
 - 1382 tests passing
+- R CMD check: 0 errors, 1 WARNING (system only), 0 notes
 - R CMD check examples: 0 errors
-- 43 R files with @examples (100% coverage of exported functions)
+- 43 R files with @examples (26 have examples, 17 without = 60% coverage)
+- All 14 vignettes build successfully
 - 0 \dontrun{} remaining (all replaced with \donttest{})
 - Package ready for CRAN submission workflow
