@@ -7,6 +7,9 @@ inst/doc/
 doc/
 *.so
 *.o
+*.Rcheck/
+*.tar.gz
+Rplots.pdf
 docs
 /doc/
 /Meta/

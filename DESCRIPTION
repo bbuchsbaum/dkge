@@ -36,6 +36,7 @@ Suggests:
     rmarkdown,
     patchwork,
     ggrepel,
+    tidyr,
     purrr
 LinkingTo:
     Rcpp,
@@ -48,6 +49,6 @@ Remotes:
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
-URL: https://bbuchsbaum.github.io/dkge/
+URL: https://github.com/bbuchsbaum/dkge
 VignetteBuilder: knitr
 Config/testthat/edition: 3

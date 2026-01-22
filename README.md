@@ -78,7 +78,7 @@ pred <- dkge_predict_subjects(fit, betas = new_subjects, contrasts = my_contrast
 
 
 ## Documentation & support
-Rendered articles and function reference are available at the pkgdown site: <https://bbuchsbaum.github.io/dkge/>. Issues and feature requests are welcome on the [GitHub tracker](https://github.com/bbuchsbaum/dkge/issues).
+Project home and documentation: <https://github.com/bbuchsbaum/dkge>. Issues and feature requests are welcome on the [GitHub tracker](https://github.com/bbuchsbaum/dkge/issues).
 
 ## Development
 - Pull requests are encouraged; please accompany user-facing changes with tests and documentation.

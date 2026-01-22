@@ -40,15 +40,14 @@
 #'
 #' @examples
 #' \donttest{
-#' # Fast analytic approximation for single subject
-#' result <- dkge_analytic_loso(fit, s = 1, c = c(1, -1, 0, 0, 0))
-#'
-#' # Check if approximation was used
-#' if (result$method == "analytic") {
-#'   cat("Used fast approximation\n")
-#' } else {
-#'   cat("Fell back to full eigen\n")
-#' }
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 4, P = 20, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' c_vec <- c(1, -1, 0, 0, 0)
+#' result <- dkge_analytic_loso(fit, s = 1, c = c_vec)
+#' result$method
 #' }
 #'
 #' @references

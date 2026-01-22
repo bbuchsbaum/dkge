@@ -20,8 +20,13 @@ NULL
 #' @export
 #' @examples
 #' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 20, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 #' Z_list <- dkge_project_clusters_to_latent(fit)
-#' str(Z_list[[1]])  # P_1 x r matrix
+#' dim(Z_list[[1]])  # P_1 x r matrix
 #' }
 dkge_project_clusters_to_latent <- function(fit) {
   stopifnot(inherits(fit, "dkge"))

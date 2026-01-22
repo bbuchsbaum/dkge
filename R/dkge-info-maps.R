@@ -29,7 +29,23 @@ NULL
 #' @export
 #' @examples
 #' \donttest{
-#' info <- dkge_info_map_from_classifier(fit, clf$beta_by_subject, renderer)
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 6, P = 20, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+#' renderer <- dkge_build_renderer(fit,
+#'                                 centroids = centroids,
+#'                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
+#'                                 anchor_n = 20,
+#'                                 anchor_method = "sample")
+#' y <- factor(rep(c("class1", "class2"), length.out = length(fit$Btil)))
+#' folds <- dkge_define_folds(fit, type = "custom",
+#'                            assignments = list(c(1, 2), c(3, 4), c(5, 6)))
+#' clf <- dkge_cv_train_latent_classifier(fit, y, folds = folds)
+#' info <- dkge_info_map_from_classifier(fit, clf$beta_by_subject, renderer, to_vox = FALSE)
+#' length(info$mean_anchor)
 #' }
 dkge_info_map_from_classifier <- function(fit,
                                            betas,
@@ -89,7 +105,23 @@ dkge_info_map_from_classifier <- function(fit,
 #' @export
 #' @examples
 #' \donttest{
-#' enc <- dkge_info_map_haufe(fit, clf, renderer, inference = "signflip")
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 6, P = 20, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+#' renderer <- dkge_build_renderer(fit,
+#'                                 centroids = centroids,
+#'                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
+#'                                 anchor_n = 20,
+#'                                 anchor_method = "sample")
+#' y <- factor(rep(c("class1", "class2"), length.out = length(fit$Btil)))
+#' folds <- dkge_define_folds(fit, type = "custom",
+#'                            assignments = list(c(1, 2), c(3, 4), c(5, 6)))
+#' clf <- dkge_cv_train_latent_classifier(fit, y, folds = folds)
+#' enc <- dkge_info_map_haufe(fit, clf, renderer, inference = "none", to_vox = FALSE)
+#' length(enc$mean_anchor)
 #' }
 dkge_info_map_haufe <- function(fit,
                                 clf,
