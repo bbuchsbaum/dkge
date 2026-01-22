@@ -37,3 +37,12 @@ Convenience helper that stacks calls to
 [dkge_anchor_contrast_from_prototypes()] so the resulting matrix can be fed
 directly to [dkge_classify()] as a weight specification.
 }
+\examples{
+anchors <- matrix(rnorm(10 * 4), 10, 4)
+proto <- list(
+  classA = anchors[1:2, , drop = FALSE],
+  classB = anchors[3:4, , drop = FALSE]
+)
+W <- dkge_anchor_targets_from_prototypes(anchors, proto)
+dim(W)
+}

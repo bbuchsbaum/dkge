@@ -28,6 +28,22 @@
 #'   - `summary`: data frame with weighted means and sensitivity indices.
 #'   - `provenance`: coverage metadata (effect IDs, subject masks, per-fold
 #'     pair-count matrices).
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)),
+#'   active_terms = "cond", S = 4, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' q <- nrow(fit$U)
+#' c_vec <- rep(0, q)
+#' c_vec[2] <- 1
+#' c_vec[3] <- -1
+#' res <- dkge_contrast_validated(fit,
+#'                                contrasts = list(cond = c_vec),
+#'                                folds = 3)
+#' res$summary
+#' }
 #' @export
 dkge_contrast_validated <- function(fit,
                                     contrasts,

@@ -20,3 +20,11 @@ Constructs lightweight mapper objects used by the dense rendering core. The
 initial implementation exposes a fast kNN barycentric mapper and keeps the
 interface open for richer transports.
 }
+\examples{
+spec <- dkge_mapper("knn", k = 3, sigx = 1)
+subj_points <- matrix(rnorm(12 * 3), 12, 3)
+anchor_points <- matrix(rnorm(6 * 3), 6, 3)
+fit <- fit_mapper(spec, subj_points = subj_points, anchor_points = anchor_points)
+y_anchor <- apply_mapper(fit, rnorm(nrow(subj_points)))
+length(y_anchor)
+}

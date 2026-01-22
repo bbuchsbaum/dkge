@@ -16,3 +16,12 @@ List with variance table, subject weights, and rank info.
 Provides a compact list of variance explained, subject weights, and rank
 metadata for quick inspection.
 }
+\examples{
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+diag <- dkge_diagnostics(fit)
+names(diag)
+}

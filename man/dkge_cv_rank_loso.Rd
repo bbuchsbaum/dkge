@@ -40,3 +40,13 @@ List containing the one-SE selection (`pick`), the best rank, and the
 Evaluates candidate ranks by recomputing LOSO bases and measuring explained
 variance on the held-out subject in the \eqn{K^{1/2}} metric.
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(
+  factors = list(cond = list(L = 3)),
+  active_terms = "cond", S = 4, P = 15, snr = 5
+)
+cv <- dkge_cv_rank_loso(toy$B_list, toy$X_list, toy$K, ranks = 1:2)
+cv$pick
+}
+}

@@ -56,3 +56,19 @@ Transports each subject's component loadings to a reference parcellation,
 computes inference statistics, and returns tidy summaries ready for
 visualisation.
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+res <- dkge_component_stats(fit,
+                            centroids = centroids,
+                            mapper = "ridge",
+                            inference = "parametric",
+                            components = 1)
+head(res$summary)
+}
+}

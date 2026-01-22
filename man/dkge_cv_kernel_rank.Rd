@@ -44,3 +44,15 @@ Runs kernel alignment pre-screening followed by LOSO explained-variance
 cross-validation, applying the one-standard-error rule to pick a kernel/rank
 pair.
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(
+  factors = list(cond = list(L = 3)),
+  active_terms = "cond", S = 4, P = 15, snr = 5
+)
+q <- nrow(toy$K)
+K_grid <- list(base = toy$K, identity = diag(q))
+sel <- dkge_cv_kernel_rank(toy$B_list, toy$X_list, K_grid, ranks = 1:2)
+sel$pick
+}
+}

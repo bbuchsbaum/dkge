@@ -34,3 +34,8 @@ A list containing the neighbour graph, sparse adjacency `W`,
 \description{
 Construct a kNN anchor graph and Laplacian
 }
+\examples{
+anchors <- matrix(rnorm(40 * 3), 40, 3)
+g <- dkge_anchor_graph(anchors, k = 3)
+names(g)
+}

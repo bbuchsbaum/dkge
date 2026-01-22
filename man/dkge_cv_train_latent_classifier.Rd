@@ -55,7 +55,15 @@ bias-aware decoder or Haufe maps.
 }
 \examples{
 \donttest{
-clf <- dkge_cv_train_latent_classifier(fit, y, folds = 5)
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 6, P = 20, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+y <- factor(rep(c("class1", "class2"), length.out = length(fit$Btil)))
+folds <- dkge_define_folds(fit, type = "custom",
+                           assignments = list(c(1, 2), c(3, 4), c(5, 6)))
+clf <- dkge_cv_train_latent_classifier(fit, y, folds = folds)
 length(clf$beta_by_subject)
 }
 }

@@ -12,6 +12,16 @@ NULL
 #' @param ids Optional subset of cluster IDs to retain.
 #' @param chunker Optional function returning list(mat = TxV_block, vox_idx).
 #' @return Matrix of dimension TxP where P is the number of clusters retained.
+#' @examples
+#' \donttest{
+#' if (requireNamespace("neuroim2", quietly = TRUE)) {
+#'   labels <- neuroim2::read_vol(system.file("extdata", "global_mask2.nii.gz", package = "neuroim2"))
+#'   vols <- lapply(1:4, function(i) labels * i)
+#'   bv <- neuroim2::vec_from_vols(vols)
+#'   ts <- dkge_cluster_ts(bv, labels)
+#'   dim(ts)
+#' }
+#' }
 #' @export
 dkge_cluster_ts <- function(bv, labels, ids = NULL, chunker = NULL) {
   lab <- as.vector(neuroim2::values(labels))
@@ -71,6 +81,17 @@ dkge_cluster_ts <- function(bv, labels, ids = NULL, chunker = NULL) {
 #' @param x_mat Subject design matrix (Txq).
 #' @param labels A `neuroim2::NeuroVol` object with cluster label assignments.
 #' @return Matrix of GLM betas (qxP) where P is the number of clusters.
+#' @examples
+#' \donttest{
+#' if (requireNamespace("neuroim2", quietly = TRUE)) {
+#'   labels <- neuroim2::read_vol(system.file("extdata", "global_mask2.nii.gz", package = "neuroim2"))
+#'   vols <- lapply(1:5, function(i) labels * i)
+#'   bv <- neuroim2::vec_from_vols(vols)
+#'   x_mat <- cbind(intercept = 1, trend = seq_len(length(vols)))
+#'   betas <- dkge_cluster_betas(bv, x_mat, labels)
+#'   dim(betas)
+#' }
+#' }
 #' @export
 dkge_cluster_betas <- function(bv, x_mat, labels) {
   z_mat <- dkge_cluster_ts(bv, labels)
@@ -96,6 +117,21 @@ dkge_cluster_betas <- function(bv, x_mat, labels) {
 #'   ClusteredNeuroVec to cluster weights. Default uses cluster sizes as
 #'   weights.
 #' @return Loader list suitable for streaming DKGE fits.
+#' @examples
+#' \donttest{
+#' if (requireNamespace("neuroim2", quietly = TRUE)) {
+#'   labels <- neuroim2::read_vol(system.file("extdata", "global_mask2.nii.gz", package = "neuroim2"))
+#'   vols <- lapply(1:6, function(i) labels * i)
+#'   bv <- neuroim2::vec_from_vols(vols)
+#'   x_mat <- cbind(intercept = 1, trend = seq_len(length(vols)))
+#'   loader <- dkge_neuro_loader(
+#'     design_objs = list(x_mat, x_mat),
+#'     bv_list = list(bv, bv),
+#'     labels_list = list(labels, labels)
+#'   )
+#'   loader$n()
+#' }
+#' }
 #' @export
 dkge_neuro_loader <- function(design_objs, bv_list,
                                labels_list = NULL,

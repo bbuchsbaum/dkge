@@ -54,6 +54,16 @@
 #'   When folds are supplied, returns `list(folds = list(...))` where each fold
 #'   entry includes the same fields along with `train_idx` and `test_idx`.
 #'
+#' @examples
+#' K_list <- list(s1 = diag(5), s2 = diag(4), s3 = diag(5))
+#' effects <- list(
+#'   s1 = c("a", "b", "c", "d", "e"),
+#'   s2 = c("a", "b", "c", "d"),
+#'   s3 = c("b", "c", "d", "e", "f")
+#' )
+#' aligned <- dkge_align_effects(K_list, effects, mode = "intersection")
+#' length(aligned$K_aligned)
+#'
 #' @export
 dkge_align_effects <- function(K_list,
                                effects,

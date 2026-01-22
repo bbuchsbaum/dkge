@@ -22,3 +22,14 @@ Matrix of dimension TxP where P is the number of clusters retained.
 \description{
 Aggregate voxel time series into cluster means
 }
+\examples{
+\donttest{
+if (requireNamespace("neuroim2", quietly = TRUE)) {
+  labels <- neuroim2::read_vol(system.file("extdata", "global_mask2.nii.gz", package = "neuroim2"))
+  vols <- lapply(1:4, function(i) labels * i)
+  bv <- neuroim2::vec_from_vols(vols)
+  ts <- dkge_cluster_ts(bv, labels)
+  dim(ts)
+}
+}
+}

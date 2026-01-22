@@ -20,3 +20,11 @@ Numeric vector or matrix of mapped values.
 Alias to [predict_mapper()] that mirrors the terminology used by the
 dense rendering helpers.
 }
+\examples{
+spec <- dkge_mapper("knn", k = 3, sigx = 1)
+subj_points <- matrix(rnorm(12 * 3), 12, 3)
+anchor_points <- matrix(rnorm(6 * 3), 6, 3)
+fitted <- fit_mapper(spec, subj_points = subj_points, anchor_points = anchor_points)
+out <- apply_mapper(fitted, rnorm(nrow(subj_points)))
+length(out)
+}

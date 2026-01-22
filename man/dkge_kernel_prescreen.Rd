@@ -24,3 +24,13 @@ Data frame sorted by decreasing alignment; the `top` attribute carries
 Ranks candidate kernels by their alignment with the pooled design-space
 covariance produced by [dkge_pooled_cov_q()].
 }
+\examples{
+toy <- dkge_sim_toy(
+  factors = list(cond = list(L = 3)),
+  active_terms = "cond", S = 3, P = 10, snr = 5
+)
+pooled <- dkge_pooled_cov_q(toy$B_list, toy$X_list)
+q <- nrow(toy$K)
+K_grid <- list(base = toy$K, identity = diag(q))
+dkge_kernel_prescreen(K_grid, pooled$C, top_k = 1)
+}

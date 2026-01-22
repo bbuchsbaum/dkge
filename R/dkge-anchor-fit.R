@@ -21,6 +21,25 @@
 #'   [dkge_fit_from_kernels()].
 #'
 #' @return A `dkge` fit with anchor provenance under `fit$provenance$anchors`.
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' features_list <- list(
+#'   s1 = matrix(rnorm(30 * 5), 30, 5),
+#'   s2 = matrix(rnorm(40 * 5), 40, 5),
+#'   s3 = matrix(rnorm(35 * 5), 35, 5)
+#' )
+#' K_item_list <- lapply(features_list, function(X) {
+#'   Z <- matrix(rnorm(nrow(X) * 4), nrow(X), 4)
+#'   tcrossprod(Z)
+#' })
+#' fit <- dkge_anchor_fit(
+#'   features_list, K_item_list,
+#'   anchors = list(L = 8, method = "dkpp", seed = 1),
+#'   dkge_args = list(rank = 2)
+#' )
+#' dkge_anchor_diagnostics(fit)$summary
+#' }
 #' @export
 dkge_anchor_fit <- function(features_list,
                             K_item_list,
@@ -131,6 +150,12 @@ dkge_anchor_fit <- function(features_list,
 #' @param normalize Logical; L2-normalise the resulting contrast.
 #'
 #' @return Numeric vector of length `L` suitable for [dkge_contrast()].
+#' @examples
+#' anchors <- matrix(rnorm(10 * 4), 10, 4)
+#' pos <- anchors[1:2, , drop = FALSE]
+#' neg <- anchors[3:4, , drop = FALSE]
+#' w <- dkge_anchor_contrast_from_prototypes(anchors, positives = pos, negatives = neg)
+#' length(w)
 #' @export
 dkge_anchor_contrast_from_prototypes <- function(anchors,
                                                   positives,
@@ -168,6 +193,11 @@ dkge_anchor_contrast_from_prototypes <- function(anchors,
 #' @param normalize Logical; L2-normalise the resulting contrast.
 #'
 #' @return Numeric vector of length `L` suitable for [dkge_contrast()].
+#' @examples
+#' anchors <- matrix(rnorm(10 * 4), 10, 4)
+#' direction <- rnorm(4)
+#' w <- dkge_anchor_contrast_from_direction(anchors, direction)
+#' length(w)
 #' @export
 dkge_anchor_contrast_from_direction <- function(anchors,
                                                  direction,
@@ -191,6 +221,21 @@ dkge_anchor_contrast_from_direction <- function(anchors,
 #'
 #' @return List containing per-subject coverage quantiles and per-anchor leverage
 #'   estimates.
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' features_list <- list(
+#'   s1 = matrix(rnorm(20 * 5), 20, 5),
+#'   s2 = matrix(rnorm(25 * 5), 25, 5),
+#'   s3 = matrix(rnorm(22 * 5), 22, 5)
+#' )
+#' K_item_list <- lapply(features_list, function(X) tcrossprod(matrix(rnorm(nrow(X) * 3), nrow(X), 3)))
+#' fit <- dkge_anchor_fit(features_list, K_item_list,
+#'                        anchors = list(L = 6, method = "dkpp", seed = 1),
+#'                        dkge_args = list(rank = 2))
+#' diag <- dkge_anchor_diagnostics(fit)
+#' names(diag)
+#' }
 #' @export
 dkge_anchor_diagnostics <- function(fit) {
   stopifnot(inherits(fit, "dkge"))

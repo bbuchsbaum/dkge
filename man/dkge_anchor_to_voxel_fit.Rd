@@ -26,3 +26,9 @@ Each voxel is represented as a convex combination of its `k` nearest
 anchors using Gaussian weights. The result can be reused to decode
 any anchor-level map.
 }
+\examples{
+anchors <- matrix(rnorm(20 * 3), 20, 3)
+vox_xyz <- matrix(rnorm(50 * 3), 50, 3)
+decoder <- dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 4)
+decoder$params$k
+}

@@ -7,6 +7,13 @@
 #' @param ... Strategy-specific hyperparameters stored in the specification.
 #' @param name Optional user-facing name for diagnostics.
 #' @return A mapper specification object.
+#' @examples
+#' spec <- dkge_mapper_spec("ridge", lambda = 1e-2)
+#' source_feat <- matrix(rnorm(10 * 2), 10, 2)
+#' target_feat <- matrix(rnorm(8 * 2), 8, 2)
+#' mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)
+#' mapped <- predict_mapper(mapping, rnorm(10))
+#' length(mapped)
 #' @export
 dkge_mapper_spec <- function(strategy = c("sinkhorn", "ridge", "ols"),
                              ..., name = NULL) {
@@ -27,6 +34,13 @@ class(spec) <- c(paste0("dkge_mapper_spec_", strategy), "dkge_mapper_spec")
 #'   implemented in the core.
 #' @param ... Backend-specific parameters stored within the mapper object.
 #' @return An S3 mapper descriptor consumed by [fit_mapper()].
+#' @examples
+#' spec <- dkge_mapper("knn", k = 3, sigx = 1)
+#' subj_points <- matrix(rnorm(12 * 3), 12, 3)
+#' anchor_points <- matrix(rnorm(6 * 3), 6, 3)
+#' fit <- fit_mapper(spec, subj_points = subj_points, anchor_points = anchor_points)
+#' y_anchor <- apply_mapper(fit, rnorm(nrow(subj_points)))
+#' length(y_anchor)
 #' @export
 dkge_mapper <- function(method = c("knn", "sinkhorn", "ridge", "gw"), ...) {
   method <- match.arg(method)
@@ -346,6 +360,13 @@ fit_mapper.dkge_mapper_gw <- function(spec, ...) {
 #' @param values Numeric vector or matrix of source-space values.
 #' @param ... Optional backend-specific arguments (e.g. reliabilities).
 #' @return Numeric vector or matrix of mapped values.
+#' @examples
+#' spec <- dkge_mapper("knn", k = 3, sigx = 1)
+#' subj_points <- matrix(rnorm(12 * 3), 12, 3)
+#' anchor_points <- matrix(rnorm(6 * 3), 6, 3)
+#' fitted <- fit_mapper(spec, subj_points = subj_points, anchor_points = anchor_points)
+#' out <- apply_mapper(fitted, rnorm(nrow(subj_points)))
+#' length(out)
 #' @export
 apply_mapper <- function(fitted_mapper, values, ...) {
   UseMethod("apply_mapper", fitted_mapper)

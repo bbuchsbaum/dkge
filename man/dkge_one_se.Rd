@@ -20,3 +20,7 @@ List with `best`, `pick`, and `summary` table of mean/se by parameter.
 Aggregates cross-validation scores by parameter setting and returns both the
 best-performing parameter and the one within one standard error of the best.
 }
+\examples{
+scores <- data.frame(param = rep(1:3, each = 2), score = c(0.2, 0.1, 0.25, 0.2, 0.24, 0.23))
+dkge_one_se(scores, param_col = "param", metric_col = "score")$pick
+}

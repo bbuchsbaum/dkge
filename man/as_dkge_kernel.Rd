@@ -19,6 +19,10 @@ Coerce arbitrary objects into a DKGE kernel bundle. The default method
 preserves existing behaviour by accepting matrices or list objects with a
 `$K` component and optional metadata.
 }
+\examples{
+K <- diag(3)
+as_dkge_kernel(K)$K
+}
 \seealso{
 `vignette("dkge-classification", package = "dkge")` for a worked
   example that uses these generics to integrate hyperdesign inputs.

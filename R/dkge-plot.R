@@ -13,6 +13,12 @@ NULL
 #' @param base_size Base font size.
 #' @param base_family Base font family.
 #' @return A ggplot2 theme object.
+#' @examples
+#' if (requireNamespace("ggplot2", quietly = TRUE)) {
+#'   ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +
+#'     ggplot2::geom_point() +
+#'     theme_dkge()
+#' }
 #' @export
 theme_dkge <- function(base_size = 12, base_family = "") {
  ggplot2::theme_minimal(base_size = base_size, base_family = base_family) +
@@ -71,6 +77,13 @@ theme_dkge <- function(base_size = 12, base_family = "") {
 #' @param fit Fitted `dkge` object.
 #' @param one_se_pick Optional integer component chosen by one-SE rule.
 #' @return A ggplot object.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' dkge_plot_scree(fit)
 #' @export
 dkge_plot_scree <- function(fit, one_se_pick = NULL) {
  stopifnot(inherits(fit, "dkge"))
@@ -105,6 +118,13 @@ dkge_plot_scree <- function(fit, one_se_pick = NULL) {
 #' @param comps Components to include (defaults to first min(rank,6)).
 #' @param zscore Logical; z-score loadings within each effect.
 #' @return A ggplot object.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' dkge_plot_effect_loadings(fit, comps = 1:2)
 #' @export
 dkge_plot_effect_loadings <- function(fit, comps = NULL, zscore = FALSE) {
  stopifnot(inherits(fit, "dkge"))
@@ -160,6 +180,14 @@ dkge_plot_effect_loadings <- function(fit, comps = NULL, zscore = FALSE) {
 #' @param fit Fitted `dkge` object.
 #' @param comps Components to display (default first min(rank,6)).
 #' @return List with `weights` and `energy` ggplots.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' panels <- dkge_plot_subject_contrib(fit, comps = 1:2)
+#' panels$weights
 #' @export
 dkge_plot_subject_contrib <- function(fit, comps = NULL) {
  stopifnot(inherits(fit, "dkge"))
@@ -203,6 +231,14 @@ dkge_plot_subject_contrib <- function(fit, comps = NULL) {
 #' @param consensus Optional consensus basis.
 #' @param labels Optional labels.
 #' @return A ggplot object.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' bases <- list(fit$U, fit$U)
+#' dkge_plot_subspace_stability(bases, K = fit$K)
 #' @export
 dkge_plot_subspace_stability <- function(bases, K, consensus = NULL, labels = NULL) {
  stopifnot(is.list(bases), is.matrix(K))
@@ -234,6 +270,10 @@ dkge_plot_subspace_stability <- function(bases, K, consensus = NULL, labels = NU
 #' @param info_loco Result from `dkge_info_map_loco()`.
 #' @param top Number of anchors to annotate.
 #' @return List of ggplot objects.
+#' @examples
+#' info_haufe <- list(mean_anchor = rnorm(12))
+#' panels <- dkge_plot_info_anchor(info_haufe = info_haufe, top = 3)
+#' panels$haufe
 #' @export
 dkge_plot_info_anchor <- function(info_haufe = NULL, info_loco = NULL, top = 20) {
  if (is.null(info_haufe) && is.null(info_loco)) {

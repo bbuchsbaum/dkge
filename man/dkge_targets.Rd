@@ -47,6 +47,13 @@ patterns for decoding.
 }
 \examples{
 \donttest{
-tg <- dkge_targets(fit, ~ A + B + A:B, collapse = list(time = list(method = "mean", window = 3:8)))
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 20, snr = 5
+)
+kern <- design_kernel(factors = list(A = list(L = 2), B = list(L = 3)), basis = "effect")
+fit <- dkge(toy$B_list, toy$X_list, kernel = kern, rank = 2)
+tg <- dkge_targets(fit, ~ A + B + A:B)
+length(tg)
 }
 }

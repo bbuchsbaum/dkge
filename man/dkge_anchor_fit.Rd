@@ -40,3 +40,23 @@ Projects item-level kernels onto a shared anchor basis (via
 the DKGE pipeline. Anchor provenance, coverage diagnostics, and subject item
 counts are stored in the resulting `dkge` object.
 }
+\examples{
+\donttest{
+set.seed(1)
+features_list <- list(
+  s1 = matrix(rnorm(30 * 5), 30, 5),
+  s2 = matrix(rnorm(40 * 5), 40, 5),
+  s3 = matrix(rnorm(35 * 5), 35, 5)
+)
+K_item_list <- lapply(features_list, function(X) {
+  Z <- matrix(rnorm(nrow(X) * 4), nrow(X), 4)
+  tcrossprod(Z)
+})
+fit <- dkge_anchor_fit(
+  features_list, K_item_list,
+  anchors = list(L = 8, method = "dkpp", seed = 1),
+  dkge_args = list(rank = 2)
+)
+dkge_anchor_diagnostics(fit)$summary
+}
+}

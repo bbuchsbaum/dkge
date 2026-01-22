@@ -58,3 +58,13 @@ Layout helper combining the main DKGE diagnostic plots into a single
 patchwork canvas. Individual panels degrade gracefully when optional inputs
 (e.g. LOSO bases or information maps) are missing.
 }
+\examples{
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+if (requireNamespace("patchwork", quietly = TRUE)) {
+  dkge_plot_suite(fit)
+}
+}

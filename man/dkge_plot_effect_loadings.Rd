@@ -19,3 +19,11 @@ A ggplot object.
 \description{
 Effect-space loadings heatmap (K \%*\% U)
 }
+\examples{
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+dkge_plot_effect_loadings(fit, comps = 1:2)
+}

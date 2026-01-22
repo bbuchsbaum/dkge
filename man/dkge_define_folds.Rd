@@ -67,19 +67,22 @@ Supply a list where each element specifies indices for that fold.
 }
 \examples{
 \donttest{
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 6, P = 20, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+
 # Random subject-level 5-fold
 folds <- dkge_define_folds(fit, type = "subject", k = 5)
 
-# Time-based 3-fold (early, middle, late)
-folds <- dkge_define_folds(fit, type = "time", k = 3)
-
-# Run-based using experimental structure
-run_list <- list(sub1 = c(1,1,2,2,3,3), sub2 = c(1,1,2,2,3,3))
-folds <- dkge_define_folds(fit, type = "run", runs = run_list)
-
-# Custom fold specification
-folds <- dkge_define_folds(fit, type = "custom",
-  assignments = list(fold1 = 1:10, fold2 = 11:20, fold3 = 21:30))
+# Custom fold specification (explicit holdouts)
+folds_custom <- dkge_define_folds(
+  fit,
+  type = "custom",
+  assignments = list(fold1 = 1:2, fold2 = 3:4, fold3 = 5:6)
+)
+folds_custom$k
 }
 
 }

@@ -20,6 +20,14 @@
 #'   [dkge_anchor_contrast_from_prototypes()].
 #'
 #' @return Matrix with one row per class and `nrow(anchors)` columns.
+#' @examples
+#' anchors <- matrix(rnorm(10 * 4), 10, 4)
+#' proto <- list(
+#'   classA = anchors[1:2, , drop = FALSE],
+#'   classB = anchors[3:4, , drop = FALSE]
+#' )
+#' W <- dkge_anchor_targets_from_prototypes(anchors, proto)
+#' dim(W)
 #' @export
 dkge_anchor_targets_from_prototypes <- function(anchors,
                                                 prototypes,
@@ -76,6 +84,11 @@ dkge_anchor_targets_from_prototypes <- function(anchors,
 #'   L2-normalised.
 #'
 #' @return Matrix with one row per supplied direction and `nrow(anchors)` columns.
+#' @examples
+#' anchors <- matrix(rnorm(10 * 4), 10, 4)
+#' dirs <- list(classA = rnorm(4), classB = rnorm(4))
+#' W <- dkge_anchor_targets_from_directions(anchors, dirs)
+#' dim(W)
 #' @export
 dkge_anchor_targets_from_directions <- function(anchors,
                                                 directions,

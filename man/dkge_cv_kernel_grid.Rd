@@ -39,3 +39,15 @@ List with the one-SE pick, best kernel, summary table, and raw scores.
 Evaluates a named list of candidate design kernels using LOSO explained
 variance at a fixed rank.
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(
+  factors = list(cond = list(L = 3)),
+  active_terms = "cond", S = 4, P = 15, snr = 5
+)
+q <- nrow(toy$K)
+K_grid <- list(base = toy$K, identity = diag(q))
+cv <- dkge_cv_kernel_grid(toy$B_list, toy$X_list, K_grid, rank = 1)
+cv$pick
+}
+}

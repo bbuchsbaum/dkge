@@ -21,3 +21,11 @@ List containing `C` (pooled covariance in the ruler metric), `R`
 Computes the qxq pooled design covariance and the corresponding Cholesky factor
 needed for fast kernel alignment screening.
 }
+\examples{
+toy <- dkge_sim_toy(
+  factors = list(cond = list(L = 3)),
+  active_terms = "cond", S = 3, P = 10, snr = 5
+)
+pooled <- dkge_pooled_cov_q(toy$B_list, toy$X_list)
+dim(pooled$C)
+}

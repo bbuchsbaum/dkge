@@ -13,6 +13,9 @@
 #' @param verbose Logical; emit per-iteration progress when `TRUE`.
 #' @param record Logical; store per-iteration diagnostics.
 #' @return A list of control parameters.
+#' @examples
+#' ctrl <- dkge_jd_control(maxit = 10, verbose = FALSE)
+#' names(ctrl)
 #' @export
 dkge_jd_control <- function(maxit = 200L,
                             step = 0.5,

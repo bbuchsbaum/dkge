@@ -16,3 +16,19 @@ List containing per-subject coverage quantiles and per-anchor leverage
 \description{
 Extract anchor diagnostics from a DKGE fit
 }
+\examples{
+\donttest{
+set.seed(1)
+features_list <- list(
+  s1 = matrix(rnorm(20 * 5), 20, 5),
+  s2 = matrix(rnorm(25 * 5), 25, 5),
+  s3 = matrix(rnorm(22 * 5), 22, 5)
+)
+K_item_list <- lapply(features_list, function(X) tcrossprod(matrix(rnorm(nrow(X) * 3), nrow(X), 3)))
+fit <- dkge_anchor_fit(features_list, K_item_list,
+                       anchors = list(L = 6, method = "dkpp", seed = 1),
+                       dkge_args = list(rank = 2))
+diag <- dkge_anchor_diagnostics(fit)
+names(diag)
+}
+}

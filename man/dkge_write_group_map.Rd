@@ -30,3 +30,12 @@ Either the output path (when `out_file` is supplied) or a
 Paints medoid-level values onto the reference parcellation and either
 returns a `neuroim2::BrainVolume` or writes it to disk.
 }
+\examples{
+\donttest{
+if (requireNamespace("neuroim2", quietly = TRUE)) {
+  labels <- neuroim2::read_vol(system.file("extdata", "global_mask2.nii.gz", package = "neuroim2"))
+  vol <- dkge_write_group_map(group_values = 1, medoid_labels = labels)
+  class(vol)
+}
+}
+}

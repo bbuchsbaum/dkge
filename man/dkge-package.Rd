@@ -10,7 +10,7 @@ Core routines for design-aware group embedding, cross-validated contrasts, and t
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://bbuchsbaum.github.io/dkge/}
+  \item \url{https://github.com/bbuchsbaum/dkge}
 }
 
 }

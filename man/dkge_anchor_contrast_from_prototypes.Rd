@@ -30,3 +30,10 @@ Numeric vector of length `L` suitable for [dkge_contrast()].
 \description{
 Build an anchor contrast from prototype feature sets
 }
+\examples{
+anchors <- matrix(rnorm(10 * 4), 10, 4)
+pos <- anchors[1:2, , drop = FALSE]
+neg <- anchors[3:4, , drop = FALSE]
+w <- dkge_anchor_contrast_from_prototypes(anchors, positives = pos, negatives = neg)
+length(w)
+}

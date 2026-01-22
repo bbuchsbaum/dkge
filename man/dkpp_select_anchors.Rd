@@ -40,3 +40,8 @@ Combines a greedy k-DPP seeding phase with either farthest-first or D^2
 sampling to reach `L` anchors. The kernel bandwidth defaults to the median
 distance heuristic computed on the training pool.
 }
+\examples{
+X_train <- matrix(rnorm(20 * 3), 20, 3)
+sel <- dkpp_select_anchors(X_train, L = 6, seed = 1)
+length(sel$indices)
+}

@@ -18,3 +18,10 @@ A ggplot2 theme object.
 Produces a light-weight theme used by the DKGE plotting helpers. Adjust
 `base_size` / `base_family` to customise font size or typeface.
 }
+\examples{
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +
+    ggplot2::geom_point() +
+    theme_dkge()
+}
+}

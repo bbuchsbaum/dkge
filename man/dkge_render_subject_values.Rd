@@ -23,3 +23,21 @@ A list with `anchor` (dense anchor field), optional `voxel` map,
 \description{
 Render per-subject values to anchors and voxels
 }
+\examples{
+\donttest{
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+renderer <- dkge_build_renderer(fit,
+                                centroids = centroids,
+                                anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
+                                anchor_n = 20,
+                                anchor_method = "sample")
+values_list <- lapply(centroids, function(C) rnorm(nrow(C)))
+out <- dkge_render_subject_values(renderer, values_list)
+length(out$anchor)
+}
+}

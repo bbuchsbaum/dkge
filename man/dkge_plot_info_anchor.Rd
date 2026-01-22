@@ -19,3 +19,8 @@ List of ggplot objects.
 \description{
 Anchor-level information plots
 }
+\examples{
+info_haufe <- list(mean_anchor = rnorm(12))
+panels <- dkge_plot_info_anchor(info_haufe = info_haufe, top = 3)
+panels$haufe
+}

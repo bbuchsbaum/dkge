@@ -11,6 +11,13 @@
 #'   only the retained components) or "total" (all possible components).
 #' @return Data frame with columns `component`, `sdev`, `variance`,
 #'   `prop_var`, and `cum_prop_var`.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' dkge_variance_explained(fit)
 #' @export
 dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
   stopifnot(inherits(fit, "dkge"))
@@ -39,6 +46,14 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
 #'
 #' @param fit A `dkge` object.
 #' @return List with variance table, subject weights, and rank info.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' diag <- dkge_diagnostics(fit)
+#' names(diag)
 #' @export
 dkge_diagnostics <- function(fit) {
   stopifnot(inherits(fit, "dkge"))
@@ -66,6 +81,9 @@ dkge_diagnostics <- function(fit) {
 #' @param param_col Column name identifying the tuning parameter.
 #' @param metric_col Column name holding the metric (larger is better).
 #' @return List with `best`, `pick`, and `summary` table of mean/se by parameter.
+#' @examples
+#' scores <- data.frame(param = rep(1:3, each = 2), score = c(0.2, 0.1, 0.25, 0.2, 0.24, 0.23))
+#' dkge_one_se(scores, param_col = "param", metric_col = "score")$pick
 #' @export
 dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
   stopifnot(is.data.frame(scores))
@@ -113,6 +131,15 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' @param w_tau Shrinkage parameter toward equal weights passed to [dkge_fit()].
 #' @return List containing the one-SE selection (`pick`), the best rank, and the
 #'   aggregated score table.
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)),
+#'   active_terms = "cond", S = 4, P = 15, snr = 5
+#' )
+#' cv <- dkge_cv_rank_loso(toy$B_list, toy$X_list, toy$K, ranks = 1:2)
+#' cv$pick
+#' }
 #' @export
 dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                               Omega_list = NULL, ridge = 0,
@@ -162,6 +189,17 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
 #' @param K_grid Named list of candidate kernels.
 #' @param rank Rank used for evaluation.
 #' @return List with the one-SE pick, best kernel, summary table, and raw scores.
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)),
+#'   active_terms = "cond", S = 4, P = 15, snr = 5
+#' )
+#' q <- nrow(toy$K)
+#' K_grid <- list(base = toy$K, identity = diag(q))
+#' cv <- dkge_cv_kernel_grid(toy$B_list, toy$X_list, K_grid, rank = 1)
+#' cv$pick
+#' }
 #' @export
 dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
                                 Omega_list = NULL, ridge = 0,
@@ -225,6 +263,13 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
 #' @inheritParams dkge_cv_rank_loso
 #' @return List containing `C` (pooled covariance in the ruler metric), `R`
 #'   (upper-triangular Cholesky factor), and `G` (pooled design Gram matrix).
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)),
+#'   active_terms = "cond", S = 3, P = 10, snr = 5
+#' )
+#' pooled <- dkge_pooled_cov_q(toy$B_list, toy$X_list)
+#' dim(pooled$C)
 #' @export
 dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
   stopifnot(length(B_list) == length(X_list))
@@ -266,6 +311,15 @@ dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
 #' @param top_k Number of kernels to retain.
 #' @return Data frame sorted by decreasing alignment; the `top` attribute carries
 #'   the names of the retained kernels.
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)),
+#'   active_terms = "cond", S = 3, P = 10, snr = 5
+#' )
+#' pooled <- dkge_pooled_cov_q(toy$B_list, toy$X_list)
+#' q <- nrow(toy$K)
+#' K_grid <- list(base = toy$K, identity = diag(q))
+#' dkge_kernel_prescreen(K_grid, pooled$C, top_k = 1)
 #' @export
 dkge_kernel_prescreen <- function(K_grid, C, normalize_k = TRUE, top_k = 3) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
@@ -295,6 +349,17 @@ dkge_kernel_prescreen <- function(K_grid, C, normalize_k = TRUE, top_k = 3) {
 #' @param top_k Number of kernels to keep after pre-screening.
 #' @return List with the selected `kernel` and `rank`, alignment and CV tables,
 #'   and a per-kernel summary of scores at the selected rank.
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)),
+#'   active_terms = "cond", S = 4, P = 15, snr = 5
+#' )
+#' q <- nrow(toy$K)
+#' K_grid <- list(base = toy$K, identity = diag(q))
+#' sel <- dkge_cv_kernel_rank(toy$B_list, toy$X_list, K_grid, ranks = 1:2)
+#' sel$pick
+#' }
 #' @export
 dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
                                 Omega_list = NULL, ridge = 0,

@@ -20,6 +20,16 @@
 #' @param dkge_args Optional list of arguments forwarded to the DKGE fitter
 #'   after anchor kernels are constructed (e.g. `w_method`, `cpca_part`).
 #' @return Object of class `dkge_input_anchor` (inherits from `dkge_input`).
+#' @examples
+#' set.seed(1)
+#' features_list <- list(
+#'   s1 = matrix(rnorm(20 * 4), 20, 4),
+#'   s2 = matrix(rnorm(25 * 4), 25, 4),
+#'   s3 = matrix(rnorm(22 * 4), 22, 4)
+#' )
+#' K_item_list <- lapply(features_list, function(X) tcrossprod(matrix(rnorm(nrow(X) * 3), nrow(X), 3)))
+#' input <- dkge_input_anchor(features_list, K_item_list, anchors = list(L = 6, seed = 1))
+#' class(input)
 #' @export
 dkge_input_anchor <- function(features_list,
                                K_item_list,
@@ -50,6 +60,21 @@ dkge_input_anchor <- function(features_list,
 #' @param ... Additional arguments merged into the DKGE fitting call (these are
 #'   interpreted as DKGE core options, e.g. `w_method`).
 #' @return A fitted `dkge` object.
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' features_list <- list(
+#'   s1 = matrix(rnorm(20 * 4), 20, 4),
+#'   s2 = matrix(rnorm(25 * 4), 25, 4),
+#'   s3 = matrix(rnorm(22 * 4), 22, 4)
+#' )
+#' K_item_list <- lapply(features_list, function(X) tcrossprod(matrix(rnorm(nrow(X) * 3), nrow(X), 3)))
+#' input <- dkge_input_anchor(features_list, K_item_list,
+#'                            anchors = list(L = 6, method = "dkpp", seed = 1),
+#'                            dkge_args = list(rank = 2))
+#' fit <- dkge_fit_from_input(input)
+#' fit$rank
+#' }
 #' @export
 dkge_fit_from_input <- function(input, ...) {
   UseMethod("dkge_fit_from_input")

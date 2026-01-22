@@ -26,6 +26,21 @@
 #'   - `summary`: tidy data frame of statistics and p-values.
 #'   - `statistics`: per-component statistic vectors.
 #'   - `transport`: per-component transported subject matrices.
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+#' res <- dkge_component_stats(fit,
+#'                             centroids = centroids,
+#'                             mapper = "ridge",
+#'                             inference = "parametric",
+#'                             components = 1)
+#' head(res$summary)
+#' }
 #' @export
 dkge_component_stats <- function(fit,
                                  mapper = "sinkhorn",

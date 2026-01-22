@@ -90,3 +90,14 @@ a data frame with columns `subject` and `fold`, or a list whose elements name
 the held-out subjects. Fold-specific results are returned under
 `result$folds[[f]]` with training/test indices attached.
 }
+\examples{
+K_list <- list(s1 = diag(5), s2 = diag(4), s3 = diag(5))
+effects <- list(
+  s1 = c("a", "b", "c", "d", "e"),
+  s2 = c("a", "b", "c", "d"),
+  s3 = c("b", "c", "d", "e", "f")
+)
+aligned <- dkge_align_effects(K_list, effects, mode = "intersection")
+length(aligned$K_aligned)
+
+}

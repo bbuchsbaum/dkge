@@ -26,3 +26,19 @@ Dispatches to the appropriate preprocessing pipeline (anchors, raw betas,
 etc.) before invoking the DKGE core. Currently supports anchor descriptors
 created via [dkge_input_anchor()].
 }
+\examples{
+\donttest{
+set.seed(1)
+features_list <- list(
+  s1 = matrix(rnorm(20 * 4), 20, 4),
+  s2 = matrix(rnorm(25 * 4), 25, 4),
+  s3 = matrix(rnorm(22 * 4), 22, 4)
+)
+K_item_list <- lapply(features_list, function(X) tcrossprod(matrix(rnorm(nrow(X) * 3), nrow(X), 3)))
+input <- dkge_input_anchor(features_list, K_item_list,
+                           anchors = list(L = 6, method = "dkpp", seed = 1),
+                           dkge_args = list(rank = 2))
+fit <- dkge_fit_from_input(input)
+fit$rank
+}
+}

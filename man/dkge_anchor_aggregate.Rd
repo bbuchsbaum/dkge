@@ -22,3 +22,8 @@ A list with the smoothed field `y`, the raw weighted mean `ybar`,
 \description{
 Aggregate anchor fields with optional Laplacian smoothing
 }
+\examples{
+anchor_list <- list(rnorm(10), rnorm(10), rnorm(10))
+agg <- dkge_anchor_aggregate(anchor_list)
+length(agg$y)
+}

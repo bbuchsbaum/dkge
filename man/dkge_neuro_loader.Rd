@@ -26,3 +26,19 @@ Loader list suitable for streaming DKGE fits.
 The returned loader exposes `n()`, `X(s)`, `B(s)`, and `Omega(s)` methods
 compatible with streaming DKGE fits.
 }
+\examples{
+\donttest{
+if (requireNamespace("neuroim2", quietly = TRUE)) {
+  labels <- neuroim2::read_vol(system.file("extdata", "global_mask2.nii.gz", package = "neuroim2"))
+  vols <- lapply(1:6, function(i) labels * i)
+  bv <- neuroim2::vec_from_vols(vols)
+  x_mat <- cbind(intercept = 1, trend = seq_len(length(vols)))
+  loader <- dkge_neuro_loader(
+    design_objs = list(x_mat, x_mat),
+    bv_list = list(bv, bv),
+    labels_list = list(labels, labels)
+  )
+  loader$n()
+}
+}
+}

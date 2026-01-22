@@ -27,3 +27,9 @@ Numeric vector of length `L` suitable for [dkge_contrast()].
 \description{
 Build an anchor contrast from a feature-space direction
 }
+\examples{
+anchors <- matrix(rnorm(10 * 4), 10, 4)
+direction <- rnorm(4)
+w <- dkge_anchor_contrast_from_direction(anchors, direction)
+length(w)
+}

@@ -22,6 +22,10 @@ Coerce various fold specifications into the `dkge_folds` structure used by
 dkge cross-fitting helpers. Methods may use `fit_or_data` to resolve subject
 identifiers when necessary.
 }
+\examples{
+folds <- as_dkge_folds(list(fold1 = 1:2, fold2 = 3:4))
+folds$k
+}
 \seealso{
 `vignette("dkge-classification", package = "dkge")` for an example
   of fold conversion in practice.

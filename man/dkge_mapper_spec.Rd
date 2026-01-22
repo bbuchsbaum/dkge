@@ -19,3 +19,11 @@ A mapper specification object.
 \description{
 Specify a DKGE mapper strategy
 }
+\examples{
+spec <- dkge_mapper_spec("ridge", lambda = 1e-2)
+source_feat <- matrix(rnorm(10 * 2), 10, 2)
+target_feat <- matrix(rnorm(8 * 2), 8, 2)
+mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)
+mapped <- predict_mapper(mapping, rnorm(10))
+length(mapped)
+}

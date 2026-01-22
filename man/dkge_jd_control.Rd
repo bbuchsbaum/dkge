@@ -41,3 +41,7 @@ A list of control parameters.
 \description{
 Control parameters for DKGE joint diagonalisation
 }
+\examples{
+ctrl <- dkge_jd_control(maxit = 10, verbose = FALSE)
+names(ctrl)
+}

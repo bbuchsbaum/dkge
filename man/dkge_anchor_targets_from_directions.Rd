@@ -31,3 +31,9 @@ Matrix with one row per supplied direction and `nrow(anchors)` columns.
 Converts named direction vectors into anchor weight rows using
 [dkge_anchor_contrast_from_direction()].
 }
+\examples{
+anchors <- matrix(rnorm(10 * 4), 10, 4)
+dirs <- list(classA = rnorm(4), classB = rnorm(4))
+W <- dkge_anchor_targets_from_directions(anchors, dirs)
+dim(W)
+}

@@ -12,6 +12,9 @@
 #' @return List with entries `K` (q x q matrix) and optional `info`
 #' @seealso `vignette("dkge-classification", package = "dkge")` for a worked
 #'   example that uses these generics to integrate hyperdesign inputs.
+#' @examples
+#' K <- diag(3)
+#' as_dkge_kernel(K)$K
 #' @export
 as_dkge_kernel <- function(x, ...) {
   UseMethod("as_dkge_kernel")
@@ -46,6 +49,9 @@ as_dkge_kernel.default <- function(x, ...) {
 #' @return Object with class `dkge_folds`
 #' @seealso `vignette("dkge-classification", package = "dkge")` for an example
 #'   of fold conversion in practice.
+#' @examples
+#' folds <- as_dkge_folds(list(fold1 = 1:2, fold2 = 3:4))
+#' folds$k
 #' @export
 as_dkge_folds <- function(x, fit_or_data = NULL, ...) {
   UseMethod("as_dkge_folds")
@@ -61,6 +67,7 @@ as_dkge_folds.default <- function(x, fit_or_data = NULL, ...) {
   subject_ids <- .dkge_resolve_subject_ids(fit_or_data)
 
   assignments <- .dkge_fold_assignments_from_input(x, subject_ids)
+  n_subjects <- if (is.null(subject_ids)) NA_integer_ else length(subject_ids)
 
   structure(
     list(
@@ -69,7 +76,7 @@ as_dkge_folds.default <- function(x, fit_or_data = NULL, ...) {
       assignments = assignments,
       subject_ids = subject_ids,
       metadata = list(
-        n_subjects = length(subject_ids) %||% NA_integer_,
+        n_subjects = n_subjects,
         coverage = length(unique(unlist(assignments))),
         source = class(x)
       ),
@@ -102,7 +109,7 @@ as_dkge_folds.default <- function(x, fit_or_data = NULL, ...) {
 }
 
 .dkge_fold_assignments_from_input <- function(x, subject_ids) {
-  n_subjects <- length(subject_ids)
+  n_subjects <- if (is.null(subject_ids)) NULL else length(subject_ids)
 
   if (is.list(x) && all(vapply(x, is.numeric, logical(1)))) {
     assignments <- lapply(x, as.integer)

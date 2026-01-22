@@ -13,6 +13,10 @@
 #'   subsample.
 #' @param seed Optional random seed for reproducibility.
 #' @return A numeric \eqn{Q \times 3} matrix of anchor coordinates.
+#' @examples
+#' xyz <- matrix(rnorm(200 * 3), 200, 3)
+#' anchors <- dkge_make_anchors(xyz = xyz, n_anchor = 10, method = "sample", seed = 1)
+#' dim(anchors)
 #' @export
 dkge_make_anchors <- function(xyz = NULL, anchors = NULL,
                               n_anchor = 20000L,
@@ -54,6 +58,10 @@ dkge_make_anchors <- function(xyz = NULL, anchors = NULL,
 #'   symmetry.
 #' @return A list containing the neighbour graph, sparse adjacency `W`,
 #'   degree matrix `D`, and Laplacian `L`.
+#' @examples
+#' anchors <- matrix(rnorm(40 * 3), 40, 3)
+#' g <- dkge_anchor_graph(anchors, k = 3)
+#' names(g)
 #' @export
 dkge_anchor_graph <- function(anchors,
                               k = 10,
@@ -95,6 +103,11 @@ dkge_anchor_graph <- function(anchors,
 #'   nearest anchors.
 #' @return A decoder object storing neighbour indices, weights, and a sparse
 #'   matrix implementing the transformation.
+#' @examples
+#' anchors <- matrix(rnorm(20 * 3), 20, 3)
+#' vox_xyz <- matrix(rnorm(50 * 3), 50, 3)
+#' decoder <- dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 4)
+#' decoder$params$k
 #' @export
 dkge_anchor_to_voxel_fit <- function(anchors, vox_xyz, k = 8, sigma = NULL) {
   stopifnot(is.matrix(anchors), ncol(anchors) == 3,
@@ -133,6 +146,12 @@ dkge_anchor_to_voxel_fit <- function(anchors, vox_xyz, k = 8, sigma = NULL) {
 #' @param decoder Object returned by [dkge_anchor_to_voxel_fit()].
 #' @param anchor_values Numeric vector of length `decoder$n_anchors`.
 #' @return Numeric vector of voxel values.
+#' @examples
+#' anchors <- matrix(rnorm(20 * 3), 20, 3)
+#' vox_xyz <- matrix(rnorm(50 * 3), 50, 3)
+#' decoder <- dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 4)
+#' vox_vals <- dkge_anchor_to_voxel_apply(decoder, rnorm(nrow(anchors)))
+#' length(vox_vals)
 #' @export
 dkge_anchor_to_voxel_apply <- function(decoder, anchor_values) {
   stopifnot(is.numeric(anchor_values),
@@ -157,6 +176,10 @@ dkge_anchor_to_voxel_apply <- function(decoder, anchor_values) {
 #' @param lambda Non-negative smoothing parameter. `0` disables smoothing.
 #' @return A list with the smoothed field `y`, the raw weighted mean `ybar`,
 #'   `coverage` (weighted contribution counts), and placeholder `ess` values.
+#' @examples
+#' anchor_list <- list(rnorm(10), rnorm(10), rnorm(10))
+#' agg <- dkge_anchor_aggregate(anchor_list)
+#' length(agg$y)
 #' @export
 dkge_anchor_aggregate <- function(anchor_list,
                                   subj_weights = NULL,
@@ -222,6 +245,21 @@ dkge_anchor_aggregate <- function(anchor_list,
 #' @param decoder_k Number of anchors per voxel when building the decoder.
 #' @return A list bundling anchors, optional graph/decoder, fitted per-subject
 #'   mappers, and subject weights.
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+#' renderer <- dkge_build_renderer(fit,
+#'                                 centroids = centroids,
+#'                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
+#'                                 anchor_n = 20,
+#'                                 anchor_method = "sample")
+#' length(renderer$anchors)
+#' }
 #' @export
 dkge_build_renderer <- function(fit,
                                 centroids,
@@ -357,6 +395,23 @@ dkge_build_renderer <- function(fit,
 #'   voxel maps are produced.
 #' @return A list with `anchor` (dense anchor field), optional `voxel` map,
 #'   the aggregation diagnostics, and the intermediate per-subject anchor maps.
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+#' renderer <- dkge_build_renderer(fit,
+#'                                 centroids = centroids,
+#'                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
+#'                                 anchor_n = 20,
+#'                                 anchor_method = "sample")
+#' values_list <- lapply(centroids, function(C) rnorm(nrow(C)))
+#' out <- dkge_render_subject_values(renderer, values_list)
+#' length(out$anchor)
+#' }
 #' @export
 dkge_render_subject_values <- function(renderer,
                                         values_list,

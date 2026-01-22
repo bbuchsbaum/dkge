@@ -19,6 +19,15 @@
 #' @param dpi Resolution (dots per inch) when saving.
 #' @param save_path Optional file path (png/pdf/svg) to save the dashboard.
 #' @return A patchwork object (invisibly if saved).
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(A = list(L = 2), B = list(L = 3)),
+#'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' if (requireNamespace("patchwork", quietly = TRUE)) {
+#'   dkge_plot_suite(fit)
+#' }
 #' @export
 dkge_plot_suite <- function(fit,
                             one_se_pick = NULL,

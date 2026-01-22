@@ -167,6 +167,10 @@
 #'
 #' @return List with `indices` (row indices in `X_train`), `sigma`, and
 #'   selection diagnostics.
+#' @examples
+#' X_train <- matrix(rnorm(20 * 3), 20, 3)
+#' sel <- dkpp_select_anchors(X_train, L = 6, seed = 1)
+#' length(sel$indices)
 #' @export
 dkpp_select_anchors <- function(X_train,
                                 L = 128,
@@ -233,6 +237,19 @@ dkpp_select_anchors <- function(X_train,
 #'
 #' @return A list indexed by folds; each element contains the anchors, bandwidth,
 #'   aligned kernels, anchor identifiers, and the fold's train/test indices.
+#' @examples
+#' set.seed(1)
+#' features_list <- list(
+#'   s1 = matrix(rnorm(30 * 5), 30, 5),
+#'   s2 = matrix(rnorm(40 * 5), 40, 5),
+#'   s3 = matrix(rnorm(35 * 5), 35, 5)
+#' )
+#' K_item_list <- lapply(features_list, function(X) {
+#'   Z <- matrix(rnorm(nrow(X) * 4), nrow(X), 4)
+#'   tcrossprod(Z)
+#' })
+#' built <- dkge_build_anchor_kernels(features_list, K_item_list, L = 8, method = "dkpp")
+#' dim(built[[1]]$K_aligned[[1]])
 #' @export
 dkge_build_anchor_kernels <- function(features_list,
                                        K_item_list,

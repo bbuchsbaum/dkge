@@ -33,3 +33,8 @@ A numeric \eqn{Q \times 3} matrix of anchor coordinates.
 \description{
 Build or validate anchor coordinates in MNI space
 }
+\examples{
+xyz <- matrix(rnorm(200 * 3), 200, 3)
+anchors <- dkge_make_anchors(xyz = xyz, n_anchor = 10, method = "sample", seed = 1)
+dim(anchors)
+}
