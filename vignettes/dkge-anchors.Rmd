@@ -43,7 +43,7 @@ anchors_true <- matrix(rnorm(4 * d), 4, d)
 make_subject <- function(n_items, n_vox, seed) {
   set.seed(seed)
   # Each subject observes item features around the latent anchors
-  centers <- anchors_true[sample.int(nrow(anchors_true)), , drop = FALSE]
+  centers <- anchors_true[sample.int(nrow(anchors_true), n_items, replace = TRUE), , drop = FALSE]
   features <- centers + matrix(rnorm(n_items * d, sd = 0.4), n_items, d)
 
   # Build an item similarity kernel (e.g., RSA over betas)
