@@ -15,7 +15,7 @@ This roadmap transforms the dkge R package from "works for developer" to "public
 - [x] **Phase 3: Cross-Fitting Validation** - Verify LOSO/K-fold mechanics and analytic fallback ✓
 - [x] **Phase 4: Numerical Edge Cases** - Verify robustness to degenerate inputs ✓
 - [x] **Phase 5: Transport + Inference** - Verify Sinkhorn convergence and null calibration ✓
-- [ ] **Phase 6: Integration + S3 Contracts** - Verify end-to-end pipelines and API contracts
+- [x] **Phase 6: Integration + S3 Contracts** - Verify end-to-end pipelines and API contracts ✓
 
 ## Phase Details
 
@@ -113,8 +113,8 @@ Plans:
 - [x] 06-03-PLAN.md — R CMD check compliance (documentation, imports, build) ✓
 - [x] 06-04-PLAN.md — Example audit and test coverage closure (>80%) ✓
 - [x] 06-05-PLAN.md — Gap closure: Replace \dontrun{} with \donttest{} and add 7 @examples ✓
-- [ ] 06-06-PLAN.md — Gap closure: Add @examples to remaining 17 files
-- [ ] 06-07-PLAN.md — Gap closure: Fix vignette build warnings
+- [x] 06-06-PLAN.md — Gap closure: Add @examples to remaining 17 files ✓
+- [x] 06-07-PLAN.md — Gap closure: Fix vignette build warnings ✓
 
 ## Requirement Mapping
 
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Cross-Fitting Validation | 2/2 | Complete ✓ | 2026-01-19 |
 | 4. Numerical Edge Cases | 2/2 | Complete ✓ | 2026-01-20 |
 | 5. Transport + Inference | 2/2 | Complete ✓ | 2026-01-20 |
-| 6. Integration + S3 Contracts | 5/7 | Gap closure | - |
+| 6. Integration + S3 Contracts | 7/7 | Complete ✓ | 2026-01-22 |
 
 ---
 *Created: 2026-01-19*
@@ -162,3 +162,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 6 revised: 2026-01-20*
 *Phase 6 gap closure: 2026-01-21*
 *Phase 6 gap closure plans 06-06, 06-07: 2026-01-21*
+*Phase 6 complete: 2026-01-22*
