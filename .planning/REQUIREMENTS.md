@@ -46,12 +46,12 @@ Quality assurance requirements for the dkge R package to achieve publication rea
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MATH-01 | 1, 2, 3, 5 | Pending |
-| API-01 | 1, 6 | Pending |
-| CHECK-01 | 6 | Pending |
-| COV-01 | 1, 3, 6 | Pending |
-| PROP-01 | 2, 5 | Pending |
-| REG-01 | 2 | Pending |
+| MATH-01 | 1, 2, 3, 5 | Complete |
+| API-01 | 1, 6 | Complete |
+| CHECK-01 | 6 | Complete |
+| COV-01 | 1, 3, 6 | Complete |
+| PROP-01 | 2, 5 | Complete |
+| REG-01 | 2 | Complete |
 | EDGE-01 | 4 | Complete |
 | FRAG-01 | 1, 3, 4 | Complete |
 
