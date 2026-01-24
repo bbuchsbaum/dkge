@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A quality assurance initiative for the dkge R package — ensuring mathematical correctness, API contract compliance, and comprehensive test coverage before publication. The package implements Design-Kernel Group Embedding for cluster-level fMRI analysis.
+A quality assurance initiative for the dkge R package — ensuring mathematical correctness, API contract compliance, and comprehensive test coverage before publication. The package implements Design-Kernel Group Embedding for cluster-level fMRI analysis. Now publication-ready with verified mathematical correctness, 1382 passing tests, and R CMD check compliance.
 
 ## Core Value
 
@@ -12,71 +12,72 @@ The implementation must faithfully match the mathematical specification in `algo
 
 ### Validated
 
-Existing functionality that works (from codebase analysis):
-
-- ✓ Data layer: `dkge_subject()`, `dkge_data()` bundle multi-subject betas — existing
-- ✓ Kernel layer: `design_kernel()` constructs factorial similarity kernels — existing
-- ✓ Fit layer: `dkge_fit()` estimates shared latent basis U via eigendecomposition — existing
-- ✓ Contrast layer: `dkge_contrast()` computes LOSO/K-fold/analytic cross-fitted contrasts — existing
-- ✓ Transport layer: `dkge_transport_contrasts_to_medoid()` aligns subjects via Sinkhorn OT — existing
-- ✓ Inference layer: `dkge_signflip_maxT()` provides permutation-based FWER control — existing
-- ✓ Prediction layer: `dkge_freeze()`, `predict.dkge()` apply frozen basis to new subjects — existing
-- ✓ Classification layer: `dkge_classify()` performs cross-validated decoding — existing
-- ✓ Pipeline layer: `dkge_pipeline()` orchestrates full workflows — existing
+- Data layer: `dkge_subject()`, `dkge_data()` bundle multi-subject betas — v1.0
+- Kernel layer: `design_kernel()` constructs factorial similarity kernels — v1.0
+- Fit layer: `dkge_fit()` estimates shared latent basis U via eigendecomposition — v1.0
+- Contrast layer: `dkge_contrast()` computes LOSO/K-fold/analytic cross-fitted contrasts — v1.0
+- Transport layer: `dkge_transport_contrasts_to_medoid()` aligns subjects via Sinkhorn OT — v1.0
+- Inference layer: `dkge_signflip_maxT()` provides permutation-based FWER control — v1.0
+- Prediction layer: `dkge_freeze()`, `predict.dkge()` apply frozen basis to new subjects — v1.0
+- Classification layer: `dkge_classify()` performs cross-validated decoding — v1.0
+- Pipeline layer: `dkge_pipeline()` orchestrates full workflows — v1.0
+- MATH-01: Mathematical accuracy verified — algorithms match `algo.md` specification — v1.0
+- API-01: API contracts verified — all exported functions behave as documented — v1.0
+- CHECK-01: R CMD check passes — zero errors, zero warnings (except system), zero notes — v1.0
+- COV-01: Higher test coverage — 1382 tests, 80 test files — v1.0
+- PROP-01: Property-based tests — K-orthonormality, symmetry, PSD verified — v1.0
+- REG-01: Regression tests — known-good outputs locked in — v1.0
+- EDGE-01: Edge case coverage — degenerate inputs, boundary conditions handled — v1.0
+- FRAG-01: Fragile areas hardened — effect alignment, analytic LOSO, kernel roots — v1.0
 
 ### Active
 
-Quality assurance goals for publication:
-
-- [ ] Mathematical accuracy verified — algorithms match `algo.md` specification
-- [ ] API contracts verified — all exported functions behave as documented
-- [ ] R CMD check passes — zero errors, zero warnings, zero notes
-- [ ] Higher test coverage — more code paths exercised
-- [ ] Property-based tests — mathematical invariants verified (orthonormality, symmetry, K-orthogonality)
-- [ ] Regression tests — known-good outputs locked in to catch drift
-- [ ] Edge case coverage — degenerate inputs, boundary conditions, ill-conditioned matrices
-- [ ] Fragile areas hardened — effect alignment, analytic LOSO fallback, kernel roots, target weights
+- [ ] CRAN submission workflow — coordinate with dependency maintainers
+- [ ] Performance optimization — post-publication priority
+- [ ] Streaming implementation — for very large datasets
 
 ### Out of Scope
 
 - `future/` directory experiments — not exported, defer to post-publication
-- New features — focus is verification of existing functionality
-- Performance optimization — correctness first, speed later
-- Streaming implementation — valuable but not required for publication
+- Mobile/web interfaces — R package only
 
 ## Context
 
-**Publication target:** Method paper describing DKGE for fMRI community
+**Shipped v1.0** with comprehensive test hardening:
+- 1382 tests passing across 80 test files
+- 53 R source files, ~55K lines of R code
+- R CMD check: 0 errors, 1 WARNING (system only), 0 notes
+- All 14 vignettes building successfully
+- 43/43 exported functions with @examples
 
-**Existing test infrastructure:**
-- testthat edition 3
-- 67 test files in `tests/testthat/`
-- Helper files for fixtures and toy data
-- Some coverage gaps identified in CONCERNS.md
+**Tech stack:** R, testthat3, roxygen2, knitr, Rcpp
 
-**Known fragile areas (from codebase analysis):**
-- Effect alignment across subjects (`R/dkge-data.R`)
-- Analytic LOSO fallback logic (`R/dkge-analytic.R`)
-- Kernel root computation (`R/design-kernel.R`)
-- Target weight matrix construction (`R/dkge-targets.R`)
+**Dependencies:** neuroim2, fmridesign, fmrireg (GitHub-only — may require CRAN coordination)
 
-**Mathematical specification:** `data-raw/algo.md` defines the algorithm
-
-**Current R CMD check status:** Unknown — needs to be run
+**Known issues:**
+- GitHub-only dependencies complicate CRAN submission
+- Deprecation warning from multivarious::prep() — external dependency
+- covr instrumentation fails on Rcpp packages
 
 ## Constraints
 
 - **Scope**: Core exported package only (`R/` directory) — `future/` is out of scope
 - **Language**: R package conventions (roxygen2, testthat, R CMD check)
-- **Dependencies**: GitHub-only deps (neuroim2, fmridesign, fmrireg) may complicate CRAN submission
+- **Dependencies**: GitHub-only deps may require CRAN coordination
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Focus on core R/ only | `future/` is experimental, not exported | — Pending |
-| R CMD check as success gate | Standard R package quality bar | — Pending |
-| Mathematical accuracy priority | Publication requires trusted results | — Pending |
+| Focus on core R/ only | `future/` is experimental, not exported | Good |
+| R CMD check as success gate | Standard R package quality bar | Good |
+| Mathematical accuracy priority | Publication requires trusted results | Good |
+| K-orthonormality tolerance 1e-8 | Consistent numerical precision | Good |
+| Minimum 2 subjects for group analysis | Single subject has no group structure | Good |
+| Condition number threshold 1e8 | Warns on ill-conditioned matrices | Good |
+| Accept NA/Inf in beta matrices | Documented behavior, downstream handling | Pending review |
+| Accept duplicate effect names | May need future hardening | Pending review |
+| Replace \dontrun with \donttest | Slow examples still run in --as-cran | Good |
 
 ---
-*Last updated: 2026-01-19 after initialization*
+*Last updated: 2026-01-22 after v1.0 milestone*
