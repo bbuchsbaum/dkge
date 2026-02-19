@@ -25,6 +25,21 @@ test_that("dkge_subject validates omega", {
   fx <- make_subject_fixture()
   expect_error(dkge_subject(fx$beta, fx$design, omega = 1:2), "length", fixed = FALSE)
   expect_error(dkge_subject(fx$beta, fx$design, omega = matrix(1, 2, 2)), "clusters", fixed = FALSE)
+  expect_error(dkge_subject(fx$beta, fx$design, omega = c(1, -1, 1, 1)), "non-negative", fixed = FALSE)
+  expect_error(dkge_subject(fx$beta, fx$design, omega = c(1, NA, 1, 1)), "finite", fixed = FALSE)
+  expect_error(
+    dkge_subject(fx$beta, fx$design, omega = matrix(c(1, 2, 0, 0,
+                                                      0, 1, 0, 0,
+                                                      0, 0, 1, 0,
+                                                      0, 0, 0, 1), 4, 4, byrow = TRUE)),
+    "symmetric",
+    fixed = FALSE
+  )
+  expect_error(
+    dkge_subject(fx$beta, fx$design, omega = diag(c(1, 1, 1, -0.2))),
+    "positive semidefinite",
+    fixed = FALSE
+  )
   ok <- dkge_subject(fx$beta, fx$design, omega = rep(1, ncol(fx$beta)))
   expect_equal(ok$omega, rep(1, ncol(fx$beta)))
 })
@@ -122,6 +137,21 @@ test_that("dkge accepts dkge_data and omega overrides", {
   fit <- dkge(data_bundle, kernel = kernel, omega = override, rank = 2)
   expect_equal(length(fit$Omega), length(override))
   expect_equal(fit$Omega[[1]], override[[1]])
+})
+
+test_that("dkge omega overrides are validated", {
+  fx <- make_dkge_fixture()
+  kernel <- diag(nrow(fx$betas[[1]]))
+  data_bundle <- dkge_data(fx$betas, fx$designs)
+
+  bad_override <- lapply(fx$betas, function(B) rep(1, ncol(B)))
+  bad_override[[1]][1] <- -0.1
+
+  expect_error(
+    dkge(data_bundle, kernel = kernel, omega = bad_override, rank = 2),
+    "non-negative",
+    fixed = FALSE
+  )
 })
 
 # -------------------------------------------------------------------------

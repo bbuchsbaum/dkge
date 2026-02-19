@@ -18,7 +18,8 @@
     dataset <- data
     if (!is.null(Omega_list)) {
       stopifnot(length(Omega_list) == dataset$n_subjects)
-      dataset$omega <- Omega_list
+      dataset$omega <- Map(function(om, B) .validate_omega(om, ncol(B)),
+                           Omega_list, dataset$betas)
     }
   } else {
     dataset <- dkge_data(data, designs = designs, omega = Omega_list)
@@ -40,13 +41,16 @@
   }
 
   stopifnot(is.matrix(K), nrow(K) == q, ncol(K) == q)
+  K <- .dkge_validate_kernel(K)
 
-  rank_requested <- if (is.null(rank)) min(q, 10L) else rank
+  rank_requested <- if (is.null(rank)) q else rank
   rank <- max(1L, min(rank_requested, q))
 
   if (is.null(Omega_list)) {
     Omega_list <- vector("list", S)
   }
+  Omega_list <- Map(function(om, B) .validate_omega(om, ncol(B)),
+                    Omega_list, betas)
   dataset$omega <- Omega_list
 
   ruler <- .dkge_compute_shared_ruler(designs)
@@ -466,7 +470,11 @@
     scores <- matrix(0, nrow = q, ncol = 0)
   }
 
-  preproc_obj <- multivarious::prep(multivarious::pass())
+  x_for_preproc <- X_concat
+  if (is.null(x_for_preproc)) {
+    x_for_preproc <- matrix(numeric(0), nrow = q, ncol = 0)
+  }
+  preproc_obj <- multivarious::fit(multivarious::pass(), x_for_preproc)
   multivarious_obj <- multivarious::multiblock_biprojector(
     v = V,
     s = scores,

@@ -63,6 +63,15 @@ test_that("dkge_fit accepts raw lists and dkge_data", {
   expect_equal(fit1$K, fixture$K)
 })
 
+test_that("dkge_fit defaults to full rank when rank is NULL", {
+  fixture <- make_fit_fixture(S = 4, q = 12, P = 20, T = 35)
+  fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = NULL,
+                  w_method = "none")
+
+  expect_equal(fit$rank_requested, 12)
+  expect_equal(fit$rank, 12)
+})
+
 test_that("dkge_fit honours ridge and Omega weighting", {
   fixture <- make_fit_fixture()
   Omega <- lapply(fixture$betas, function(B) runif(ncol(B)))
@@ -70,6 +79,33 @@ test_that("dkge_fit honours ridge and Omega weighting", {
                   ridge = 0.5, Omega_list = Omega)
   expect_true(all(eigen(fit$Chat, symmetric = TRUE)$values >= -1e-8))
   expect_equal(length(fit$weights), length(fixture$betas))
+})
+
+test_that("dkge_fit validates kernel PSD and finite values", {
+  fixture <- make_fit_fixture(q = 3)
+
+  K_bad_psd <- diag(3)
+  K_bad_psd[1, 1] <- -1
+  expect_error(
+    dkge_fit(fixture$betas, fixture$designs, K = K_bad_psd, rank = 2),
+    "positive semidefinite"
+  )
+
+  K_bad_finite <- fixture$K
+  K_bad_finite[1, 2] <- Inf
+  K_bad_finite[2, 1] <- Inf
+  expect_error(
+    dkge_fit(fixture$betas, fixture$designs, K = K_bad_finite, rank = 2),
+    "non-finite"
+  )
+
+  K_bad_sym <- fixture$K
+  K_bad_sym[1, 2] <- 0.9
+  K_bad_sym[2, 1] <- 0
+  expect_error(
+    dkge_fit(fixture$betas, fixture$designs, K = K_bad_sym, rank = 2),
+    "symmetric"
+  )
 })
 
 test_that("cpca arguments are respected", {

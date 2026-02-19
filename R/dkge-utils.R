@@ -54,6 +54,57 @@ NULL
 # Numerical robustness utilities ------------------------------------------
 # -------------------------------------------------------------------------
 
+#' Validate design kernel matrix
+#'
+#' Enforces finite numeric entries, symmetry (up to tolerance), and positive
+#' semidefiniteness. Small numerical asymmetry is corrected by symmetrization.
+#'
+#' @param K Candidate kernel matrix.
+#' @param tol Relative tolerance for symmetry/PSD checks.
+#' @return Symmetrized kernel matrix.
+#' @keywords internal
+#' @noRd
+.dkge_validate_kernel <- function(K, tol = 1e-8) {
+  if (!is.matrix(K) || !is.numeric(K)) {
+    stop("Kernel `K` must be a numeric matrix.", call. = FALSE)
+  }
+  if (nrow(K) != ncol(K)) {
+    stop("Kernel `K` must be square.", call. = FALSE)
+  }
+  if (any(!is.finite(K))) {
+    stop("Kernel `K` contains non-finite values.", call. = FALSE)
+  }
+
+  Ksym <- (K + t(K)) / 2
+  asym <- max(abs(K - t(K)))
+  k_scale <- max(1, max(abs(K)))
+  if (asym > tol * k_scale) {
+    stop(sprintf(
+      "Kernel `K` must be symmetric (max asymmetry %.3e exceeds tolerance %.3e).",
+      asym, tol * k_scale
+    ), call. = FALSE)
+  }
+  if (asym > 1e-12 * k_scale) {
+    warning("Kernel `K` is not exactly symmetric; using (K + t(K)) / 2.", call. = FALSE)
+  }
+
+  eig_vals <- eigen(Ksym, symmetric = TRUE, only.values = TRUE)$values
+  eig_scale <- max(1, max(abs(eig_vals)))
+  neg_tol <- tol * eig_scale
+  min_eig <- min(eig_vals)
+  if (min_eig < -neg_tol) {
+    stop(sprintf(
+      "Kernel `K` must be positive semidefinite; minimum eigenvalue %.3e is below tolerance %.3e.",
+      min_eig, -neg_tol
+    ), call. = FALSE)
+  }
+  if (min_eig < -neg_tol / 10) {
+    warning("Kernel `K` has small negative eigenvalues; they will be clamped in kernel roots.", call. = FALSE)
+  }
+
+  Ksym
+}
+
 #' Check matrix rank for design and/or beta matrices
 #'
 #' Detects rank deficiency and emits informative warnings identifying the

@@ -51,11 +51,36 @@
   }
   if (is.vector(omega)) {
     omega <- as.numeric(omega)
-    stopifnot(length(omega) == clusters)
+    if (length(omega) != clusters) {
+      stop("omega vector length must match the number of clusters.", call. = FALSE)
+    }
+    if (any(!is.finite(omega))) {
+      stop("omega vector must contain only finite values.", call. = FALSE)
+    }
+    if (any(omega < 0)) {
+      stop("omega vector entries must be non-negative.", call. = FALSE)
+    }
     return(omega)
   }
   if (is.matrix(omega)) {
-    stopifnot(nrow(omega) == clusters, ncol(omega) == clusters)
+    if (nrow(omega) != clusters || ncol(omega) != clusters) {
+      stop("omega matrix must have dimensions clusters x clusters.", call. = FALSE)
+    }
+    if (any(!is.finite(omega))) {
+      stop("omega matrix must contain only finite values.", call. = FALSE)
+    }
+    asym <- max(abs(omega - t(omega)))
+    scale <- max(1, max(abs(omega)))
+    if (asym > 1e-8 * scale) {
+      stop("omega matrix must be symmetric.", call. = FALSE)
+    }
+    omega <- (omega + t(omega)) / 2
+    eig <- eigen(omega, symmetric = TRUE, only.values = TRUE)$values
+    eig_scale <- max(1, max(abs(eig)))
+    tol <- 1e-8 * eig_scale
+    if (min(eig) < -tol) {
+      stop("omega matrix must be positive semidefinite.", call. = FALSE)
+    }
     return(omega)
   }
   stop("Unsupported omega type; supply NULL, a numeric vector, or a matrix.", call. = FALSE)
