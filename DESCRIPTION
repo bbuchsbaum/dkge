@@ -18,7 +18,7 @@ Imports:
     future.apply,
     Matrix,
     methods,
-    neighborweights,
+    adjoin,
     neuroim2,
     stats,
     Rcpp,
