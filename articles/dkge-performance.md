@@ -72,8 +72,8 @@ microbenchmark::microbenchmark(
 )
 #> Unit: microseconds
 #>      expr  min   lq mean median   uq   max neval
-#>       knn  324  339  551    386  422  2124    10
-#>  sinkhorn 5012 5286 7852   8226 9332 11122    10
+#>       knn  331  336  569    379  433  2297    10
+#>  sinkhorn 5173 5245 7928   8314 9366 10799    10
 ```
 
 The performance characteristics of these two mapping approaches differ
