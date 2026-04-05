@@ -3,13 +3,12 @@
 
 library(testthat)
 
-make_kernel_cv_fixture <- function(q = 5L, P = 12L, S = 4L) {
-  design_base <- qr.Q(qr(matrix(seq_len(q * q), q, q)))
+make_kernel_cv_fixture <- function(q = 5L, P = 12L, S = 4L, seed = 42L) {
+  set.seed(seed)
+  design_base <- qr.Q(qr(matrix(rnorm(q * q), q, q)))
   X_list <- replicate(S, design_base, simplify = FALSE)
   B_list <- lapply(seq_len(S), function(s) {
-    outer(seq_len(q), seq_len(P), function(i, j) {
-      cos(i + j / 2 + s / 4) + sin(j / q)
-    })
+    matrix(rnorm(q * P), q, P)
   })
 
   K_identity <- diag(q)

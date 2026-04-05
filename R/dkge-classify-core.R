@@ -187,12 +187,33 @@ dkge_classify <- function(fit,
   }
 
   fold_bundle <- .dkge_prepare_folds(fit, folds)
-  fold_info <- .dkge_build_fold_bases(fit,
-                                      assignments = fold_bundle$assignments,
-                                      ridge = ridge,
-                                      align = FALSE,
-                                      loader_scope = "all",
-                                      verbose = verbose)
+
+  # Determine which fold_info structures are actually needed.
+  # cell mode uses the global fit$U; cell_cross and delta use fold-specific bases.
+  resolved_modes <- vapply(seq_along(target_list), function(i) {
+    tm <- if (mode == "auto") .dkge_choose_target_mode(target_list[[i]]) else mode
+    tm
+  }, character(1))
+  needs_cell   <- any(resolved_modes == "cell")
+  needs_cross  <- any(resolved_modes %in% c("cell_cross", "delta"))
+
+  fold_info_cell <- if (needs_cell) {
+    .dkge_build_global_fold_loaders(fit, assignments = fold_bundle$assignments)
+  } else NULL
+
+  fold_info_cross <- if (needs_cross) {
+    .dkge_build_fold_bases(fit,
+                           assignments = fold_bundle$assignments,
+                           ridge = ridge,
+                           align = FALSE,
+                           loader_scope = "all",
+                           verbose = verbose)
+  } else NULL
+
+  # Convenience selector used inside the target loop
+  fold_info_for <- function(tm) {
+    if (identical(tm, "cell")) fold_info_cell else fold_info_cross
+  }
 
   results <- vector("list", length(target_list))
   names(results) <- vapply(target_list, `[[`, character(1), "name")
@@ -207,7 +228,7 @@ dkge_classify <- function(fit,
         next
       }
       standardize_flag <- resolve_standardize(i, target, target_mode)
-      res <- .dkge_classify_cell_target(fit, target, fold_info,
+      res <- .dkge_classify_cell_target(fit, target, fold_info_for(target_mode),
                                         mode = target_mode,
                                         method = method,
                                         lambda = lambda,
@@ -222,7 +243,7 @@ dkge_classify <- function(fit,
                                         standardize_within_fold = standardize_flag)
     } else if (target_mode == "delta") {
       delta_labels <- resolve_delta_labels(i, target)
-      res <- .dkge_classify_delta_target(fit, target, fold_info,
+      res <- .dkge_classify_delta_target(fit, target, fold_info_for(target_mode),
                                          lambda = lambda,
                                          metric = metric,
                                          n_perm = n_perm,

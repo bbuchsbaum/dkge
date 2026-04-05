@@ -44,7 +44,7 @@ test_that("dkge_predict_subjects handles list inputs", {
 })
 
 test_that("dkge_predict_subjects accepts dkge_data", {
-  fixtures <- make_small_fit(S = 2, q = 4, P = 3, T = 8, rank = 2, seed = 11)
+  fixtures <- make_small_fit(S = 2, q = 4, P = 6, T = 8, rank = 2, seed = 11)
   subjects <- lapply(seq_along(fixtures$betas), function(i) {
     dkge_subject(fixtures$betas[[i]], design = diag(fixtures$q), id = paste0("d", i))
   })

@@ -208,6 +208,71 @@
   result
 }
 
+#' Build fold loaders using the global (full-data) basis
+#'
+#' For `mode = "cell"` classification, every subject is projected onto the
+#' global `fit$U` rather than fold-specific leave-one-out bases.  This helper
+#' produces the same list structure as [.dkge_build_fold_bases()] so that the
+#' downstream CV loop can use it without modification.
+#'
+#' @param fit dkge object.
+#' @param assignments List of integer vectors (one per fold, subjects held out).
+#' @keywords internal
+#' @noRd
+.dkge_build_global_fold_loaders <- function(fit, assignments) {
+  stopifnot(inherits(fit, "dkge"))
+  S <- length(fit$Btil)
+  U_global <- fit$U
+  n_folds <- length(assignments)
+
+  # Build one loader per subject — same for every fold
+  loader_template <- vector("list", S)
+  names(loader_template) <- as.character(seq_len(S))
+  for (s in seq_len(S)) {
+    Bts <- fit$Btil[[s]]
+    A_s <- t(Bts) %*% fit$K %*% U_global
+    Y_s <- Bts %*% A_s
+    loader_template[[s]] <- list(
+      subject = s,
+      A = A_s,
+      Y = Y_s,
+      n_cluster = ncol(Bts)
+    )
+  }
+
+  folds <- vector("list", n_folds)
+  for (fold_idx in seq_len(n_folds)) {
+    holdout <- sort(unique(as.integer(assignments[[fold_idx]])))
+    folds[[fold_idx]] <- list(
+      index = fold_idx,
+      subjects = holdout,
+      basis = U_global,
+      basis_aligned = U_global,
+      rotation = NULL,
+      evals = fit$evals,
+      loaders = loader_template,
+      weights = NULL,
+      U_minus = U_global,
+      D_minus = fit$evals,
+      pair_counts = NULL,
+      missingness = "none",
+      miss_args = list()
+    )
+  }
+
+  list(
+    folds = folds,
+    assignments = assignments,
+    align = FALSE,
+    consensus = NULL,
+    alignment = NULL,
+    loader_scope = "all",
+    weight_spec = fit$weight_spec %||% dkge_weights(adapt = "none"),
+    missingness = "none",
+    miss_args = list()
+  )
+}
+
 #' @noRd
 .dkge_normalize_folds <- function(folds, fit) {
   S <- length(fit$Btil)

@@ -109,7 +109,7 @@ test_that("dkge_fit validates kernel PSD and finite values", {
 })
 
 test_that("cpca arguments are respected", {
-  fixture <- make_fit_fixture(q = 5)
+  fixture <- make_fit_fixture(q = 5, P = 8)
   fit <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 3,
                   cpca_blocks = 1:2, cpca_part = "design", cpca_ridge = 0.1)
   expect_true(!is.null(fit$cpca))
@@ -166,7 +166,7 @@ test_that("K-orthonormality holds with multi-factor kernel", {
   diag(K) <- 1
   K <- K + 0.1 * diag(q)  # ensure PSD
 
-  fixture <- make_fit_fixture(S = 3, q = q, P = 5, T = 20)
+  fixture <- make_fit_fixture(S = 3, q = q, P = 9, T = 20)
   fit <- dkge_fit(fixture$betas, fixture$designs, K = K, rank = 4,
                   w_method = "none")
 

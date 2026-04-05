@@ -7,14 +7,6 @@
                                        control, blocks,
                                        parallel, verbose,
                                        standardize_within_fold) {
-  if (identical(mode, "cell_cross")) {
-    warning(
-      "mode='cell_cross' is not yet fully implemented: it currently behaves as ",
-      "mode='cell' with standardize_within_fold=TRUE. ",
-      "A distinct cross-subject projection protocol is planned for a future release.",
-      call. = FALSE
-    )
-  }
   S <- length(fit$Btil)
   n_classes <- nrow(target$weight_matrix)
   rank_dim <- ncol(fit$U)

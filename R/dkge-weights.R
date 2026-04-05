@@ -12,7 +12,14 @@
 #'   integer indices, or ROI labels (factor/character/integer of length V) per voxel. Helpers
 #'   [dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.
 #' @param adapt Adaptive weighting rule, one of `"none"`, `"kenergy"`,
-#'   `"precision"`, or `"kenergy_prec"`.
+#'   `"precision"`, `"kenergy_prec"`, or `"reliability"`.  The `"reliability"`
+#'   rule computes split-half squared inter-run correlation per voxel and
+#'   requires `B_list2` (a second run of beta matrices, one per subject).
+#' @param B_list2 Optional second-run beta list (same structure as `B_list` used
+#'   at fit time): one `q x V` matrix per subject.  Required when
+#'   `adapt = "reliability"`.  Per-voxel reliability is estimated as the squared
+#'   Pearson correlation of cross-subject mean activations between run 1 and
+#'   run 2.
 #' @param combine How prior and adaptive sources combine: `"product"` (default),
 #'   `"sum"`, `"override_adapt"`, or `"prefer_prior"`.
 #' @section Combine modes:
@@ -46,9 +53,18 @@
 #'
 #' # Uniform (no adaptive) weights
 #' w_uniform <- dkge_weights(adapt = "none")
+#'
+#' # Split-half reliability weighting (requires two runs of betas)
+#' \dontrun{
+#' w_rel <- dkge_weights(
+#'   adapt  = "reliability",
+#'   B_list2 = run2_betas   # list of q x V matrices, one per subject
+#' )
+#' }
 #' @export
 dkge_weights <- function(prior = NULL,
-                         adapt = c("none", "kenergy", "precision", "kenergy_prec"),
+                         adapt = c("none", "kenergy", "precision", "kenergy_prec", "reliability"),
+                         B_list2 = NULL,
                          combine = c("product", "sum", "override_adapt", "prefer_prior"),
                          mix = 0.6,
                          shrink = list(alpha = 0.5, winsor = 0.99, normalize = "mean", roi_smooth = FALSE),
@@ -60,11 +76,23 @@ dkge_weights <- function(prior = NULL,
   combine <- match.arg(combine)
   scope <- match.arg(scope)
 
+  if (adapt == "reliability" && is.null(B_list2)) {
+    warning(
+      "adapt = 'reliability' requires B_list2 (second-run beta matrices). ",
+      "Supply it via dkge_weights(B_list2 = ...) or weights will fall back to uniform.",
+      call. = FALSE
+    )
+  }
+  if (!is.null(B_list2) && !is.list(B_list2)) {
+    stop("B_list2 must be a list of matrices (one per subject), or NULL.", call. = FALSE)
+  }
+
   shrink <- .dkge_weights_shrink_defaults(shrink)
 
   structure(list(
     prior = prior,
     adapt = adapt,
+    B_list2 = B_list2,
     combine = combine,
     mix = .dkge_clamp01(mix),
     shrink = shrink,
@@ -79,7 +107,12 @@ dkge_weights <- function(prior = NULL,
 print.dkge_weights <- function(x, ...) {
   cat("dkge weight specification\n")
   cat("  prior   :", .dkge_weights_prior_summary(x$prior), "\n")
-  cat("  adapt   :", x$adapt, "(scope =", x$scope, ")\n")
+  adapt_label <- x$adapt
+  if (x$adapt == "reliability") {
+    b2_status <- if (is.null(x$B_list2)) "B_list2=MISSING" else sprintf("B_list2=S%d", length(x$B_list2))
+    adapt_label <- paste0(x$adapt, " (", b2_status, ")")
+  }
+  cat("  adapt   :", adapt_label, "(scope =", x$scope, ")\n")
   cat("  combine :", x$combine, "(mix =", sprintf("%.2f", x$mix), ")\n")
   cat("  shrink  : alpha =", sprintf("%.2f", x$shrink$alpha),
       ", winsor =", sprintf("%.3f", x$shrink$winsor),
@@ -322,12 +355,36 @@ dkge_weights_prior_roi <- function(labels, roi_values = NULL) {
                                 adapt = "kenergy",
                                 K = NULL,
                                 sigma2_list = NULL,
-                                winsor = 0.99) {
+                                winsor = 0.99,
+                                B_list2 = NULL) {
   V <- ncol(B_list[[1]])
   if (adapt == "none") return(rep(1, V))
 
   if (adapt %in% c("kenergy", "kenergy_prec") && is.null(K)) {
     stop("k-energy weighting requires an effect-space kernel")
+  }
+
+  if (adapt == "reliability") {
+    if (is.null(B_list2)) {
+      warning("adapt='reliability' requires B_list2; returning uniform weights.", call. = FALSE)
+      return(rep(1, V))
+    }
+    if (length(B_list2) != length(B_list)) {
+      stop("B_list2 must have the same number of subjects as B_list.")
+    }
+    S <- length(B_list)
+    # X1, X2: S x V matrices of per-subject mean activations (averaged over effects)
+    X1 <- do.call(rbind, lapply(B_list,  function(B) colMeans(B)))
+    X2 <- do.call(rbind, lapply(B_list2, function(B) colMeans(B)))
+    mu1 <- colMeans(X1);  mu2 <- colMeans(X2)
+    X1c <- sweep(X1, 2, mu1, "-")
+    X2c <- sweep(X2, 2, mu2, "-")
+    denom <- sqrt(colSums(X1c^2)) * sqrt(colSums(X2c^2))
+    r_vec <- ifelse(denom > 1e-12, colSums(X1c * X2c) / denom, 0)
+    r_vec[!is.finite(r_vec)] <- 0
+    w <- abs(r_vec)^2 + 1e-6
+    w[!is.finite(w) | w < 0] <- 1e-6
+    return(.dkge_winsor(w, upper = winsor))
   }
 
   energy_acc <- NULL
@@ -440,16 +497,20 @@ dkge_weights_auto <- function() {
     if (is.null(K_effects)) kernel_failed <- TRUE
   }
 
+  # reliability is cross-subject by definition — always fold-level
+  effective_scope <- if (weights$adapt == "reliability") "fold" else weights$scope
+
   if (kernel_failed) {
     w_adapt <- rep(1, V)
     w_subject <- NULL
     w_total_subject <- NULL
-  } else if (weights$scope == "fold" || length(B_list) <= 1L) {
+  } else if (effective_scope == "fold" || length(B_list) <= 1L) {
     w_adapt <- .dkge_adapt_weights(B_list,
                                    adapt = weights$adapt,
                                    K = K_effects,
                                    sigma2_list = sigma2_list,
-                                   winsor = weights$shrink$winsor)
+                                   winsor = weights$shrink$winsor,
+                                   B_list2 = weights$B_list2)
     w_subject <- NULL
     w_total_subject <- NULL
   } else {

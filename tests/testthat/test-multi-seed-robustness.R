@@ -196,7 +196,7 @@ test_that("minimum subjects error is seed-independent", {
 
   for (seed in seeds) {
     withr::local_seed(seed)
-    beta <- matrix(rnorm(6), 3, 2, dimnames = list(c("e1", "e2", "e3"), NULL))
+    beta <- matrix(rnorm(9), 3, 3, dimnames = list(c("e1", "e2", "e3"), NULL))
     design <- matrix(rnorm(15), 5, 3, dimnames = list(NULL, c("e1", "e2", "e3")))
 
     expect_error(

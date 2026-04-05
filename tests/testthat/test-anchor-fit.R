@@ -221,7 +221,9 @@ test_that("anchor classification requires explicit weight targets", {
     Y <- matrix(rnorm(nrow(Fs) * 3), nrow(Fs), 3)
     tcrossprod(Y) + 1e-4 * diag(nrow(Fs))
   })
-  fit_anchor <- dkge_anchor_fit(features_list, K_item_list, anchors = list(L = 4, seed = 3L))
+  fit_anchor <- suppressWarnings(
+    dkge_anchor_fit(features_list, K_item_list, anchors = list(L = 4, seed = 3L))
+  )
   expect_error(
     dkge_classify(fit_anchor, targets = ~ 1),
     "fit\\$kernel_info\\$map"

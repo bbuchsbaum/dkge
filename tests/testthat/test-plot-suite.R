@@ -1,11 +1,12 @@
 library(testthat)
 library(dkge)
 
-make_plot_fit <- function(S = 3, P = 4, seed = 1) {
+make_plot_fit <- function(S = 3, P = NULL, seed = 1) {
   set.seed(seed)
   factors <- list(A = list(L = 2), B = list(L = 2), time = list(L = 4))
   dk <- design_kernel(factors, basis = "effect")
   q <- nrow(dk$K)
+  P <- P %||% (q + 5)
   betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
   designs <- replicate(S, diag(q), simplify = FALSE)
   fit <- dkge_fit(betas, designs, K = dk, rank = min(3, q))

@@ -228,8 +228,8 @@ test_that("effect alignment produces correct values after reordering", {
   design_perm <- design_orig[, c("C", "A", "B")]
   colnames(design_perm) <- c("C", "A", "B")
 
-  data1 <- dkge_data(list(beta_orig, beta_other), list(design_orig, design_orig))
-  data2 <- dkge_data(list(beta_perm, beta_other), list(design_perm, design_orig))
+  data1 <- suppressWarnings(dkge_data(list(beta_orig, beta_other), list(design_orig, design_orig)))
+  data2 <- suppressWarnings(dkge_data(list(beta_perm, beta_other), list(design_perm, design_orig)))
 
   # Effect order follows first subject's design column order
   # Both should preserve all effects, though order may differ
