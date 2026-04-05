@@ -33,7 +33,6 @@ Suggests:
     microbenchmark,
     pkgdown,
     remotes,
-    neuralign,
     testthat,
     T4transport,
     knitr,
@@ -50,8 +49,7 @@ Remotes:
     bbuchsbaum/fmridesign,
     bbuchsbaum/fmriAR,
     bbuchsbaum/fmrireg,
-    bbuchsbaum/adjoin,
-    bbuchsbaum/neuralign
+    bbuchsbaum/adjoin
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
