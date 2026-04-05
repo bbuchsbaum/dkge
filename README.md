@@ -1,5 +1,10 @@
 # dkge
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/bbuchsbaum/dkge/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bbuchsbaum/dkge/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/bbuchsbaum/dkge/actions/workflows/pkgdown.yaml/badge.svg)](https://bbuchsbaum.github.io/dkge/)
+<!-- badges: end -->
+
 Design-Kernel Group Embedding (DKGE) turns subject-level GLM outputs into a shared, design-aware latent space. It preserves the structure of experimental designs, supports cross-validated contrasts, and provides transport utilities for mapping parcellated fields onto common anchor or voxel representations.
 
 ## Key capabilities

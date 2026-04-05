@@ -195,3 +195,12 @@ reference:
       - helmert_contrasts
       - sum_contrasts
       - dkpp_select_anchors
+      - pairwise_sqdist_cpp
+      - predict.dkge
+      - print.dkge_contrasts
+      - print.dkge_folds
+      - print.dkge_inference
+      - as.data.frame.dkge_inference
+      - as.matrix.dkge_contrasts
+      - dkge-info-maps
+      - dkge-latent-utils
