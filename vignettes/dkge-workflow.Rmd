@@ -110,8 +110,8 @@ The `dkge_subject()` function serves to package each beta matrix together with i
 Now we can proceed to fit a rank-2 DKGE model using an identity kernel, which means we're not imposing any smoothing relationships between different experimental effects. The object returned by the fitting process inherits from the `multiblock_biprojector` class, which ensures that it integrates seamlessly with the broader ecosystem of `multivarious` projection helper functions.
 
 ```{r fit-model}
-fit <- dkge(data_bundle, kernel = identity_kernel, rank = 2)
-fit$centroids <- centroids  # store spatial information for transport utilities
+fit <- dkge(data_bundle, K = identity_kernel, rank = 2)
+fit$centroids <- centroids  # convenience: attach for transport helpers; pass explicitly in production
 
 round(fit$sdev, 3)
 fit$weights

@@ -22,6 +22,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+> **Status: Design Document.** This vignette describes the *planned* modular decomposition and future API improvements — not the current implementation. The current public API is `dkge()` / `dkge_fit()` as documented in `vignette("dkge-workflow")`. The roadmap sections below reflect intentions for a future v2 refactor; nothing described here should be relied upon as a stable interface today.
+
 ## Motivation
 
 The DKGE codebase has grown rapidly as new utilities — transport, inference, classifier localisation, bootstrap diagnostics — were added around the original fitting routine. Many of these features currently live in large, multi-purpose functions. This vignette documents the present architecture and sets out a modular refactor roadmap. The goals are to make the package easier to extend, reduce the coupling between subsystems, and provide contributors with a concise reference for how data moves through DKGE.

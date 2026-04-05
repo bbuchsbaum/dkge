@@ -117,7 +117,7 @@ best <- cv_table[best_idx, ]
 best
 
 K_best <- K_grid[[best$kernel]]
-fit <- dkge(bundle, kernel = K_best, rank = best$param)
+fit <- dkge(bundle, K = K_best, rank = best$param)
 round(fit$sdev, 3)
 ```
 
@@ -126,7 +126,7 @@ round(fit$sdev, 3)
 In many neuroimaging studies, certain effects are known to exhibit high variance characteristics, such as motion regressors or other nuisance variables. To handle these problematic effects, you can add diagonal ridge terms through the `dkge(..., ridge = value)` parameter or alternatively pre-scale the kernel matrix to de-emphasize these components. Higher ridge values have the effect of shrinking small singular values toward zero, which helps stabilize model fits particularly when working with limited subject counts or noisy data.
 
 ```{r ridge}
-fit_ridge <- dkge(bundle, kernel = K_best, rank = best$param, ridge = 0.2)
+fit_ridge <- dkge(bundle, K = K_best, rank = best$param, ridge = 0.2)
 round(fit_ridge$sdev, 3)
 ```
 

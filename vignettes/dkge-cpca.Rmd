@@ -101,7 +101,7 @@ bundle <- dkge_data(subjects)
 When we fit the standard DKGE model without CPCA filtering, all task-related variance is compressed into a single latent basis. The leading eigenvalues reflect the combined influence of both our primary experimental effects and secondary conditions, making it difficult to isolate the specific patterns we want to study.
 
 ```{r fit-standard}
-fit_plain <- dkge(bundle, kernel = diag(q), rank = 3)
+fit_plain <- dkge(bundle, K = diag(q), rank = 3)
 round(fit_plain$evals[1:4], 3)
 ```
 
@@ -115,7 +115,7 @@ Setting `cpca_part = "both"` instructs DKGE to return both the design-aligned ba
 
 ```{r fit-cpca}
 fit_cpca <- dkge(bundle,
-                 kernel = diag(q),
+                 K = diag(q),
                  cpca_blocks = 1:2,
                  cpca_part = "both",
                  rank = 3)
@@ -144,7 +144,7 @@ rows, so design energy leaks into adjacent effects.
 ```{r kernel-effect}
 K_smooth <- outer(seq_len(q), seq_len(q), function(i, j) 0.7^abs(i - j))
 fit_kernel <- dkge(bundle,
-                   kernel = K_smooth,
+                   K = K_smooth,
                    cpca_blocks = 1:2,
                    cpca_part = "both",
                    rank = 3)
@@ -184,7 +184,7 @@ The columns of your custom basis matrix span the linear combinations of effects 
 T_custom <- qr.Q(qr(cbind(c(1, 1, 0, 0, 0, 0),
                           c(0, 0, 2, 1, 0, 0))))
 fit_custom <- dkge(bundle,
-                   kernel = diag(q),
+                   K = diag(q),
                    cpca_T = T_custom,
                    cpca_part = "design",
                    rank = 2)
@@ -199,7 +199,7 @@ When working with real neuroimaging data, you may encounter situations where the
 
 ```{r ridge}
 fit_ridge <- dkge(bundle,
-                  kernel = diag(q),
+                  K = diag(q),
                   cpca_blocks = 1:2,
                   cpca_part = "design",
                   cpca_ridge = 1e-3,
@@ -216,7 +216,7 @@ For workflows that focus exclusively on CPCA filtering, the `dkge_cpca_fit()` fu
 
 ```{r wrapper}
 fit_wrapper <- dkge_cpca_fit(bundle,
-                             kernel = diag(q),
+                             K = diag(q),
                              cpca_blocks = 1:2,
                              cpca_part = "design",
                              rank = 3)

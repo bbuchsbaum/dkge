@@ -36,6 +36,10 @@ theme_set(theme_dkge())
 ```
 
 
+**See also:** The [Weighting Strategies](dkge-weighting.html) vignette covers the three complementary weighting *layers* — spatial (`Omega_list`), subject-level (`w_method`/`w_tau`), and transport (`sizes`). This vignette focuses on the orthogonal `dkge_weights()` API for fold-safe *voxel-level* adaptive weighting. The two mechanisms are independent and compose freely.
+
+---
+
 DKGE fits are fundamentally driven by cross-subject second moments. When every voxel is treated equally in the analysis, strong signals can be diluted by large regions that mainly contribute noise rather than meaningful signal. Adaptive voxel weighting provides us with a principled approach to up-weight informative locations while still working within the analytic DKGE framework. This vignette explains what the various weighting options mean, demonstrates how to configure them effectively, and shows how to verify that cross-validation and permutation tests remain statistically valid.
 
 We will proceed through four main steps to build understanding:
@@ -105,8 +109,8 @@ make_subject <- function(id, q = 4L, v = 60L) {
 subjects <- lapply(seq_len(10L), make_subject)
 K <- diag(4)
 
-fit_uniform  <- dkge(subjects, kernel = K, rank = 2, w_method = "none")
-fit_adaptive <- dkge(subjects, kernel = K, rank = 2, weights = wts_adapt)
+fit_uniform  <- dkge(subjects, K = K, rank = 2, w_method = "none")
+fit_adaptive <- dkge(subjects, K = K, rank = 2, weights = wts_adapt)
 ```
 
 The second fit internally computes voxel weights for every training fold, applying the adaptive weighting strategy we specified. We
@@ -137,7 +141,7 @@ wts_mixed <- dkge_weights(
   shrink  = list(alpha = 0.6, winsor = 0.995)
 )
 
-fit_mixed <- dkge(subjects, kernel = K, rank = 2, weights = wts_mixed)
+fit_mixed <- dkge(subjects, K = K, rank = 2, weights = wts_mixed)
 ```
 
 The diagnostics now reveal how the prior information nudges the final weights towards voxels with high

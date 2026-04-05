@@ -53,8 +53,8 @@ designs <- replicate(S, {
 centroids <- replicate(S, matrix(runif(P * 3, -40, 40), P, 3), simplify = FALSE)
 subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
 bundle <- dkge_data(subjects)
-fit <- dkge(bundle, kernel = diag(q), rank = 2)
-fit$centroids <- centroids
+fit <- dkge(bundle, K = diag(q), rank = 2)
+fit$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 ```
 
 ## Building an Anchor Renderer

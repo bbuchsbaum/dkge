@@ -1,0 +1,99 @@
+---
+title: "Getting Started with DKGE"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    df_print: paged
+
+vignette: >
+  %\VignetteIndexEntry{Getting Started with DKGE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r library, message=FALSE}
+library(dkge)
+set.seed(42)
+```
+
+Design-Kernel Group Embedding (DKGE) is an R package for multi-subject fMRI
+analysis. It works in the compressed **q-space** of design effects (typically
+10–100 dimensions) rather than voxel-space, enabling memory-efficient group
+fits, leave-one-subject-out contrasts, and optimal-transport alignment to a
+common parcellation — all without ever forming large subject-by-voxel matrices.
+
+## Minimal example
+
+Five subjects, three effects, twenty voxels each:
+
+```{r quick-start}
+S <- 5; q <- 3; P <- 20
+subjects <- lapply(seq_len(S), function(s) {
+  beta   <- matrix(rnorm(q * P), q, P)
+  design <- diag(q); colnames(design) <- paste0("eff", seq_len(q))
+  dkge_subject(beta, design = design, id = paste0("sub", s))
+})
+
+fit <- dkge(subjects, K = diag(q), rank = 2)
+fit          # print method shows eigenspectrum and subject count
+```
+
+The returned object is a `multiblock_biprojector` with q-space loadings in
+`fit$U`, compressed projections in `fit$Btil`, and diagnostics in
+`fit$weights` and `fit$evals`.
+
+## Reading order
+
+| Vignette | Purpose |
+|----------|---------|
+| **You are here** | Overview and entry point |
+| [Workflow](dkge-workflow.html) | Complete fit → contrast → transport → visualise pipeline |
+| [Design Kernels](dkge-design-kernels.html) | Encoding factor structure with `design_kernel()` |
+| [Contrasts & Inference](dkge-contrasts-inference.html) | LOSO contrasts, analytic and bootstrap inference |
+| [Classification](dkge-classification.html) | Cross-validated decoding with `dkge_classify()` |
+| [Weighting Strategies](dkge-weighting.html) | Spatial (`Omega_list`), subject, and transport weights |
+| [Adaptive Voxel Weighting](dkge-adaptive-weighting.html) | Fold-safe `dkge_weights()` API |
+| [Components](dkge-components.html) | Inspecting group-level components and loadings |
+| [Plotting](dkge-plotting.html) | `theme_dkge()`, scree plots, contribution maps |
+| [Dense Rendering](dkge-dense-rendering.html) | Mapping cluster values to voxel space |
+| [Anchors](dkge-anchors.html) | `dkge_anchor_fit()` and anchor-based prediction |
+| [CPCA](dkge-cpca.html) | Contrastive PCA inside the DKGE framework |
+| [DKGE vs PLS](dkge-vs-pls.html) | Comparison with partial least squares approaches |
+| [Performance](dkge-performance.html) | Mapper selection, warm starts, custom backends |
+| [Architecture](dkge-architecture.html) | Design document: planned modular refactor (not current API) |
+
+## Key concepts at a glance
+
+**`dkge_subject(beta, design)`** — wraps a single subject's `q × P` beta
+matrix and `T × q` design matrix. Supply optional `omega` (cluster weights)
+and `id`.
+
+**`dkge_data(betas, designs)`** — bundles a list of subjects, aligns
+partially-overlapping effect sets, and records provenance.
+
+**`dkge(subjects, K, rank)`** — main entry point. `K` is the `q × q` design
+kernel; pass `design_kernel(factors, basis = "effect")` for structured factor
+designs.
+
+**`dkge_contrast(fit, contrast_vec, method = "loso")`** — leave-one-subject-out
+contrasts in q-space; pair with `dkge_transport_contrasts_to_medoid()` to map
+to a common parcellation.
+
+**`dkge_classify(fit, targets, method = "lda")`** — fully cross-validated
+decoding with optional permutation tests. Supply targets via
+`dkge_targets(fit, ~ factor1 + factor2)` or a plain contrast weight matrix.
+
+## Getting help
+
+- `?dkge` — main fitting function
+- `?dkge_contrast` — LOSO and k-fold contrasts
+- `?dkge_classify` — classification and decoding
+- `?design_kernel` — structured factor kernels
+- Issues: <https://github.com/bbuchsbaum/dkge/issues>

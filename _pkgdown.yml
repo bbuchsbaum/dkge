@@ -5,6 +5,38 @@ figures:
   dev: grDevices::png
   dpi: 96
 
+articles:
+  - title: "Start here"
+    navbar: ~
+    contents:
+      - dkge
+      - dkge-workflow
+  - title: "Core analysis"
+    navbar: Core analysis
+    contents:
+      - dkge-design-kernels
+      - dkge-contrasts-inference
+      - dkge-classification
+      - dkge-components
+  - title: "Weighting"
+    navbar: Weighting
+    contents:
+      - dkge-weighting
+      - dkge-adaptive-weighting
+  - title: "Spatial mapping"
+    navbar: Spatial mapping
+    contents:
+      - dkge-dense-rendering
+      - dkge-anchors
+      - dkge-performance
+  - title: "Extras"
+    navbar: Extras
+    contents:
+      - dkge-plotting
+      - dkge-cpca
+      - dkge-vs-pls
+      - dkge-architecture
+
 reference:
   - title: "Workflow — start here"
     desc: "Primary functions for fitting, contrasting, classifying, and predicting"

@@ -14,37 +14,52 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```r
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-The DKGE classification helpers allow you to reuse the cross-fitted group basis to decode subject-level contrasts with statistical rigor. This vignette demonstrates a complete workflow that systematically builds from data preparation through statistical inference.
-
-The approach follows four key steps: first, we construct a design kernel and generate synthetic beta volumes to establish our experimental framework. Next, we fit the DKGE model to extract the group-level latent structure. We then define classification targets that specify which experimental contrasts we want to decode. Finally, we obtain cross-validated decoding scores with permutation-based statistical inference to assess significance.
-
-While we keep this example computationally modest for quick execution, the methodological pattern scales directly to larger neuroimaging studies.
-
-## Setup
-
-```r
+```{r library, message=FALSE}
 library(dkge)
 set.seed(12)
 ```
 
-For this demonstration, we simulate beta coefficients for 10 subjects, 4 design effects, and 60 voxels. To create a realistic classification scenario, we embed weak but detectable signal in effects 1 and 2 that distinguishes between two experimental conditions A and B.
+The DKGE classification helpers allow you to reuse the cross-fitted group basis to decode
+subject-level contrasts with statistical rigor. This vignette demonstrates a complete
+workflow: data preparation → model fit → target specification → cross-validated decoding
+→ statistical inference.
 
-```r
+The approach is fully cross-validated: by default `dkge_classify()` uses
+leave-one-subject-out (LOSO) cross-fitting, re-estimating the group basis without the
+held-out subject at each fold. This ensures that the reported accuracies are unbiased
+estimates of generalisation performance.
+
+## Setup
+
+We define two experimental factors — condition (A vs B) and time (4 time points) — and
+construct a design kernel that encodes their structure:
+
+```{r design-kernel}
+factors <- list(cond = list(L = 2), time = list(L = 4))
+kern    <- design_kernel(factors, basis = "effect")
+q       <- nrow(kern$K)   # number of effect-coded columns
+q
+```
+
+We simulate 10 subjects, each with `q` design effects and 60 voxels. A detectable signal
+distinguishing the two conditions is embedded in the condition contrast:
+
+```{r simulate}
 n_subjects <- 10L
-q <- 4L
 v <- 60L
 
 make_subject <- function(id) {
+  # design: identity matrix over effects (one trial per effect)
   design <- diag(q)
-  colnames(design) <- paste0("eff", seq_len(q))
+  colnames(design) <- rownames(kern$K)
 
+  # signal: condition contrast (first effect column) drives voxels 1-10
   signal <- matrix(0, nrow = q, ncol = v)
-  signal[1, 1:10] <- 0.4
-  signal[2, 1:10] <- -0.4
+  signal[1, 1:10] <- 0.5    # positive signal for condition contrast
 
   beta <- signal + matrix(rnorm(q * v, sd = 1.0), nrow = q)
   dkge_subject(beta, design = design, id = paste0("sub", id))
@@ -53,165 +68,209 @@ make_subject <- function(id) {
 subjects <- lapply(seq_len(n_subjects), make_subject)
 ```
 
-We define a simple isotropic kernel that maintains orthonormality among the design effects:
+Fit the DKGE model using the design kernel. `design_kernel()` returns a list with `$K`
+(the q×q kernel matrix) and `$info` (factor metadata used by `dkge_targets()`):
 
-```r
-K <- diag(q)
-```
-
-With our synthetic data and kernel defined, we proceed to fit the DKGE model. The rank parameter controls how many group-level components are retained in the latent basis, providing a form of dimensionality reduction.
-
-```r
-fit <- dkge(subjects, kernel = K, rank = 2)
+```{r fit}
+fit <- dkge(subjects, K = kern, rank = 2)
+fit
 ```
 
 ## Classification targets
 
-The `dkge_targets()` function provides a systematic way to map from design terms to classification contrasts. Since our goal is to discriminate between effect 1 and effect 2, we specify a formula that includes both factors of interest.
+`dkge_targets()` maps design formula terms to classification contrasts using the factor
+metadata stored in the kernel. Each term becomes a binary (or multi-class) decoding
+problem over the group embedding.
 
-```r
-targets <- dkge_targets(fit, ~ eff1 + eff2, scope = "within_subject")
-str(targets[[1]])
+```{r targets}
+targets <- dkge_targets(fit, ~ cond + time)
+length(targets)                      # one target per formula term
+targets[[1]]$name                    # "cond"
+nrow(targets[[1]]$weight_matrix)     # 2 classes (A vs B)
 ```
 
-The resulting target object contains a weight matrix that transforms subject-level beta coefficients into class-specific pattern vectors suitable for classification analysis.
+The weight matrix transforms subject-level beta vectors into class-specific pattern
+vectors for the downstream classifier.
 
 ## Cross-validated decoding
 
-The `dkge_classify()` function implements leave-one-subject-out (LOSO) cross-validation by default, ensuring unbiased performance estimates. Here we request both linear discriminant analysis (LDA, the default) and logistic regression as classification backends. Additionally, we specify 199 permutations to generate empirical p-values for statistical significance testing.
-
-```r
+```{r classify}
 cls <- dkge_classify(
   fit,
   targets = targets,
-  method = "loso",
-  backends = c("lda", "logit"),
-  permutations = 199,
-  seed = 99
+  method  = "lda",     # "lda" (default) or "logit"
+  n_perm  = 199,       # permutation test for significance
+  seed    = 99
 )
-
 print(cls)
 ```
 
-The classification results are returned as a structured tibble that reports balanced accuracy for each individual subject, along with cross-validated group-level summary statistics and permutation-based p-values. Given that we deliberately injected only weak signal into our simulated data, the resulting accuracies are modest but notably above chance levels.
+The result is a `dkge_classification` object. Each entry of `$results` corresponds to
+one target:
 
-If you wish to evaluate directionality using `mode = "delta"`, provide subject-level labels through the new `y` argument (or by attaching `target$y` to individual targets). DKGE will align the supplied factor levels with each target's `class_labels` and compute label-aware metrics such as AUROC and calibration error. A complementary `mode = "cell_cross"` now supports subjectwise generalisation with optional within-fold standardisation controlled via `standardize_within_fold`.
-
-## Inspecting loadings and confusion
-
-The classification object provides rich diagnostic information that can be accessed programmatically for further analysis:
-
-```r
-head(cls$subject_scores)
-cls$permutation$p_values
+```{r results}
+res <- cls$results[["cond"]]
+res$mode       # decoding mode: "cell" for within-subject targets
+res$metrics    # cross-validated accuracy and log-loss
 ```
 
-For quick inspection, use `summary(cls)` to obtain a compact overview of the key results. Alternatively, convert the results to a standard data frame via `as.data.frame(cls)` to enable custom plotting and downstream analysis workflows.
+Convert to a tidy data frame for plotting or downstream analysis:
+
+```{r tidy}
+df <- as.data.frame(cls)
+head(df)
+```
+
+### Permutation p-values
+
+When `n_perm > 0`, each target gets an empirical p-value from the sign-flip max-T
+permutation distribution:
+
+```{r pvalues}
+res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
+```
+
+### Subject-level predictions
+
+Individual predictions and fold assignments live in `$row_data`:
+
+```{r predictions}
+head(res$row_data[, c("subject_label", "class_label", "fold")])
+```
+
+Full predicted probabilities are in `res$probabilities` (rows = subject × class
+combinations, columns = class labels).
+
+### Per-fold diagnostics
+
+Confusion matrices and class counts per fold are in `res$diagnostics$folds`:
+
+```{r diag}
+diag_fold1 <- res$diagnostics$folds[[1]]
+diag_fold1$confusion           # confusion matrix for fold 1
+diag_fold1$class_counts_test   # observed class counts in test set
+```
+
+## Two modes: `cell` vs `cell_cross`
+
+The `mode` argument controls how the group basis is applied at test time:
+
+| Mode | Basis used | Use case |
+|------|-----------|----------|
+| `"cell"` | Global `fit$U` | Fast; mild basis-step leakage — `fit$U` saw all subjects |
+| `"cell_cross"` | Fold-specific LOSO `U_fold` | Fully cross-validated, more conservative |
+| `"delta"` | Global `fit$U` + subject labels | Subject-level binary test; requires `y` argument |
+
+`"auto"` (default) selects `"cell"` for within-subject targets and `"delta"` for
+between-subject targets.
+
+```{r cell-cross, eval=FALSE}
+# Fully cross-validated basis — recommended for publication-quality results
+cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
+```
 
 ## Multiple betas per condition
 
-In many neuroimaging experiments, you may have multiple beta estimates per experimental condition, such as estimates from separate scanner runs or split-half analyses. DKGE and its classification framework handle this scenario naturally by stacking the run-specific betas as additional effect rows in the design matrix, then using a target weight matrix that intelligently combines them into a single, robust class pattern.
+When you have multiple beta estimates per condition (e.g., separate scanner runs), stack
+the run-specific effects as extra rows in the design matrix and supply a weight matrix
+that combines them into a single class pattern.
 
-```r
+```{r multi-beta}
+# 4 effects: A_run1, A_run2, B_run1, B_run2
 make_subject_multi <- function(id) {
   design <- diag(4)
   colnames(design) <- c("A_run1", "A_run2", "B_run1", "B_run2")
 
   signal <- matrix(0, nrow = 4, ncol = v)
-  signal[1:2, 1:10] <- 0.4        # both A runs share the same underlying effect
-  signal[3:4, 1:10] <- -0.4       # both B runs share the opposite effect
+  signal[1:2, 1:10] <-  0.5   # both A runs share signal
+  signal[3:4, 1:10] <- -0.5   # both B runs share the opposite signal
 
   beta <- signal + matrix(rnorm(4 * v, sd = 1.0), nrow = 4)
   dkge_subject(beta, design = design, id = paste0("sub", id))
 }
 
 subjects_multi <- lapply(seq_len(n_subjects), make_subject_multi)
-fit_multi <- dkge(subjects_multi, kernel = diag(4), rank = 2)
+fit_multi      <- dkge(subjects_multi, K = diag(4), rank = 2)
 
-# Average the two runs per condition before decoding
+# Weight matrix: rows = classes, columns = effects.
+# Each class averages its two runs.
 W_runs <- matrix(0, nrow = 2, ncol = 4)
-W_runs[1, 1:2] <- 0.5   # condition A averages run1/run2
-W_runs[2, 3:4] <- 0.5   # condition B averages run1/run2
+W_runs[1, 1:2] <- 0.5    # class A = mean(A_run1, A_run2)
+W_runs[2, 3:4] <- 0.5    # class B = mean(B_run1, B_run2)
 rownames(W_runs) <- c("A", "B")
-
-target_runs <- list(structure(list(
-  name = "condition",
-  factors = character(0),
-  labels = data.frame(),
-  class_labels = rownames(W_runs),
-  weight_matrix = W_runs,
-  indicator = NULL,
-  residualized = NA,
-  collapse = list(run = "mean"),
-  scope = "within_subject"
-), class = c("dkge_target", "list")))
-
-cls_multi <- dkge_classify(fit_multi,
-                           targets = target_runs,
-                           permutations = 99,
-                           seed = 101)
-
-cls_multi$summary
 ```
 
-This approach maintains the statistical integrity of the cross-validation procedure because the runs are averaged within the target weight matrix, ensuring that each LOSO fold observes only a single pattern per condition. This preserves the unbiased nature of the cross-fitted statistic and keeps the permutation-based inference valid. When working with more than two runs, simply replace the `0.5` entries with `1 / n_runs` to compute the arithmetic mean. More generally, any set of non-negative weights that sum to one is acceptable, allowing for sophisticated approaches such as reliability-weighted averages that account for differential measurement quality across runs.
+A plain matrix is accepted directly as `targets` — DKGE wraps it automatically:
+
+```{r multi-classify}
+cls_multi <- dkge_classify(fit_multi,
+                           targets = W_runs,   # plain matrix dispatch
+                           n_perm  = 99,
+                           seed    = 101)
+
+res_multi <- cls_multi$results[[1]]
+res_multi$metrics
+as.data.frame(cls_multi)
+```
+
+The cross-validation remains unbiased: run averaging happens inside the weight matrix,
+so each LOSO fold observes exactly one pattern per condition.
 
 ## Hyperdesign inputs and fold bridges
 
-Many labs organise beta estimates and design metadata using richer containers such as `multidesign::hyperdesign()`. DKGE now exposes light-weight coercion hooks that let those objects flow through existing pipelines without altering the core solvers. Any object that implements
+Labs using `multidesign::hyperdesign()` can supply design kernels and fold assignments
+through coercion S3 generics. Any object implementing `as_dkge_kernel()` and
+`as_dkge_folds()` flows through the existing pipeline without altering the core solvers.
 
-```
-as_dkge_kernel(x, ...)
-as_dkge_folds(x, fit_or_data, ...)
-```
-
-can supply design kernels and fold assignments directly to DKGE entry points. For example, if `hd` is a hyperdesign that already knows how to build kernels and cross-validation folds, the following pattern just works:
-
-```r
+```{r hyperdesign, eval=FALSE}
+# Pseudocode — requires multidesign package and a user-defined hyperdesign object
 library(multidesign)
 
-hd <- make_demo_hyperdesign()                     # user-defined helper
-Kobj <- as_dkge_kernel(hd, basis = "effect")      # returns list(K = ..., info = ...)
+hd     <- make_demo_hyperdesign()                # user-supplied helper
+Kobj   <- as_dkge_kernel(hd, basis = "effect")   # list(K = ..., info = ...)
 
 fit_hd <- dkge(
-  betas = dkge_data_from_hd(hd),                  # list/array of subject betas
-  kernel = Kobj,
+  betas       = dkge_data_from_hd(hd),
+  K           = Kobj,
   keep_inputs = TRUE
 )
 
-# fold_over() output converts transparently
-folds <- as_dkge_folds(fold_over(hd, over = "subject", k = 5, seed = 1), fit_hd)
+folds  <- as_dkge_folds(fold_over(hd, over = "subject", k = 5, seed = 1), fit_hd)
 
 res_hd <- dkge_contrast(fit_hd,
                         contrasts = c(1, -1, 0, 0),
-                        method = "kfold",
-                        folds = folds)
+                        method    = "kfold",
+                        folds     = folds)
 ```
 
-The default methods keep backwards compatibility by treating matrices, lists with a `$K` element, and existing `dkge_folds` objects exactly as before. Packages that manage richer design structures only need to provide S3 methods for the two coercion generics, allowing DKGE to stay agnostic about upstream data management while still benefiting from advanced fold builders such as `multidesign::fold_over()`.
+Matrices, lists with a `$K` element, and existing `dkge_folds` objects continue to work
+as before — only packages with richer design structures need to implement these generics.
 
-## Tips for real datasets
+## Practical tips
 
-Several practical considerations can enhance your classification analyses with real neuroimaging data:
+**Target specification.** Define the full factorial structure with formula notation
+(e.g., `~ cond + time + cond:time`) and reuse the same target definitions across both
+classification and contrast analyses for methodological consistency.
 
-**Target specification:** Define the complete factorial structure of your experiment using formula notation (e.g., `~ A + B + A:B` for main effects and interactions), then reuse these target definitions consistently across both classification and contrast analyses to maintain analytical coherence.
+**Backend choice.** LDA (`method = "lda"`) is fast and usually sufficient. Use
+`method = "logit"` with `class_weights = "balanced"` when experimental conditions have
+unequal numbers of trials.
 
-**Backend selection:** Linear discriminant analysis (LDA) provides fast computation and often sufficient performance for most applications. When you need additional flexibility, logistic regression (`backends = "logit"`) offers support for class weighting (`class_weights = "balanced"`), which becomes important when experimental conditions have unequal sample sizes.
+**Permutation testing.** Increase `n_perm` for precise p-values near significance
+thresholds. Set `n_perm = 0` during exploratory analysis to skip the permutation loop.
 
-**Permutation testing:** Increase the number of `permutations` to obtain more precise p-value estimates, particularly when approaching significance thresholds. For purely exploratory analyses where statistical inference is not yet critical, set `permute = FALSE` to accelerate computation.
+**Spatial alignment.** When subjects have different voxel grids, apply transport to a
+common medoid parcellation via `dkge_transport_contrasts_to_medoid()` before
+classification.
 
-**Spatial alignment:** When subjects have different voxel grids or parcellation schemes, ensure proper spatial correspondence by applying `dkge_transport_contrasts_to_medoid()` or by supplying pre-computed medoid transforms through the `transport` argument in `dkge_pipeline()` before proceeding with classification.
-
-When working with storage-backed workflows, preserve the `fit$input` bundle by maintaining the default `keep_inputs = TRUE` setting. This enables you to adapt weight specifications or rebuild cross-validation folds without the computational expense of recomputing the underlying beta estimates.
+**Input caching.** Keep `keep_inputs = TRUE` (default) to enable `dkge_update_weights()`
+without re-running the full fit.
 
 ## Next steps
 
-Building on this foundational workflow, several advanced techniques can further enhance your DKGE classification analyses:
-
-First, consider combining classification with adaptive voxel weighting strategies, which are detailed in the companion vignette and can improve classification performance by emphasizing the most informative spatial features.
-
-Second, leverage `dkge_pipeline()` to orchestrate the entire analytical sequence—including model fitting, contrast computation, spatial transport, statistical inference, and classification—within a single, streamlined function call that reduces code complexity and ensures methodological consistency.
-
-Finally, explore the `diagnostics` component of your fitted model to monitor key quality metrics such as variance explained by the group components and individual subject weights, which provide valuable insights into model performance and potential outliers.
-
-The complete analytical framework follows the systematic structure demonstrated here: define an appropriate design kernel, fit the DKGE model, create meaningful classification targets, execute `dkge_classify()` with proper cross-validation, and interpret the resulting decoding scores using rigorous permutation-based statistical inference.
+- **Adaptive weighting** (`vignette("dkge-adaptive-weighting")`): Emphasize spatially
+  reliable voxels before computing the group embedding.
+- **`dkge_pipeline()`**: Orchestrate fit → contrast → transport → inference →
+  classification in a single call.
+- **Diagnostics**: Inspect `fit$evals` (variance explained) and per-fold confusion
+  matrices to identify underperforming subjects or poorly separated conditions.

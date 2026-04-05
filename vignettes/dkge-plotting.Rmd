@@ -73,7 +73,7 @@ make_subject <- function(id) {
 
 subjects <- lapply(seq_len(S), make_subject)
 K <- diag(q)
-fit <- dkge(subjects, kernel = K, rank = 4, w_method = 'none')
+fit <- dkge(subjects, K = K, rank = 4, w_method = 'none')
 ```
 
 ## Auxiliary objects

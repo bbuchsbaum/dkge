@@ -58,8 +58,8 @@ designs <- replicate(S, {
 centroids <- replicate(S, matrix(runif(P * 3, -10, 10), P, 3), simplify = FALSE)
 subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
  bundle <- dkge_data(subjects)
-fit <- dkge(bundle, kernel = diag(q), rank = 3)
-fit$centroids <- centroids
+fit <- dkge(bundle, K = diag(q), rank = 3)
+fit$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 ```
 
 ## Leave-One-Subject-Out (LOSO) Contrasts
@@ -165,7 +165,7 @@ the computational burden of bootstrap inference, the package leverages warm-star
 Sinkhorn transport algorithms and automatically caches dual variables to reduce runtime
 in subsequent iterations.
 
-Regardless of the inference method chosen, it is essential to inspect the `loso$subject_values`
+Regardless of the inference method chosen, it is essential to inspect the `loso$values`
 output to identify potential outlier subjects before reporting group-level results. This
 quality control step helps ensure that your conclusions are not unduly influenced by
 atypical individual responses and maintains the integrity of your statistical inferences.

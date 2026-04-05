@@ -51,7 +51,7 @@ designs <- replicate(S, {
 }, simplify = FALSE)
 subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
 bundle <- dkge_data(subjects)
-fit <- dkge(bundle, kernel = diag(q), rank = 3)
+fit <- dkge(bundle, K = diag(q), rank = 3)
 ```
 
 By default `dkge()` pools the whitened subject covariances and diagonalises the result.  
@@ -61,7 +61,7 @@ optimiser):
 
 ```{r fit-jd, eval=FALSE}
 fit_jd <- dkge(bundle,
-               kernel = diag(q),
+               K = diag(q),
                rank = 3,
                solver = "jd",
                jd_control = dkge_jd_control(maxit = 200, tol = 1e-8))
