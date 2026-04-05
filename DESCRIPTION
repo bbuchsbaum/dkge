@@ -2,6 +2,8 @@ Package: dkge
 Type: Package
 Title: Design-Kernel Group Embedding for Cluster-Level fMRI
 Version: 0.0.0.9000
+Author: Brad Buchsbaum <brad.buchsbaum@gmail.com>
+Maintainer: Brad Buchsbaum <brad.buchsbaum@gmail.com>
 Authors@R: c(
     person(given = "Brad", family = "Buchsbaum", email = "brad.buchsbaum@gmail.com", role = c("aut", "cre"))
   )
@@ -47,7 +49,8 @@ Remotes:
     bbuchsbaum/neuroim2,
     bbuchsbaum/fmridesign,
     bbuchsbaum/fmriAR,
-    bbuchsbaum/fmrireg
+    bbuchsbaum/fmrireg,
+    bbuchsbaum/adjoin
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3

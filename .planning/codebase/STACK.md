@@ -51,7 +51,7 @@
 - `multivarious` - Multiblock projector interface compatibility
 - `glmnet` - Regularized regression (cv.glmnet)
 - `FNN` - Fast nearest neighbor algorithms
-- `neighborweights` - Spatial weighting utilities
+- `adjoin` - Spatial weighting utilities and neighbor graph construction
 - `ggplot2` - Visualization and plotting
 
 **Suggested:**

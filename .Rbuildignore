@@ -12,3 +12,5 @@
 ^pkgdown$
 ^\.github$
 ^\.planning$
+^\.omc$
+^\.rcmdcheck.*\.rds$

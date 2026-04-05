@@ -74,7 +74,7 @@
 - Purpose: Dense anchor-based group maps for visualization
 - Location: `R/dkge-render-core.R`, `R/dkge-anchor-build.R`, `R/dkge-anchor-fit.R`
 - Contains: Anchor construction, kNN graphs, anchor-to-voxel decoders
-- Depends on: `neighborweights`, `FNN`
+- Depends on: `adjoin`, `FNN`
 - Used by: End users for visualization
 
 **Pipeline/Service Layer:**

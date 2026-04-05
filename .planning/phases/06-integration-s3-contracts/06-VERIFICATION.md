@@ -134,7 +134,7 @@ WARNING 1: CRAN incoming feasibility
   - Version: 0.0.0.9000 (development version)
   - Unknown field: 'Remotes'
   - Strong dependencies not in mainstream repositories:
-    fmridesign, fmrireg, neighborweights
+    fmridesign, fmrireg, adjoin
   [Expected for packages with GitHub-only dependencies]
 
 WARNING 2: Installation warning (system-level)

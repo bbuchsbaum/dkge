@@ -198,7 +198,7 @@ neuroim2                # Neuroimaging data structures
 FNN                     # Fast nearest neighbor search
 future.apply            # Parallel processing
 Matrix                  # Sparse matrix operations
-neighborweights         # Graph construction
+adjoin                  # Graph construction and neighbor weighting
 Rcpp, RcppArmadillo     # C++ integration
 multivarious            # Multiblock projector framework
 stats, utils            # Base R utilities

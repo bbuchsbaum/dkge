@@ -87,3 +87,15 @@ Remote dependencies (GitHub):
 - Use double precision and symmetrization for numerical stability
 - Add small ridge to eigenvalues when needed
 - Streaming variants process subjects in two passes: first to compute the pooled design Cholesky factor R, then to accumulate compressed covariance
+
+## Migration: Replacing K-Procrustes with neuralign
+
+A migration plan exists to replace dkge's K-Procrustes alignment code with neuralign's equivalent implementations. See `docs/MIGRATION_NEURALIGN.md` for the full plan.
+
+**Key points:**
+- dkge's 4 K-Procrustes functions (`dkge_k_orthonormalize`, `dkge_procrustes_K`, `dkge_align_bases_K`, `dkge_consensus_basis_K`) map 1:1 to neuralign equivalents (`k_orthonormalize`, `k_procrustes`, `k_align_bases`, `k_consensus_basis`)
+- Core `dkge_fit()` is unaffected — it achieves K-orthonormality via eigendecomposition, not Procrustes
+- Only post-fit analysis (bootstrap, analytic, folds, plot, sim) uses K-Procrustes — 12 call sites across 6 files
+- `compat_neuralign.R` already provides the adapter seam
+- 24 golden tests with strict tolerances gate each migration phase
+- Design kernels, Sinkhorn OT, spatial mappers, and effect kernel alignment stay in dkge

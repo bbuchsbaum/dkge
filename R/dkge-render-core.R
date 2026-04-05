@@ -251,7 +251,7 @@ dkge_anchor_aggregate <- function(anchor_list,
 #'   factors = list(A = list(L = 2), B = list(L = 3)),
 #'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
 #' )
-#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 #' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
 #' renderer <- dkge_build_renderer(fit,
 #'                                 centroids = centroids,
@@ -401,7 +401,7 @@ dkge_build_renderer <- function(fit,
 #'   factors = list(A = list(L = 2), B = list(L = 3)),
 #'   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
 #' )
-#' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#' fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 #' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
 #' renderer <- dkge_build_renderer(fit,
 #'                                 centroids = centroids,
