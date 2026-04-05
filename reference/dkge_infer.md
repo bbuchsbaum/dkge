@@ -1,0 +1,136 @@
+# Unified inference for DKGE contrasts
+
+High-level interface for statistical inference on DKGE contrasts with
+integrated cross-fitting and multiple testing correction.
+
+## Usage
+
+``` r
+dkge_infer(
+  fit,
+  contrasts,
+  method = c("loso", "kfold", "analytic"),
+  inference = c("signflip", "freedman-lane", "parametric"),
+  correction = c("maxT", "fdr", "bonferroni", "none"),
+  n_perm = 2000,
+  alpha = 0.05,
+  transported = FALSE,
+  transport = NULL,
+  ...
+)
+```
+
+## Arguments
+
+- fit:
+
+  A \`dkge\` object from \[dkge_fit()\] or \[dkge()\]
+
+- contrasts:
+
+  Contrast specification (see \[dkge_contrast()\])
+
+- method:
+
+  Cross-fitting method: "loso", "kfold", or "analytic"
+
+- inference:
+
+  Inference type: - \`"signflip"\`: Sign-flip permutation test
+  (default) - \`"freedman-lane"\`: Freedman-Lane permutation (requires
+  adapters) - \`"parametric"\`: Parametric t-test (assumes normality)
+
+- correction:
+
+  Multiple testing correction: - \`"maxT"\`: Family-wise error rate via
+  max-T (default) - \`"fdr"\`: False discovery rate
+  (Benjamini-Hochberg) - \`"bonferroni"\`: Bonferroni correction -
+  \`"none"\`: No correction
+
+- n_perm:
+
+  Number of permutations for non-parametric tests
+
+- alpha:
+
+  Significance level for corrections
+
+- transported:
+
+  Logical; retained for backwards compatibility. Deprecated.
+
+- transport:
+
+  Optional list describing how to map subject clusters to a shared
+  reference before inference. Provide \`centroids\`, \`medoid\`, and an
+  optional mapper specification created via \[dkge_mapper_spec()\].
+  Additional parameters (e.g. \`epsilon\`, \`lambda_emb\`) are forwarded
+  when constructing the default Sinkhorn mapper.
+
+- ...:
+
+  Additional arguments passed to \[dkge_contrast()\] and inference
+  functions
+
+## Value
+
+An object of class \`dkge_inference\` containing: - \`contrasts\`: The
+contrast results from cross-fitting - \`statistics\`: Test statistics
+per cluster/voxel - \`p_values\`: Raw p-values - \`p_adjusted\`:
+Adjusted p-values based on correction method - \`significant\`: Logical
+indicators of significance - \`method\`: Cross-fitting method used -
+\`inference\`: Inference type used - \`correction\`: Correction method
+applied - \`metadata\`: Additional information about the analysis
+
+## Details
+
+This function integrates the cross-fitting machinery from
+\[dkge_contrast()\] with various statistical inference procedures. It
+first computes contrast values using the specified cross-fitting method,
+then applies the chosen inference procedure to obtain p-values, and
+finally applies multiple testing correction.
+
+When subject cluster counts differ across participants, supply the
+\`transport\` argument so that contrasts are first mapped to a shared
+parcellation before stacking. The resulting mapped subject matrices are
+returned in the \`transport\` field of the output for downstream
+inspection.
+
+The workflow is: 1. Compute contrast values via cross-fitting
+(LOSO/K-fold/analytic) 2. Apply inference procedure
+(sign-flip/Freedman-Lane/parametric) 3. Apply multiple testing
+correction (maxT/FDR/Bonferroni)
+
+For sign-flip inference, the max-T correction provides strong FWER
+control. For parametric inference, FDR may be more appropriate for
+exploratory analyses.
+
+## See also
+
+\[dkge_contrast()\], \[dkge_signflip_maxT()\], \[dkge_freedman_lane()\]
+
+## Examples
+
+``` r
+# Simulate and fit
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 6, P = 15, snr = 5
+)
+fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+#> Warning: Argument 'kernel' is deprecated; use 'K' instead.
+
+# LOSO with sign-flip and maxT correction (fast with few perms for example)
+# \donttest{
+results <- dkge_infer(fit, c(1, rep(0, 4)), n_perm = 100)
+results
+#> DKGE Inference Results
+#> ----------------------
+#> Cross-fitting: loso
+#> Inference: signflip
+#> Correction: maxT
+#> Contrasts: 1
+#> Alpha level: 0.05
+#>   contrast1: 0/15 significant
+# }
+```

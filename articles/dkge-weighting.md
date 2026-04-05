@@ -1,0 +1,349 @@
+# Weighting Strategies in DKGE
+
+Design-Kernel Group Embedding (DKGE) provides several sophisticated
+weighting mechanisms that allow you to emphasize reliable clusters,
+incorporate spatial smoothness constraints, or balance contributions
+from subjects in heterogeneous cohorts. This vignette systematically
+catalogues the available weighting options and demonstrates how they
+interact throughout the various stages of fitting, projection, and
+transport operations.
+
+### Adaptive voxel weighting (preview)
+
+In addition to the subjects × clusters weighting controls showcased
+throughout this vignette, DKGE can also rescale individual voxels
+adaptively before fold bases are constructed. This adaptive weighting
+approach enhances informative brain regions by intelligently combining
+sign-invariant priors (such as reliability maps) with training-only
+statistics including design-kernel energy or precision measures. This
+provides a fold-safe method to sharpen statistical contrasts without
+discarding potentially valuable data. The companion [Adaptive Voxel
+Weighting
+vignette](https://bbuchsbaum.github.io/dkge/articles/dkge-adaptive-weighting.md)
+provides detailed coverage of the
+[`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
+specification, null-safety validation checks, and post-hoc weight
+updates using
+[`dkge_update_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_update_weights.md).
+
+## Weighting Landscape
+
+DKGE operates with three distinct yet complementary weighting layers
+that work together to provide fine-grained control over the analysis:
+
+The first layer consists of **spatial weights (`omega`)**, which operate
+within each individual subject block before the compressed covariance is
+accumulated across subjects. You can supply either vectors (which
+implement diagonal weights) or positive semi-definite matrices (which
+capture full covariances) when constructing subjects or calling the main
+[`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md)
+function.
+
+The second layer involves **subject weights (`w_method`, `w_tau`)**,
+which rescale entire subject blocks based on their energy measured in
+the K-metric. This layer offers Multiple Factor Analysis style scaling
+(`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`)
+schemes, alongside options for manual weight overrides.
+
+The third layer comprises **transport weights (`sizes`)**, which shape
+the optimal-transport alignment process when producing consensus maps.
+This allows you to respect important spatial characteristics such as
+cluster surface areas or voxel densities during the mapping procedure.
+
+The following sections systematically walk through each weighting layer
+using a carefully constructed simulated dataset.
+
+## Example Dataset
+
+To illustrate the behavior of different weighting strategies, we
+generate a synthetic dataset with three subjects that exhibit varying
+cluster counts, sizes, and reliability characteristics. This
+heterogeneity makes the effects of different weighting approaches
+readily apparent during inspection.
+
+``` r
+library(dkge)
+library(purrr)
+set.seed(42)
+
+S <- 3
+q <- 4
+P <- c(6, 5, 7)
+T <- 40
+
+betas <- map(P, ~ matrix(rnorm(q * .x), q, .x))
+designs <- map(seq_len(S), function(s) {
+  X <- matrix(rnorm(T * q), T, q)
+  qr.Q(qr(X))
+})
+
+centroids <- map(P, ~ matrix(runif(.x * 3, min = -20, max = 20), .x, 3))
+cluster_sizes <- map(P, ~ sample(10:40, .x, replace = TRUE))
+reliability_scores <- map(P, ~ runif(.x, min = 0.4, max = 1))
+```
+
+In this simulation, the `cluster_sizes` vectors serve as proxies for
+surface-area weights that would reflect the actual spatial extent of
+brain parcels, while the `reliability_scores` could represent various
+quality control measures such as motion artifacts or bootstrap stability
+assessments commonly used in neuroimaging analyses.
+
+## Baseline Fit (No Spatial Weights)
+
+``` r
+data_equal <- dkge_data(betas, designs = designs)
+k_identity <- diag(data_equal$q)
+
+fit_equal <- dkge(data_equal, K = k_identity, rank = 2, w_method = "none")
+fit_equal$weights
+#> [1] 1 1 1
+```
+
+In this baseline configuration where all weights are equal, every
+subject contributes uniformly to the construction of the shared basis.
+Consequently, cluster-level variability patterns are driven purely by
+the structure encoded in the design kernel, without any additional bias
+from differential weighting schemes.
+
+## Size-Weighted Blocks
+
+When you supply per-cluster mass values, this approach emphasizes the
+contribution of larger parcels while maintaining a diagonal information
+structure that preserves the independence assumption between clusters.
+
+``` r
+omega_size <- cluster_sizes
+
+fit_size <- dkge(data_equal,
+                 K = k_identity,
+                 Omega_list = omega_size,
+                 rank = 2,
+                 w_method = "none")
+fit_size$weights
+#> [1] 1 1 1
+```
+
+Since the subject blocks now differ in their total weighted energy due
+to the size-based weighting, each block’s relative influence on the
+underlying eigenproblem shifts accordingly. By inspecting the leading
+component, we can observe how the loadings are systematically rebalanced
+to favor larger parcels:
+
+``` r
+size_loadings <- lapply(fit_size$Btil, function(Bts) t(Bts) %*% fit_size$K %*% fit_size$U)
+map(size_loadings, ~ round(.x[, 1, drop = FALSE], 3))
+#> [[1]]
+#>             [,1]
+#> cluster_1 -0.544
+#> cluster_2 -2.319
+#> cluster_3 -1.859
+#> cluster_4  1.394
+#> cluster_5  6.112
+#> cluster_6  2.226
+#> 
+#> [[2]]
+#>             [,1]
+#> cluster_1 -1.083
+#> cluster_2 -0.114
+#> cluster_3 -1.565
+#> cluster_4  4.466
+#> cluster_5 -1.239
+#> 
+#> [[3]]
+#>             [,1]
+#> cluster_1  2.182
+#> cluster_2 -1.049
+#> cluster_3 -1.295
+#> cluster_4  3.950
+#> cluster_5 -0.156
+#> cluster_6 -0.587
+#> cluster_7  0.437
+```
+
+## Reliability Weighting
+
+Reliability scores can be seamlessly incorporated into the `omega`
+weighting scheme by scaling each cluster according to its expected
+signal quality characteristics. When you want to combine both size and
+reliability considerations, this can be accomplished through a
+straightforward Hadamard (element-wise) product of the respective weight
+vectors.
+
+``` r
+omega_reliability <- map2(cluster_sizes, reliability_scores, `*`)
+
+fit_reliability <- dkge(data_equal,
+                        K = k_identity,
+                        Omega_list = omega_reliability,
+                        rank = 2,
+                        w_method = "none")
+fit_reliability$weights
+#> [1] 1 1 1
+```
+
+By comparing `fit_reliability$weights` with `fit_size$weights`, we can
+observe that subjects containing systematically noisier clusters receive
+reduced leverage in the analysis, even before any additional
+subject-level scaling is applied.
+
+In real-world applications, reliability vectors can be derived from
+several methodologically sound sources. First, you can use per-cluster
+GLM uncertainty measures, such as inverse residual variance or
+`1 / se^2` values obtained from first-level statistical fits. Second,
+split-half or test-retest variance estimates provide another approach by
+down-weighting parcels that show poor temporal stability. Third, motion
+and quality control summaries can identify and flag clusters that were
+acquired under conditions of excessive artifact contamination. Fourth,
+bootstrap or jackknife stability scores can be converted into positive
+weight values that reflect resampling-based reliability. Finally, you
+can create combinations of the above approaches, often multiplying them
+by parcel sizes and rescaling the results so that the subject-level mean
+weight equals one.
+
+An important technical consideration is to always maintain positive
+weight values and add a small ridge term (such as `+ 1e-6`) when your
+weight construction procedure might potentially produce zero values.
+
+## Spatial Covariance (Smoothness) Weighting
+
+When spatial coordinate information for clusters is available, you can
+replace simple diagonal weights with more sophisticated smooth
+covariance matrices that capture spatial relationships. The example
+below demonstrates how to construct Gaussian affinity matrices that
+explicitly reward neighboring parcels for exhibiting coordinated
+activation patterns.
+
+``` r
+gaussian_cov <- function(coords, bandwidth = 15) {
+  D <- as.matrix(dist(coords))
+  K <- exp(-(D / bandwidth)^2)
+  (K + t(K)) / 2 + diag(1e-6, nrow(K))
+}
+
+omega_smooth <- lapply(centroids, gaussian_cov)
+
+fit_smooth <- dkge(data_equal,
+                   K = k_identity,
+                   Omega_list = omega_smooth,
+                   rank = 2,
+                   w_method = "none")
+fit_smooth$weights
+#> [1] 1 1 1
+```
+
+These matrix-based weights function conceptually like whitening
+transforms in that they first apply spatial smoothing to the beta
+coefficients within cluster neighborhoods, and then propagate this
+blended energy information into the shared covariance structure. This
+approach proves particularly useful when working with coarse
+parcellations where you want to down-weight artificial sharp transitions
+between adjacent cluster boundaries.
+
+## Subject-Level Scaling
+
+The `w_method` argument provides control over block-level reweighting
+that occurs after the spatial weights have already been applied to
+individual clusters. The default Multiple Factor Analysis scaling
+approach systematically shrinks the influence of dominant subjects by
+applying weights based on the inverse squared leading singular value of
+their contribution.
+
+``` r
+fit_mfa <- dkge(data_equal,
+                K = k_identity,
+                Omega_list = omega_reliability,
+                rank = 2,
+                w_method = "mfa_sigma1",
+                w_tau = 0.25)
+
+fit_energy <- dkge(data_equal,
+                   K = k_identity,
+                   Omega_list = omega_reliability,
+                   rank = 2,
+                   w_method = "energy",
+                   w_tau = 0)
+
+rbind(mfa = fit_mfa$weights,
+      energy = fit_energy$weights,
+      none = fit_size$weights)
+#>         [,1] [,2] [,3]
+#> mfa    0.779 1.11 1.11
+#> energy 0.650 1.25 1.10
+#> none   1.000 1.00 1.00
+```
+
+The `w_tau` parameter provides a mechanism to shrink extreme weight
+values toward more equal contributions across subjects, which becomes
+particularly valuable when working with imbalanced cohorts or datasets
+that contain potential outlier subjects.
+
+## Weighting During Transport
+
+The transport utilities within DKGE accept their own dedicated `sizes`
+argument that conceptually mirrors the role of the `omega` parameter but
+operates at a different stage—specifically *after* the components have
+been estimated. By providing consistent size information during
+transport, you can ensure that the reference medoid representation
+remains faithful to the actual surface area characteristics of the brain
+parcels.
+
+``` r
+fit_mfa$centroids <- centroids  # attach for transport helpers; pass explicitly in production
+
+comp_equal <- dkge_component_stats(
+  fit_mfa,
+  mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+  centroids = centroids,
+  inference = list(type = "parametric"),
+  medoid = 1L
+)
+
+comp_weighted <- dkge_component_stats(
+  fit_mfa,
+  mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+  centroids = centroids,
+  sizes = cluster_sizes,
+  inference = list(type = "parametric"),
+  medoid = 1L
+)
+
+data.frame(equal = head(comp_equal$summary$stat),
+           size_weighted = head(comp_weighted$summary$stat))
+#>     equal size_weighted
+#> 1 -1.7510        -1.846
+#> 2 -1.2691        -1.100
+#> 3  3.2796         2.332
+#> 4  0.0809        -0.355
+```
+
+Even when working with identical component scores, the application of
+reweighting during the transport phase systematically shifts the medoid
+summary statistics toward larger parcels, demonstrating the distinct
+influence of transport-stage weighting.
+
+## Practical Tips
+
+Several practical considerations can help you effectively implement
+weighting strategies in your DKGE analyses. First, construct your
+subjects using
+[`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
+to ensure that weight information stays properly attached to the data
+when passing through complex pipelines or streaming data loaders.
+Second, for voxelwise analyses, remember to feed cluster size
+information to
+[`dkge_transport_to_voxels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_to_voxels.md)
+through the `sizes` parameter in order to preserve volumetric weighting
+throughout the mapping process.
+
+When combining multiple weighting concepts, maintain positive vector
+values and consider adding a mild ridge term (such as `+ 1e-6`) to
+covariance matrices to prevent numerical instabilities. Additionally,
+make it a practice to revisit the `fit$weights`, singular values, and
+eigenspectra whenever you modify weighting assumptions, as these provide
+quick diagnostic information about the balance of contributions across
+subjects.
+
+Collectively, these weighting tools allow you to tailor DKGE analyses to
+accommodate study-specific quality metrics or incorporate prior spatial
+beliefs, all without requiring modifications to the core fitting
+pipeline.

@@ -1,0 +1,23 @@
+pandoc: 3.1.11
+pkgdown: 2.2.0
+pkgdown_sha: ~
+articles:
+  dkge-adaptive-weighting: dkge-adaptive-weighting.html
+  dkge-anchors: dkge-anchors.html
+  dkge-architecture: dkge-architecture.html
+  dkge-classification: dkge-classification.html
+  dkge-components: dkge-components.html
+  dkge-contrasts-inference: dkge-contrasts-inference.html
+  dkge-cpca: dkge-cpca.html
+  dkge-dense-rendering: dkge-dense-rendering.html
+  dkge-design-kernels: dkge-design-kernels.html
+  dkge-performance: dkge-performance.html
+  dkge-plotting: dkge-plotting.html
+  dkge-vs-pls: dkge-vs-pls.html
+  dkge-weighting: dkge-weighting.html
+  dkge-workflow: dkge-workflow.html
+  dkge: dkge.html
+last_built: 2026-04-05T14:49Z
+urls:
+  reference: https://bbuchsbaum.github.io/dkge/reference
+  article: https://bbuchsbaum.github.io/dkge/articles
