@@ -50,7 +50,8 @@ Remotes:
     bbuchsbaum/fmridesign,
     bbuchsbaum/fmriAR,
     bbuchsbaum/fmrireg,
-    bbuchsbaum/adjoin
+    bbuchsbaum/adjoin,
+    bbuchsbaum/neuralign
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
