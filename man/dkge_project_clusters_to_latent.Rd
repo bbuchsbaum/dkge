@@ -31,3 +31,4 @@ Z_list <- dkge_project_clusters_to_latent(fit)
 dim(Z_list[[1]])  # P_1 x r matrix
 }
 }
+\keyword{internal}

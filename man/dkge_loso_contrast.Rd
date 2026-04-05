@@ -4,14 +4,14 @@
 \alias{dkge_loso_contrast}
 \title{Leave-one-subject-out DKGE contrast}
 \usage{
-dkge_loso_contrast(fit, s, c, ridge = 0)
+dkge_loso_contrast(fit, s, contrasts, ridge = 0)
 }
 \arguments{
 \item{fit}{`dkge` object}
 
 \item{s}{Subject index (1-based)}
 
-\item{c}{Contrast vector in the original design basis}
+\item{contrasts}{Contrast vector in the original design basis}
 
 \item{ridge}{Optional ridge when recomputing the held-out compressed matrix}
 }
@@ -29,6 +29,7 @@ toy <- dkge_sim_toy(
 )
 fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 c_vec <- c(1, -1, rep(0, 3))
-result <- dkge_loso_contrast(fit, s = 1, c = c_vec)
+result <- dkge_loso_contrast(fit, s = 1, contrasts = c_vec)
 }
 }
+\keyword{internal}

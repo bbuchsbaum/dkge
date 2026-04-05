@@ -8,11 +8,11 @@ test_that("as_dkge_kernel preserves existing matrix behaviour", {
   designs <- replicate(S, diag(q), simplify = FALSE)
 
   kernel_obj <- list(K = diag(q), info = list(tag = "ok"))
-  fit_obj <- dkge(betas, designs = designs, kernel = kernel_obj, subject_ids = paste0("s", seq_len(S)))
+  fit_obj <- dkge(betas, designs = designs, K = kernel_obj, subject_ids = paste0("s", seq_len(S)))
 
   expect_equal(fit_obj$kernel_info$tag, "ok")
 
-  fit_default <- dkge(betas, designs = designs, kernel = diag(q), subject_ids = paste0("s", seq_len(S)))
+  fit_default <- dkge(betas, designs = designs, K = diag(q), subject_ids = paste0("s", seq_len(S)))
   expect_null(fit_default$kernel_info)
 })
 

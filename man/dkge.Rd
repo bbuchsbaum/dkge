@@ -7,8 +7,8 @@
 dkge(
   betas,
   designs = NULL,
-  kernel,
-  omega = NULL,
+  K = NULL,
+  Omega_list = NULL,
   subject_ids = NULL,
   keep_inputs = TRUE,
   cpca_blocks = NULL,
@@ -16,6 +16,8 @@ dkge(
   cpca_part = c("none", "design", "resid", "both"),
   cpca_ridge = 0,
   weights = NULL,
+  kernel = NULL,
+  omega = NULL,
   ...
 )
 }
@@ -29,16 +31,19 @@ Each column corresponds to an effect/regressor; column names become the
 canonical effect labels enforced across subjects. Ignored when `betas`
 already carries `dkge_subject`/`dkge_data` entries.}
 
-\item{kernel}{Design kernel that expresses similarity or smoothness between
+\item{K}{Design kernel that expresses similarity or smoothness between
 effects in the design space (e.g. identity for nominal factors, RBF for
 ordinal factors, Kronecker combinations for interactions). Supply either a
 qxq numeric matrix or the list returned by [design_kernel()], whose `K`
-element is extracted automatically.}
+element is extracted automatically. Matches the `K` parameter name used by
+[dkge_fit()].}
 
-\item{omega}{Optional list overriding per-subject spatial weights. Each element
-may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix. When betas
-are voxelwise (e.g. coming from `NeuroVec`), these weights operate on spatial
-units (voxels) rather than clusters; equal weights are assumed when omitted.}
+\item{Omega_list}{Optional list overriding per-subject spatial weights. Each
+element may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix.
+When betas are voxelwise (e.g. coming from `NeuroVec`), these weights
+operate on spatial units (voxels) rather than clusters; equal weights are
+assumed when omitted. Matches the `Omega_list` parameter name used by
+[dkge_fit()].}
 
 \item{subject_ids}{Optional subject identifiers used when raw matrices are
 provided. Ignored when `betas` carries IDs already.}
@@ -66,6 +71,10 @@ eigen-decomposition.}
 default adaptive weighting behaviour when accumulating covariance. Use this
 to inject custom spatial reliabilities or to reuse a precomputed weighting
 recipe produced by [dkge_weights()].}
+
+\item{kernel}{Deprecated. Use `K` instead.}
+
+\item{omega}{Deprecated. Use `Omega_list` instead.}
 
 \item{...}{Additional arguments forwarded to [dkge_fit()] (e.g. `rank`,
 `ridge`, `w_method`, `weights`).}

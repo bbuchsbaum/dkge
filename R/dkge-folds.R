@@ -207,3 +207,120 @@
   }
   result
 }
+
+#' @noRd
+.dkge_normalize_folds <- function(folds, fit) {
+  S <- length(fit$Btil)
+  if (is.null(folds)) {
+    return(list(assignments = lapply(seq_len(S), function(s) s), folds = NULL))
+  }
+  if (is.numeric(folds) && length(folds) == 1) {
+    fold_obj <- dkge_define_folds(fit, type = "subject", k = folds)
+  } else if (inherits(folds, "dkge_folds")) {
+    fold_obj <- folds
+  } else {
+    fold_obj <- as_dkge_folds(folds, fit_or_data = fit)
+    if (!inherits(fold_obj, "dkge_folds")) {
+      stop("folds must be an integer k or convertible via as_dkge_folds().", call. = FALSE)
+    }
+  }
+  list(assignments = fold_obj$assignments, folds = fold_obj)
+}
+
+#' @noRd
+.dkge_fold_weight_context <- function(fit,
+                                      train_ids,
+                                      weight_spec = NULL,
+                                      ridge = 0,
+                                      missingness = c("none", "rescale", "mask", "shrink"),
+                                      miss_args = list()) {
+  stopifnot(inherits(fit, "dkge"))
+  weight_spec <- weight_spec %||% fit$weight_spec %||% dkge_weights(adapt = "none")
+  stopifnot(inherits(weight_spec, "dkge_weights"))
+  missingness <- match.arg(missingness)
+
+  kernel_payload <- .dkge_weight_kernel_payload(fit$K, fit$kernel_info)
+  B_train <- fit$Btil[train_ids]
+  Omega_train <- fit$Omega[train_ids]
+  subject_weights <- fit$weights[train_ids]
+
+  weight_eval <- .dkge_resolve_voxel_weights(weight_spec, B_train, kernel_payload)
+  voxel_weights_train <- weight_eval$total_subject %||% weight_eval$total
+
+  accum <- .dkge_accumulate_chat(B_train, Omega_train, fit$Khalf, subject_weights,
+                                 voxel_weights = voxel_weights_train)
+  Chat <- accum$Chat
+
+  pair_counts <- NULL
+  prov <- fit$provenance
+  masks <- prov$obs_mask %||% NULL
+  if (!is.null(masks) && length(train_ids) > 0L) {
+    subject_ids <- fit$subject_ids %||% seq_along(fit$Btil)
+    if (!is.null(names(masks))) {
+      order_idx <- match(subject_ids, names(masks))
+      if (!anyNA(order_idx)) {
+        masks <- masks[order_idx]
+      }
+    }
+    if (length(masks) >= max(train_ids)) {
+      freq_mat <- matrix(0L, nrow = nrow(Chat), ncol = ncol(Chat))
+      dimnames(freq_mat) <- dimnames(Chat)
+      if (!is.null(prov$effect_ids) && length(prov$effect_ids) == nrow(Chat)) {
+        dimnames(freq_mat) <- list(prov$effect_ids, prov$effect_ids)
+      }
+      for (idx in train_ids) {
+        mask <- masks[[idx]]
+        if (is.null(mask)) next
+        mask <- as.logical(mask)
+        if (length(mask) != nrow(Chat)) next
+        sel <- which(mask)
+        if (!length(sel)) next
+        freq_mat[sel, sel] <- freq_mat[sel, sel] + 1L
+      }
+      pair_counts <- freq_mat
+
+      if (!identical(missingness, "none")) {
+        pc_safe <- pmax(freq_mat, 1L)
+        if (identical(missingness, "rescale")) {
+          Chat <- Chat / pc_safe
+          Chat[freq_mat == 0L] <- 0
+        } else if (identical(missingness, "mask")) {
+          threshold <- miss_args$min_pairs %||% 1L
+          mask_zero <- freq_mat < threshold
+          Chat[mask_zero] <- 0
+        } else if (identical(missingness, "shrink")) {
+          rescaled <- Chat / pc_safe
+          rescaled[freq_mat == 0L] <- 0
+          max_pc <- max(freq_mat)
+          gamma <- miss_args$gamma %||% 1
+          if (max_pc <= 0) {
+            weights_mat <- matrix(0, nrow = nrow(Chat), ncol = ncol(Chat))
+          } else {
+            weights_mat <- (freq_mat / max_pc)^gamma
+          }
+          if (!is.null(dimnames(Chat))) {
+            dimnames(weights_mat) <- dimnames(Chat)
+          }
+          diag_part <- diag(diag(Chat), nrow = nrow(Chat), ncol = ncol(Chat))
+          if (!is.null(dimnames(Chat))) {
+            dimnames(diag_part) <- dimnames(Chat)
+          }
+          Chat <- weights_mat * rescaled + (1 - weights_mat) * diag_part
+        }
+      }
+    }
+  }
+
+  if (ridge > 0) Chat <- Chat + ridge * diag(nrow(Chat))
+  Chat <- (Chat + t(Chat)) / 2
+
+  list(
+    Chat = Chat,
+    weights = weight_eval,
+    train_ids = train_ids,
+    weight_spec = weight_spec,
+    pair_counts = pair_counts,
+    missingness = missingness,
+    miss_args = miss_args
+  )
+}

@@ -6,7 +6,7 @@
 #' Packages the arguments required by [dkge_contrast()] into a reusable service
 #' object. The service can be passed to [dkge_pipeline()] (via the `service`
 #' argument when it gains support) or executed manually with
-#' `dkge_run_contrast_service()`.
+#' `.dkge_run_contrast_service()`.
 #'
 #' @param method Cross-fitting strategy ("loso", "kfold", or "analytic").
 #' @param ridge Ridge penalty forwarded to [dkge_contrast()].
@@ -147,4 +147,46 @@ dkge_inference_service <- function(spec = NULL, ...) {
   })
   names(res) <- names(contrast_results$values)
   res
+}
+
+#' Run a dkge service object
+#'
+#' Generic dispatcher for executing pre-configured service objects. Dispatches
+#' to the appropriate typed runner based on the service class.
+#'
+#' @param service A service object created by `dkge_contrast_service()`,
+#'   `dkge_inference_service()`, or `dkge_transport_service()`
+#' @param ... Additional arguments passed to the typed runner
+#' @return Result from the typed service runner
+#' @export
+dkge_run_service <- function(service, ...) {
+  UseMethod("dkge_run_service")
+}
+
+#' @export
+#' @rdname dkge_run_service
+dkge_run_service.dkge_contrast_service <- function(service, ...) {
+  .dkge_run_contrast_service(service, ...)
+}
+
+#' @export
+#' @rdname dkge_run_service
+dkge_run_service.dkge_inference_service <- function(service, ...) {
+  .dkge_run_inference_service(service, ...)
+}
+
+#' @export
+#' @rdname dkge_run_service
+dkge_run_service.dkge_transport_service <- function(service, ...) {
+  .dkge_run_transport_service(service, ...)
+}
+
+#' @export
+#' @rdname dkge_run_service
+dkge_run_service.default <- function(service, ...) {
+  stop(
+    "No dkge_run_service method for class '",
+    paste(class(service), collapse = "/"), "'.",
+    call. = FALSE
+  )
 }

@@ -1,6 +1,53 @@
 # dkge-fit-core.R
 # Internal staging functions that modularise the dkge_fit lifecycle.
 
+# --- Fit Object Fields ---
+# The assembled dkge object returned by dkge_fit() contains the following fields:
+#
+# STABLE (public contract - do not rename without version bump):
+#   U                  q x r    K-orthonormal group latent basis
+#   K                  q x q    design kernel (positive semidefinite)
+#   R                  q x q    pooled design Cholesky factor
+#   eig_vectors_full   q x q    full eigenvectors of pooled compressed covariance
+#   eig_values_full    q        full eigenvalues (descending)
+#   evals              q        full eigenvalues (descending, length = q; same as eig_values_full)
+#   Btil               list[S]  compressed beta matrices (q x P_s) per subject
+#   subject_ids        character  subject identifiers
+#   effects            character  effect names
+#   rank               integer    number of latent dimensions kept
+#   Chat_sym           q x q    symmetric compressed covariance (used by tests)
+#   scores_matrix      S x r    subject scores matrix (alias of s; used by tests)
+#   v                  q x r    loadings (alias of U in multivarious sense)
+#   s                  S x r    scores
+#   sdev               r        standard deviations per dimension
+#   KU                 q x r    K %*% U (precomputed product)
+#
+# INTERNAL (may change between versions):
+#   Khalf              q x q    K^{1/2} factor
+#   Kihalf             q x q    K^{-1/2} factor
+#   Chat               q x q    raw compressed covariance accumulator
+#   contribs           list     per-subject contribution matrices
+#   weights            numeric  per-subject weights
+#   Omega              list[S]  per-subject AR/noise covariance structures
+#   provenance         list     data provenance metadata
+#   kernel_info        list     kernel construction metadata
+#   block_indices      list     multivarious block index mapping
+#   X_concat           matrix   concatenated design matrices (NULL if keep_X=FALSE)
+#   cpca               list     CPCA partitioning info (when cpca_part != "none")
+#   solver             character  solver used
+#   jd                 list     joint-diagonalisation info (when applicable)
+#   weight_spec        list     weight specification used
+#   voxel_weights      numeric  aggregated voxel weights
+#   voxel_weights_subject  list  per-subject voxel weights
+#   voxel_weights_prior    numeric  prior voxel weights
+#   voxel_weights_adapt    numeric  adaptive voxel weights
+#   w_method           character  weighting method
+#   w_tau              numeric    weighting tau parameter
+#   ridge_input        numeric    ridge penalty applied to input
+#   rank_requested     integer    rank requested by caller
+#   effective_rank     integer    effective rank after regularisation
+#   rank_reduced       logical    whether rank was reduced from requested
+
 #' Prepare DKGE inputs for fitting
 #'
 #' Harmonises data, resolves kernel metadata, and constructs the pooled
@@ -26,6 +73,13 @@
   }
 
   betas <- dataset$betas
+  q_vals <- vapply(betas, nrow, integer(1))
+  if (length(unique(q_vals)) > 1) {
+    stop(sprintf(
+      "All subjects must have the same number of design effects (q = nrow(B)). Found: %s",
+      paste(names(betas) %||% seq_along(betas), q_vals, sep = "=", collapse = ", ")
+    ), call. = FALSE)
+  }
   designs <- dataset$designs
   Omega_list <- dataset$omega
   subject_ids <- dataset$subject_ids
@@ -108,7 +162,7 @@
 
   list(
     Chat = accum$Chat,
-    Chat_sym = accum$Chat,
+    Chat_sym = (accum$Chat + t(accum$Chat)) / 2,
     contribs = accum$contribs,
     subject_weights = subject_weights,
     voxel_weights = voxel_weights,
@@ -371,6 +425,12 @@
           jd_resid$Q[, seq_len(rank), drop = FALSE]
         cpca_info$jd_resid <- jd_resid
       } else {
+        if (is.null(contribs_resid)) {
+          warning(
+            "cpca_part='both' requested but contribs_resid is NULL; U_resid will equal U_design.",
+            call. = FALSE
+          )
+        }
         cpca_info$evals_resid <- eig_values_full
         cpca_info$U_resid <- U
       }
@@ -507,7 +567,6 @@
     kernel_info = prepped$kernel_info,
     block_indices = block_indices,
     X_concat = X_store,
-    V_full = solved$eig_vectors_full,
     eig_vectors_full = solved$eig_vectors_full,
     eig_values_full = solved$eig_values_full,
     rank = rank,
@@ -530,7 +589,6 @@
   fit$Chat_sym <- accum$Chat_sym
   fit$KU <- fit$K %*% fit$U
 
-  fit$variables <- fit$v
   fit$scores_matrix <- fit$s
 
   for (nm in names(fit)) {

@@ -4,14 +4,14 @@
 \alias{dkge_analytic_loso}
 \title{Analytic LOSO contrast using eigenvalue perturbation}
 \usage{
-dkge_analytic_loso(fit, s, c, tol = 1e-06, fallback = TRUE, ridge = 0)
+dkge_analytic_loso(fit, s, contrasts, tol = 1e-06, fallback = TRUE, ridge = 0)
 }
 \arguments{
 \item{fit}{A `dkge` object from [dkge_fit()]}
 
 \item{s}{Subject index (1-based) to leave out}
 
-\item{c}{Contrast vector in the original design basis (length q)}
+\item{contrasts}{Contrast vector in the original design basis (length q)}
 
 \item{tol}{Numerical tolerance for determining when to fall back to full eigen}
 
@@ -57,7 +57,7 @@ toy <- dkge_sim_toy(
 )
 fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 c_vec <- c(1, -1, 0, 0, 0)
-result <- dkge_analytic_loso(fit, s = 1, c = c_vec)
+result <- dkge_analytic_loso(fit, s = 1, contrasts = c_vec)
 result$method
 }
 
@@ -66,3 +66,4 @@ result$method
 Golub, G. H., & Van Loan, C. F. (2013). Matrix computations (4th ed.).
 Stewart, G. W., & Sun, J. (1990). Matrix perturbation theory.
 }
+\keyword{internal}

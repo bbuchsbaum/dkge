@@ -1,6 +1,5 @@
 # tests/testthat/test-analytic-fallback.R
 # Tests for analytic LOSO fallback paths - complete coverage of all safety conditions
-context("Analytic LOSO fallback paths")
 
 library(testthat)
 
@@ -111,13 +110,13 @@ test_that("Analytic LOSO falls back when solver is not pooled", {
   fit$solver <- "jd"  # Non-pooled solver
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec)
 
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "solver_not_pooled")
 
   # Verify fallback produces same result as direct LOSO
-  exact <- dkge_loso_contrast(fit, s = 1, c = cvec)
+  exact <- dkge_loso_contrast(fit, s = 1, contrasts = cvec)
   expect_lt(max(abs(result$v - exact$v)), 1e-12)
 })
 
@@ -128,7 +127,7 @@ test_that("Analytic LOSO falls back when voxel_weights are nonuniform", {
   fit$voxel_weights <- c(1.0, 0.5, 1.0, 0.8, 1.2, 0.9, 1.1, 1.0)  # Nonuniform
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec)
 
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "nonuniform_voxel_weights")
@@ -142,7 +141,7 @@ test_that("Analytic LOSO does NOT fall back when voxel_weights are uniform", {
   fit$voxel_weights <- rep(1, 8)  # Uniform weights
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec, tol = 1e-8)
 
   expect_equal(result$method, "analytic")
 })
@@ -154,7 +153,7 @@ test_that("Analytic LOSO falls back when eig_vectors_full is NULL", {
   fit$eig_vectors_full <- NULL
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec)
 
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "missing_full_decomposition")
@@ -167,7 +166,7 @@ test_that("Analytic LOSO falls back when eig_values_full is NULL", {
   fit$eig_values_full <- NULL
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec)
 
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "missing_full_decomposition")
@@ -215,14 +214,14 @@ test_that("Analytic LOSO falls back when perturbation magnitude is large", {
   expect_gt(abs(H[1, 2]), 1.5)
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec, tol = 1e-8)
 
   # Should fall back due to perturbation magnitude (coeff >> 0.1)
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "perturbation_magnitude")
 
   # Verify fallback produces valid result (same as direct LOSO)
-  exact <- dkge_loso_contrast(fit, s = 1, c = cvec)
+  exact <- dkge_loso_contrast(fit, s = 1, contrasts = cvec)
   expect_lt(max(abs(result$v - exact$v)), 1e-12)
 })
 
@@ -237,8 +236,8 @@ test_that("Analytic matches iterative LOSO within tolerance for stable input", {
 
   cvec <- rnorm(nrow(fit$U))
 
-  exact <- dkge_loso_contrast(fit, s = 1, c = cvec)
-  approx <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+  exact <- dkge_loso_contrast(fit, s = 1, contrasts = cvec)
+  approx <- dkge_analytic_loso(fit, s = 1, contrasts = cvec, tol = 1e-8)
 
   expect_equal(approx$method, "analytic")
 
@@ -269,7 +268,7 @@ test_that("Analytic LOSO populates diagnostic information", {
                    low_leverage_subject = 1, low_scale = 1e-3)
   cvec <- rnorm(nrow(fit$U))
 
-  result <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-8)
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec, tol = 1e-8)
 
   expect_equal(result$method, "analytic")
   expect_true(!is.null(result$diagnostic))

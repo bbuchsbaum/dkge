@@ -10,7 +10,7 @@ dkge_classification_spec(
   folds = NULL,
   lambda = NULL,
   metric = c("accuracy", "logloss"),
-  mode = c("auto", "cell", "delta"),
+  mode = c("auto", "cell", "cell_cross", "delta"),
   ...
 )
 }
@@ -25,7 +25,9 @@ dkge_classification_spec(
 
 \item{metric}{Classification metrics to report.}
 
-\item{mode}{Decoding mode passed to [dkge_classify()].}
+\item{mode}{Decoding mode passed to [dkge_classify()]: "auto" selects
+automatically, "cell" uses per-cell embeddings, "cell_cross" uses
+cross-validated per-cell embeddings, and "delta" uses pairwise deltas.}
 
 \item{...}{Additional fields stored on the spec (e.g., `n_perm`, `scope`).}
 }

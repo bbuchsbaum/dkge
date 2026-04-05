@@ -270,6 +270,7 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
 #' )
 #' pooled <- dkge_pooled_cov_q(toy$B_list, toy$X_list)
 #' dim(pooled$C)
+#' @keywords internal
 #' @export
 dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
   stopifnot(length(B_list) == length(X_list))

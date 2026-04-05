@@ -21,3 +21,4 @@ Matrix of projected scores (qxrank).
 \description{
 Project new blocks into DKGE score space
 }
+\keyword{internal}

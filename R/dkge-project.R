@@ -80,6 +80,7 @@ dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @param fit A `dkge` object.
 #' @inheritParams dkge_preprocess_blocks
 #' @return Matrix of projected scores (qxrank).
+#' @keywords internal
 #' @export
 dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   Xnew <- dkge_preprocess_blocks(fit, B_list, Omega_list, w)
@@ -100,6 +101,7 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @param Btil Either a qxP matrix or a list of such matrices (e.g. `fit$Btil`).
 #' @return List of Pxrank matrices; returns a single matrix when `Btil` is a matrix.
 #' @describeIn dkge_project_block Project subject-standardised betas into component space
+#' @keywords internal
 #' @export
 #' @examples
 #' toy <- dkge_sim_toy(
@@ -133,6 +135,7 @@ dkge_project_btil <- function(fit, Btil) {
 #' @param least_squares Logical; pass to [multivarious::project_block()].
 #' @return Projection scores (qxrank) restricted to block `s`.
 #' @rdname dkge_project_block
+#' @keywords internal
 #' @export
 dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
                                least_squares = TRUE) {
@@ -153,6 +156,7 @@ dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
 #' @param omega Optional scalar or matrix weight.
 #' @param w Optional scalar subject weight.
 #' @return Numeric vector of length `rank` (component scores).
+#' @keywords internal
 #' @export
 dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
   stopifnot(inherits(fit, "dkge"))
@@ -178,6 +182,7 @@ dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
 #' @param omega_vec Optional vector of per-cluster weights.
 #' @param w Optional subject weight.
 #' @return Pxrank matrix of projected coordinates.
+#' @keywords internal
 #' @export
 dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1) {
   stopifnot(inherits(fit, "dkge"))

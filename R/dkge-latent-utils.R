@@ -17,6 +17,7 @@ NULL
 #' @return A list of length `S` (number of subjects). Element `s` is a
 #'   `P_s x r` matrix holding the latent representation of subject `s`'s
 #'   clusters.
+#' @keywords internal
 #' @export
 #' @examples
 #' \donttest{

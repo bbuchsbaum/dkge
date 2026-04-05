@@ -64,7 +64,7 @@ toy_real_fit <- function(nsub = 3L, Q = 4L, V = 6L, weights = NULL, seed = 321) 
     X
   })
   kernel <- diag(Q)
-  dkge(betas, designs = designs, kernel = kernel, keep_inputs = TRUE, weights = weights)
+  dkge(betas, designs = designs, K = kernel, keep_inputs = TRUE, weights = weights)
 }
 
 # ---- Reference weighted covariance builder (column scaling) ----

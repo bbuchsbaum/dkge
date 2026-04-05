@@ -50,11 +50,11 @@ dkge_make_anchors <- function(xyz = NULL, anchors = NULL,
 #' @param anchors \eqn{Q \times 3} matrix of anchor coordinates.
 #' @param k Number of neighbours used in the graph (default 10).
 #' @param sigma Optional Gaussian length-scale (mm). If `NULL`, the
-#'   `neighborweights` defaults are used.
+#'   `adjoin` defaults are used.
 #' @param weight_mode Edge weighting scheme passed to
-#'   [neighborweights::graph_weights()]. Defaults to `"heat"`.
+#'   [adjoin::graph_weights()]. Defaults to `"heat"`.
 #' @param type Graph symmetrisation strategy (see
-#'   [neighborweights::graph_weights()]); `"mutual"` helps enforce
+#'   [adjoin::graph_weights()]); `"mutual"` helps enforce
 #'   symmetry.
 #' @return A list containing the neighbour graph, sparse adjacency `W`,
 #'   degree matrix `D`, and Laplacian `L`.
@@ -72,7 +72,7 @@ dkge_anchor_graph <- function(anchors,
   weight_mode <- match.arg(weight_mode)
   type <- match.arg(type)
   suppressMessages({
-    graph <- neighborweights::graph_weights(
+    graph <- adjoin::graph_weights(
       anchors,
       k = k,
       sigma = sigma,
@@ -81,11 +81,11 @@ dkge_anchor_graph <- function(anchors,
       type = type
     )
   })
-  W <- neighborweights::adjacency(graph)
+  W <- adjoin::adjacency(graph)
   # Force symmetry while keeping sparsity structure intact
   W <- Matrix::forceSymmetric(0.5 * (W + Matrix::t(W)), uplo = "U")
   D <- Matrix::Diagonal(nrow(W), x = Matrix::rowSums(W))
-  L <- neighborweights::laplacian(graph)
+  L <- adjoin::laplacian(graph)
   list(graph = graph, W = W, D = D, L = L)
 }
 

@@ -12,10 +12,10 @@ test_that("dkge_transport_spec validates medoid and shape", {
 })
 
 test_that("dkge_inference_spec records arguments", {
-  spec <- dkge_inference_spec(B = 500, tail = "left", center = "median")
+  spec <- dkge_inference_spec(B = 500, tail = "less", center = "median")
   expect_s3_class(spec, "dkge_inference_spec")
   expect_equal(spec$B, 500L)
-  expect_equal(spec$tail, "left")
+  expect_equal(spec$tail, "less")
   expect_equal(spec$center, "median")
 })
 

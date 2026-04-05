@@ -414,15 +414,20 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #'   Each column corresponds to an effect/regressor; column names become the
 #'   canonical effect labels enforced across subjects. Ignored when `betas`
 #'   already carries `dkge_subject`/`dkge_data` entries.
-#' @param kernel Design kernel that expresses similarity or smoothness between
+#' @param K Design kernel that expresses similarity or smoothness between
 #'   effects in the design space (e.g. identity for nominal factors, RBF for
 #'   ordinal factors, Kronecker combinations for interactions). Supply either a
 #'   qxq numeric matrix or the list returned by [design_kernel()], whose `K`
-#'   element is extracted automatically.
-#' @param omega Optional list overriding per-subject spatial weights. Each element
-#'   may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix. When betas
-#'   are voxelwise (e.g. coming from `NeuroVec`), these weights operate on spatial
-#'   units (voxels) rather than clusters; equal weights are assumed when omitted.
+#'   element is extracted automatically. Matches the `K` parameter name used by
+#'   [dkge_fit()].
+#' @param Omega_list Optional list overriding per-subject spatial weights. Each
+#'   element may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix.
+#'   When betas are voxelwise (e.g. coming from `NeuroVec`), these weights
+#'   operate on spatial units (voxels) rather than clusters; equal weights are
+#'   assumed when omitted. Matches the `Omega_list` parameter name used by
+#'   [dkge_fit()].
+#' @param kernel Deprecated. Use `K` instead.
+#' @param omega Deprecated. Use `Omega_list` instead.
 #' @param subject_ids Optional subject identifiers used when raw matrices are
 #'   provided. Ignored when `betas` carries IDs already.
 #' @param keep_inputs Logical; when `TRUE` (default) the returned object stores the
@@ -470,25 +475,37 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #' @seealso [dkge_subject()], [dkge_data()], [design_kernel()], [dkge_fit()],
 #'   [dkge_loso_contrast()]
 #' @export
-dkge <- function(betas, designs = NULL, kernel, omega = NULL, subject_ids = NULL,
+dkge <- function(betas, designs = NULL, K = NULL, Omega_list = NULL,
+                 subject_ids = NULL,
                  keep_inputs = TRUE, cpca_blocks = NULL, cpca_T = NULL,
                  cpca_part = c("none", "design", "resid", "both"),
-                 cpca_ridge = 0, weights = NULL, ...) {
+                 cpca_ridge = 0, weights = NULL,
+                 kernel = NULL, omega = NULL, ...) {
+  # Deprecated aliases
+  if (!is.null(kernel) && is.null(K)) {
+    warning("Argument 'kernel' is deprecated; use 'K' instead.", call. = FALSE)
+    K <- kernel
+  }
+  if (!is.null(omega) && is.null(Omega_list)) {
+    warning("Argument 'omega' is deprecated; use 'Omega_list' instead.", call. = FALSE)
+    Omega_list <- omega
+  }
+
   cpca_part <- match.arg(cpca_part)
   omega_override <- NULL
   if (inherits(betas, "dkge_data")) {
     data <- betas
-    omega_override <- omega
+    omega_override <- Omega_list
   } else {
-    data <- dkge_data(betas, designs = designs, omega = omega, subject_ids = subject_ids)
+    data <- dkge_data(betas, designs = designs, omega = Omega_list, subject_ids = subject_ids)
   }
 
-  kernel <- as_dkge_kernel(kernel)
-  K <- kernel$K
-  stopifnot(is.matrix(K), nrow(K) == data$q, ncol(K) == data$q)
-  kernel_info <- kernel$info %||% NULL
+  kernel_obj <- as_dkge_kernel(K)
+  K_mat <- kernel_obj$K
+  stopifnot(is.matrix(K_mat), nrow(K_mat) == data$q, ncol(K_mat) == data$q)
+  kernel_info <- kernel_obj$info %||% NULL
 
-  fit <- dkge_fit(data, K = K, Omega_list = omega_override,
+  fit <- dkge_fit(data, K = K_mat, Omega_list = omega_override,
                      cpca_blocks = cpca_blocks, cpca_T = cpca_T,
                      cpca_part = cpca_part, cpca_ridge = cpca_ridge,
                      weights = weights, ...)

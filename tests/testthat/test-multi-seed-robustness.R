@@ -231,7 +231,7 @@ test_that("ill-conditioned warning consistent across seeds", {
 
     # Should warn about ill-conditioning consistently
     expect_warning(
-      result <- dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2),
+      result <- dkge(list(beta1, beta2), list(design1, design2), K = K, rank = 2),
       "ill-conditioned",
       info = paste("Seed:", seed)
     )

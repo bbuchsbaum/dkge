@@ -199,14 +199,8 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
                                 miss_args = list(), ...) {
   # Prepare folds
   missingness <- match.arg(missingness)
-  if (is.numeric(folds) && length(folds) == 1) {
-    folds <- dkge_define_folds(fit, type = "subject", k = folds)
-  } else if (!inherits(folds, "dkge_folds")) {
-    folds <- as_dkge_folds(folds, fit_or_data = fit)
-    if (!inherits(folds, "dkge_folds")) {
-      stop("folds must be an integer k or convertible via as_dkge_folds().")
-    }
-  }
+  fold_info_raw <- .dkge_normalize_folds(folds, fit)
+  folds <- fold_info_raw$folds
 
   S <- length(fit$Btil)
   q <- nrow(fit$U)

@@ -29,3 +29,4 @@ toy <- dkge_sim_toy(
 pooled <- dkge_pooled_cov_q(toy$B_list, toy$X_list)
 dim(pooled$C)
 }
+\keyword{internal}

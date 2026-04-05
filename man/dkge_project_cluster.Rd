@@ -21,3 +21,4 @@ Numeric vector of length `rank` (component scores).
 \description{
 Project a new cluster/voxel vector onto DKGE components
 }
+\keyword{internal}

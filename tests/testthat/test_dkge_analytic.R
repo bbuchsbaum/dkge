@@ -1,5 +1,4 @@
 # tests/testthat/test_dkge_analytic.R
-context("Analytic LOSO DKGE: accuracy, fallback, invariance")
 
 library(testthat)
 
@@ -106,8 +105,8 @@ test_that("Analytic LOSO matches exact LOSO for low-leverage subject", {
   cvec <- rnorm(nrow(fit$U))
 
   # Exact LOSO (ground truth) vs Analytic
-  exact   <- dkge_loso_contrast(fit, s = 2, c = cvec, ridge = 0)
-  approx  <- dkge_analytic_loso(fit, s = 2, c = cvec, tol = 1e-8, fallback = TRUE)
+  exact   <- dkge_loso_contrast(fit, s = 2, contrasts = cvec, ridge = 0)
+  approx  <- dkge_analytic_loso(fit, s = 2, contrasts = cvec, tol = 1e-8, fallback = TRUE)
 
   # Should use analytic path (not fallback) in this benign regime
   expect_identical(approx$method, "analytic")
@@ -144,8 +143,8 @@ test_that("Analytic LOSO falls back when eigengap is tiny (near-degenerate spect
 
   cvec <- rnorm(nrow(fit$U))
 
-  exact  <- dkge_loso_contrast(fit, s = 1, c = cvec, ridge = 0)
-  approx <- dkge_analytic_loso(fit, s = 1, c = cvec, tol = 1e-6, fallback = TRUE)
+  exact  <- dkge_loso_contrast(fit, s = 1, contrasts = cvec, ridge = 0)
+  approx <- dkge_analytic_loso(fit, s = 1, contrasts = cvec, tol = 1e-6, fallback = TRUE)
 
   # Must take fallback path
   expect_identical(approx$method, "fallback")
@@ -165,7 +164,7 @@ test_that("Analytic LOSO values are invariant to permutation of stored eigenbasi
   cvec <- rnorm(nrow(fit$U))
 
   # Original analytic LOSO
-  a1 <- dkge_analytic_loso(fit, s = 3, c = cvec, tol = 1e-8, fallback = TRUE)
+  a1 <- dkge_analytic_loso(fit, s = 3, contrasts = cvec, tol = 1e-8, fallback = TRUE)
   expect_identical(a1$method, "analytic")
 
   # Permute the full eigenbasis (columns) and eigenvalues consistently
@@ -174,7 +173,7 @@ test_that("Analytic LOSO values are invariant to permutation of stored eigenbasi
   fit2$eig_vectors_full <- fit$eig_vectors_full[, perm, drop = FALSE]
   fit2$eig_values_full  <- fit$eig_values_full[perm]
 
-  a2 <- dkge_analytic_loso(fit2, s = 3, c = cvec, tol = 1e-8, fallback = TRUE)
+  a2 <- dkge_analytic_loso(fit2, s = 3, contrasts = cvec, tol = 1e-8, fallback = TRUE)
   expect_identical(a2$method, "analytic")
 
   # The *projected values* v must be invariant to any orthonormal relabeling

@@ -72,7 +72,7 @@ dkge_pipeline <- function(fit = NULL,
       fit <- do.call(dkge_fit_from_input, c(list(input = input), extra_args))
     } else {
       stopifnot(!is.null(betas), !is.null(designs), !is.null(kernel))
-      fit_args <- c(list(betas, designs = designs, kernel = kernel, omega = omega),
+      fit_args <- c(list(betas, designs = designs, K = kernel, Omega_list = omega),
                     extra_args)
       fit <- do.call(dkge, fit_args)
     }

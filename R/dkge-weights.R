@@ -12,9 +12,19 @@
 #'   integer indices, or ROI labels (factor/character/integer of length V) per voxel. Helpers
 #'   [dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.
 #' @param adapt Adaptive weighting rule, one of `"none"`, `"kenergy"`,
-#'   `"precision"`, `"kenergy_prec"`, `"reliability"` (reserved for future use).
+#'   `"precision"`, or `"kenergy_prec"`.
 #' @param combine How prior and adaptive sources combine: `"product"` (default),
-#'   `"sum"`, `"override_adapt"`, or `"override_prior"`.
+#'   `"sum"`, `"override_adapt"`, or `"prefer_prior"`.
+#' @section Combine modes:
+#' \describe{
+#'   \item{`"product"`}{Geometric mean of prior and adaptive weights, blended
+#'     in log-space by `mix` (default). Smooth and robust.}
+#'   \item{`"sum"`}{Linear mixture: `(1 - mix) * prior + mix * adaptive`.}
+#'   \item{`"override_adapt"`}{Adaptive weight is used wherever it is finite and
+#'     positive; falls back to prior otherwise. Adaptive takes priority.}
+#'   \item{`"prefer_prior"`}{Prior weight is used wherever it is finite and
+#'     positive; falls back to adaptive otherwise. Prior takes priority.}
+#' }
 #' @param mix Numeric in [0,1] controlling the relative influence of the adaptive
 #'   component. Interpreted in log-space for `combine = "product"`.
 #' @param shrink List with fields `alpha` (shrink towards uniform), `winsor`
@@ -38,8 +48,8 @@
 #' w_uniform <- dkge_weights(adapt = "none")
 #' @export
 dkge_weights <- function(prior = NULL,
-                         adapt = c("none", "kenergy", "precision", "kenergy_prec", "reliability"),
-                         combine = c("product", "sum", "override_adapt", "override_prior"),
+                         adapt = c("none", "kenergy", "precision", "kenergy_prec"),
+                         combine = c("product", "sum", "override_adapt", "prefer_prior"),
                          mix = 0.6,
                          shrink = list(alpha = 0.5, winsor = 0.99, normalize = "mean", roi_smooth = FALSE),
                          scope = c("fold", "subject"),
@@ -345,8 +355,7 @@ dkge_weights_prior_roi <- function(labels, roi_values = NULL) {
   w <- switch(adapt,
               kenergy = energy_acc / n,
               precision = prec_acc / n,
-              kenergy_prec = (energy_acc / n) * (prec_acc / n),
-              reliability = stop("adapt = 'reliability' not implemented"))
+              kenergy_prec = (energy_acc / n) * (prec_acc / n))
   w[!is.finite(w) | w < 0] <- 0
   if (!any(w > 0)) w[] <- 1
   .dkge_winsor(w, upper = winsor)
@@ -368,7 +377,7 @@ dkge_weights_prior_roi <- function(labels, roi_values = NULL) {
               },
               sum = (1 - mix) * w_prior + mix * w_adapt,
               override_adapt = ifelse(is.finite(w_adapt) & w_adapt > 0, w_adapt, w_prior),
-              override_prior = ifelse(is.finite(w_prior) & w_prior > 0, w_prior, w_adapt),
+              prefer_prior = ifelse(is.finite(w_prior) & w_prior > 0, w_prior, w_adapt),
               stop("Unknown combine rule"))
 
   w <- .dkge_winsor(w, upper = shrink$winsor)
@@ -499,102 +508,7 @@ dkge_weights_auto <- function() {
   )
 }
 
-.dkge_fold_weight_context <- function(fit,
-                                      train_ids,
-                                      weight_spec = NULL,
-                                      ridge = 0,
-                                      missingness = c("none", "rescale", "mask", "shrink"),
-                                      miss_args = list()) {
-  stopifnot(inherits(fit, "dkge"))
-  weight_spec <- weight_spec %||% fit$weight_spec %||% dkge_weights(adapt = "none")
-  stopifnot(inherits(weight_spec, "dkge_weights"))
-  missingness <- match.arg(missingness)
-
-  kernel_payload <- .dkge_weight_kernel_payload(fit$K, fit$kernel_info)
-  B_train <- fit$Btil[train_ids]
-  Omega_train <- fit$Omega[train_ids]
-  subject_weights <- fit$weights[train_ids]
-
-  weight_eval <- .dkge_resolve_voxel_weights(weight_spec, B_train, kernel_payload)
-  voxel_weights_train <- weight_eval$total_subject %||% weight_eval$total
-
-  accum <- .dkge_accumulate_chat(B_train, Omega_train, fit$Khalf, subject_weights,
-                                 voxel_weights = voxel_weights_train)
-  Chat <- accum$Chat
-
-  pair_counts <- NULL
-  prov <- fit$provenance
-  masks <- prov$obs_mask %||% NULL
-  if (!is.null(masks) && length(train_ids) > 0L) {
-    subject_ids <- fit$subject_ids %||% seq_along(fit$Btil)
-    if (!is.null(names(masks))) {
-      order_idx <- match(subject_ids, names(masks))
-      if (!anyNA(order_idx)) {
-        masks <- masks[order_idx]
-      }
-    }
-    if (length(masks) >= max(train_ids)) {
-      freq_mat <- matrix(0L, nrow = nrow(Chat), ncol = ncol(Chat))
-      dimnames(freq_mat) <- dimnames(Chat)
-      if (!is.null(prov$effect_ids) && length(prov$effect_ids) == nrow(Chat)) {
-        dimnames(freq_mat) <- list(prov$effect_ids, prov$effect_ids)
-      }
-      for (idx in train_ids) {
-        mask <- masks[[idx]]
-        if (is.null(mask)) next
-        mask <- as.logical(mask)
-        if (length(mask) != nrow(Chat)) next
-        sel <- which(mask)
-        if (!length(sel)) next
-        freq_mat[sel, sel] <- freq_mat[sel, sel] + 1L
-      }
-      pair_counts <- freq_mat
-
-      if (!identical(missingness, "none")) {
-        pc_safe <- pmax(freq_mat, 1L)
-        if (identical(missingness, "rescale")) {
-          Chat <- Chat / pc_safe
-          Chat[freq_mat == 0L] <- 0
-        } else if (identical(missingness, "mask")) {
-          threshold <- miss_args$min_pairs %||% 1L
-          mask_zero <- freq_mat < threshold
-          Chat[mask_zero] <- 0
-        } else if (identical(missingness, "shrink")) {
-          rescaled <- Chat / pc_safe
-          rescaled[freq_mat == 0L] <- 0
-          max_pc <- max(freq_mat)
-          gamma <- miss_args$gamma %||% 1
-          if (max_pc <= 0) {
-            weights_mat <- matrix(0, nrow = nrow(Chat), ncol = ncol(Chat))
-          } else {
-            weights_mat <- (freq_mat / max_pc)^gamma
-          }
-          if (!is.null(dimnames(Chat))) {
-            dimnames(weights_mat) <- dimnames(Chat)
-          }
-          diag_part <- diag(diag(Chat), nrow = nrow(Chat), ncol = ncol(Chat))
-          if (!is.null(dimnames(Chat))) {
-            dimnames(diag_part) <- dimnames(Chat)
-          }
-          Chat <- weights_mat * rescaled + (1 - weights_mat) * diag_part
-        }
-      }
-    }
-  }
-
-  if (ridge > 0) Chat <- Chat + ridge * diag(nrow(Chat))
-  Chat <- (Chat + t(Chat)) / 2
-
-  list(
-    Chat = Chat,
-    weights = weight_eval,
-    train_ids = train_ids,
-    weight_spec = weight_spec,
-    pair_counts = pair_counts,
-    missingness = missingness,
-    miss_args = miss_args
-  )
-}
+# moved to dkge-folds.R
 
 #' Refit a DKGE object with a new voxel-weight specification
 #'

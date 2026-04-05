@@ -121,8 +121,8 @@ make_dkge_fixture <- function(S = 3, q = 3, P = 4, T = 20, seed = 202) {
 test_that("dkge high-level stores inputs when requested", {
   fx <- make_dkge_fixture()
   kernel <- diag(nrow(fx$betas[[1]]))
-  fit1 <- dkge(fx$betas, designs = fx$designs, kernel = kernel, keep_inputs = TRUE, rank = 2)
-  fit2 <- dkge(fx$betas, designs = fx$designs, kernel = list(K = kernel, info = "identity"),
+  fit1 <- dkge(fx$betas, designs = fx$designs, K = kernel, keep_inputs = TRUE, rank = 2)
+  fit2 <- dkge(fx$betas, designs = fx$designs, K = list(K = kernel, info = "identity"),
                keep_inputs = FALSE, rank = 2)
   expect_true(!is.null(fit1$input))
   expect_null(fit2$input)
@@ -134,7 +134,7 @@ test_that("dkge accepts dkge_data and omega overrides", {
   kernel <- diag(nrow(fx$betas[[1]]))
   data_bundle <- dkge_data(fx$betas, fx$designs)
   override <- lapply(fx$betas, function(b) rep(2, ncol(b)))
-  fit <- dkge(data_bundle, kernel = kernel, omega = override, rank = 2)
+  fit <- dkge(data_bundle, K = kernel, Omega_list = override, rank = 2)
   expect_equal(length(fit$Omega), length(override))
   expect_equal(fit$Omega[[1]], override[[1]])
 })
@@ -148,7 +148,7 @@ test_that("dkge omega overrides are validated", {
   bad_override[[1]][1] <- -0.1
 
   expect_error(
-    dkge(data_bundle, kernel = kernel, omega = bad_override, rank = 2),
+    dkge(data_bundle, K = kernel, Omega_list = bad_override, rank = 2),
     "non-negative",
     fixed = FALSE
   )

@@ -23,7 +23,7 @@ test_that("combine product/sum/overrides are consistent and normalized", {
   expect_equal(mean(w_ovrA), 1, tolerance = 1e-12)
 
   w_ovrP <- comb(w_prior, w_adapt,
-                 combine = "override_prior", mix = 0.5, shrink = shrink)
+                 combine = "prefer_prior", mix = 0.5, shrink = shrink)
   expect_equal(mean(w_ovrP), 1, tolerance = 1e-12)
 })
 

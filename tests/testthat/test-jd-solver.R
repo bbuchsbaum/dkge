@@ -160,7 +160,7 @@ test_that("JD fit supports LOSO contrast, prediction, and transport pipelines", 
   fit_jd <- dkge_fit(data_obj, K = diag(q), rank = 3, solver = "jd", keep_X = TRUE)
 
   cvec <- rnorm(q)
-  loso <- dkge_loso_contrast(fit_jd, s = 1, c = cvec)
+  loso <- dkge_loso_contrast(fit_jd, s = 1, contrasts = cvec)
   expect_type(loso$v, "double")
   expect_length(loso$v, P)
 

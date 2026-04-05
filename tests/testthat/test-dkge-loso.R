@@ -95,7 +95,7 @@ test_that("LOSO: matches manual pipeline; basis is K-orthonormal; depends on R (
   cvec <- rnorm(q)
 
   # Function output
-  out <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+  out <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
 
   # ---- Manual recomputation (should match function) ----
   Chat_minus <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
@@ -133,9 +133,9 @@ test_that("LOSO: ridge shifts eigenvalues by +ridge and preserves K-orthonormali
   s <- 3L
   cvec <- rnorm(q)
 
-  out0 <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+  out0 <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
   ridge <- 0.125
-  out1 <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = ridge)
+  out1 <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = ridge)
 
   # Independent check: eigenvalues of (Chat_minus + ridge * I)
   Chat_minus <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
@@ -164,7 +164,7 @@ test_that("LOSO: permuting columns of B_s permutes v_s identically; basis & alph
   cvec <- rnorm(q)
 
   # Original result
-  out <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+  out <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
 
   # Permute columns (clusters) for subject s only
   P <- ncol(fit$Btil[[s]])
@@ -175,7 +175,7 @@ test_that("LOSO: permuting columns of B_s permutes v_s identically; basis & alph
 
   # Note: contrib S_s = Khalf B B^T Khalf is invariant to column permutations,
   # so Chat_minus is unchanged; the basis and alpha must be identical.
-  out2 <- dkge_loso_contrast(fit2, s = s, c = cvec, ridge = 0)
+  out2 <- dkge_loso_contrast(fit2, s = s, contrasts = cvec, ridge = 0)
 
   # Basis & alpha equality
   expect_lt(max_abs(out2$basis - out$basis), 1e-10)

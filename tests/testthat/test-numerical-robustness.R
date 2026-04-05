@@ -53,7 +53,7 @@ test_that("dkge_fit completes with rank-deficient input after warning", {
 
   # Should warn but complete
   expect_warning(
-    result <- dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2),
+    result <- dkge(list(beta1, beta2), list(design1, design2), K = K, rank = 2),
     "rank-deficient"
   )
 
@@ -86,7 +86,7 @@ test_that("effective_rank stored in fit object when reduced", {
 
   # Request high rank on low-dimensional data
   result <- suppressWarnings(
-    dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = q)
+    dkge(list(beta1, beta2), list(design1, design2), K = K, rank = q)
   )
 
   expect_true(!is.null(result$effective_rank))
@@ -114,7 +114,7 @@ test_that("rank below minimum viable threshold produces appropriate response", {
 
   # Should still complete - verifying effective_rank < requested_rank
   result <- suppressWarnings(
-    dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = q)
+    dkge(list(beta1, beta2), list(design1, design2), K = K, rank = q)
   )
 
   expect_s3_class(result, "dkge")
@@ -146,7 +146,7 @@ test_that("ill-conditioned pooled Gram produces warning", {
 
   # Should warn about ill-conditioning
   expect_warning(
-    result <- dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2),
+    result <- dkge(list(beta1, beta2), list(design1, design2), K = K, rank = 2),
     "ill-conditioned"
   )
 })
@@ -172,7 +172,7 @@ test_that("fit succeeds despite ill-conditioning warning", {
 
   # Should complete despite warning
   result <- suppressWarnings(
-    dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2)
+    dkge(list(beta1, beta2), list(design1, design2), K = K, rank = 2)
   )
 
   expect_s3_class(result, "dkge")
@@ -198,7 +198,7 @@ test_that("well-conditioned matrices produce no ill-conditioning warning", {
   # Capture all warnings and verify none match "ill-conditioned"
   warnings_caught <- character(0)
   result <- withCallingHandlers(
-    dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2),
+    dkge(list(beta1, beta2), list(design1, design2), K = K, rank = 2),
     warning = function(w) {
       warnings_caught <<- c(warnings_caught, conditionMessage(w))
       invokeRestart("muffleWarning")
@@ -331,7 +331,7 @@ test_that("fit succeeds with partial overlap", {
   K <- diag(4)  # Identity kernel for 4 effects in union
 
   result <- suppressWarnings(
-    dkge(list(beta1, beta2), list(design1, design2), kernel = K, rank = 2)
+    dkge(list(beta1, beta2), list(design1, design2), K = K, rank = 2)
   )
 
   expect_s3_class(result, "dkge")

@@ -225,7 +225,7 @@ dkge_clear_sinkhorn_cache <- function() {
                "sigma_mm", "lambda_size")
   params <- dots[intersect(names(dots), allowed)]
   if (length(params)) {
-    do.call(dkge_mapper_spec, c(list(strategy = strategy), params))
+    do.call(dkge_mapper_spec, c(list(type = strategy), params))
   } else {
     dkge_mapper_spec(strategy)
   }
@@ -284,6 +284,7 @@ dkge_clear_sinkhorn_cache <- function() {
 #' @return A list containing cached transport objects: `operators`,
 #'   `mapper_spec`, `feature_list`, `size_list`, `feature_ref`, `size_ref`,
 #'   `centroids`, and `medoid`.
+#' @keywords internal
 #' @export
 dkge_prepare_transport <- function(fit,
                                    centroids = NULL,

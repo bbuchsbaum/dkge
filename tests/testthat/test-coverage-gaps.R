@@ -164,7 +164,7 @@ test_that("dkge_contrast analytic method returns valid structure", {
     factors = list(A = list(L = 2)),
     active_terms = "A", S = 3, P = 10, snr = 5
   )
-  fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 1)
+  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
 
   # Use analytic method (faster)
   result <- dkge_contrast(fit, c(1, 0), method = "analytic")
@@ -179,7 +179,7 @@ test_that("dkge_contrast kfold method works", {
     factors = list(A = list(L = 2)),
     active_terms = "A", S = 4, P = 10, snr = 5
   )
-  fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 1)
+  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
 
   result <- dkge_contrast(fit, c(1, 0), method = "kfold", folds = 2)
 
@@ -196,7 +196,7 @@ test_that("print.dkge_contrasts works", {
     factors = list(A = list(L = 2)),
     active_terms = "A", S = 3, P = 8, snr = 5
   )
-  fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 1)
+  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
   result <- dkge_contrast(fit, c(1, 0), method = "analytic")
 
   output <- capture.output(print(result))
@@ -210,7 +210,7 @@ test_that("as.data.frame.dkge_contrasts works", {
     factors = list(A = list(L = 2)),
     active_terms = "A", S = 3, P = 8, snr = 5
   )
-  fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 1)
+  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
   result <- dkge_contrast(fit, c(1, 0), method = "analytic")
 
   df <- as.data.frame(result)

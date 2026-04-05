@@ -6,9 +6,10 @@
 #'
 #' @param fit `dkge` object
 #' @param s Subject index (1-based)
-#' @param c Contrast vector in the original design basis
+#' @param contrasts Contrast vector in the original design basis
 #' @param ridge Optional ridge when recomputing the held-out compressed matrix
 #' @return List with fields `v`, `alpha`, and `basis`
+#' @keywords internal
 #' @export
 #' @examples
 #' \donttest{
@@ -18,12 +19,12 @@
 #' )
 #' fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 #' c_vec <- c(1, -1, rep(0, 3))
-#' result <- dkge_loso_contrast(fit, s = 1, c = c_vec)
+#' result <- dkge_loso_contrast(fit, s = 1, contrasts = c_vec)
 #' }
-dkge_loso_contrast <- function(fit, s, c, ridge = 0) {
+dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   stopifnot(inherits(fit, "dkge"), s >= 1L, s <= length(fit$Btil))
   q <- nrow(fit$U)
-  stopifnot(length(c) == q)
+  stopifnot(length(contrasts) == q)
 
   train_ids <- setdiff(seq_len(length(fit$Btil)), s)
   ctx <- .dkge_fold_weight_context(fit, train_ids, ridge = ridge)
@@ -34,7 +35,7 @@ dkge_loso_contrast <- function(fit, s, c, ridge = 0) {
   r <- ncol(fit$U)
   Uminus <- fit$Kihalf %*% eig_minus$vectors[, seq_len(r), drop = FALSE]
 
-  c_tilde <- backsolve(fit$R, c, transpose = FALSE)
+  c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(Uminus) %*% fit$K %*% c_tilde
 
   loader_weights <- weight_eval$total

@@ -6,8 +6,8 @@
 \usage{
 dkge_weights(
   prior = NULL,
-  adapt = c("none", "kenergy", "precision", "kenergy_prec", "reliability"),
-  combine = c("product", "sum", "override_adapt", "override_prior"),
+  adapt = c("none", "kenergy", "precision", "kenergy_prec"),
+  combine = c("product", "sum", "override_adapt", "prefer_prior"),
   mix = 0.6,
   shrink = list(alpha = 0.5, winsor = 0.99, normalize = "mean", roi_smooth = FALSE),
   scope = c("fold", "subject"),
@@ -22,10 +22,10 @@ integer indices, or ROI labels (factor/character/integer of length V) per voxel.
 [dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.}
 
 \item{adapt}{Adaptive weighting rule, one of `"none"`, `"kenergy"`,
-`"precision"`, `"kenergy_prec"`, `"reliability"` (reserved for future use).}
+`"precision"`, or `"kenergy_prec"`.}
 
 \item{combine}{How prior and adaptive sources combine: `"product"` (default),
-`"sum"`, `"override_adapt"`, or `"override_prior"`.}
+`"sum"`, `"override_adapt"`, or `"prefer_prior"`.}
 
 \item{mix}{Numeric in [0,1] controlling the relative influence of the adaptive
 component. Interpreted in log-space for `combine = "product"`.}
@@ -55,6 +55,19 @@ resolved and applied when building weighted second moments inside DKGE. The
 specification is attached to fits and reused by fold builders to ensure
 cross-fitting remains leak-free.
 }
+\section{Combine modes}{
+
+\describe{
+  \item{`"product"`}{Geometric mean of prior and adaptive weights, blended
+    in log-space by `mix` (default). Smooth and robust.}
+  \item{`"sum"`}{Linear mixture: `(1 - mix) * prior + mix * adaptive`.}
+  \item{`"override_adapt"`}{Adaptive weight is used wherever it is finite and
+    positive; falls back to prior otherwise. Adaptive takes priority.}
+  \item{`"prefer_prior"`}{Prior weight is used wherever it is finite and
+    positive; falls back to adaptive otherwise. Prior takes priority.}
+}
+}
+
 \examples{
 # Default specification with adaptive k-energy weighting
 w <- dkge_weights(adapt = "kenergy")

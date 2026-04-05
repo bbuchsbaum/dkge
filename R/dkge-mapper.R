@@ -1,51 +1,77 @@
 # dkge-mapper.R
 # Pluggable mapping strategies from subject parcels to a consensus reference.
 
-#' Specify a DKGE mapper strategy
+#' Specify a DKGE mapper strategy for the transport pipeline
 #'
-#' @param strategy Mapping strategy identifier ("sinkhorn", "ridge", "ols").
-#' @param ... Strategy-specific hyperparameters stored in the specification.
+#' @description
+#' Creates a mapper specification for the **transport pipeline** — used when
+#' mapping subject-level contrast/loading vectors from a source feature space
+#' (e.g., parcel embeddings) to a common reference space.  Pass the result to
+#' [dkge_transport_spec()], [dkge_prepare_transport()], or directly to
+#' [fit_mapper()] together with `source_feat` / `target_feat` matrices.
+#'
+#' Use [dkge_mapper()] instead when you need a **dense rendering / anchor
+#' mapper** that works in 3-D spatial coordinates (kNN barycentric, Sinkhorn
+#' OT over point clouds) for functions such as [dkge_build_renderer()] or
+#' [dkge_render_subject_values()].
+#'
+#' @param type Mapping strategy identifier: `"sinkhorn"` (optimal transport),
+#'   `"ridge"` (ridge regression), or `"ols"` (ordinary least squares).
+#' @param ... Strategy-specific hyperparameters stored in the specification
+#'   (e.g. `lambda`, `epsilon`, `lambda_emb`, `lambda_spa`).
 #' @param name Optional user-facing name for diagnostics.
-#' @return A mapper specification object.
+#' @return A `dkge_mapper_spec` object consumed by [fit_mapper()] and
+#'   [predict_mapper()].
 #' @examples
-#' spec <- dkge_mapper_spec("ridge", lambda = 1e-2)
+#' spec <- dkge_mapper_spec(type = "ridge", lambda = 1e-2)
 #' source_feat <- matrix(rnorm(10 * 2), 10, 2)
 #' target_feat <- matrix(rnorm(8 * 2), 8, 2)
 #' mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)
 #' mapped <- predict_mapper(mapping, rnorm(10))
 #' length(mapped)
 #' @export
-dkge_mapper_spec <- function(strategy = c("sinkhorn", "ridge", "ols"),
+dkge_mapper_spec <- function(type = c("sinkhorn", "ridge", "ols"),
                              ..., name = NULL) {
-  strategy <- match.arg(strategy)
-  spec <- list(strategy = strategy, params = list(...),
-               name = name %||% strategy)
-class(spec) <- c(paste0("dkge_mapper_spec_", strategy), "dkge_mapper_spec")
+  type <- match.arg(type)
+  spec <- list(strategy = type, params = list(...),
+               name = name %||% type)
+  class(spec) <- c(paste0("dkge_mapper_spec_", type), "dkge_mapper_spec")
   spec
 }
 
-#' Create a pluggable DKGE anchor mapper
+#' Create a pluggable DKGE anchor mapper for dense rendering
 #'
-#' Constructs lightweight mapper objects used by the dense rendering core. The
-#' initial implementation exposes a fast kNN barycentric mapper and keeps the
-#' interface open for richer transports.
+#' @description
+#' Constructs a mapper descriptor for the **dense rendering / anchor pipeline**
+#' — used when projecting subject-space voxel/parcel values onto a set of 3-D
+#' spatial anchor points (e.g., medoid centroids).  Pass the result to
+#' [dkge_build_renderer()], [dkge_render_subject_values()], or directly to
+#' [fit_mapper()] together with `subj_points` / `anchor_points` matrices.
 #'
-#' @param method Mapper backend identifier. Currently only `"knn"` is
-#'   implemented in the core.
-#' @param ... Backend-specific parameters stored within the mapper object.
-#' @return An S3 mapper descriptor consumed by [fit_mapper()].
+#' Use [dkge_mapper_spec()] instead when you need a **transport pipeline
+#' mapper** that operates in an abstract feature space (ridge regression,
+#' Sinkhorn OT over embeddings) for functions such as [dkge_prepare_transport()]
+#' or [dkge_transport_spec()].
+#'
+#' @param type Mapper backend identifier: `"knn"` (barycentric kNN, fully
+#'   implemented), `"sinkhorn"` (OT over point clouds), `"ridge"`, or `"gw"`
+#'   (Gromov-Wasserstein; latter three require external plugins).
+#' @param ... Backend-specific parameters stored within the mapper object
+#'   (e.g. `k`, `sigx`, `sigz` for kNN; `epsilon` for Sinkhorn).
+#' @return A `dkge_mapper` S3 descriptor consumed by [fit_mapper()] and
+#'   [apply_mapper()].
 #' @examples
-#' spec <- dkge_mapper("knn", k = 3, sigx = 1)
+#' spec <- dkge_mapper(type = "knn", k = 3, sigx = 1)
 #' subj_points <- matrix(rnorm(12 * 3), 12, 3)
 #' anchor_points <- matrix(rnorm(6 * 3), 6, 3)
 #' fit <- fit_mapper(spec, subj_points = subj_points, anchor_points = anchor_points)
 #' y_anchor <- apply_mapper(fit, rnorm(nrow(subj_points)))
 #' length(y_anchor)
 #' @export
-dkge_mapper <- function(method = c("knn", "sinkhorn", "ridge", "gw"), ...) {
-  method <- match.arg(method)
-  structure(list(method = method, pars = list(...)),
-            class = c(paste0("dkge_mapper_", method), "dkge_mapper"))
+dkge_mapper <- function(type = c("knn", "sinkhorn", "ridge", "gw"), ...) {
+  type <- match.arg(type)
+  structure(list(method = type, pars = list(...)),
+            class = c(paste0("dkge_mapper_", type), "dkge_mapper"))
 }
 
 # Internal registry (reserved for future extensions)

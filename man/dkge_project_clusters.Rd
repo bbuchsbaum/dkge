@@ -21,3 +21,4 @@ Pxrank matrix of projected coordinates.
 \description{
 Project multiple cluster/voxel vectors
 }
+\keyword{internal}

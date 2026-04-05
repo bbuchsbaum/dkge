@@ -46,3 +46,4 @@ Computes and caches subject-to-medoid transport matrices so downstream
 routines (e.g. bootstraps) can reuse a fixed consensus mapping without
 re-solving the transport problem on every call.
 }
+\keyword{internal}

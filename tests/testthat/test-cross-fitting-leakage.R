@@ -108,7 +108,7 @@ test_that("LOSO: held-out basis U_minus differs from full basis U", {
   for (s in c(1L, 3L, 5L)) {
     cvec <- rnorm(q)
 
-    out <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+    out <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
     U_minus <- out$basis
     U_full <- fit$U
 
@@ -138,7 +138,7 @@ test_that("LOSO: extreme values in held-out subject do not affect U_minus", {
   cvec <- rnorm(q)
 
   # Get baseline LOSO basis for subject s
-  out1 <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+  out1 <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
 
   # Create modified fit with extreme values in subject s only
   fit_extreme <- fit
@@ -155,7 +155,7 @@ test_that("LOSO: extreme values in held-out subject do not affect U_minus", {
   fit_extreme$Chat <- (Chat_new + t(Chat_new)) / 2
 
   # Get LOSO basis for same subject with extreme values
-  out2 <- dkge_loso_contrast(fit_extreme, s = s, c = cvec, ridge = 0)
+  out2 <- dkge_loso_contrast(fit_extreme, s = s, contrasts = cvec, ridge = 0)
 
   # Key test: out1$basis should equal out2$basis because subject s is excluded
   # from both held-out basis computations
@@ -186,9 +186,9 @@ test_that("LOSO: different subjects get different held-out bases", {
   cvec <- rnorm(q)
 
   # Get LOSO bases for subjects 1, 2, 3
-  out1 <- dkge_loso_contrast(fit, s = 1L, c = cvec, ridge = 0)
-  out2 <- dkge_loso_contrast(fit, s = 2L, c = cvec, ridge = 0)
-  out3 <- dkge_loso_contrast(fit, s = 3L, c = cvec, ridge = 0)
+  out1 <- dkge_loso_contrast(fit, s = 1L, contrasts = cvec, ridge = 0)
+  out2 <- dkge_loso_contrast(fit, s = 2L, contrasts = cvec, ridge = 0)
+  out3 <- dkge_loso_contrast(fit, s = 3L, contrasts = cvec, ridge = 0)
 
   U1 <- out1$basis
   U2 <- out2$basis
@@ -337,7 +337,7 @@ test_that("LOSO: Chat_minus equals Chat minus held-out contribution", {
 
     # Verify LOSO function uses correct Chat_minus by comparing eigenvalues
     cvec <- rnorm(q)
-    out <- dkge_loso_contrast(fit, s = s, c = cvec, ridge = 0)
+    out <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
 
     # Eigenvalues of manual Chat_minus should match returned evals
     manual_eig <- eigen(Chat_minus_manual, symmetric = TRUE)$values

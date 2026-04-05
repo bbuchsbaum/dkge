@@ -4,3 +4,162 @@ template:
 figures:
   dev: grDevices::png
   dpi: 96
+
+reference:
+  - title: "Workflow — start here"
+    desc: "Primary functions for fitting, contrasting, classifying, and predicting"
+    contents:
+      - dkge
+      - dkge_contrast
+      - dkge_classify
+      - dkge_infer
+      - dkge_predict
+      - dkge_freeze
+      - dkge_bootstrap_analytic
+      - dkge_bootstrap_projected
+      - dkge_bootstrap_qspace
+
+  - title: "Advanced — model construction"
+    desc: "Lower-level functions for custom workflows"
+    contents:
+      - dkge_fit
+      - dkge_fit_from_input
+      - dkge_fit_from_kernels
+      - dkge_weights
+      - dkge_weights_auto
+      - dkge_weights_prior_mask
+      - dkge_weights_prior_roi
+      - design_kernel
+      - dkge_design_kernel
+      - dkge_mapper
+      - dkge_mapper_spec
+      - dkge_transport_spec
+      - dkge_transport_contrasts_to_medoid
+      - dkge_transport_loadings_to_medoid
+      - dkge_transport_to_medoid_sinkhorn
+      - dkge_transport_to_medoid_sinkhorn_cpp
+      - dkge_transport_to_voxels
+      - dkge_transport_service
+      - dkge_classification_spec
+      - dkge_inference_spec
+      - dkge_define_folds
+      - dkge_subject
+      - dkge_data
+      - dkge_prepare_transport
+      - dkge_pipeline
+      - dkge_loso_contrast
+      - dkge_analytic_loso
+      - dkge_contrast_validated
+      - dkge_cv_kernel_grid
+      - dkge_cv_kernel_rank
+      - dkge_cv_rank_loso
+      - dkge_cv_train_latent_classifier
+      - dkge_pooled_cov_q
+      - dkge_predict_loadings
+      - dkge_predict_stream
+      - dkge_predict_subjects
+      - dkge_preprocess_blocks
+      - dkge_project_block
+      - dkge_project_blocks
+      - dkge_project_btil
+      - dkge_project_cluster
+      - dkge_project_clusters
+      - dkge_project_clusters_to_latent
+      - dkge_sim_toy
+      - dkge_update_weights
+
+  - title: "Anchors and rendering"
+    desc: "Functions for building and applying spatial anchor mappers"
+    contents:
+      - dkge_build_renderer
+      - dkge_render_subject_values
+      - dkge_build_anchor_kernels
+      - dkge_make_anchors
+      - dkge_anchor_aggregate
+      - dkge_anchor_contrast_from_direction
+      - dkge_anchor_contrast_from_prototypes
+      - dkge_anchor_diagnostics
+      - dkge_anchor_fit
+      - dkge_anchor_graph
+      - dkge_anchor_targets_from_directions
+      - dkge_anchor_targets_from_prototypes
+      - dkge_anchor_to_voxel_apply
+      - dkge_anchor_to_voxel_fit
+      - dkge_input_anchor
+      - fit_mapper
+      - predict_mapper
+      - apply_mapper
+
+  - title: "Extension points — S3 generics"
+    desc: "Generics for integrating custom kernels, folds, and inputs"
+    contents:
+      - as_dkge_kernel
+      - as_dkge_folds
+      - dkge_run_service
+      - dkge_contrast_service
+      - dkge_inference_service
+
+  - title: "Kernel and alignment utilities"
+    desc: "Design kernels, K-Procrustes alignment, and kernel diagnostics"
+    contents:
+      - kernel_alignment
+      - kernel_roots
+      - dkge_kernel_alignment
+      - dkge_kernel_prescreen
+      - dkge_kernel_roots
+      - dkge_k_orthonormalize
+      - dkge_procrustes_K
+      - dkge_align_bases_K
+      - dkge_consensus_basis_K
+      - dkge_projector_K
+      - dkge_cosines_K
+      - dkge_jd_control
+      - dkge_align_effects
+      - dkge_target_factor
+      - dkge_target_interaction
+      - dkge_targets
+
+  - title: "Cluster and CPCA utilities"
+    desc: "Cluster-level projections and CPCA filtering"
+    contents:
+      - dkge_cpca_fit
+      - dkge_fit_cpca
+      - dkge_cpca_split_chat
+      - dkge_cluster_betas
+      - dkge_cluster_loadings
+      - dkge_cluster_ts
+      - dkge_regress
+      - dkge_transform_block
+      - dkge_neuro_loader
+
+  - title: "Visualization and diagnostics"
+    desc: "Plotting and metric functions"
+    contents:
+      - dkge_plot_effect_loadings
+      - dkge_plot_info_anchor
+      - dkge_plot_scree
+      - dkge_plot_subject_contrib
+      - dkge_plot_subspace_stability
+      - dkge_plot_suite
+      - dkge_diagnostics
+      - dkge_component_stats
+      - dkge_variance_explained
+      - dkge_info_map_from_classifier
+      - dkge_info_map_haufe
+      - dkge_info_map_loco
+      - dkge_confusion
+      - dkge_paint_medoid_map
+      - theme_dkge
+
+  - title: "Internal building blocks"
+    desc: "Low-level functions exposed for advanced use and testing"
+    contents:
+      - dkge_freedman_lane
+      - dkge_signflip_maxT
+      - dkge_one_se
+      - dkge_write_component_stats
+      - dkge_write_group_map
+      - dkge_clear_sinkhorn_cache
+      - helmert_contrasts
+      - sum_contrasts
+      - dkpp_select_anchors

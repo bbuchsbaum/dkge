@@ -10,7 +10,7 @@ betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
 designs <- replicate(S, qr.Q(qr(matrix(rnorm(T * q), T, q))), simplify = FALSE)
 centroids <- replicate(S, matrix(runif(P * 3), P, 3), simplify = FALSE)
 
-fit <- dkge(betas, designs = designs, kernel = diag(q), rank = 2)
+fit <- dkge(betas, designs = designs, K = diag(q), rank = 2)
 fit$centroids <- centroids
 
 transport_loadings <- dkge_transport_loadings_to_medoid(fit,

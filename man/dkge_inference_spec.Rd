@@ -6,14 +6,14 @@
 \usage{
 dkge_inference_spec(
   B = 2000L,
-  tail = c("two.sided", "left", "right"),
+  tail = c("two.sided", "greater", "less"),
   center = c("mean", "median", "none")
 )
 }
 \arguments{
 \item{B}{Number of permutations for sign-flip inference.}
 
-\item{tail}{Tail of the test: "two.sided", "left", or "right".}
+\item{tail}{Tail of the test: "two.sided", "greater", or "less".}
 
 \item{center}{Centering method for permutations: "mean", "median", or "none".}
 }

@@ -2,25 +2,37 @@
 % Please edit documentation in R/dkge-mapper.R
 \name{dkge_mapper_spec}
 \alias{dkge_mapper_spec}
-\title{Specify a DKGE mapper strategy}
+\title{Specify a DKGE mapper strategy for the transport pipeline}
 \usage{
-dkge_mapper_spec(strategy = c("sinkhorn", "ridge", "ols"), ..., name = NULL)
+dkge_mapper_spec(type = c("sinkhorn", "ridge", "ols"), ..., name = NULL)
 }
 \arguments{
-\item{strategy}{Mapping strategy identifier ("sinkhorn", "ridge", "ols").}
+\item{type}{Mapping strategy identifier: `"sinkhorn"` (optimal transport),
+`"ridge"` (ridge regression), or `"ols"` (ordinary least squares).}
 
-\item{...}{Strategy-specific hyperparameters stored in the specification.}
+\item{...}{Strategy-specific hyperparameters stored in the specification
+(e.g. `lambda`, `epsilon`, `lambda_emb`, `lambda_spa`).}
 
 \item{name}{Optional user-facing name for diagnostics.}
 }
 \value{
-A mapper specification object.
+A `dkge_mapper_spec` object consumed by [fit_mapper()] and
+  [predict_mapper()].
 }
 \description{
-Specify a DKGE mapper strategy
+Creates a mapper specification for the **transport pipeline** — used when
+mapping subject-level contrast/loading vectors from a source feature space
+(e.g., parcel embeddings) to a common reference space.  Pass the result to
+[dkge_transport_spec()], [dkge_prepare_transport()], or directly to
+[fit_mapper()] together with `source_feat` / `target_feat` matrices.
+
+Use [dkge_mapper()] instead when you need a **dense rendering / anchor
+mapper** that works in 3-D spatial coordinates (kNN barycentric, Sinkhorn
+OT over point clouds) for functions such as [dkge_build_renderer()] or
+[dkge_render_subject_values()].
 }
 \examples{
-spec <- dkge_mapper_spec("ridge", lambda = 1e-2)
+spec <- dkge_mapper_spec(type = "ridge", lambda = 1e-2)
 source_feat <- matrix(rnorm(10 * 2), 10, 2)
 target_feat <- matrix(rnorm(8 * 2), 8, 2)
 mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)

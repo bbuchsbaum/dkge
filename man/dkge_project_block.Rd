@@ -56,3 +56,4 @@ fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 A <- dkge_project_btil(fit, fit$Btil[[1]])
 dim(A)
 }
+\keyword{internal}

@@ -18,13 +18,13 @@ dkge_anchor_graph(
 \item{k}{Number of neighbours used in the graph (default 10).}
 
 \item{sigma}{Optional Gaussian length-scale (mm). If `NULL`, the
-`neighborweights` defaults are used.}
+`adjoin` defaults are used.}
 
 \item{weight_mode}{Edge weighting scheme passed to
-[neighborweights::graph_weights()]. Defaults to `"heat"`.}
+[adjoin::graph_weights()]. Defaults to `"heat"`.}
 
 \item{type}{Graph symmetrisation strategy (see
-[neighborweights::graph_weights()]); `"mutual"` helps enforce
+[adjoin::graph_weights()]); `"mutual"` helps enforce
 symmetry.}
 }
 \value{

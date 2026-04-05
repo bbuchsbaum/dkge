@@ -74,14 +74,14 @@ dkge_transport_spec <- function(centroids,
 #' Inference specification helper
 #'
 #' @param B Number of permutations for sign-flip inference.
-#' @param tail Tail of the test: "two.sided", "left", or "right".
+#' @param tail Tail of the test: "two.sided", "greater", or "less".
 #' @param center Centering method for permutations: "mean", "median", or "none".
 #' @return Object with class `dkge_inference_spec`.
 #' @export
 #' @examples
 #' infer <- dkge_inference_spec(B = 1000, tail = "two.sided")
 dkge_inference_spec <- function(B = 2000L,
-                                tail = c("two.sided", "left", "right"),
+                                tail = c("two.sided", "greater", "less"),
                                 center = c("mean", "median", "none")) {
   stopifnot(B > 0)
   tail <- match.arg(tail)
@@ -97,7 +97,9 @@ dkge_inference_spec <- function(B = 2000L,
 #' @param folds Optional fold specification.
 #' @param lambda Optional ridge parameter.
 #' @param metric Classification metrics to report.
-#' @param mode Decoding mode passed to [dkge_classify()].
+#' @param mode Decoding mode passed to [dkge_classify()]: "auto" selects
+#'   automatically, "cell" uses per-cell embeddings, "cell_cross" uses
+#'   cross-validated per-cell embeddings, and "delta" uses pairwise deltas.
 #' @param ... Additional fields stored on the spec (e.g., `n_perm`, `scope`).
 #' @return Object with class `dkge_classification_spec`.
 #' @export
@@ -108,7 +110,7 @@ dkge_classification_spec <- function(targets,
                                      folds = NULL,
                                      lambda = NULL,
                                      metric = c("accuracy", "logloss"),
-                                     mode = c("auto", "cell", "delta"),
+                                     mode = c("auto", "cell", "cell_cross", "delta"),
                                      ...) {
   method <- match.arg(method)
   metric <- match.arg(metric, several.ok = TRUE)

@@ -2,26 +2,36 @@
 % Please edit documentation in R/dkge-mapper.R
 \name{dkge_mapper}
 \alias{dkge_mapper}
-\title{Create a pluggable DKGE anchor mapper}
+\title{Create a pluggable DKGE anchor mapper for dense rendering}
 \usage{
-dkge_mapper(method = c("knn", "sinkhorn", "ridge", "gw"), ...)
+dkge_mapper(type = c("knn", "sinkhorn", "ridge", "gw"), ...)
 }
 \arguments{
-\item{method}{Mapper backend identifier. Currently only `"knn"` is
-implemented in the core.}
+\item{type}{Mapper backend identifier: `"knn"` (barycentric kNN, fully
+implemented), `"sinkhorn"` (OT over point clouds), `"ridge"`, or `"gw"`
+(Gromov-Wasserstein; latter three require external plugins).}
 
-\item{...}{Backend-specific parameters stored within the mapper object.}
+\item{...}{Backend-specific parameters stored within the mapper object
+(e.g. `k`, `sigx`, `sigz` for kNN; `epsilon` for Sinkhorn).}
 }
 \value{
-An S3 mapper descriptor consumed by [fit_mapper()].
+A `dkge_mapper` S3 descriptor consumed by [fit_mapper()] and
+  [apply_mapper()].
 }
 \description{
-Constructs lightweight mapper objects used by the dense rendering core. The
-initial implementation exposes a fast kNN barycentric mapper and keeps the
-interface open for richer transports.
+Constructs a mapper descriptor for the **dense rendering / anchor pipeline**
+— used when projecting subject-space voxel/parcel values onto a set of 3-D
+spatial anchor points (e.g., medoid centroids).  Pass the result to
+[dkge_build_renderer()], [dkge_render_subject_values()], or directly to
+[fit_mapper()] together with `subj_points` / `anchor_points` matrices.
+
+Use [dkge_mapper_spec()] instead when you need a **transport pipeline
+mapper** that operates in an abstract feature space (ridge regression,
+Sinkhorn OT over embeddings) for functions such as [dkge_prepare_transport()]
+or [dkge_transport_spec()].
 }
 \examples{
-spec <- dkge_mapper("knn", k = 3, sigx = 1)
+spec <- dkge_mapper(type = "knn", k = 3, sigx = 1)
 subj_points <- matrix(rnorm(12 * 3), 12, 3)
 anchor_points <- matrix(rnorm(6 * 3), 6, 3)
 fit <- fit_mapper(spec, subj_points = subj_points, anchor_points = anchor_points)

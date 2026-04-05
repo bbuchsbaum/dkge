@@ -21,7 +21,7 @@ Object of class `dkge_contrast_service`.
 Packages the arguments required by [dkge_contrast()] into a reusable service
 object. The service can be passed to [dkge_pipeline()] (via the `service`
 argument when it gains support) or executed manually with
-`dkge_run_contrast_service()`.
+`.dkge_run_contrast_service()`.
 }
 \examples{
 contrast_srv <- dkge_contrast_service(method = "loso", ridge = 0)

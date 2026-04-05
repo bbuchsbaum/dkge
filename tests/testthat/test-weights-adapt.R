@@ -51,7 +51,7 @@ test_that("adaptive weighting homes in on informative voxels across rules", {
   }
 
   K <- diag(q)
-  fit_uniform <- dkge(subjects, kernel = K, rank = 2, w_method = "none")
+  fit_uniform <- dkge(subjects, K = K, rank = 2, w_method = "none")
   y <- factor(classes, levels = c("A", "B"))
 
   predict_acc <- function(fit, clf, y) {
@@ -90,7 +90,7 @@ test_that("adaptive weighting homes in on informative voxels across rules", {
 
     w_spec <- dkge_weights(adapt = rule, scope = "fold", mix = 1,
                            shrink = list(alpha = 1, winsor = 0.999, normalize = "mean"))
-    fit_adapt <- dkge(subjects, kernel = K, rank = 2, weights = w_spec)
+    fit_adapt <- dkge(subjects, K = K, rank = 2, weights = w_spec)
     clf_adapt <- dkge_cv_train_latent_classifier(fit_adapt, y, folds = S,
                                                  model = "lda", level = "subject",
                                                  standardize = FALSE)

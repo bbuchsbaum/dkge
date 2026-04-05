@@ -50,7 +50,7 @@ The `dkge_mapper()` function creates a mapper configuration that stores the back
 
 ## Speed Comparison
 
-```{r performance}
+```{r performance, eval = requireNamespace("microbenchmark", quietly = TRUE)}
 S <- 3; q <- 3; P <- 200
 centroids <- replicate(S, matrix(rnorm(P * 3), P, 3), simplify = FALSE)
 anchors <- matrix(rnorm(1500 * 3), 1500, 3)
@@ -73,7 +73,7 @@ The performance characteristics of these two mapping approaches differ significa
 
 ## Warm Starts and Dual Caching
 
-```{r warm-start}
+```{r warm-start, eval = FALSE}
 C <- as.matrix(dist(anchors[1:200, ]))
 mu <- rep(1/nrow(C), nrow(C))
 nu <- rep(1/ncol(C), ncol(C))
