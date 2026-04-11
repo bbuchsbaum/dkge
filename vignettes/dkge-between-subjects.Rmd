@@ -1,0 +1,188 @@
+---
+title: "Between-Subject Multivariate Modeling"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Between-Subject Multivariate Modeling}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+library(dkge)
+set.seed(2026)
+```
+
+If you have one brain-derived representation per subject and want to test group, trait, or covariate effects jointly, the between-subject DKGE layer gives you a supervised multivariate model instead of a voxel-by-voxel second-level GLM.
+
+The workflow has three steps:
+
+1. build a subject-by-feature target with `dkge_make_target()`
+2. build a second-level design with `dkge_subject_model()`
+3. fit and test a reduced-rank model with `dkge_between_rrr()` and `dkge_between_permute()`
+
+## What does the second-level model estimate?
+
+The between-subject model is a reduced-rank regression:
+
+\[
+Y = X B + E, \qquad \mathrm{rank}(B) \le r
+\]
+
+Here `Y` is a subject-by-feature matrix, `X` is the subject-level design matrix, and `B` contains distributed coefficient maps for your terms of interest.
+
+## Start from a direct subject-by-feature matrix
+
+In the simplest case you already have a common-space matrix with one row per subject.
+
+```{r quick-target}
+subject_data <- data.frame(
+  subject_id = paste0("s", 1:18),
+  group = factor(rep(c("control", "patient"), each = 9)),
+  trait = seq(-1, 1, length.out = 18)
+)
+
+design <- dkge_subject_model(~ group * trait, subject_data)
+X <- design$X
+
+beta <- matrix(0, nrow = ncol(X), ncol = 6,
+               dimnames = list(colnames(X), paste0("feature", 1:6)))
+beta["grouppatient:trait", ] <- c(2, 1, 0, -1, -2, -1)
+
+Y <- X %*% beta + matrix(rnorm(nrow(X) * ncol(beta), sd = 0.08), nrow(X), ncol(beta))
+rownames(Y) <- subject_data$subject_id
+colnames(Y) <- colnames(beta)
+
+target <- dkge_make_target(Y = Y)
+fit_between <- dkge_between_rrr(target, design, rank = 1)
+```
+
+You can inspect the fitted term map directly.
+
+```{r quick-term-map}
+round(dkge_term_map(fit_between, "grouppatient:trait"), 2)
+```
+
+And you can run a permutation test that keeps the formula structure intact.
+
+```{r quick-permutation}
+perm_between <- dkge_between_permute(
+  fit_between,
+  terms = c("group", "trait", "group:trait"),
+  B = 99,
+  seed = 42,
+  scope = "both",
+  feature_adjust = "maxT"
+)
+
+perm_between$summary[, c("term", "statistic", "p", "p_adjusted")]
+```
+
+```{r quick-permutation-checks, include = FALSE}
+stopifnot(all(is.finite(fitted(fit_between))))
+stopifnot(all(is.finite(residuals(fit_between))))
+stopifnot(all(perm_between$summary$p >= 0 & perm_between$summary$p <= 1))
+stopifnot(all(perm_between$feature_tests[["group:trait"]]$p_adjusted >= 0))
+```
+
+## Build the target from a DKGE fit
+
+The more DKGE-native path is to let DKGE construct the subject representation first, then model subjects in that common target space.
+
+This example starts from heterogeneous subject maps, fits DKGE, transports one contrast to a medoid subject, and then applies the between-subject model.
+
+```{r dkge-fit}
+toy <- dkge_sim_toy(
+  factors = list(condition = list(L = 2), phase = list(L = 2)),
+  active_terms = c("condition", "phase"),
+  S = 6,
+  P = c(4, 5, 3, 6, 4, 5),
+  snr = 6,
+  seed = 9
+)
+
+effects <- toy$info$term_names
+toy$B_list <- lapply(toy$B_list, function(B) {
+  rownames(B) <- effects
+  B
+})
+toy$X_list <- lapply(toy$X_list, function(X) {
+  colnames(X) <- effects
+  X
+})
+centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+
+fit_dkge <- dkge_fit(
+  dkge_data(toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids),
+  K = toy$K,
+  rank = 2
+)
+```
+
+```{r transported-target}
+transport <- dkge_transport_spec(
+  centroids = centroids,
+  medoid = 1L,
+  method = "sinkhorn",
+  epsilon = 0.1
+)
+
+contrast <- matrix(c(1, 0, 0), ncol = 1, dimnames = list(NULL, "condition"))
+rownames(contrast) <- effects
+
+transported_target <- dkge_make_target(
+  fit_dkge,
+  type = "transported_maps",
+  contrast = contrast,
+  transport = transport,
+  crossfit = "analytic"
+)
+
+dim(transported_target$Y)
+```
+
+Now the second-level model looks the same as before.
+
+```{r dkge-between}
+subject_meta <- data.frame(
+  subject_id = toy$subject_ids,
+  group = factor(c("control", "control", "control", "patient", "patient", "patient")),
+  trait = c(-0.8, -0.3, 0.2, -0.1, 0.5, 1.0)
+)
+
+between_design <- dkge_subject_model(~ group * trait, subject_meta)
+fit_transport <- dkge_between_rrr(transported_target, between_design, rank = 1)
+perm_transport <- dkge_between_permute(
+  fit_transport,
+  terms = c("group", "trait", "group:trait"),
+  B = 49,
+  seed = 7
+)
+
+perm_transport$summary[, c("term", "p")]
+```
+
+```{r dkge-between-checks, include = FALSE}
+stopifnot(nrow(transported_target$Y) == nrow(subject_meta))
+stopifnot(all(is.finite(predict(fit_transport))))
+stopifnot(all(perm_transport$summary$p >= 0 & perm_transport$summary$p <= 1))
+```
+
+## What should you inspect after fitting?
+
+There are three outputs worth checking first:
+
+- `coef(fit_transport)` gives the full coefficient matrix in target space
+- `dkge_term_map(fit_transport, "group:trait")` extracts the term-specific map
+- `perm_transport$summary` gives a global multivariate permutation test for each term
+
+If you asked for featurewise inference, `perm_between$feature_tests[["group:trait"]]` adds per-feature statistics and adjusted p-values in the same target space.
+
+## Where to go next
+
+Use `type = "component_scores"` in `dkge_make_target()` when you want a compact latent target, and use `type = "transported_maps"` when spatial interpretation in a common map space matters.

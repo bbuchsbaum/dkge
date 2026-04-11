@@ -1,6 +1,17 @@
 # dkge-folds.R
 # Shared fold-building helpers for LOSO/K-fold cross-fitting.
 
+.dkge_subject_loader_weights <- function(loader_weights, Bts) {
+  if (is.null(loader_weights) || length(loader_weights) == 0L) {
+    return(NULL)
+  }
+  w_s <- as.numeric(loader_weights)
+  if (length(w_s) != ncol(Bts)) {
+    w_s <- rep(w_s, length.out = ncol(Bts))
+  }
+  w_s
+}
+
 #' Build held-out fold bases and loaders
 #'
 #' Internal utility that re-computes DKGE bases for a collection of held-out
@@ -105,12 +116,11 @@
     for (j in seq_along(subject_scope)) {
       s <- subject_scope[[j]]
       Bts <- fit$Btil[[s]]
-      w_s <- loader_weights
-      if (!is.null(w_s) && length(w_s) != ncol(Bts)) {
-        if (length(w_s) > 1L) {
+      w_s <- .dkge_subject_loader_weights(loader_weights, Bts)
+      if (!is.null(loader_weights) && length(loader_weights) != ncol(Bts)) {
+        if (length(loader_weights) > 1L) {
           recycled_subjects <- unique(c(recycled_subjects, subject_ids[s]))
         }
-        w_s <- rep(w_s, length.out = ncol(Bts))
       }
       Bw <- if (is.null(w_s) || length(w_s) == 0L) {
         Bts

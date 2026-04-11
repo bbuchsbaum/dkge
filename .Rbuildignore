@@ -5,7 +5,11 @@
 ^Rplots\.pdf$
 ^data-raw$
 ^docs$
+^bench$
 ^future$
+^\.git$
+^\.gitignore$
+^\.planning$
 ^repomix-output\.xml$
 ^repomix-output\.txt$
 ^_pkgdown\.yml$
@@ -13,4 +17,9 @@
 ^\.github$
 ^\.planning$
 ^\.omc$
+^\.?\.?Rcheck$
+^dkge\.Rcheck$
+^dkge_.*\.tar\.gz$
+^src/.*\.(o|so)$
+^src/symbols\.rds$
 ^\.rcmdcheck.*\.rds$

@@ -38,8 +38,8 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(Uminus) %*% fit$K %*% c_tilde
 
-  loader_weights <- weight_eval$total
   Bts <- fit$Btil[[s]]
+  loader_weights <- .dkge_subject_loader_weights(weight_eval$total, Bts)
   Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
   A_s <- t(Bw) %*% fit$K %*% Uminus
   v_s <- as.numeric(A_s %*% alpha)

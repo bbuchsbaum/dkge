@@ -6,7 +6,8 @@
 \usage{
 dkge_weights(
   prior = NULL,
-  adapt = c("none", "kenergy", "precision", "kenergy_prec"),
+  adapt = c("none", "kenergy", "precision", "kenergy_prec", "reliability"),
+  B_list2 = NULL,
   combine = c("product", "sum", "override_adapt", "prefer_prior"),
   mix = 0.6,
   shrink = list(alpha = 0.5, winsor = 0.99, normalize = "mean", roi_smooth = FALSE),
@@ -22,7 +23,15 @@ integer indices, or ROI labels (factor/character/integer of length V) per voxel.
 [dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.}
 
 \item{adapt}{Adaptive weighting rule, one of `"none"`, `"kenergy"`,
-`"precision"`, or `"kenergy_prec"`.}
+`"precision"`, `"kenergy_prec"`, or `"reliability"`. The `"reliability"`
+rule computes split-half squared inter-run correlation per voxel and
+requires `B_list2` (a second run of beta matrices, one per subject).}
+
+\item{B_list2}{Optional second-run beta list (same structure as `B_list` used
+at fit time): one `q x V` matrix per subject. Required when
+`adapt = "reliability"`. Per-voxel reliability is estimated as the squared
+Pearson correlation of cross-subject mean activations between run 1 and
+run 2.}
 
 \item{combine}{How prior and adaptive sources combine: `"product"` (default),
 `"sum"`, `"override_adapt"`, or `"prefer_prior"`.}
@@ -75,4 +84,12 @@ print(w)
 
 # Uniform (no adaptive) weights
 w_uniform <- dkge_weights(adapt = "none")
+
+# Split-half reliability weighting (requires two runs of betas)
+\dontrun{
+w_rel <- dkge_weights(
+  adapt = "reliability",
+  B_list2 = run2_betas   # list of q x V matrices, one per subject
+)
+}
 }

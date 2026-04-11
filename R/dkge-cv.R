@@ -160,11 +160,11 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
     train_ids <- setdiff(seq_len(S), s)
     ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
     eg <- eigen(ctx$Chat, symmetric = TRUE)
-    loader_weights <- ctx$weights$total
     for (r in ranks) {
       Uminus <- base$Kihalf %*% eg$vectors[, seq_len(r), drop = FALSE]
       score <- {
         Bts <- base$Btil[[s]]
+        loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
         Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
         Xs <- base$Khalf %*% Bw
         V <- base$Khalf %*% Uminus
@@ -219,10 +219,10 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
       train_ids <- setdiff(seq_len(S), s)
       ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
       eg <- eigen(ctx$Chat, symmetric = TRUE)
-      loader_weights <- ctx$weights$total
       Uminus <- base$Kihalf %*% eg$vectors[, seq_len(rank), drop = FALSE]
 
       Bts <- base$Btil[[s]]
+      loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
       Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
       V <- Khalf %*% Uminus
       Xs <- Khalf %*% Bw

@@ -3,7 +3,8 @@
 .Ruserdata
 .Rproj.user/
 .DS_Store
-inst/doc/
+inst/doc/*
+!inst/doc/README
 doc/
 *.so
 *.o
