@@ -54,6 +54,7 @@ The returned object is a `multiblock_biprojector` with q-space loadings in
 | Vignette | Purpose |
 |----------|---------|
 | **You are here** | Overview and entry point |
+| [Concepts](dkge-concepts.html) | What DKGE actually decomposes, what K does, and the three levels of inference — read before your first fit |
 | [Workflow](dkge-workflow.html) | Complete fit → contrast → transport → visualise pipeline |
 | [Design Kernels](dkge-design-kernels.html) | Encoding factor structure with `design_kernel()` |
 | [Contrasts & Inference](dkge-contrasts-inference.html) | LOSO contrasts, analytic and bootstrap inference |

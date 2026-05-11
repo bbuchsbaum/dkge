@@ -34,6 +34,15 @@ DKGE compresses per-subject GLM beta matrices into a shared latent space that
 respects the experimental design. This vignette walks through the core pipeline:
 data prep → fit → component inspection → inference → bootstrap.
 
+> **Before you fit.** If you are new to DKGE, read
+> `vignette("dkge-concepts")` first. It covers what DKGE actually
+> decomposes (it eigendecomposes \(K^{1/2} C K^{1/2}\), so the kernel is a
+> metric, not a basis), why identity-\(K\) is the unconstrained baseline that
+> structured kernels should be compared against, and the three levels at
+> which DKGE supports inference (component, contrast, feature). The choices
+> made below — `K = diag(q)`, `method = "loso"`, `dkge_component_stats()` —
+> map directly onto those concepts.
+
 ## Data preparation
 
 Three subjects, three design effects, four spatial clusters each:
