@@ -31,21 +31,26 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
   # center data if using "median" just for display; t uses mean in any case
   Yc <- Y
 
-  # permutation max stat
+  # permutation max stat, matched to the tested tail so one-sided tests use a
+  # signed (not absolute) null; using max(abs(.)) for a one-sided test inflates
+  # the null and needlessly costs power.
   maxnull <- numeric(B)
   for (b in seq_len(B)) {
     Yb <- flips[,b] * Yc
     mu_b  <- colMeans(Yb)
     sd_b  <- apply(Yb, 2, stats::sd)
     t_b   <- mu_b / (sd_b / sqrt(S) + 1e-12)
-    maxnull[b] <- max(abs(t_b))
+    maxnull[b] <- switch(tail,
+                         two.sided = max(abs(t_b)),
+                         greater   = max(t_b),
+                         less      = max(-t_b))
   }
 
   # p-values (max-T, strong FWER control)
   if (tail == "two.sided") {
     p <- sapply(abs(t_obs), function(x) (1 + sum(maxnull >= x)) / (B + 1))
   } else if (tail == "greater") {
-    p <- sapply(t_obs, function(x) (1 + sum(maxnull >= x)) / (B + 1)) # conservative
+    p <- sapply(t_obs, function(x) (1 + sum(maxnull >= x)) / (B + 1))
   } else {
     p <- sapply(-t_obs, function(x) (1 + sum(maxnull >= x)) / (B + 1))
   }

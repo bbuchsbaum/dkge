@@ -155,3 +155,14 @@ test_that("circular factor with L=2 is well-defined", {
   # The actual kernel is constructed by Kronecker products, so check relative value
   expect_equal(K_res$K[1, 2], K_res$K[2, 1], tolerance = 1e-10)
 })
+
+test_that("kernel_roots handles a 1x1 kernel without the diag() scalar footgun", {
+  # diag(scalar) builds an identity of that dimension, so a 1x1 kernel silently
+  # produced Khalf = 1 instead of sqrt(K). Passing the length restores correctness.
+  K <- matrix(2, 1, 1)
+  kr <- kernel_roots(K, jitter = 1e-12)
+  expect_equal(dim(kr$Khalf), c(1L, 1L))
+  expect_equal(as.numeric(kr$Khalf), sqrt(2), tolerance = 1e-8)
+  expect_equal(as.numeric(kr$Kihalf), 1 / sqrt(2), tolerance = 1e-8)
+  expect_equal(kr$Khalf %*% kr$Khalf, K, tolerance = 1e-8)
+})

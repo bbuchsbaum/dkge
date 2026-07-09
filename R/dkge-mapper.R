@@ -183,14 +183,24 @@ apply_mapper.dkge_mapper_fit_knn <- function(fitted_mapper,
   }
 
   values <- vals[, 1]
+  k <- ncol(idx)
+  # Flatten the P x k neighbour structure column-major so that duplicate anchor
+  # targets accumulate correctly. Scatter-add via `x[js] <- x[js] + ...` keeps
+  # only the *last* write when `js` contains repeated anchors (multiple source
+  # clusters sharing a nearest anchor), silently dropping contributions; rowsum
+  # sums over the repeated groups instead.
+  js_all <- as.integer(idx)
+  w_all <- as.numeric(W)
+
+  scatter_add <- function(contrib) {
+    out <- numeric(Q)
+    agg <- rowsum(contrib, group = js_all, reorder = FALSE)
+    out[as.integer(rownames(agg))] <- agg[, 1]
+    out
+  }
+
   if (!normalize_by_reliab) {
-    anchor <- numeric(Q)
-    for (t in seq_len(ncol(idx))) {
-      js <- idx[, t]
-      wt <- W[, t]
-      anchor[js] <- anchor[js] + wt * values
-    }
-    return(anchor)
+    return(scatter_add(w_all * rep(values, times = k)))
   }
 
   if (is.null(r)) {
@@ -199,15 +209,8 @@ apply_mapper.dkge_mapper_fit_knn <- function(fitted_mapper,
     stopifnot(length(r) == fitted_mapper$P)
   }
 
-  y_num <- numeric(Q)
-  y_den <- numeric(Q)
-  rv <- r * values
-  for (t in seq_len(ncol(idx))) {
-    js <- idx[, t]
-    wt <- W[, t]
-    y_num[js] <- y_num[js] + wt * rv
-    y_den[js] <- y_den[js] + wt * r
-  }
+  y_num <- scatter_add(w_all * rep(r * values, times = k))
+  y_den <- scatter_add(w_all * rep(r, times = k))
   anchor <- numeric(Q)
   ok <- y_den > 1e-12
   anchor[ok] <- y_num[ok] / y_den[ok]

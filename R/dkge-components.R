@@ -77,7 +77,12 @@ dkge_component_stats <- function(fit,
                                                  sizes = sizes,
                                                  mapper = mapper_spec)
 
-  subj_mats <- lapply(transport$subjects, function(M) M[, comp_idx, drop = FALSE])
+  # transport$subjects is a length-`rank` list (one S x Q matrix per component);
+  # select the requested components, not columns (clusters) of every component.
+  if (any(is.na(comp_idx)) || any(comp_idx < 1L) || any(comp_idx > length(transport$subjects))) {
+    stop("`components` must index existing components (1..rank).", call. = FALSE)
+  }
+  subj_mats <- transport$subjects[comp_idx]
 
   inference_res <- .dkge_component_inference(subj_mats, inference)
   tidy <- .dkge_component_tidy(inference_res, comp_idx, adjust)

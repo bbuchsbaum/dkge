@@ -64,3 +64,22 @@ test_that("dkge_infer applies mapper-based transport", {
   expect_equal(ncol(res$transport[[1]]$subj_values), nrow(data$centroids[[1]]))
   expect_false(anyNA(res$p_values[[1]]))
 })
+
+test_that("one-sided sign-flip max-T uses a signed (not absolute) null", {
+  set.seed(1)
+  S <- 12L; Q <- 6L
+  Y <- matrix(rnorm(S * Q, sd = 0.3), S, Q)
+  Y[, 1] <- Y[, 1] + 2   # strong positive effect in cluster 1
+
+  set.seed(42); res_two <- dkge_signflip_maxT(Y, B = 500, tail = "two.sided")
+  set.seed(42); res_gt  <- dkge_signflip_maxT(Y, B = 500, tail = "greater")
+
+  # Same seed => identical sign flips. The greater-tail null is max(t_b), which
+  # must be <= the two-sided null max(|t_b|), and strictly smaller for some draws
+  # (the buggy version made them identical).
+  expect_true(all(res_gt$maxnull <= res_two$maxnull + 1e-12))
+  expect_false(isTRUE(all.equal(res_gt$maxnull, res_two$maxnull)))
+
+  # One-sided test is at least as powerful for the positive effect.
+  expect_lte(res_gt$p[1], res_two$p[1] + 1e-12)
+})

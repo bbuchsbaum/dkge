@@ -277,8 +277,8 @@ kernel_roots <- function(K, jitter = 1e-10) {
   pos_idx <- vals > 0
   inv_sqrt_vals[pos_idx] <- 1 / sqrt_vals[pos_idx]
 
-  Khalf  <- V %*% diag(sqrt_vals) %*% t(V)
-  Kihalf <- V %*% diag(inv_sqrt_vals) %*% t(V)
+  Khalf  <- V %*% diag(sqrt_vals, length(sqrt_vals)) %*% t(V)
+  Kihalf <- V %*% diag(inv_sqrt_vals, length(inv_sqrt_vals)) %*% t(V)
 
   rank_est <- sum(vals > .Machine$double.eps)
 

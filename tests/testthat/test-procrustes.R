@@ -42,3 +42,37 @@ test_that("dkge_align_bases_K returns aligned set and scores", {
   })))
   expect_equal(length(aligned$score), length(bases))
 })
+
+test_that("dkge_procrustes_K recovers the rotation and maximises overlap for large angles", {
+  toy <- make_procrustes_toy(q = 6, r = 3, seed = 11)
+  Uref <- dkge_k_orthonormalize(toy$U_ref, toy$K)
+  set.seed(202)
+  Rot <- qr.Q(qr(matrix(rnorm(9), 3, 3)))   # large orthogonal rotation in component space
+  U <- Uref %*% Rot                          # still K-orthonormal
+  pr <- dkge_procrustes_K(Uref, U, toy$K, allow_reflection = TRUE)
+
+  # Aligned basis matches the reference in the K-metric (the transposed rotation
+  # would anti-align and leave t(Uref) K U_aligned != I).
+  expect_equal(t(Uref) %*% toy$K %*% pr$U_aligned, diag(3), tolerance = 1e-8)
+
+  # Overlap trace attains the optimum = sum of singular values of C.
+  C <- t(Uref) %*% toy$K %*% U
+  expect_equal(sum(diag(C %*% pr$R)), sum(svd(C)$d), tolerance = 1e-8)
+
+  # Alignment is not worse than the raw (un-aligned) input in the K-metric.
+  d_raw <- sum((toy$K %*% (U - Uref))^2)
+  d_aln <- sum((toy$K %*% (pr$U_aligned - Uref))^2)
+  expect_lte(d_aln, d_raw + 1e-8)
+})
+
+test_that("dkge_procrustes_K without reflection returns a proper rotation", {
+  toy <- make_procrustes_toy(q = 5, r = 3, seed = 21)
+  Uref <- dkge_k_orthonormalize(toy$U_ref, toy$K)
+  set.seed(7)
+  Refl <- qr.Q(qr(matrix(rnorm(9), 3, 3)))
+  if (det(Refl) > 0) Refl[, 1] <- -Refl[, 1]   # force a reflection (det = -1)
+  U <- Uref %*% Refl
+  pr <- dkge_procrustes_K(Uref, U, toy$K, allow_reflection = FALSE)
+  expect_equal(det(pr$R), 1, tolerance = 1e-8)
+  expect_equal(t(pr$R) %*% pr$R, diag(3), tolerance = 1e-8)
+})

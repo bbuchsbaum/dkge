@@ -482,7 +482,7 @@
   for (s in seq_len(S)) {
     Bts <- Btil[[s]]
     P_s <- ncol(Bts)
-    idx <- (total_clusters + 1L):(total_clusters + P_s)
+    idx <- seq_len(P_s) + total_clusters  # empty when P_s == 0 (avoids reversed `:`)
     block_indices[[s]] <- idx
     total_clusters <- total_clusters + P_s
 
