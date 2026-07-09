@@ -104,7 +104,9 @@
     sqmin <- pmin(sqmin, rowSums(diff * diff))
   }
   while (length(sel) < L) {
-    j <- which.max(sqmin)
+    cand <- setdiff(seq_len(n), sel)
+    if (!length(cand)) break  # fewer than L distinct points; caller pads
+    j <- cand[which.max(sqmin[cand])]
     sel <- c(sel, j)
     diff <- X - matrix(X[j, ], n, d, byrow = TRUE)
     sqmin <- pmin(sqmin, rowSums(diff * diff))

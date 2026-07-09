@@ -83,3 +83,14 @@ test_that("one-sided sign-flip max-T uses a signed (not absolute) null", {
   # One-sided test is at least as powerful for the positive effect.
   expect_lte(res_gt$p[1], res_two$p[1] + 1e-12)
 })
+
+test_that("sign-flip max-T exposes uncorrected p-values bounded by the adjusted ones", {
+  set.seed(3)
+  Y <- matrix(rnorm(12 * 5, sd = 0.5), 12, 5)
+  Y[, 1] <- Y[, 1] + 1.5
+  res <- dkge_signflip_maxT(Y, B = 400, tail = "two.sided")
+  expect_length(res$p_unadj, ncol(Y))
+  expect_true(all(res$p_unadj >= 0 & res$p_unadj <= 1))
+  # Uncorrected p is never larger than the max-T (FWER) adjusted p.
+  expect_true(all(res$p_unadj <= res$p + 1e-9))
+})
