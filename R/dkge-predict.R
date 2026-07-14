@@ -144,10 +144,11 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
   vals <- lapply(seq_along(mats), function(i) {
     A <- A_list[[i]]
     res <- sapply(alpha_list, function(a) as.numeric(A %*% a))
+    # Only a multi-contrast matrix carries contrast labels (as columns); a single
+    # contrast yields a per-cluster vector that must not be tagged with the
+    # (length-1) contrast name, which R would recycle into c(name, NA, NA, ...).
     if (is.matrix(res) && length(alpha_list) > 1) {
       colnames(res) <- names(alpha_list)
-    } else {
-      names(res) <- names(alpha_list)
     }
     res
   })
@@ -283,8 +284,6 @@ dkge_predict_stream <- function(object, loader, contrasts) {
     res <- sapply(alpha_list, function(a) as.numeric(A %*% a))
     if (is.matrix(res) && length(alpha_list) > 1) {
       colnames(res) <- names(alpha_list)
-    } else {
-      names(res) <- names(alpha_list)
     }
     vals[[s]] <- res
   }

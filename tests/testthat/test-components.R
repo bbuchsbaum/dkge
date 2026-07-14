@@ -36,3 +36,38 @@ test_that("auto centroids and Sinkhorn mapper produce consensus summary", {
   expect_equal(unique(res$summary$component), 1)
   expect_equal(nrow(res$transport[[1]]), 5)
 })
+
+test_that("dkge_component_stats analyzes all medoid clusters (not the first `rank`)", {
+  # rank = 2, medoid parcellation has P = 5 clusters. The index-confusion bug
+  # sliced each component matrix to its first `rank` columns, yielding rank*rank
+  # rows and dropping clusters 3..5.
+  fixture <- make_component_fixture(S = 4, q = 3, P = 5)
+  res <- dkge_component_stats(fixture$fit,
+                              mapper = "ridge",
+                              inference = list(type = "parametric"))
+  expect_equal(sort(unique(res$summary$component)), c(1, 2))
+  expect_equal(sort(unique(res$summary$cluster)), 1:5)
+  expect_equal(nrow(res$summary), 2L * 5L)
+  expect_equal(dim(res$transport[[1]]), c(4L, 5L))
+})
+
+test_that("dkge_component_stats selects the requested component", {
+  fixture <- make_component_fixture(S = 4, q = 3, P = 5)
+  res <- dkge_component_stats(fixture$fit,
+                              mapper = "ridge",
+                              components = 2,
+                              inference = list(type = "parametric"))
+  expect_equal(unique(res$summary$component), 2)
+  expect_equal(sort(unique(res$summary$cluster)), 1:5)
+  expect_length(res$transport, 1L)
+  expect_equal(dim(res$transport[[1]]), c(4L, 5L))
+})
+
+test_that("dkge_component_stats rejects out-of-range component indices", {
+  fixture <- make_component_fixture(S = 4, q = 3, P = 5)  # rank = 2
+  expect_error(
+    dkge_component_stats(fixture$fit, mapper = "ridge",
+                         components = 5, inference = list(type = "parametric")),
+    "components"
+  )
+})

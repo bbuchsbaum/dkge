@@ -31,26 +31,36 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
   # center data if using "median" just for display; t uses mean in any case
   Yc <- Y
 
-  # permutation max stat
+  # Observed statistic on the tested side.
+  obs_side <- switch(tail,
+                     two.sided = abs(t_obs),
+                     greater   = t_obs,
+                     less      = -t_obs)
+
+  # permutation max stat, matched to the tested tail so one-sided tests use a
+  # signed (not absolute) null; using max(abs(.)) for a one-sided test inflates
+  # the null and needlessly costs power. Accumulate per-cluster exceedances too
+  # so an *uncorrected* p-value is available alongside the max-T adjusted one.
   maxnull <- numeric(B)
+  exceed_unadj <- numeric(length(t_obs))
   for (b in seq_len(B)) {
     Yb <- flips[,b] * Yc
     mu_b  <- colMeans(Yb)
     sd_b  <- apply(Yb, 2, stats::sd)
     t_b   <- mu_b / (sd_b / sqrt(S) + 1e-12)
-    maxnull[b] <- max(abs(t_b))
+    stat_b <- switch(tail,
+                     two.sided = abs(t_b),
+                     greater   = t_b,
+                     less      = -t_b)
+    maxnull[b] <- max(stat_b)
+    exceed_unadj <- exceed_unadj + (stat_b >= obs_side)
   }
 
-  # p-values (max-T, strong FWER control)
-  if (tail == "two.sided") {
-    p <- sapply(abs(t_obs), function(x) (1 + sum(maxnull >= x)) / (B + 1))
-  } else if (tail == "greater") {
-    p <- sapply(t_obs, function(x) (1 + sum(maxnull >= x)) / (B + 1)) # conservative
-  } else {
-    p <- sapply(-t_obs, function(x) (1 + sum(maxnull >= x)) / (B + 1))
-  }
+  # p-values: max-T (strong FWER control) and per-cluster uncorrected.
+  p <- sapply(obs_side, function(x) (1 + sum(maxnull >= x)) / (B + 1))
+  p_unadj <- (1 + exceed_unadj) / (B + 1)
 
-  list(stat = t_obs, p = p, maxnull = maxnull, flips = flips)
+  list(stat = t_obs, p = p, p_unadj = p_unadj, maxnull = maxnull, flips = flips)
 }
 
 #' Unified inference for DKGE contrasts
@@ -218,7 +228,9 @@ dkge_infer <- function(fit, contrasts,
     if (correction == "maxT") {
       result <- dkge_signflip_maxT(Y, B = n_perm)
       stats[[i]] <- result$stat
-      p_values[[i]] <- result$p
+      # Report the uncorrected p in p_value and the max-T FWER p in p_adjusted,
+      # instead of duplicating the adjusted value into both.
+      p_values[[i]] <- result$p_unadj %||% result$p
       p_adjusted[[i]] <- result$p
       next
     }

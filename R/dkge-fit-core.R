@@ -73,6 +73,16 @@
   }
 
   betas <- dataset$betas
+  bad_finite <- which(vapply(betas, function(B) any(!is.finite(B)), logical(1)))
+  if (length(bad_finite)) {
+    labels <- (names(betas) %||% seq_along(betas))[bad_finite]
+    stop(sprintf(
+      paste0("Beta matrices contain non-finite values (NA/NaN/Inf) for subject(s): %s. ",
+             "Clean or drop these voxels before fitting; .dkge_voxel_exclusion_mask() ",
+             "identifies the offending columns."),
+      paste(labels, collapse = ", ")
+    ), call. = FALSE)
+  }
   q_vals <- vapply(betas, nrow, integer(1))
   if (length(unique(q_vals)) > 1) {
     stop(sprintf(
@@ -266,8 +276,11 @@
     eig_vectors_full <- eigChat$vectors
     eig_values_full <- eigChat$values
 
-    # Track effective rank (eigenvalues > 1e-12)
-    effective_rank <- sum(eig_values_full > 1e-12)
+    # Scale-relative positivity tolerance: an absolute 1e-12 spuriously collapses
+    # the rank when betas are small-magnitude (Chat eigenvalues scale as beta^2).
+    # Never looser than 1e-12 so well-scaled fits keep their existing behavior.
+    eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
+    effective_rank <- sum(eig_values_full > eig_tol)
     rank_reduced <- FALSE
 
     # Warn if requested rank exceeds effective rank
@@ -282,7 +295,7 @@
 
     eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
     eig_values <- eig_values_full[seq_len(rank)]
-    pos_idx <- eig_values > 1e-12
+    pos_idx <- eig_values > eig_tol
     if (!all(pos_idx)) {
       eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
       eig_values <- eig_values[pos_idx]
@@ -371,8 +384,9 @@
   eig_vectors_full <- jd_res$Q
   eig_values_full <- jd_res$diag_vals
 
-  # Track effective rank (eigenvalues > 1e-12)
-  effective_rank <- sum(eig_values_full > 1e-12)
+  # Scale-relative positivity tolerance (see the pooled branch above).
+  eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
+  effective_rank <- sum(eig_values_full > eig_tol)
   rank_reduced <- FALSE
 
   # Warn if requested rank exceeds effective rank
@@ -387,7 +401,7 @@
 
   eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
   eig_values <- eig_values_full[seq_len(rank)]
-  pos_idx <- eig_values > 1e-12
+  pos_idx <- eig_values > eig_tol
   if (!all(pos_idx)) {
     eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
     eig_values <- eig_values[pos_idx]
@@ -482,7 +496,7 @@
   for (s in seq_len(S)) {
     Bts <- Btil[[s]]
     P_s <- ncol(Bts)
-    idx <- (total_clusters + 1L):(total_clusters + P_s)
+    idx <- seq_len(P_s) + total_clusters  # empty when P_s == 0 (avoids reversed `:`)
     block_indices[[s]] <- idx
     total_clusters <- total_clusters + P_s
 

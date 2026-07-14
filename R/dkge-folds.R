@@ -319,6 +319,14 @@
   Omega_train <- fit$Omega[train_ids]
   subject_weights <- fit$weights[train_ids]
 
+  # Reliability weighting cross-references a second run (weight_spec$B_list2),
+  # one entry per subject. It must be subset to the training subjects so its
+  # length matches B_train; otherwise .dkge_adapt_weights() errors on every
+  # fold (and, if lengths happened to align, would leak held-out run-2 data).
+  if (!is.null(weight_spec$B_list2)) {
+    weight_spec$B_list2 <- weight_spec$B_list2[train_ids]
+  }
+
   weight_eval <- .dkge_resolve_voxel_weights(weight_spec, B_train, kernel_payload)
   voxel_weights_train <- weight_eval$total_subject %||% weight_eval$total
 

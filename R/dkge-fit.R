@@ -77,10 +77,15 @@
   if (n == 0L || ncol(X) == 0L) {
     return(0)
   }
-  v <- stats::rnorm(n)
+  # Deterministic data-driven start (row sums), so subject weights are
+  # reproducible and do not perturb the caller's RNG stream. Power iteration
+  # converges to the same leading value for any start not orthogonal to the top
+  # singular vector; fall back to a constant vector if the row sums vanish.
+  v <- rowSums(X)
   v_norm <- sqrt(sum(v * v))
   if (!is.finite(v_norm) || v_norm == 0) {
-    return(0)
+    v <- rep(1, n)
+    v_norm <- sqrt(n)
   }
   v <- v / v_norm
   sigma_sq <- 0

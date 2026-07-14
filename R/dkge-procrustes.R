@@ -52,11 +52,13 @@ dkge_procrustes_K <- function(Uref, U, K, allow_reflection = TRUE) {
   stopifnot(nrow(Uref) == nrow(U), ncol(Uref) == ncol(U), nrow(K) == nrow(U))
   C <- t(Uref) %*% K %*% U
   sv <- svd(C)
-  R <- sv$u %*% t(sv$v)
+  # Maximiser of tr((Uref^T K U) R) over orthogonal R is R = V U^T
+  # (from C = U d V^T). Using U V^T here inverts the rotation and anti-aligns.
+  R <- sv$v %*% t(sv$u)
   if (!allow_reflection && det(R) < 0) {
-    Uu <- sv$u; Vv <- sv$v
-    Uu[, ncol(Uu)] <- -Uu[, ncol(Uu)]
-    R <- Uu %*% t(Vv)
+    Vv <- sv$v
+    Vv[, ncol(Vv)] <- -Vv[, ncol(Vv)]
+    R <- Vv %*% t(sv$u)
   }
   list(U_aligned = U %*% R,
        R = R,

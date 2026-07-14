@@ -100,6 +100,18 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
                       log_v_init = log_v_init,
                       keep_duals = TRUE)
   plan <- res$plan
+  # The solver returns the last plan whether or not it converged; surface a
+  # warning when the marginals are still off so callers are not silently handed
+  # an under-converged transport plan.
+  if (!is.null(res$iterations) && res$iterations >= max_iter) {
+    marg_err <- max(max(abs(rowSums(plan) - mu)), max(abs(colSums(plan) - nu)))
+    if (is.finite(marg_err) && marg_err > tol) {
+      warning(sprintf(
+        "Sinkhorn did not converge in %d iterations (marginal error %.2e > tol %.2e); increase max_iter or epsilon.",
+        max_iter, marg_err, tol
+      ), call. = FALSE)
+    }
+  }
   if (!is.null(res$log_u) && !is.null(res$log_v)) {
     .dkge_sinkhorn_cache_store(key, list(log_u = res$log_u,
                                          log_v = res$log_v,

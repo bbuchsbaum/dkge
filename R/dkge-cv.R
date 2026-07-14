@@ -206,12 +206,13 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
                                 w_method = "mfa_sigma1", w_tau = 0.3) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
   rows <- list()
+  fit_fun <- if (exists("dkge_fit_fast")) get("dkge_fit_fast") else dkge_fit
 
   for (nm in names(K_grid)) {
     Kc <- K_grid[[nm]]
-    base <- dkge_fit(B_list, X_list, Kc, Omega_list = Omega_list,
-                     w_method = w_method, w_tau = w_tau,
-                     ridge = ridge, rank = rank)
+    base <- fit_fun(B_list, X_list, Kc, Omega_list = Omega_list,
+                    w_method = w_method, w_tau = w_tau,
+                    ridge = ridge, rank = rank)
     Khalf <- base$Khalf
     S <- length(B_list)
 
@@ -244,8 +245,9 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
   means <- stats_mat[, "mean"]
   ses <- stats_mat[, "se"]
   best_idx <- which.max(means)
-  threshold <- means[best_idx] - ses[best_idx]
-  pick_idx <- min(which(means >= threshold))
+  # Kernels are nominal: the one-SE "first within tolerance" rule reduces to an
+  # arbitrary alphabetical tie-break, so select the best-scoring kernel directly.
+  pick_idx <- best_idx
 
   list(
     pick = kernels[pick_idx],

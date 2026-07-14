@@ -378,11 +378,12 @@ dkge_bootstrap_analytic <- function(fit,
     w_sum <- sum(weights_boot)
     if (!is.finite(w_sum) || w_sum <= 0) w_sum <- 1
 
+    # A_s depends only on the bootstrap basis, not the contrast; hoist it.
+    A_list <- lapply(seq_len(S), function(s) KBtil_t[[s]] %*% Ub)
     for (idx_con in seq_len(n_contrasts)) {
       alpha_b <- as.numeric(crossprod(Ub, Kctil_list[[idx_con]]))
       for (s in seq_len(S)) {
-        A_s <- KBtil_t[[s]] %*% Ub
-        v_s <- as.numeric(A_s %*% alpha_b)
+        v_s <- as.numeric(A_list[[s]] %*% alpha_b)
         subject_maps[s, ] <- as.numeric(t(operators[[s]]) %*% v_s)
       }
       boot_medoid[[idx_con]][b, ] <- colSums(subject_maps * weights_boot) / (w_sum + 1e-12)
