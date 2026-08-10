@@ -175,6 +175,8 @@
                                 reference = "consensus",
                                 train_idx = NULL,
                                 allow_reflection = TRUE,
+                                fit_context = NULL,
+                                provider_plan = NULL,
                                 ...) {
   if (is.null(train_idx)) train_idx <- seq_along(data@subjects)
   subjects <- data@subjects
@@ -268,9 +270,9 @@
     capabilities = .dkge_neuralign_capabilities(),
     package = "dkge",
     description = "DKGE effect-space alignment (K-Procrustes; operators are rxr)",
-    version = as.character(utils::packageVersion("dkge"))
+    version = as.character(utils::packageVersion("dkge")),
+    api_version = 2L
   )
 
   invisible(TRUE)
 }
-
