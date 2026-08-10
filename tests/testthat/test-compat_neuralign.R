@@ -3,6 +3,7 @@ test_that("dkge registers a neuralign aligner and fits K-Procrustes operators", 
 
   # Ensure aligner is registered (even if .onLoad didn't run).
   dkge:::.dkge_register_neuralign_aligner()
+  expect_identical(neuralign::get_aligner("dkge")$api_version, 2L)
 
   set.seed(1)
   q <- 6
@@ -43,4 +44,3 @@ test_that("dkge registers a neuralign aligner and fits K-Procrustes operators", 
   dims_ok <- vapply(model@transforms, function(A) all(dim(A) == c(r, r)), logical(1))
   expect_true(all(dims_ok))
 })
-
