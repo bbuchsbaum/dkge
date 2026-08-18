@@ -14,6 +14,7 @@ design_kernel(
   basis = c("cell", "effect"),
   contrasts = NULL,
   block_structure = NULL,
+  block_factors = NULL,
   normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
   jitter = 1e-08
 )
@@ -27,6 +28,7 @@ dkge_design_kernel(
   basis = c("cell", "effect"),
   contrasts = NULL,
   block_structure = NULL,
+  block_factors = NULL,
   normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
   jitter = 1e-08
 )
@@ -35,10 +37,10 @@ dkge_design_kernel(
 \item{factors}{Named list of factor specifications. Each factor is described
 by a list containing:
 \describe{
-  \item{type}{"nominal" | "ordinal" | "circular" | "continuous" (default "nominal").}
-  \item{L}{Number of levels (for discrete types).}
-  \item{values}{Numeric coordinates for continuous factors.}
-  \item{l}{Optional length-scale for ordinal/circular/continuous factors.}
+\item{type}{"nominal" | "ordinal" | "circular" | "continuous" (default "nominal").}
+\item{L}{Number of levels (for discrete types).}
+\item{values}{Numeric coordinates for continuous factors.}
+\item{l}{Optional length-scale for ordinal/circular/continuous factors.}
 }}
 
 \item{terms}{List of character vectors describing which factors appear in each
@@ -49,31 +51,36 @@ effects plus the full interaction.}
 to 1 for each term if omitted. Must be non-negative.}
 
 \item{include_intercept}{Logical; if TRUE adds a small identity ridge
-(controlled by `rho0`) to keep the kernel full rank (default TRUE).}
+(controlled by \code{rho0}) to keep the kernel full rank (default TRUE).}
 
-\item{rho0}{Non-negative scalar ridge weight added when `include_intercept` is
+\item{rho0}{Non-negative scalar ridge weight added when \code{include_intercept} is
 TRUE (default 1e-8).}
 
 \item{basis}{Either "cell" (kernel over all design cells) or "effect" (kernel
 over regressors/effects). Default "cell".}
 
 \item{contrasts}{Optional named list of per-factor contrast matrices used when
-`basis="effect"`. Defaults to sum-to-zero contrasts for discrete factors and
+\code{basis="effect"}. Defaults to sum-to-zero contrasts for discrete factors and
 a single column of ones for continuous factors.}
 
 \item{block_structure}{Optional ordering of effect blocks (names matching
-terms). If NULL, uses the order of `terms`.}
+terms). If NULL, uses the order of \code{terms}.}
+
+\item{block_factors}{Optional factor names forced to use their factor kernel
+in every cell-space term. This gives block-diagonal replication across
+between-subject factors such as group instead of accidental all-ones
+coupling through terms that omit the block factor.}
 
 \item{normalize}{One of "unit_trace", "none", "unit_fro", "max_diag".
 Controls how the kernel is scaled after construction (default "unit_trace").}
 
-\item{jitter}{Small diagonal jitter added to `K_cell` for numerical stability
+\item{jitter}{Small diagonal jitter added to \code{K_cell} for numerical stability
 (default 1e-8).}
 }
 \value{
-A list with elements `K` (kernel in requested basis), `K_cell` (always
-  returned), and `info` containing metadata such as factor/term names, mapping
-  matrix, and block indices.
+A list with elements \code{K} (kernel in requested basis), \code{K_cell} (always
+returned), and \code{info} containing metadata such as factor/term names, mapping
+matrix, and block indices.
 }
 \description{
 Constructs a PSD kernel that captures factorial similarity across design

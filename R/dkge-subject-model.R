@@ -11,6 +11,8 @@
 #' @param data Data frame containing subject-level variables.
 #' @param subject_ids Optional subject identifiers. Defaults to a `subject_id`
 #'   column when present, then row names, then sequential IDs.
+#' @param subject_id_col Optional column name in `data` to use as subject
+#'   identifiers when `subject_ids` is not supplied. Defaults to `"subject_id"`.
 #' @param nuisance Optional character vector of term labels to treat as nuisance
 #'   in downstream inference.
 #' @param contrasts.arg Optional contrasts passed to [stats::model.matrix()].
@@ -23,7 +25,8 @@ dkge_subject_model <- function(formula,
                                subject_ids = NULL,
                                nuisance = NULL,
                                contrasts.arg = NULL,
-                               na.action = stats::na.fail) {
+                               na.action = stats::na.fail,
+                               subject_id_col = "subject_id") {
   if (!inherits(formula, "formula")) {
     stop("`formula` must be a formula.", call. = FALSE)
   }
@@ -33,11 +36,19 @@ dkge_subject_model <- function(formula,
   X <- stats::model.matrix(tt, data = mf, contrasts.arg = contrasts.arg)
 
   if (is.null(subject_ids)) {
-    if ("subject_id" %in% names(data)) {
-      subject_ids <- as.character(data$subject_id)
-    } else if (!is.null(rownames(data)) && all(nzchar(rownames(data)))) {
+    if (!is.null(subject_id_col)) {
+      if (!is.character(subject_id_col) || length(subject_id_col) != 1L || !nzchar(subject_id_col)) {
+        stop("`subject_id_col` must be NULL or a non-empty column name.", call. = FALSE)
+      }
+      if (subject_id_col %in% names(data)) {
+        subject_ids <- as.character(data[[subject_id_col]])
+      } else if (!identical(subject_id_col, "subject_id")) {
+        stop("`subject_id_col` was not found in `data`: ", subject_id_col, call. = FALSE)
+      }
+    }
+    if (is.null(subject_ids) && !is.null(rownames(data)) && all(nzchar(rownames(data)))) {
       subject_ids <- rownames(data)
-    } else {
+    } else if (is.null(subject_ids)) {
       subject_ids <- paste0("subj", seq_len(nrow(X)))
     }
   }

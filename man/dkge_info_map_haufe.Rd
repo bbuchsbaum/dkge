@@ -15,28 +15,28 @@ dkge_info_map_haufe(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{clf}{Cross-fitted classifier returned by
-[dkge_cv_train_latent_classifier()].}
+\code{\link[=dkge_cv_train_latent_classifier]{dkge_cv_train_latent_classifier()}}.}
 
-\item{renderer}{Renderer produced by [dkge_build_renderer()].}
+\item{renderer}{Renderer produced by \code{\link[=dkge_build_renderer]{dkge_build_renderer()}}.}
 
 \item{Z_by_subject}{Optional list of latent cluster features used to estimate
-fold covariances when they are not stored in `clf`.}
+fold covariances when they are not stored in \code{clf}.}
 
 \item{lambda}{Non-negative smoothing parameter applied via
-[dkge_anchor_aggregate()].}
+\code{\link[=dkge_anchor_aggregate]{dkge_anchor_aggregate()}}.}
 
-\item{to_vox}{Logical; when `TRUE` and a decoder is available in `renderer`,
+\item{to_vox}{Logical; when \code{TRUE} and a decoder is available in \code{renderer},
 a dense voxel map is produced.}
 
-\item{inference}{One of `"none"`, `"signflip"`, or `"parametric"` specifying the
+\item{inference}{One of \code{"none"}, \code{"signflip"}, or \code{"parametric"} specifying the
 group inference routine applied to anchor maps.}
 }
 \value{
-List mirroring [dkge_info_map_from_classifier()] with
-  `meta$kind = "haufe"`.
+List mirroring \code{\link[=dkge_info_map_from_classifier]{dkge_info_map_from_classifier()}} with
+\code{meta$kind = "haufe"}.
 }
 \description{
 Converts discriminative weights into encoding (activation) patterns in latent

@@ -21,23 +21,23 @@ same effect ordering.}
 (anchor) indices.}
 
 \item{subject_ids}{Optional character vector naming subjects. Defaults to the
-names of `K_list` or sequential identifiers.}
+names of \code{K_list} or sequential identifiers.}
 
-\item{design_kernel}{Optional design kernel passed to [dkge_fit()]. Defaults
+\item{design_kernel}{Optional design kernel passed to \code{\link[=dkge_fit]{dkge_fit()}}. Defaults
 to the \eqn{q \times q} identity matrix, which matches the whitened anchor
 setup.}
 
 \item{sqrt_tol}{Eigenvalue tolerance used when extracting square roots.}
 
-\item{...}{Additional arguments forwarded to [dkge_fit()].}
+\item{...}{Additional arguments forwarded to \code{\link[=dkge_fit]{dkge_fit()}}.}
 }
 \value{
-A `dkge` object identical to one obtained from [dkge_fit()], with
-  provenance annotated to record the kernel-driven construction.
+A \code{dkge} object identical to one obtained from \code{\link[=dkge_fit]{dkge_fit()}}, with
+provenance annotated to record the kernel-driven construction.
 }
 \description{
 Converts a list of subject-level effect kernels \eqn{K_s \in \mathbb{R}^{q \times q}} into
-synthetic GLM inputs that reuse [dkge_fit()] without modifying the core
+synthetic GLM inputs that reuse \code{\link[=dkge_fit]{dkge_fit()}} without modifying the core
 implementation. Each kernel is factorised into a symmetric square root,
 scaled to keep the pooled design metric unchanged, and paired with an
 identity design matrix so the resulting DKGE fit matches the supplied

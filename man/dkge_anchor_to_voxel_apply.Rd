@@ -7,9 +7,9 @@
 dkge_anchor_to_voxel_apply(decoder, anchor_values)
 }
 \arguments{
-\item{decoder}{Object returned by [dkge_anchor_to_voxel_fit()].}
+\item{decoder}{Object returned by \code{\link[=dkge_anchor_to_voxel_fit]{dkge_anchor_to_voxel_fit()}}.}
 
-\item{anchor_values}{Numeric vector of length `decoder$n_anchors`.}
+\item{anchor_values}{Numeric vector of length \code{decoder$n_anchors}.}
 }
 \value{
 Numeric vector of voxel values.

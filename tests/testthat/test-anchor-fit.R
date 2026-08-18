@@ -16,9 +16,12 @@ test_that("dkge_fit_from_kernels reproduces pooled kernel", {
   expect_equal(nrow(fit$U), q)
   expect_equal(length(fit$subject_ids), S)
   weighted_sum <- Reduce(`+`, Map(function(K, w) w * K, K_list, fit$weights))
-  expect_equal(fit$Chat, weighted_sum, tolerance = 1e-6)
+  # Chat and the contributions now carry the effect_ids as dimnames.
+  expect_equal(colnames(fit$Chat), paste0("e", seq_len(q)))
+  expect_equal(fit$Chat, weighted_sum, tolerance = 1e-6, ignore_attr = TRUE)
   for (s in seq_len(S)) {
-    expect_equal(fit$contribs[[s]], K_list[[s]], tolerance = 1e-8)
+    expect_equal(fit$contribs[[s]], K_list[[s]], tolerance = 1e-8,
+                 ignore_attr = TRUE)
   }
   expect_equal(fit$provenance$kernel_fit$sqrt_scale, sqrt(S))
 })

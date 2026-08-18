@@ -23,11 +23,11 @@ dkge_align_effects(
 )
 }
 \arguments{
-\item{K_list}{List of per-subject symmetric kernels; `K_list[[s]]` has
-dimensions `|O_s| x |O_s|`.}
+\item{K_list}{List of per-subject symmetric kernels; \code{K_list[[s]]} has
+dimensions \verb{|O_s| x |O_s|}.}
 
-\item{effects}{List of character vectors. `effects[[s]]` gives the effect IDs
-associated with the rows and columns of `K_list[[s]]`.}
+\item{effects}{List of character vectors. \code{effects[[s]]} gives the effect IDs
+associated with the rows and columns of \code{K_list[[s]]}.}
 
 \item{subject_ids}{Optional character vector naming subjects; defaults to the
 list names or sequential labels.}
@@ -45,7 +45,7 @@ the training kernels.}
 
 \item{alpha}{Shrinkage weight applied in \code{mode = "shrinkage"}.}
 
-\item{ensure_psd}{Logical; when `TRUE` (default) project pooled and completed
+\item{ensure_psd}{Logical; when \code{TRUE} (default) project pooled and completed
 matrices to the PSD cone.}
 
 \item{psd_tol}{Eigenvalue floor expressed as a fraction of the largest
@@ -60,24 +60,26 @@ intersection to \code{"all_subjects"} (default) or \code{"train_only"}.}
 \item{effect_prior}{Optional PSD matrix indexed by effect IDs used to seed
 zero-coverage entries of the group kernel.}
 
-\item{prior_weight}{Blend factor in [0, 1] applied to `effect_prior` when
+\item{prior_weight}{Blend factor in [0, 1] applied to \code{effect_prior} when
 available.}
 
-\item{verbose}{Logical; emit messages when `TRUE`.}
+\item{verbose}{Logical; emit messages when \code{TRUE}.}
 }
 \value{
-When `folds = NULL`, a list with fields
-  - `K_aligned`: list of aligned `n x n` kernels per subject
-  - `effect_ids`: character vector of shared effect IDs
-  - `G`: pooled training kernel (when applicable)
-  - `obs_mask`: list of logical vectors indicating observed effects per
-    subject
-  - `pair_counts`: integer matrix of training coverage per effect pair
-  - `coverage`: data frame summarising training coverage per effect
-  - `mode`: completion mode used.
+When \code{folds = NULL}, a list with fields
+\itemize{
+\item \code{K_aligned}: list of aligned \verb{n x n} kernels per subject
+\item \code{effect_ids}: character vector of shared effect IDs
+\item \code{G}: pooled training kernel (when applicable)
+\item \code{obs_mask}: list of logical vectors indicating observed effects per
+subject
+\item \code{pair_counts}: integer matrix of training coverage per effect pair
+\item \code{coverage}: data frame summarising training coverage per effect
+\item \code{mode}: completion mode used.
+}
 
-  When folds are supplied, returns `list(folds = list(...))` where each fold
-  entry includes the same fields along with `train_idx` and `test_idx`.
+When folds are supplied, returns \code{list(folds = list(...))} where each fold
+entry includes the same fields along with \code{train_idx} and \code{test_idx}.
 }
 \description{
 Builds a fold-aware common effect geometry using masked averaging over the
@@ -85,10 +87,10 @@ training subjects, then completes each subject's kernel on the shared effect
 index via Nyström, shrinkage, or intersection.
 }
 \details{
-The `folds` argument accepts: `NULL` (single context), a `dkge_folds` object,
-a data frame with columns `subject` and `fold`, or a list whose elements name
+The \code{folds} argument accepts: \code{NULL} (single context), a \code{dkge_folds} object,
+a data frame with columns \code{subject} and \code{fold}, or a list whose elements name
 the held-out subjects. Fold-specific results are returned under
-`result$folds[[f]]` with training/test indices attached.
+\code{result$folds[[f]]} with training/test indices attached.
 }
 \examples{
 K_list <- list(s1 = diag(5), s2 = diag(4), s3 = diag(5))

@@ -7,12 +7,12 @@
 dkge_plot_subject_contrib(fit, comps = NULL)
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{comps}{Components to display (default first min(rank,6)).}
 }
 \value{
-List with `weights` and `energy` ggplots.
+List with \code{weights} and \code{energy} ggplots.
 }
 \description{
 Subject weights and per-component energy heatmap
@@ -22,7 +22,7 @@ toy <- dkge_sim_toy(
   factors = list(A = list(L = 2), B = list(L = 3)),
   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
 )
-fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 panels <- dkge_plot_subject_contrib(fit, comps = 1:2)
 panels$weights
 }

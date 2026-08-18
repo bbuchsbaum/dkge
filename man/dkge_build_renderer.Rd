@@ -24,29 +24,29 @@ dkge_build_renderer(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
-\item{centroids}{List of per-subject centroid matrices (`P_s x 3`).
-Must align with `fit$Btil`.}
+\item{centroids}{List of per-subject centroid matrices (\verb{P_s x 3}).
+Must align with \code{fit$Btil}.}
 
-\item{anchors}{Optional precomputed anchor coordinate matrix. When `NULL`,
-anchors are derived from `anchor_xyz` if provided, otherwise from
-`vox_xyz`.}
+\item{anchors}{Optional precomputed anchor coordinate matrix. When \code{NULL},
+anchors are derived from \code{anchor_xyz} if provided, otherwise from
+\code{vox_xyz}.}
 
 \item{anchor_xyz}{Optional matrix of candidate points used to derive anchors
-via [dkge_make_anchors()]. Ignored when `anchors` is supplied.}
+via \code{\link[=dkge_make_anchors]{dkge_make_anchors()}}. Ignored when \code{anchors} is supplied.}
 
 \item{anchor_n}{Number of anchors to draw when constructing them from
 coordinates.}
 
-\item{anchor_method}{Method passed to [dkge_make_anchors()] when anchors are
-derived. Defaults to `"kmeans"`.}
+\item{anchor_method}{Method passed to \code{\link[=dkge_make_anchors]{dkge_make_anchors()}} when anchors are
+derived. Defaults to \code{"kmeans"}.}
 
-\item{anchor_seed}{Optional seed forwarded to [dkge_make_anchors()].}
+\item{anchor_seed}{Optional seed forwarded to \code{\link[=dkge_make_anchors]{dkge_make_anchors()}}.}
 
 \item{vox_xyz}{Optional voxel coordinates for constructing a decoder.}
 
-\item{mapper}{Mapper specification created with [dkge_mapper()]. Defaults to
+\item{mapper}{Mapper specification created with \code{\link[=dkge_mapper]{dkge_mapper()}}. Defaults to
 the barycentric kNN mapper.}
 
 \item{graph_k}{Optional integer; when provided, an anchor graph of this
@@ -59,11 +59,11 @@ to the mapper during fitting.}
 
 \item{subject_feats}{Optional list of matrices supplying latent features per
 subject cluster. When provided and the mapper consumes latent information
-(e.g., Sinkhorn), they are forwarded via `subj_feats`.}
+(e.g., Sinkhorn), they are forwarded via \code{subj_feats}.}
 
 \item{anchor_feats}{Optional anchor-level feature matrix aligned with
-`anchors`. Derived automatically by pooling subject features when `NULL`
-and `subject_feats` are provided.}
+\code{anchors}. Derived automatically by pooling subject features when \code{NULL}
+and \code{subject_feats} are provided.}
 
 \item{feat_lambda}{Feature cost weight passed to Sinkhorn mappers. Ignored by
 kNN.}
@@ -72,7 +72,7 @@ kNN.}
 }
 \value{
 A list bundling anchors, optional graph/decoder, fitted per-subject
-  mappers, and subject weights.
+mappers, and subject weights.
 }
 \description{
 Prepare reusable rendering objects for a fitted DKGE model
@@ -83,7 +83,7 @@ toy <- dkge_sim_toy(
   factors = list(A = list(L = 2), B = list(L = 3)),
   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
 )
-fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
 renderer <- dkge_build_renderer(fit,
                                 centroids = centroids,

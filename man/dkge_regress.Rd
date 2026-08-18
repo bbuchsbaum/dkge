@@ -19,44 +19,43 @@ dkge_regress(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object containing an effect-space basis (`fit$U`).}
+\item{fit}{A \code{dkge} object containing an effect-space basis (\code{fit$U}).}
 
-\item{Y}{Numeric matrix of shape `(#effects) x (#outputs)` with row names that
+\item{Y}{Numeric matrix of shape \verb{(#effects) x (#outputs)} with row names that
 identify the effects/items to be modelled.}
 
 \item{effect_ids}{Optional character vector of effect identifiers to include
-(defaults to `rownames(Y)`).}
+(defaults to \code{rownames(Y)}).}
 
 \item{folds}{Optional list giving held-out effect IDs for each fold. When
-`NULL`, random K-fold splits are generated.}
+\code{NULL}, random K-fold splits are generated.}
 
-\item{k}{Number of folds to create when `folds` is `NULL` (default `5`).}
+\item{k}{Number of folds to create when \code{folds} is \code{NULL} (default \code{5}).}
 
 \item{features}{Either the string "effects" (use the fitted DKGE effect
-embeddings) or a custom function `function(fit, ids, ctx)` returning a
+embeddings) or a custom function \verb{function(fit, ids, ctx)} returning a
 matrix of predictors for the supplied effect IDs. The function may use the
-optional `ctx` argument to receive fold-specific context objects.}
+optional \code{ctx} argument to receive fold-specific context objects.}
 
 \item{engine}{Regression engine. One of "glmnet" (default ridge multi-output
 regression), "lm" (ordinary least squares solved jointly across outputs),
-or a list with `fit`/`predict` closures: `list(fit = function(X, Y) \{...\},
-predict = function(model, X) \{...\})`.}
+or a list with \code{fit}/\code{predict} closures: \verb{list(fit = function(X, Y) \\\{...\\\}, predict = function(model, X) \\\{...\\\})}.}
 
 \item{alpha}{Elastic-net mixing parameter passed to \pkg{glmnet} (0 for ridge,
 1 for lasso).}
 
-\item{standardize}{Logical; when `TRUE` (default) the \pkg{glmnet} engine
+\item{standardize}{Logical; when \code{TRUE} (default) the \pkg{glmnet} engine
 standardises predictors internally.}
 
 \item{seed}{Random seed used when generating folds.}
 
-\item{return_models}{Logical; when `TRUE`, attach the fitted model for each
+\item{return_models}{Logical; when \code{TRUE}, attach the fitted model for each
 fold to the returned object.}
 }
 \value{
-An object of class `"dkge_regress"` containing predictions (`pred`),
-  observed targets (`truth`), fold assignments (`folds`), summary metrics
-  (`metrics`), and optionally the per-fold models (`models`).
+An object of class \code{"dkge_regress"} containing predictions (\code{pred}),
+observed targets (\code{truth}), fold assignments (\code{folds}), summary metrics
+(\code{metrics}), and optionally the per-fold models (\code{models}).
 }
 \description{
 Fits cross-validated regressors that map DKGE effect embeddings to

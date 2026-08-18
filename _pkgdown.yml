@@ -11,6 +11,7 @@ articles:
     contents:
       - dkge
       - dkge-workflow
+      - dkge-concepts
   - title: "Core analysis"
     navbar: Core analysis
     contents:
@@ -18,6 +19,8 @@ articles:
       - dkge-contrasts-inference
       - dkge-classification
       - dkge-components
+      - dkge-between-subjects
+      - dkge-partial-effect-spaces
   - title: "Weighting"
     navbar: Weighting
     contents:
@@ -147,6 +150,7 @@ reference:
       - dkge_cosines_K
       - dkge_jd_control
       - dkge_align_effects
+      - dkge_make_target
       - dkge_target_factor
       - dkge_target_interaction
       - dkge_targets
@@ -164,6 +168,31 @@ reference:
       - dkge_transform_block
       - dkge_neuro_loader
 
+  - title: "Between-subject modeling"
+    desc: "Subject-level models, reduced-rank regression, and permutation inference on latent codes"
+    contents:
+      - dkge_subject_model
+      - dkge_between_rrr
+      - dkge_between_permute
+      - dkge_term_map
+
+  - title: "Aggregate (cell-mean) decomposition"
+    desc: "PLS-style decomposition of group-by-cell aggregate maps with permutation and bootstrap inference"
+    contents:
+      - dkge_aggregate_target
+      - dkge_aggregate_fit
+      - dkge_aggregate_align
+      - dkge_aggregate_stat
+      - dkge_aggregate_permute
+      - dkge_aggregate_bootstrap
+
+  - title: "Partial effect spaces and trial-level inputs"
+    desc: "Effect grids, effect-reliability weighting, and trial-level subject construction"
+    contents:
+      - dkge_effect_grid
+      - dkge_effect_weights
+      - dkge_trial_subject
+
   - title: "Visualization and diagnostics"
     desc: "Plotting and metric functions"
     contents:
@@ -172,6 +201,14 @@ reference:
       - dkge_plot_scree
       - dkge_plot_subject_contrib
       - dkge_plot_subspace_stability
+      - dkge_component_saliences
+      - dkge_component_contrast_scores
+      - dkge_subject_component_projections
+      - dkge_design_basis
+      - dkge_principal_angles_K
+      - dkge_plot_component_saliences
+      - dkge_plot_component_contrast_scores
+      - dkge_plot_subject_component_projections
       - dkge_plot_suite
       - dkge_diagnostics
       - dkge_component_stats

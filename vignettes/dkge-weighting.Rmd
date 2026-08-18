@@ -36,7 +36,10 @@ theme_set(theme_dkge())
 ```
 
 
-Design-Kernel Group Embedding (DKGE) provides several sophisticated weighting mechanisms that allow you to emphasize reliable clusters, incorporate spatial smoothness constraints, or balance contributions from subjects in heterogeneous cohorts. This vignette systematically catalogues the available weighting options and demonstrates how they interact throughout the various stages of fitting, projection, and transport operations.
+DKGE has several weighting mechanisms, but they act on different axes and are
+not interchangeable. This vignette identifies the unit each mechanism weights,
+shows where it enters the estimator, and gives diagnostics for checking that a
+small part of the data has not acquired unintended leverage.
 
 ### Adaptive voxel weighting (preview)
 
@@ -44,13 +47,24 @@ In addition to the subjects × clusters weighting controls showcased throughout 
 
 ## Weighting Landscape
 
-DKGE operates with three distinct yet complementary weighting layers that work together to provide fine-grained control over the analysis:
+DKGE operates with four complementary weighting layers:
 
 The first layer consists of **spatial weights (`omega`)**, which operate within each individual subject block before the compressed covariance is accumulated across subjects. You can supply either vectors (which implement diagonal weights) or positive semi-definite matrices (which capture full covariances) when constructing subjects or calling the main `dkge()` function.
 
-The second layer involves **subject weights (`w_method`, `w_tau`)**, which rescale entire subject blocks based on their energy measured in the K-metric. This layer offers Multiple Factor Analysis style scaling (`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`) schemes, alongside options for manual weight overrides.
+The second layer is **subject-by-effect precision (`effect_weights`)**. It acts
+on rows of the raw q-space subject moments. `"count"` uses trial counts stored
+by `dkge_trial_subject()` or `dkge_subject(effect_n = ...)`; `"precision"`
+uses explicit non-negative precision values. It is the layer for unequal cell
+counts within subjects.
 
-The third layer comprises **transport weights (`sizes`)**, which shape the optimal-transport alignment process when producing consensus maps. This allows you to respect important spatial characteristics such as cluster surface areas or voxel densities during the mapping procedure.
+The third layer involves **subject weights (`w_method`, `w_tau`)**, which
+rescale entire subject blocks based on their energy measured in the K-metric.
+This layer offers Multiple Factor Analysis scaling (`"mfa_sigma1"`) and
+Frobenius-based energy scaling (`"energy"`), alongside manual overrides.
+
+The fourth layer comprises **transport weights (`sizes`)**, which shape the
+optimal-transport alignment used to produce consensus maps. They operate after
+the group basis is fitted and can respect parcel surface area or voxel density.
 
 The following sections systematically walk through each weighting layer using a carefully constructed simulated dataset.
 
@@ -92,6 +106,52 @@ fit_equal$weights
 ```
 
 In this baseline configuration where all weights are equal, every subject contributes uniformly to the construction of the shared basis. Consequently, cluster-level variability patterns are driven purely by the structure encoded in the design kernel, without any additional bias from differential weighting schemes.
+
+## Subject-by-Effect Precision
+
+Suppose the four effect rows are cell means estimated from different numbers
+of trials. Attach those counts to each subject, then request count weighting at
+fit time:
+
+```{r effect-weighting}
+effect_counts <- list(
+  c(20, 18, 3, 15),
+  c(5, 16, 14, 4),
+  c(12, 7, 20, 18)
+)
+
+effect_subjects <- lapply(seq_len(S), function(s) {
+  dkge_subject(
+    betas[[s]], design = designs[[s]], id = paste0("s", s),
+    effect_n = effect_counts[[s]]
+  )
+})
+data_effect <- dkge_data(effect_subjects)
+
+fit_effect <- dkge_fit(
+  data_effect,
+  K = k_identity,
+  rank = 2,
+  w_method = "none",
+  effect_weights = dkge_effect_weights("count")
+)
+
+range(fit_effect$pair_ess)
+```
+
+For effects \(c\) and \(c'\), subject \(s\) receives pair reliability
+\(\sqrt{n_{sc}n_{sc'}}\). `fit_effect$pair_weight` records total reliability
+mass and `fit_effect$pair_ess` records Kish effective sample size. A low
+`pair_ess` warns that a pair is effectively determined by only a few subjects.
+Explicit precision values use the same calculation through
+`dkge_subject(effect_precision = ...)` and
+`dkge_effect_weights("precision")`; zero precision excludes that
+subject-effect row.
+
+This weighting changes precision, not noise bias. If the cell means were
+estimated from trialwise data, use `dkge_trial_subject()` and choose
+`debias = "analytic"` or `"split_half"` separately. The complete 3 x 5 x 4
+example is in `vignette("dkge-partial-effect-spaces")`.
 
 ## Size-Weighted Blocks
 

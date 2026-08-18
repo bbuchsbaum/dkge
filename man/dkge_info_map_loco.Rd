@@ -14,24 +14,24 @@ dkge_info_map_loco(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
-\item{clf}{Cross-fitted classifier from [dkge_cv_train_latent_classifier()].}
+\item{clf}{Cross-fitted classifier from \code{\link[=dkge_cv_train_latent_classifier]{dkge_cv_train_latent_classifier()}}.}
 
-\item{renderer}{Renderer produced by [dkge_build_renderer()].}
+\item{renderer}{Renderer produced by \code{\link[=dkge_build_renderer]{dkge_build_renderer()}}.}
 
 \item{neighborhoods}{Optional list of integer vectors defining anchor
-neighbourhoods. When `NULL`, the function derives them from the renderer's
+neighbourhoods. When \code{NULL}, the function derives them from the renderer's
 anchor graph.}
 
 \item{k_nn}{When neighbourhoods are not supplied, limits the automatically
 derived neighbourhood size.}
 
-\item{aggregate}{Aggregation method across subjects: `"mean"` or `"sum"`.}
+\item{aggregate}{Aggregation method across subjects: \code{"mean"} or \code{"sum"}.}
 }
 \value{
 A list with LOCO scores per anchor, per-subject anchor maps, and the
-  neighbourhood definition.
+neighbourhood definition.
 }
 \description{
 Approximates the influence of each anchor by zeroing its neighbourhood in the

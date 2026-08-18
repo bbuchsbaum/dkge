@@ -20,43 +20,43 @@ dkge_weights(
 \arguments{
 \item{prior}{Optional prior weights: numeric vector of length V, logical mask,
 integer indices, or ROI labels (factor/character/integer of length V) per voxel. Helpers
-[dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.}
+\code{\link[=dkge_weights_prior_mask]{dkge_weights_prior_mask()}} and \code{\link[=dkge_weights_prior_roi]{dkge_weights_prior_roi()}} ease construction.}
 
-\item{adapt}{Adaptive weighting rule, one of `"none"`, `"kenergy"`,
-`"precision"`, `"kenergy_prec"`, or `"reliability"`. The `"reliability"`
+\item{adapt}{Adaptive weighting rule, one of \code{"none"}, \code{"kenergy"},
+\code{"precision"}, \code{"kenergy_prec"}, or \code{"reliability"}.  The \code{"reliability"}
 rule computes split-half squared inter-run correlation per voxel and
-requires `B_list2` (a second run of beta matrices, one per subject).}
+requires \code{B_list2} (a second run of beta matrices, one per subject).}
 
-\item{B_list2}{Optional second-run beta list (same structure as `B_list` used
-at fit time): one `q x V` matrix per subject. Required when
-`adapt = "reliability"`. Per-voxel reliability is estimated as the squared
+\item{B_list2}{Optional second-run beta list (same structure as \code{B_list} used
+at fit time): one \verb{q x V} matrix per subject.  Required when
+\code{adapt = "reliability"}.  Per-voxel reliability is estimated as the squared
 Pearson correlation of cross-subject mean activations between run 1 and
 run 2.}
 
-\item{combine}{How prior and adaptive sources combine: `"product"` (default),
-`"sum"`, `"override_adapt"`, or `"prefer_prior"`.}
+\item{combine}{How prior and adaptive sources combine: \code{"product"} (default),
+\code{"sum"}, \code{"override_adapt"}, or \code{"prefer_prior"}.}
 
 \item{mix}{Numeric in [0,1] controlling the relative influence of the adaptive
-component. Interpreted in log-space for `combine = "product"`.}
+component. Interpreted in log-space for \code{combine = "product"}.}
 
-\item{shrink}{List with fields `alpha` (shrink towards uniform), `winsor`
-(upper quantile cap), `normalize` (`"mean"` or `"sum"`), and optional
-`roi_smooth = TRUE` to median-smooth within ROIs.}
+\item{shrink}{List with fields \code{alpha} (shrink towards uniform), \code{winsor}
+(upper quantile cap), \code{normalize} (\code{"mean"} or \code{"sum"}), and optional
+\code{roi_smooth = TRUE} to median-smooth within ROIs.}
 
-\item{scope}{Either `"fold"` (default: compute adapt weights from training
-subjects within each fold) or `"subject"` (per-subject adaptive weights
+\item{scope}{Either \code{"fold"} (default: compute adapt weights from training
+subjects within each fold) or \code{"subject"} (per-subject adaptive weights
 averaged for fold pooling).}
 
-\item{k_weight}{Optional effect-space kernel for k-energy rules. When `NULL`
-we reuse the kernel stored in the fit, with optional factor `collapse`.}
+\item{k_weight}{Optional effect-space kernel for k-energy rules. When \code{NULL}
+we reuse the kernel stored in the fit, with optional factor \code{collapse}.}
 
 \item{collapse}{Optional list describing factor collapses (e.g.,
-`list(time = "mean")` or `list(time = list(method = "mean", window = 3:8))`).}
+\code{list(time = "mean")} or \code{list(time = list(method = "mean", window = 3:8))}).}
 
-\item{roi}{Optional ROI labels used when `shrink$roi_smooth = TRUE`.}
+\item{roi}{Optional ROI labels used when \code{shrink$roi_smooth = TRUE}.}
 }
 \value{
-Object of class `"dkge_weights"`.
+Object of class \code{"dkge_weights"}.
 }
 \description{
 Constructs a lightweight object describing how voxel-level weights are
@@ -64,16 +64,23 @@ resolved and applied when building weighted second moments inside DKGE. The
 specification is attached to fits and reused by fold builders to ensure
 cross-fitting remains leak-free.
 }
+\section{Shared voxel space}{
+
+All voxel-level weighting (\code{prior} and every \code{adapt} other than \code{"none"})
+assumes subjects share one voxel/cluster space (equal \code{ncol()} across
+subjects). Fitting heterogeneous-width subjects with such a spec is an error.
+}
+
 \section{Combine modes}{
 
 \describe{
-  \item{`"product"`}{Geometric mean of prior and adaptive weights, blended
-    in log-space by `mix` (default). Smooth and robust.}
-  \item{`"sum"`}{Linear mixture: `(1 - mix) * prior + mix * adaptive`.}
-  \item{`"override_adapt"`}{Adaptive weight is used wherever it is finite and
-    positive; falls back to prior otherwise. Adaptive takes priority.}
-  \item{`"prefer_prior"`}{Prior weight is used wherever it is finite and
-    positive; falls back to adaptive otherwise. Prior takes priority.}
+\item{\code{"product"}}{Geometric mean of prior and adaptive weights, blended
+in log-space by \code{mix} (default). Smooth and robust.}
+\item{\code{"sum"}}{Linear mixture: \code{(1 - mix) * prior + mix * adaptive}.}
+\item{\code{"override_adapt"}}{Adaptive weight is used wherever it is finite and
+positive; falls back to prior otherwise. Adaptive takes priority.}
+\item{\code{"prefer_prior"}}{Prior weight is used wherever it is finite and
+positive; falls back to adaptive otherwise. Prior takes priority.}
 }
 }
 
@@ -88,7 +95,7 @@ w_uniform <- dkge_weights(adapt = "none")
 # Split-half reliability weighting (requires two runs of betas)
 \dontrun{
 w_rel <- dkge_weights(
-  adapt = "reliability",
+  adapt  = "reliability",
   B_list2 = run2_betas   # list of q x V matrices, one per subject
 )
 }

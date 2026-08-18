@@ -7,11 +7,11 @@
 dkge_cluster_betas(bv, x_mat, labels)
 }
 \arguments{
-\item{bv}{A `neuroim2::NeuroVec` object containing 4D time-series data.}
+\item{bv}{A \code{neuroim2::NeuroVec} object containing 4D time-series data.}
 
 \item{x_mat}{Subject design matrix (Txq).}
 
-\item{labels}{A `neuroim2::NeuroVol` object with cluster label assignments.}
+\item{labels}{A \code{neuroim2::NeuroVol} object with cluster label assignments.}
 }
 \value{
 Matrix of GLM betas (qxP) where P is the number of clusters.

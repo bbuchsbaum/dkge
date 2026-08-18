@@ -19,6 +19,6 @@ dkge_procrustes_K(Uref, U, K, allow_reflection = TRUE)
 list(U_aligned, R, d=sum(singular values), cosines, det)
 }
 \description{
-Aligns basis `U` to reference `Uref` by solving
+Aligns basis \code{U} to reference \code{Uref} by solving
 max_R tr((U_ref^T K U) R) subject to R^T R = I.
 }

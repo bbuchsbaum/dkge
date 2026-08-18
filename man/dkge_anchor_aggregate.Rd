@@ -7,17 +7,17 @@
 dkge_anchor_aggregate(anchor_list, subj_weights = NULL, L = NULL, lambda = 0)
 }
 \arguments{
-\item{anchor_list}{List of anchor-valued vectors (length `Q`).}
+\item{anchor_list}{List of anchor-valued vectors (length \code{Q}).}
 
 \item{subj_weights}{Optional subject weights applied during the average.}
 
 \item{L}{Optional graph Laplacian for Tikhonov regularisation.}
 
-\item{lambda}{Non-negative smoothing parameter. `0` disables smoothing.}
+\item{lambda}{Non-negative smoothing parameter. \code{0} disables smoothing.}
 }
 \value{
-A list with the smoothed field `y`, the raw weighted mean `ybar`,
-  `coverage` (weighted contribution counts), and placeholder `ess` values.
+A list with the smoothed field \code{y}, the raw weighted mean \code{ybar},
+\code{coverage} (weighted contribution counts), and placeholder \code{ess} values.
 }
 \description{
 Aggregate anchor fields with optional Laplacian smoothing

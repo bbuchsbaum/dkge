@@ -75,6 +75,17 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                    diagnostic = diag_info))
   }
 
+  if (.dkge_fit_pool_is_nonlinear(fit)) {
+    diag_info <- list(reason = "pair_normalized_pooling",
+                      min_eigengap = NA_real_,
+                      max_abs_coeff = NA_real_,
+                      threshold_eigengap = NA_real_,
+                      threshold_coeff = NA_real_)
+    return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
+                                   reason = "pair_normalized_pooling",
+                                   diagnostic = diag_info))
+  }
+
   if (!is.null(fit$voxel_weights)) {
     uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
     if (!uniform) {

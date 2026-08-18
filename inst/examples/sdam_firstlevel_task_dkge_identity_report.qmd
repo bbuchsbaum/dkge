@@ -1,0 +1,470 @@
+---
+title: "SDAM first-level analysis with identity-kernel DKGE"
+subtitle: "Identity design metric baseline on MVPA AUC maps"
+author: "dkge example"
+date: today
+format:
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    fig-pos: "H"
+    geometry:
+      - margin=1in
+    include-in-header:
+      text: |
+        \usepackage{float}
+execute:
+  echo: false
+  warning: false
+  message: false
+  fig-align: center
+---
+
+```{r setup}
+suppressPackageStartupMessages({
+  pkgload::load_all(here::here(), quiet = TRUE, helpers = FALSE, attach_testthat = FALSE)
+  library(ggplot2)
+  library(neuroim2)
+  library(knitr)
+})
+
+repo_root <- here::here()
+script <- file.path(repo_root, "inst", "examples", "sdam_firstlevel_task_dkge.R")
+source(script)
+
+bundle <- readRDS(file.path(repo_root, "artifacts", "sdam-firstlevel-task-dkge-identity",
+                            "analysis.rds"))
+
+manifest    <- bundle$manifest
+mask        <- bundle$mask
+kernel      <- bundle$kernel
+between     <- bundle$between
+basis_check <- bundle$basis_check
+group_explicit <- bundle$group_explicit
+cell_mean_bridge <- bundle$cell_mean_bridge
+bsr_all     <- bundle$bsr_all
+component_summary <- bundle$component_summary
+component_score_summary <- bundle$component_score_summary
+component_score_tests <- bundle$component_score_tests
+loso_summary <- bundle$loso_summary
+bsr_summary <- bundle$bsr_summary
+group_diff_summary <- bundle$group_diff_summary
+group_explicit_sensitivity <- bundle$group_explicit_sensitivity
+plot_dir <- file.path(repo_root, "artifacts", "sdam-firstlevel-task-dkge-identity")
+
+n_subjects <- length(unique(manifest$subject))
+group_tab  <- table(unique(manifest[, c("subject", "group")])$group)
+n_voxels   <- sum(as.array(mask) > 0)
+```
+
+# Dataset and study design
+
+The dataset is `r n_subjects` participants
+(`r group_tab["control"]` controls, `r group_tab["sdam"]` SDAM)
+each contributing four whole-brain MVPA AUC maps in a 2 x 2 within-subject
+design crossing **task** (`recog`, `nback`) with **measure**
+(`low_mid`, `high_sem`). Maps are AUC - 0.5 so they are zero-centred at
+chance. The shared analysis mask contains
+`r format(n_voxels, big.mark = ",")` voxels
+where every map is finite and nonzero.
+
+```{r design-table}
+cell_meta <- sdam_cell_table()
+cell_meta$cell <- factor(cell_meta$cell, levels = cell_meta$cell)
+knitr::kable(cell_meta,
+             col.names = c("task", "measure", "cell label"),
+             caption = "Four cells of the within-subject 2 x 2 design.")
+```
+
+# DKGE setup
+
+Each subject contributes a `q x P_s` matrix `B_s` whose rows are the four
+cell maps in canonical order. Because each cell is observed once per
+subject, the per-subject "design" is the `q x q` identity. The factorial
+structure is used for labels and contrasts, but this baseline uses an identity design metric:
+
+```{r kernel-print, echo = TRUE}
+kern <- make_sdam_design_kernel()
+round(kern$K, 3)
+```
+
+Diagonal cells are similar to themselves; off-diagonal entries are zero, so latent directions are not smoothed or coupled by the factorial design kernel. This is the unconstrained comparison baseline for the structured DKGE report.
+
+# Component summary
+
+```{r component-summary}
+knitr::kable(component_summary,
+             caption = "Variance carried by each DKGE component (q = 4, kept rank = 3).")
+```
+
+```{r scree-plot, fig.width = 5, fig.height = 3.4, fig.cap = "Scree plot of the DKGE compressed-covariance eigenvalues."}
+knitr::include_graphics(file.path(plot_dir, "singular-values.png"))
+```
+
+# Design saliences
+
+The cell-space loading matrix `K %*% U` is the DKGE analogue of PLS design
+saliences. Each panel below is one component; cells are laid out as
+`task x measure` so that main effects and interaction structure are visible
+at a glance.
+
+```{r design-heatmap, fig.width = 8, fig.height = 3.2, fig.cap = "Cell-space loadings for each component."}
+knitr::include_graphics(file.path(plot_dir, "design-heatmap.png"))
+```
+
+```{r design-interaction, fig.width = 8, fig.height = 3.2, fig.cap = "Interaction view: lines connect cells sharing a measure across tasks. Parallel lines indicate additive structure; crossing lines indicate task x measure interaction."}
+knitr::include_graphics(file.path(plot_dir, "design-interaction.png"))
+```
+
+# Subject-level diagnostics
+
+DKGE's MFA-style subject weighting downweights noisy subjects automatically.
+Energy on each component shows where each subject's variance lands.
+
+```{r subject-contrib, fig.width = 8, fig.height = 4.2, fig.cap = "Subject weights and per-component participation energy."}
+knitr::include_graphics(c(file.path(plot_dir, "subject-weights.png"),
+                         file.path(plot_dir, "subject-energy.png")))
+```
+
+```{r brain-scores-lv1, fig.width = 7, fig.height = 4, fig.cap = "Subject 'brain scores' on LV1, by task (facets) x measure (x axis) and group (fill). Equivalent role to PLS scores plotted by condition."}
+knitr::include_graphics(file.path(plot_dir, "lv1-brain-scores.png"))
+```
+
+```{r brain-scores-lv2, fig.width = 7, fig.height = 4, fig.cap = "Subject brain scores on LV2."}
+knitr::include_graphics(file.path(plot_dir, "lv2-brain-scores.png"))
+```
+
+The score plots project each subject-cell map onto a pooled DKGE component
+loading map, so they are the DKGE score-space analogue of PLS brain-score
+plots. The table below tests whether group differs on each component-level
+cell contrast.
+
+```{r component-score-tests}
+score_tests_show <- component_score_tests
+score_tests_show[, c("mean_control", "mean_sdam", "diff_sdam_minus_control",
+                     "statistic", "p", "p_adjusted")] <-
+  round(score_tests_show[, c("mean_control", "mean_sdam", "diff_sdam_minus_control",
+                            "statistic", "p", "p_adjusted")], 4)
+knitr::kable(score_tests_show,
+             caption = "Group differences in DKGE component score-space contrasts. The task, measure, and task:measure rows are the group-by-within-subject effects for each component.")
+```
+
+# LOSO contrast maps
+
+Cross-fitted (leave-one-subject-out) contrast values give an unbiased
+per-subject voxel map for each design contrast. The summary statistics
+below are computed across the 32 subjects.
+
+```{r loso-summary}
+knitr::kable(loso_summary,
+             caption = "Voxel statistics for each LOSO contrast: mean across subjects, z = mean / SE, and the number of voxels with |z| >= 3.")
+```
+
+# Bootstrap-ratio brain maps
+
+For each contrast we resample the 32 LOSO subject vectors with replacement
+(`r format(bsr_all[[1]]$B, big.mark = ",")` draws) and report z = mean / SD at every
+voxel. This is the DKGE analogue of the PLS bootstrap-ratio map.
+
+```{r bsr-stats}
+knitr::kable(bsr_summary,
+             caption = "Bootstrap z-statistic per voxel for each contrast.")
+```
+
+```{r bsr-task, fig.width = 7, fig.height = 6.5, fig.cap = "Task contrast (nback - recog) bootstrap z-map; nine evenly-spaced axial slices, |z| >= 3."}
+plot_sdam_bsr_volume(bsr_all[["task"]]$z, mask, threshold = 3,
+                     title = "Task contrast (nback - recog) BSR z-map")
+```
+
+```{r bsr-measure, fig.width = 7, fig.height = 6.5, fig.cap = "Measure contrast (high_sem - low_mid) bootstrap z-map; nine evenly-spaced axial slices, |z| >= 3."}
+plot_sdam_bsr_volume(bsr_all[["measure"]]$z, mask, threshold = 3,
+                     title = "Measure contrast (high_sem - low_mid) BSR z-map")
+```
+
+```{r bsr-interaction, fig.width = 7, fig.height = 6.5, fig.cap = "Task x measure interaction bootstrap z-map; nine evenly-spaced axial slices, |z| >= 3."}
+plot_sdam_bsr_volume(bsr_all[["task:measure"]]$z, mask, threshold = 3,
+                     title = "Task x measure interaction BSR z-map")
+```
+
+```{r bsr-surface, fig.width = 9, fig.height = 6, fig.cap = "Task contrast bootstrap z-map projected onto a Schaefer 200x7 surface (fsaverage6).", eval = requireNamespace("neuroatlas", quietly = TRUE)}
+plot_sdam_bsr_surface(bsr_all[["task"]]$z, mask, threshold = 3)
+```
+
+# Primary between-subject DKGE: control vs SDAM
+
+The voxel-level contrast-map target Y is regressed on `~ group` via
+reduced-rank regression. Rows are subjects; columns are feature blocks
+formed by each cross-fitted repeated-measures contrast (`grand_mean`,
+`task`, `measure`, `task:measure`) crossed with voxels. This tests whether
+control and SDAM subjects differ in the spatial expression of the
+within-subject effects, rather than reducing each subject to three
+component means first.
+
+This is the primary DKGE inference path for the PLS-like crossover question:
+fit a shared q = 4 task x measure DKGE model, build cross-fitted subject-level
+contrast targets, and test `group` as a between-subject predictor.
+
+```{r between-target}
+feature_blocks <- between$target$feature_blocks
+if (is.null(feature_blocks)) {
+  feature_blocks <- sub(":[^:]+$", "", between$target$feature_ids)
+}
+target_dim <- between$target$dim
+if (is.null(target_dim)) target_dim <- dim(between$target$Y)
+target_tab <- data.frame(
+  contrast = names(table(feature_blocks)),
+  features = as.integer(table(feature_blocks)),
+  stringsAsFactors = FALSE
+)
+knitr::kable(target_tab,
+             caption = sprintf("Between-subject target dimensions: %d subjects x %s contrast-voxel features.",
+                               target_dim[[1]],
+                               format(target_dim[[2]], big.mark = ",")))
+```
+
+```{r between-permutation}
+knitr::kable(between$perm$summary[, c("term", "statistic", "p", "p_adjusted")],
+             digits = 4,
+             caption = "Permutation test for the group term in the voxel-level contrast-map RRR.")
+```
+
+```{r between-focused}
+if (!is.null(between$focused)) {
+  focused_tab <- between$focused$perm$summary[, c("term", "statistic", "p", "p_adjusted")]
+  focused_tab$target_features <- between$focused$target_dim[["features"]]
+  knitr::kable(focused_tab,
+               digits = 4,
+               caption = "Focused primary test: group effect on the cross-fitted task:measure contrast target only.")
+}
+```
+
+```{r between-feature}
+ft <- between$perm$feature_tests[["group"]]
+if (!is.null(ft)) {
+  ft_blocks <- ft$feature_blocks
+  if (is.null(ft_blocks)) {
+    ft_blocks <- sub(":[^:]+$", "", ft$feature_ids)
+  }
+  ft_feature <- ft$feature_ids
+  if (is.null(ft_feature)) {
+    ft_feature <- paste0(as.character(ft_blocks), ":", ft$feature_index)
+  }
+  ft_df <- data.frame(
+    contrast   = as.character(ft_blocks),
+    feature    = ft_feature,
+    statistic  = as.numeric(ft$statistic),
+    p          = as.numeric(ft$p),
+    p_adjusted = as.numeric(ft$p_adjusted),
+    stringsAsFactors = FALSE
+  )
+  block_summary <- do.call(rbind, lapply(split(ft_df, ft_df$contrast), function(d) {
+    data.frame(
+      contrast = d$contrast[[1]],
+      features = nrow(d),
+      max_statistic = max(d$statistic),
+      min_p_adjusted = min(d$p_adjusted),
+      n_p_adjusted_lt_05 = sum(d$p_adjusted < 0.05),
+      stringsAsFactors = FALSE
+    )
+  }))
+  knitr::kable(block_summary, digits = 4,
+               caption = "Featurewise maxT summary for the group term, aggregated by contrast block.")
+
+  top_df <- utils::head(ft_df[order(ft_df$p_adjusted, -ft_df$statistic), ], 10)
+  knitr::kable(top_df, digits = 4,
+               caption = "Top featurewise group effects by maxT-adjusted p-value.")
+}
+```
+
+# q = 8 group-cell mean DKGE bridge to PLS
+
+This is the q = 8 cell-mean analysis in which `group` enters the analysis
+up front. It is not the strict partial-effect subject-level fit. The target is
+an 8-row matrix of observed group-cell means: for each group, task, and
+measure row, subject maps are averaged within group before the decomposition.
+
+Mean-centered task PLS decomposes this kind of group/condition cell-mean
+object, so this is the DKGE bridge that is closest to the PLS LV display. We
+build the 8-row `group x task x measure` target through
+`dkge_aggregate_target()`, apply a DKGE design kernel over those aggregate
+rows, and decompose the resulting cell-mean object. It is a secondary
+PLS-facing analysis; the primary DKGE inference remains the q = 4
+subject-level model above.
+
+Permutation and bootstrap inference still resample subjects, not the eight
+aggregate rows. For every draw, the subject labels or subject sample are
+changed, the group x task x measure means are recomputed, the aggregate
+decomposition is refit, components are aligned back to the observed fit, and
+the group:task:measure statistic is reevaluated.
+The bridge statistic below is a selected-component, singular-value-scaled
+salience contrast on the cell-mean object. It is useful for comparing the
+shape of DKGE and PLS cell-mean decompositions, but it is not a replacement
+for the primary subject-level `dkge_between_*` test above.
+
+```{r cell-bridge-target}
+bridge_target <- data.frame(
+  rows = cell_mean_bridge$target_dim[[1]],
+  features = cell_mean_bridge$target_dim[[2]],
+  aggregate = cell_mean_bridge$aggregate,
+  inference_unit = cell_mean_bridge$inference_unit,
+  center = cell_mean_bridge$center,
+  rank = cell_mean_bridge$rank,
+  tested_component = paste0("LV", cell_mean_bridge$component),
+  stringsAsFactors = FALSE
+)
+knitr::kable(bridge_target,
+             caption = "q = 8 group-cell mean DKGE bridge target and fit settings.")
+```
+
+```{r cell-bridge-rows}
+bridge_rows <- cell_mean_bridge$row_metadata
+knitr::kable(bridge_rows,
+             caption = "The eight observed group x task x measure cell means decomposed by the bridge analysis.")
+```
+
+```{r cell-bridge-sv}
+bridge_sv <- data.frame(
+  component = paste0("LV", seq_along(cell_mean_bridge$singular_values)),
+  singular_value = cell_mean_bridge$singular_values,
+  stringsAsFactors = FALSE
+)
+knitr::kable(bridge_sv, digits = 4,
+             caption = "Singular values of the q = 8 group-cell mean DKGE bridge.")
+```
+
+```{r cell-bridge-factor-scores, fig.width = 8.2, fig.height = 6.2, fig.cap = "q = 8 group-cell mean DKGE bridge factor scores. Each LV has its own boxed panel; task is color and group is line type/point shape."}
+bridge_scores <- cell_mean_bridge$saliences
+sv <- cell_mean_bridge$singular_values
+bridge_scores$score <- bridge_scores$loading * sv[as.integer(bridge_scores$component)]
+ggplot2::ggplot(bridge_scores,
+                ggplot2::aes(measure, score,
+                             colour = task,
+                             linetype = group,
+                             shape = group,
+                             group = interaction(group, task))) +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey65", linetype = 2) +
+  ggplot2::geom_line(linewidth = 0.8) +
+  ggplot2::geom_point(size = 2.3) +
+  ggplot2::facet_wrap(~ component, ncol = 1, scales = "free_y") +
+  ggplot2::scale_colour_brewer(palette = "Set1") +
+  ggplot2::labs(x = "measure", y = "Cell factor score",
+                colour = "task", linetype = "group", shape = "group") +
+  dkge::theme_dkge() +
+  ggplot2::theme(
+    panel.border = ggplot2::element_rect(colour = "grey35", fill = NA, linewidth = 0.7),
+    strip.background = ggplot2::element_rect(fill = "grey92", colour = "grey35"),
+    panel.spacing = ggplot2::unit(8, "pt")
+  )
+```
+
+```{r cell-bridge-lv-effects}
+if (!is.null(cell_mean_bridge$bootstrap$component_contrasts)) {
+  bridge_effects <- cell_mean_bridge$bootstrap$component_contrasts$summary
+  bridge_effects[, c("observed", "bootstrap_low", "bootstrap_high")] <-
+    round(bridge_effects[, c("observed", "bootstrap_low", "bootstrap_high")], 4)
+  knitr::kable(
+    bridge_effects,
+    caption = "LV-wise q = 8 bridge cell-score contrasts from subject bootstrap. Intervals excluding zero mark visually large effects that were stable under subject resampling."
+  )
+}
+```
+
+```{r cell-bridge-inference}
+bridge_inf <- data.frame(
+  tested_component = paste0("LV", cell_mean_bridge$component),
+  statistic = cell_mean_bridge$permutation$observed,
+  permutation_p = cell_mean_bridge$permutation$p,
+  permutation_B = cell_mean_bridge$permutation$B,
+  bootstrap_low = cell_mean_bridge$bootstrap$interval[[1]],
+  bootstrap_high = cell_mean_bridge$bootstrap$interval[[2]],
+  bootstrap_B = cell_mean_bridge$bootstrap$B,
+  near_tie_draws = cell_mean_bridge$permutation$n_near_tie,
+  weak_alignment_draws = cell_mean_bridge$permutation$n_weak_alignment,
+  min_alignment_cosine = cell_mean_bridge$permutation$min_alignment_cosine,
+  stringsAsFactors = FALSE
+)
+knitr::kable(bridge_inf, digits = 4,
+             caption = "Subject-resampling inference for the q = 8 group-cell mean DKGE bridge group:task:measure statistic. The statistic is the selected component's singular-value-scaled salience contrast.")
+```
+
+```{r cell-bridge-alignment-note, results = "asis"}
+align <- cell_mean_bridge$permutation$alignment
+if (isTRUE(align$weak_alignment)) {
+  cat(sprintf(
+    "Alignment diagnostic: %d permutation draws had component alignment cosine below %.2f (minimum %.3f). LV-specific bridge inference should therefore be treated as descriptive unless the statistic is changed to an omnibus/subspace target.\n\n",
+    align$n_weak, align$weak_cosine, align$min_cosine
+  ))
+}
+```
+
+```{r cell-bridge-feature-maps, fig.width = 7, fig.height = 5.5, fig.cap = "Bootstrap-ratio feature maps for the q = 8 group-cell mean DKGE bridge LVs. Maps are built by resampling subjects, recomputing group-cell means, refitting, aligning components, and accumulating feature-space component scores."}
+fb <- cell_mean_bridge$bootstrap$feature_bootstrap
+if (!is.null(fb)) {
+  for (lv in colnames(fb$z)) {
+    print(plot_sdam_bsr_volume(
+      fb$z[, lv],
+      mask,
+      threshold = 2,
+      title = sprintf("Cell-mean bridge %s feature bootstrap z-map", lv),
+      subtitle = "|z| >= 2 shown; subject-resampled cell-mean bridge feature bootstrap"
+    ))
+  }
+}
+```
+
+# Strict block-diagonal q = 8 partial-effect fit
+
+The strict block-diagonal q = 8 partial-effect fit is intentionally omitted
+from the main figures. In that model each subject observes only the four rows
+for their own group, and the block-diagonal group kernel leaves the control
+and SDAM row spaces disconnected. Its components are therefore group-local
+axes sorted by eigenvalue, not shared group x task x measure latent variables.
+Those component plots are not interpretable as a PLS LV2 analogue, so they
+are not shown here.
+
+# Stratified basis diagnostic
+
+The voxel-level group test above assumes the pooled cell-space basis is a
+reasonable shared design space. As a diagnostic, DKGE is also fit
+separately in controls and SDAM, then compared with K-metric principal
+angles. These angles are descriptive; a stronger claim would compare them
+against within-group split-half or bootstrap stability.
+
+A geometric note on rank choice. Two rank-`r` subspaces of a `q`-dimensional
+ambient space share at least `max(0, 2r - q)` dimensions by the dimension
+formula, so the first that-many principal angles are forced to zero
+regardless of the data. With `q = 4` and pooled rank 3,
+two of the three angles would be geometric necessities. The diagnostic
+therefore caps the *stratified* rank at `floor(q / 2) =`
+`r as.integer(basis_check$q %/% 2)` so every reported angle is informative;
+the pooled fit still uses the full requested rank.
+
+```{r stratified-basis}
+angle_tab <- basis_check$angles
+angle_tab$angle_rad <- round(angle_tab$angle_rad, 4)
+angle_tab$angle_deg <- round(angle_tab$angle_deg, 2)
+knitr::kable(angle_tab[, c("component", "group_a", "group_b", "angle_rad", "angle_deg")],
+             caption = sprintf(
+               "Principal angles between control-only and SDAM-only DKGE bases (q = %d, stratified rank = %d, forced overlap = %d).",
+               basis_check$q, basis_check$rank_strat, basis_check$forced_overlap))
+```
+
+# Voxel-level group difference (sdam - control) on LOSO contrasts
+
+```{r group-diff}
+knitr::kable(group_diff_summary,
+             caption = "Per-voxel two-sample z statistic for the SDAM minus control difference of each LOSO contrast.")
+```
+
+# Reproducibility
+
+```{r session-info, results = "asis"}
+si <- sessionInfo()
+cat("\\begin{verbatim}\n")
+cat("R version:", R.version.string, "\n")
+cat("DKGE seed:", SDAM_SEED, "\n")
+cat("Mask voxels:", n_voxels, "\n")
+cat("Subjects (control / sdam):", group_tab["control"], "/", group_tab["sdam"], "\n")
+cat("\\end{verbatim}\n")
+```

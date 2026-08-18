@@ -66,3 +66,80 @@ test_that("analytic bootstrap falls back gracefully", {
   expect_true(boot_a$fallbacks >= 0)
   expect_equal(ncol(boot_a$summary[[1]]$boot_medoid), ncol(subject_maps))
 })
+
+
+test_that("linear pooling reproduces the re-pooled Chat exactly", {
+  set.seed(11)
+  Sl <- 4; ql <- 5; Pl <- 8; Tl <- 30
+  betas_l <- replicate(Sl, matrix(rnorm(ql * Pl), ql, Pl), simplify = FALSE)
+  designs_l <- replicate(Sl, qr.Q(qr(matrix(rnorm(Tl * ql), Tl, ql))), simplify = FALSE)
+  fit_l <- dkge(betas_l, designs_l, K = diag(ql), rank = 2)
+
+  # Default fits pool linearly, so the O(1) matvec branch is the live one.
+  expect_false(dkge:::.dkge_fit_pool_is_nonlinear(fit_l))
+
+  contrib_matrix <- vapply(fit_l$contribs, as.numeric, numeric(ql * ql))
+  expect_equal(matrix(contrib_matrix %*% as.numeric(fit_l$weights), ql, ql),
+               unname(fit_l$Chat), tolerance = 1e-12)
+
+  set.seed(99)
+  for (i in seq_len(5)) {
+    xi <- stats::rpois(Sl, lambda = 1)
+    linear <- matrix(contrib_matrix %*% (as.numeric(fit_l$weights) * xi), ql, ql)
+    repooled <- dkge:::.dkge_repool_fit(fit_l, sample_weights = xi)
+    expect_equal(linear, unname(repooled$Chat), tolerance = 1e-12)
+  }
+})
+
+
+test_that("non-linear pooling without stored moments is an error, not a silent fallback", {
+  # `.dkge_repool_fit()` returns NULL when the fit carries no q-space effect
+  # moments. Falling through to the linear matvec there would report a
+  # differently-normalised bootstrap as if it matched the fit.
+  fit_bad <- fit
+  fit_bad$missingness <- "rescale"
+  fit_bad$effect_moments <- NULL
+  expect_true(dkge:::.dkge_fit_pool_is_nonlinear(fit_bad))
+  expect_null(dkge:::.dkge_repool_fit(fit_bad))
+
+  expect_error(
+    dkge_bootstrap_qspace(fit_bad,
+                          contrasts = contrasts,
+                          B = 2,
+                          seed = 7,
+                          transport_cache = cache,
+                          medoid = 1,
+                          scheme = "poisson"),
+    "does not carry the q-space effect moments"
+  )
+})
+
+
+test_that("q-space bootstrap fast path matches the re-pooling path", {
+  boot_fast <- dkge_bootstrap_qspace(fit,
+                                     contrasts = contrasts,
+                                     B = 6,
+                                     seed = 4242,
+                                     transport_cache = cache,
+                                     medoid = 1,
+                                     scheme = "poisson")
+
+  # Force the re-pooling branch and confirm the results are identical.
+  boot_repool <- with_mocked_bindings(
+    dkge_bootstrap_qspace(fit,
+                          contrasts = contrasts,
+                          B = 6,
+                          seed = 4242,
+                          transport_cache = cache,
+                          medoid = 1,
+                          scheme = "poisson"),
+    .dkge_fit_pool_is_nonlinear = function(fit) TRUE
+  )
+
+  expect_equal(boot_fast$summary[[1]]$boot, boot_repool$summary[[1]]$boot,
+               tolerance = 1e-12)
+  expect_equal(boot_fast$summary[[1]]$mean, boot_repool$summary[[1]]$mean,
+               tolerance = 1e-12)
+  expect_equal(boot_fast$summary[[1]]$sd, boot_repool$summary[[1]]$sd,
+               tolerance = 1e-12)
+})

@@ -50,11 +50,11 @@ are available.}
 or betas).}
 }
 \value{
-Object with class `dkge_transport_spec`.
+Object with class \code{dkge_transport_spec}.
 }
 \description{
 Builds a validated transport configuration that can be passed to
-[dkge_pipeline()] or transport utilities. The helper enforces basic argument
+\code{\link[=dkge_pipeline]{dkge_pipeline()}} or transport utilities. The helper enforces basic argument
 checks and provides sensible defaults for Sinkhorn-based mapping.
 }
 \examples{

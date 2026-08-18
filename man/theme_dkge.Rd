@@ -16,7 +16,7 @@ A ggplot2 theme object.
 }
 \description{
 Produces a light-weight theme used by the DKGE plotting helpers. Adjust
-`base_size` / `base_family` to customise font size or typeface.
+\code{base_size} / \code{base_family} to customise font size or typeface.
 }
 \examples{
 if (requireNamespace("ggplot2", quietly = TRUE)) {

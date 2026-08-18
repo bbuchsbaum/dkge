@@ -7,11 +7,11 @@
 dkge_project_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 
 \item{B_list}{List of subject beta matrices.}
 
-\item{Omega_list}{Optional list of spatial weights aligned with `B_list`.}
+\item{Omega_list}{Optional list of spatial weights aligned with \code{B_list}.}
 
 \item{w}{Optional vector of subject weights for the new data.}
 }

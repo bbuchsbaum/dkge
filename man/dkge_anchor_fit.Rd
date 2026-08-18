@@ -14,31 +14,31 @@ dkge_anchor_fit(
 )
 }
 \arguments{
-\item{features_list}{List of subject feature matrices (`n_s x d` each).}
+\item{features_list}{List of subject feature matrices (\verb{n_s x d} each).}
 
-\item{K_item_list}{List of subject item kernels (`n_s x n_s` each).}
+\item{K_item_list}{List of subject item kernels (\verb{n_s x n_s} each).}
 
 \item{folds}{Optional fold specification passed to
-[dkge_build_anchor_kernels()].}
+\code{\link[=dkge_build_anchor_kernels]{dkge_build_anchor_kernels()}}.}
 
-\item{anchors}{Named list overriding anchor-building defaults (`L`,
-`method`, `rho`, `fill`, `seed`, `sigma`, `center`, `whiten`, `eps`,
-`unit_trace`, `item_weights`).}
+\item{anchors}{Named list overriding anchor-building defaults (\code{L},
+\code{method}, \code{rho}, \code{fill}, \code{seed}, \code{sigma}, \code{center}, \code{whiten}, \code{eps},
+\code{unit_trace}, \code{item_weights}).}
 
 \item{design_kernel}{Optional design kernel forwarded to
-[dkge_fit_from_kernels()]. Defaults to the identity.}
+\code{\link[=dkge_fit_from_kernels]{dkge_fit_from_kernels()}}. Defaults to the identity.}
 
 \item{dkge_args}{Named list of additional arguments forwarded to
-[dkge_fit_from_kernels()].}
+\code{\link[=dkge_fit_from_kernels]{dkge_fit_from_kernels()}}.}
 }
 \value{
-A `dkge` fit with anchor provenance under `fit$provenance$anchors`.
+A \code{dkge} fit with anchor provenance under \code{fit$provenance$anchors}.
 }
 \description{
 Projects item-level kernels onto a shared anchor basis (via
-[dkge_build_anchor_kernels()]) and reuses [dkge_fit_from_kernels()] to enter
+\code{\link[=dkge_build_anchor_kernels]{dkge_build_anchor_kernels()}}) and reuses \code{\link[=dkge_fit_from_kernels]{dkge_fit_from_kernels()}} to enter
 the DKGE pipeline. Anchor provenance, coverage diagnostics, and subject item
-counts are stored in the resulting `dkge` object.
+counts are stored in the resulting \code{dkge} object.
 }
 \examples{
 \donttest{

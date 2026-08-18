@@ -18,129 +18,190 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.show = "hide"
+  fig.show = "hide",
+  message = FALSE,
+  warning = FALSE
+)
+library(dkge)
+set.seed(2026)
+```
+
+This is a contributor-oriented description of the current implementation. The
+central design constraint is simple: subject data may be wide in features, but
+group estimation must stay in q-dimensional effect space. DKGE forms q-by-q
+moments and never a feature-by-feature covariance matrix.
+
+## Where does each responsibility live?
+
+| Domain | Key files | Current responsibility |
+|---|---|---|
+| Subjects and alignment | `dkge-data.R`, `dkge-align-data.R`, `dkge-effect-grid.R` | Validate local effects, align them to a named union, and retain observation masks. |
+| Trialwise reduction | `dkge-trial-subject.R` | Reduce trial-by-feature maps to effect estimates and uncertainty sufficient statistics. |
+| Moment construction | `dkge-moments.R`, `dkge-effect-weights.R` | Apply coverage, reliability, analytic/split-half debiasing, and pair normalization in raw effect space. |
+| Fit stages | `dkge-fit.R`, `dkge-fit-core.R` | Prepare inputs, accumulate q-space moments, solve the eigensystem, and assemble the fit. |
+| Cross-fitting | `dkge-folds.R`, `dkge-loso.R`, `dkge-kfold.R`, `dkge-bootstrap.R` | Re-pool stored subject moments without leaking held-out subjects. |
+| Between-subject layer | `dkge-subject-model.R`, `dkge-between-rrr.R`, `dkge-between-infer.R` | Fit reduced-rank subject models and evaluate Freedman-Lane or residual-rotation nulls. |
+| Transport and rendering | `dkge-transport*.R`, `dkge-render*.R`, C++ Sinkhorn/distance helpers | Move subject fields to common anchors or voxels without changing the q-space estimator. |
+| Classification | `dkge-classify*.R`, `dkge-latent*.R`, `dkge-info-maps.R` | Cross-fit latent classifiers and construct decoder, Haufe, and LOCO maps. |
+
+Files under `future/` are design drafts and are not loaded or exported. A
+contributor must move and reconcile a draft before treating it as package code.
+
+## What is the fit data flow?
+
+The public `dkge_fit()` wrapper orchestrates four implemented internal stages:
+
+```
+dkge_subject() / dkge_trial_subject()
+                  |
+                  v
+             dkge_data()
+        align effects and masks
+                  |
+                  v
+       .dkge_fit_prepare()
+    kernel roots, ruler, weights
+                  |
+                  v
+      .dkge_fit_accumulate()
+  raw q-space moments and coverage
+                  |
+                  v
+        .dkge_fit_solve()
+  symmetric q-space eigenproblem / JD
+                  |
+                  v
+       .dkge_fit_assemble()
+ basis, projections, diagnostics, cache
+```
+
+The stages are internal so their signatures may evolve, but their mathematical
+contracts are regression-tested and reflected in the public fit object.
+
+## What enters the pooled moment?
+
+For subject \(s\), the ordinary raw effect moment is
+
+\[
+M_s = B_s \Omega_s B_s^\top,
+\]
+
+where \(B_s\) is q-by-\(P_s\) and \(\Omega_s\) is an optional spatial weight.
+Partial observation masks zero unobserved rows and columns before any design or
+kernel transform.
+
+Trialwise inputs add two alternatives:
+
+- **Analytic debiasing:**
+  \(M_s = B_s\Omega_sB_s^\top - t_s\Lambda_s\), where
+  \(\Lambda_s=(X_s^\top X_s)^{-1}\) and \(t_s\) is the spatially weighted
+  residual-variance trace.
+- **Split-half debiasing:**
+  \(M_s = (B_s^{(1)}\Omega_sB_s^{(2)\top} +
+  B_s^{(2)}\Omega_sB_s^{(1)\top})/2\).
+
+Effect precision \(p_{sc}\) contributes pair reliability
+\(h_{scc'}=\sqrt{p_{sc}p_{sc'}}\). The pool computes a precision-weighted mean
+per observed pair and, except under `missingness = "rescale"`, restores the
+cohort mass so unit precision exactly recovers the legacy sum. It records:
+
+- `pair_counts`: observed subject mass for each effect pair;
+- `pair_weight`: summed reliability mass;
+- `pair_ess`: Kish effective sample size under reliability weights.
+
+Only after this raw-effect pool is resolved does DKGE transform it:
+
+\[
+\widehat C = K^{1/2}R^\top M R K^{1/2}.
+\]
+
+This order is important. Coverage and precision describe the data; \(R\) and
+\(K\) describe the metric. Moving masks after the congruence would change the
+estimand because a coupling kernel has already mixed effect coordinates.
+
+## Which eigensolver is used?
+
+The pooled solver symmetrizes the q-by-q matrix and uses a dense symmetric
+eigendecomposition. That is intentional at the package's target q (usually
+10-100): it is deterministic, exposes negative eigenvalues introduced by
+debiasing, and avoids a feature-space solver. Positive leading eigenpairs are
+mapped back to a K-orthonormal basis.
+
+`solver = "jd"` is a separate joint-diagonalization path. It currently rejects
+effect weighting, missingness normalization, and debiasing instead of silently
+solving a different objective. Adding those features to JD requires a derived
+objective and dedicated validation, not argument forwarding.
+
+## How can you inspect the public contract?
+
+The following small fit shows that all group-level quadratic objects remain
+q-by-q.
+
+```{r architecture-fit}
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 4, P = 12, snr = 4, seed = 21
+)
+data <- dkge_data(toy$B_list, toy$X_list,
+                  subject_ids = toy$subject_ids)
+fit <- dkge_fit(data, K = toy$K, rank = 2, w_method = "none")
+
+data.frame(
+  object = c("pooled raw-effect moment", "transformed covariance",
+             "pair effective sample size", "group basis"),
+  rows = c(nrow(fit$effect_moment), nrow(fit$Chat),
+           nrow(fit$pair_ess), nrow(fit$U)),
+  columns = c(ncol(fit$effect_moment), ncol(fit$Chat),
+              ncol(fit$pair_ess), ncol(fit$U))
 )
 ```
 
-> **Status: Design Document.** This vignette describes the *planned* modular decomposition and future API improvements — not the current implementation. The current public API is `dkge()` / `dkge_fit()` as documented in `vignette("dkge-workflow")`. The roadmap sections below reflect intentions for a future v2 refactor; nothing described here should be relied upon as a stable interface today.
-
-## Motivation
-
-The DKGE codebase has grown rapidly as new utilities — transport, inference, classifier localisation, bootstrap diagnostics — were added around the original fitting routine. Many of these features currently live in large, multi-purpose functions. This vignette documents the present architecture and sets out a modular refactor roadmap. The goals are to make the package easier to extend, reduce the coupling between subsystems, and provide contributors with a concise reference for how data moves through DKGE.
-
-## High-Level Package Layout
-
-| Domain | Key files | Responsibilities |
-| --- | --- | --- |
-| Data & kernels | `dkge-data.R`, `design-kernel.R`, `dkge-weights*.R` | Build subject bundles, harmonise design metadata, and construct similarity kernels/weights. |
-| Fitting core | `dkge-fit.R`, `dkge-cpca.R`, `dkge-components.R` | Row-standardise betas, accumulate compressed covariances, run the eigensolver, and expose component summaries. |
-| Contrasts & inference | `dkge-contrast.R`, `dkge-inference*.R`, `dkge-analytic*.R` | Generate LOSO/K-fold contrasts, analytic approximations, and sign-flip inference. |
-| Transport & rendering | `dkge-transport*.R`, `dkge-render*.R`, C++ sinkhorn/pwdist | Map subject maps to anchors/voxels via kNN or Sinkhorn operators. |
-| Classification | `dkge-classify.R`, `dkge-info-maps.R`, `dkge-latent-*.R` | Train latent classifiers, derive Haufe/LOCO maps, and aggregate anchor evidence. |
-| Orchestration | `dkge-pipeline.R`, `dkge-predict.R`, `dkge-bootstrap*.R` | Wrap core steps into workflows, prediction helpers, and resampling utilities. |
-| Visualisation | `dkge-plot*.R`, `theme_dkge()` | Plot scree, loadings, subject contribution heatmaps, and information maps. |
-
-The package follows standard R conventions (roxygen2, testthat, pkgdown) and links to C++ helpers for computational hotspots.
-
-## Current `dkge_fit()` Lifecycle
-
-`dkge_fit()` is the main entry point for batch fitting. Today it performs a long sequence of responsibilities in one 400+ line function:
-
-1. **Coercion**: Accept raw lists or `dkge_data` bundles, validate dimensions, and attach kernel metadata.
-2. **Row standardisation**: Pool subject designs, compute the shared Cholesky factor `R`, and build `Btil` (`R^T B_s`).
-3. **Kernel preparation**: Symmetrise the kernel, derive square roots/inverses, and resolve voxel/anchor weights.
-4. **Weighting**: Compute optional subject MFA weights (`svd` per subject) and voxel weights, accumulating the compressed covariance `Chat`.
-5. **CPCA branches**: Optionally split the covariance into design/residual parts, re-merge based on `cpca_part`, and inject ridge terms.
-6. **Eigen solve**: Run a dense `eigen()` on `Chat`, drop near-zero components, and project back to the K-metric basis.
-7. **Block assembly**: Build the concatenated subject matrix, populate the multivarious `multiblock_biprojector`, and package diagnostics (weights, contributions, CPCA payloads, cached Chat pieces).
-
-This structure makes it difficult to reuse intermediate artefacts (e.g. cached `Chat`, per-subject contributions) or to experiment with variant solvers, streaming fits, or GPU back-ends.
-
-## Proposed Modular Decomposition
-
-To improve cohesion we will split the lifecycle into composable stages with explicit inputs and outputs:
-
-```
-+---------------------+    +-------------------+    +--------------------+
-| fit_prepare()       | -> | fit_accumulate()   | -> | fit_solve()        |
-| - coerce inputs     |    | - subject/voxel    |    | - eigen/CPCA       |
-| - pool designs, R   |    |   weights          |    | - basis assembly   |
-| - resolve kernel    |    | - compressed Chat  |    | - diagnostics      |
-+---------------------+    +-------------------+    +--------------------+
-                                  |
-                                  v
-                        +--------------------+
-                        | fit_assemble()     |
-                        | - multiblock view  |
-                        | - scores/loadings  |
-                        | - result object    |
-                        +--------------------+
+```{r architecture-checks, include = FALSE}
+stopifnot(identical(dim(fit$effect_moment), c(data$q, data$q)))
+stopifnot(identical(dim(fit$Chat), c(data$q, data$q)))
+stopifnot(identical(dim(fit$pair_ess), c(data$q, data$q)))
+stopifnot(nrow(fit$U) == data$q, ncol(fit$U) == fit$rank)
+stopifnot(all(is.finite(fit$Chat)))
 ```
 
-Each function will live in `R/dkge-fit-core.R` (internal) with focused unit tests. Public wrappers (`dkge_fit()`, `dkge()`) will orchestrate these stages but remain minimal. Key contracts:
+The fit also stores per-subject effect moments for fold refits. It intentionally
+does not retain redundant full beta/design/weight copies in `fit$subjects`.
+`effect_moments_raw` differs from `effect_moments` only for analytic debiasing;
+`noise_moments` is `NULL` otherwise.
 
-- `fit_prepare()` returns a list containing harmonised data, kernel payload (`K`, `Khalf`, `Kihalf`), `Btil`, subject ids, and resolved weighting specs.
-- `fit_accumulate()` consumes the prepared payload plus weighting options and returns `Chat`, `contribs`, updated weights, and CPCA-ready intermediates.
-- `fit_solve()` encapsulates `cpca_part` branching, ridge handling, and eigen decomposition, returning `basis` matrices (`U`, `U_hat`), eigenvalues, CPCA splits, and ready-to-project column scalings.
-- `fit_assemble()` creates the `multiblock_biprojector`, attaches diagnostics, and constructs the final `dkge` object.
+## How do resampling paths reuse the fit?
 
-This decomposition allows drop-in replacement of any stage (e.g. streaming accumulation, truncated eigen solvers) and clarifies test boundaries.
+LOSO, k-fold, bootstrap, and multiplier paths re-pool the stored subject
+q-by-q moments. Each fold recomputes data-derived pair weights, coverage, and
+missingness decisions from its training subjects. This avoids both feature-
+space work and leakage from a full-sample reliability pool.
 
-## Pipeline & Service Layers
+The between-subject layer has a different shape: its input is an n-subject by
+P-feature target. Freedman-Lane and residual rotation both reduce each
+replicate to design-by-feature cross-products before solving the reduced-rank
+problem. Residual rotation fixes the reduced-design coordinates and rotates
+only their complement; it forms a residual-dimension-square orthogonal matrix,
+not a P-by-P covariance.
 
-`dkge_pipeline()` currently coordinates contrasts, transport, inference, and classification through ad-hoc lists. We plan to formalise these as lightweight service objects:
+## What invariants should contributors preserve?
 
-- `dkge_contrast_service(fit, scheme, ridge, ...)` will encapsulate cross-fitting strategy selection and expose `run()` returning a `dkge_contrasts` object.
-- `dkge_transport_service(spec)` will precompute and cache mappers/centroids, exposing `apply(contrast_values)` and `operators()`. Specs will be created using a constructor (`dkge_transport_spec()`) that validates mapper arguments.
-- `dkge_inference_service(spec)` will wrap sign-flip/parametric routines with validated parameters (`B`, `tail`, `center`).
-- `dkge_classification_service(spec)` will standardise latent classifier training options.
+1. **Never form \(P_s\times P_s\).** New quadratic work belongs in q-space or
+   in a documented subject residual space.
+2. **Symmetrize every quadratic form.** Debiased moments may be indefinite;
+   retain and report negative spectral mass rather than hiding it with an SVD.
+3. **Apply coverage before \(R/K\).** Observation masks and effect precision
+   have meaning only in the named raw effect coordinate.
+4. **Keep label alignment explicit.** Effect matrices, kernels, uncertainty
+   matrices, and counts must share a checked ordering.
+5. **Refit data-derived quantities inside resampling folds.** Cached sufficient
+   statistics are welcome; cached full-sample decisions are leakage.
+6. **Fail closed on unsupported combinations.** The JD and residual-rotation
+   guards are deliberate scientific boundaries.
+7. **Protect the compatibility path.** Full-coverage, unit-precision,
+   `debias = "none"` fits must reproduce the historical pooled estimator to
+   numerical tolerance.
 
-The pipeline will accept these services (or specs) and wire them together, making it easier to reuse components independently and to unit-test each subsystem in isolation.
-
-## User-Facing API Improvements
-
-To reduce boilerplate and misconfiguration we will introduce small constructor helpers:
-
-- `dkge_transport_spec(method = "sinkhorn", centroids, sizes = NULL, ...)`
-- `dkge_inference_spec(B = 2000, tail = "two.sided", center = "mean")`
-- `dkge_classification_spec(targets, method = "elasticnet", ...)`
-
-These helpers will perform argument checking up front and provide sensible defaults. They will also carry print methods for clearer logging.
-
-For prediction workflows we will layer a friendly wrapper, e.g.:
-
-```r
-predict_subjects <- dkge_predict_subjects(fit, betas, contrasts, ids = NULL)
-```
-
-The helper will accept matrices, `dkge_subject` objects, or tidy data frames and internally convert them to the low-level list format required by `dkge_predict()`.
-
-## Performance Work Areas
-
-The refactor will also make targeted optimisation straightforward:
-
-- Memoise or approximate the leading singular value in the weighting stage (e.g. power iteration) to avoid full SVD per subject.
-- Vectorise bootstrap resampling loops and expose a `parallel` flag that leverages `future.apply` when available.
-- Surface diagnostics for the Sinkhorn cache (size, hit rate) and allow users to tune cache depth or disable it explicitly.
-- Remove compiled artefacts (`*.o`, `dkge.so`) from the repository and add a CI check to guard against regressions.
-
-Each optimisation will be benchmarked using micro-benchmarks (stored under `bench/`) and guarded by regression tests where feasible.
-
-## Implementation Roadmap
-
-1. **Extract fit stages** with testthat coverage for each helper.
-2. **Introduce spec constructors** and adapt pipeline/predict entry points to consume them.
-3. **Refactor pipeline** into service objects while maintaining backward compatibility (the existing list signature will continue to work).
-4. **Optimise hotspot code paths** guided by microbenchmarks and profiler traces.
-5. **Clean repository hygiene** (remove compiled binaries, update `.Rbuildignore`, document build requirements).
-
-Progress on each milestone will be tracked in the package NEWS and cross-linked from this vignette so contributors can follow the evolving architecture.
-
-## Contributing Notes
-
-- Keep new helper functions internal (`@keywords internal`) until the public API stabilises.
-- When introducing services/specs, supply coercion helpers so existing list-based calls continue to work.
-- Update relevant vignettes (workflow, performance) to reference the new helpers once they are in place.
-- Extend the test suite alongside every refactor step: unit tests for internal helpers, integration tests for pipeline outputs, and snapshots for user messaging.
-
-By tightening the architectural boundaries and improving ergonomics we expect DKGE to remain nimble while accommodating richer workflows (e.g. streaming fits, multimodal transport) without exponential growth in complexity.
+For the user workflow, see `vignette("dkge-workflow")`. For partial coverage and
+trialwise sufficient statistics, see `vignette("dkge-partial-effect-spaces")`.
+For between-subject rotation and its frozen calibration, see
+`vignette("dkge-between-subjects")`.

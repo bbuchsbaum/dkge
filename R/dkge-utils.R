@@ -51,6 +51,70 @@ NULL
 }
 
 # -------------------------------------------------------------------------
+# Resampling helpers ------------------------------------------------------
+# -------------------------------------------------------------------------
+
+#' Validate a resampling replicate count
+#'
+#' Shared by the aggregate and between-subject resampling entry points so that
+#' `B` is rejected identically everywhere.
+#'
+#' @param B Candidate number of replicates.
+#' @return `B` coerced to a positive integer scalar.
+#' @keywords internal
+#' @noRd
+.dkge_validate_resample_B <- function(B) {
+  B <- suppressWarnings(as.integer(B))
+  if (length(B) != 1L || is.na(B) || B < 1L) {
+    stop("`B` must be a positive integer.", call. = FALSE)
+  }
+  B
+}
+
+#' Enter a seeded RNG scope
+#'
+#' Records the caller's `.Random.seed` (or its absence) and seeds the stream.
+#' Pair with `.dkge_seed_exit()` via `on.exit()` so that a seeded run leaves the
+#' caller's RNG state exactly as it found it. A `NULL` seed is a no-op.
+#'
+#' @param seed Optional seed passed to [set.seed()].
+#' @return Opaque state to hand back to `.dkge_seed_exit()`.
+#' @keywords internal
+#' @noRd
+.dkge_seed_enter <- function(seed) {
+  if (is.null(seed)) {
+    return(list(active = FALSE))
+  }
+  old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  } else {
+    NULL
+  }
+  set.seed(seed)
+  list(active = TRUE, old_seed = old_seed)
+}
+
+#' Leave a seeded RNG scope
+#'
+#' @param state Value returned by `.dkge_seed_enter()`.
+#' @return `NULL`, invisibly.
+#' @keywords internal
+#' @noRd
+.dkge_seed_exit <- function(state) {
+  if (!isTRUE(state$active)) {
+    return(invisible(NULL))
+  }
+  if (is.null(state$old_seed)) {
+    if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  } else {
+    assign(".Random.seed", state$old_seed, envir = .GlobalEnv)
+  }
+  invisible(NULL)
+}
+
+# -------------------------------------------------------------------------
 # Numerical robustness utilities ------------------------------------------
 # -------------------------------------------------------------------------
 

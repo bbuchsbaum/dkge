@@ -15,6 +15,23 @@ test_that("dkge_subject_model builds formula metadata", {
   expect_equal(nrow(design$X), nrow(dat))
 })
 
+test_that("dkge_subject_model accepts a configurable subject id column", {
+  dat <- data.frame(
+    subject = paste0("s", 1:6),
+    group = factor(rep(c("A", "B"), each = 3)),
+    trait = seq(-1, 1, length.out = 6)
+  )
+
+  design <- dkge_subject_model(~ group + trait, data = dat, subject_id_col = "subject")
+
+  expect_equal(design$subject_ids, dat$subject)
+  expect_equal(rownames(design$X), dat$subject)
+  expect_error(
+    dkge_subject_model(~ group, data = dat, subject_id_col = "participant_id"),
+    "subject_id_col"
+  )
+})
+
 test_that("dkge_make_target wraps matrix targets with metadata", {
   Y <- matrix(rnorm(6 * 5), 6, 5)
   rownames(Y) <- paste0("s", 1:6)
@@ -306,6 +323,41 @@ test_that("component score target derives subject-by-component matrix from DKGE 
   expect_equal(target$subject_ids, fit$subject_ids)
 })
 
+test_that("transported map targets without centroids stack all contrasts", {
+  set.seed(2221)
+  data <- create_mismatched_data(P_vec = rep(4, 4), q = 3, seed = 2221)
+  ids <- paste0("s", seq_len(data$S))
+  effects <- paste0("e", seq_len(data$q))
+  data$betas <- lapply(data$betas, function(B) {
+    rownames(B) <- effects
+    B
+  })
+  data$designs <- lapply(data$designs, function(X) {
+    colnames(X) <- effects
+    X
+  })
+  fit <- dkge_fit(
+    dkge_data(data$betas, designs = data$designs, subject_ids = ids),
+    K = data$K,
+    rank = 2
+  )
+  contrasts <- matrix(c(1, -1, 0, 0, 1, -1), nrow = 3,
+                      dimnames = list(effects, c("c1", "c2")))
+
+  target <- dkge_make_target(
+    fit,
+    type = "transported_maps",
+    contrast = contrasts,
+    crossfit = "analytic"
+  )
+
+  expect_s3_class(target, "dkge_target")
+  expect_equal(dim(target$Y), c(data$S, 8L))
+  expect_equal(target$subject_ids, ids)
+  expect_true(all(startsWith(target$feature_ids[1:4], "c1:")))
+  expect_true(all(startsWith(target$feature_ids[5:8], "c2:")))
+})
+
 test_that("transported map targets integrate with between-subject RRR and permutation inference", {
   set.seed(223)
   data <- create_mismatched_data(P_vec = c(4, 5, 3, 6, 4), q = 3, seed = 223)
@@ -485,4 +537,172 @@ test_that("singleton exchangeability blocks make Freedman-Lane null deterministi
   expect_equal(perm$tests$x$null, rep(perm$tests$x$statistic, 6),
                tolerance = 1e-10)
   expect_equal(perm$summary$p, 1)
+})
+
+test_that("closed-form Freedman-Lane null matches an explicit refit loop", {
+  set.seed(2181)
+  n <- 12L
+  dat <- data.frame(
+    subject_id = paste0("s", seq_len(n)),
+    group = factor(rep(c("A", "B"), each = n / 2)),
+    trait = seq(-1, 1, length.out = n)
+  )
+  design <- dkge_subject_model(~ group + trait, dat)
+  X <- design$X
+  beta <- matrix(0, nrow = ncol(X), ncol = 4,
+                 dimnames = list(colnames(X), paste0("f", 1:4)))
+  beta["trait", ] <- c(1.5, -0.5, 0.25, 0)
+  Y <- X %*% beta + matrix(rnorm(n * 4, sd = 0.2), n, 4)
+  subject_w <- seq(0.5, 1.5, length.out = n)
+  feature_w <- c(1, 2, 0.5, 1.5)
+  target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+  fit <- dkge_between_rrr(target, design, rank = 1,
+                          weights = list(subject = subject_w, feature = feature_w))
+
+  B <- 12L
+  seed <- 4321
+  blocks <- rep(c(1L, 2L), each = n / 2)
+  term <- "trait"
+
+  perm <- dkge_between_permute(fit, terms = term, B = B, blocks = blocks, seed = seed)
+
+  # Oracle: the pre-rewrite Freedman-Lane loop, refitting both models from
+  # scratch on permuted reduced-model residuals.
+  Xred <- X[, setdiff(colnames(X), term), drop = FALSE]
+  weighted_sse <- function(R) {
+    R <- as.matrix(R) * sqrt(subject_w)
+    R <- sweep(R, 2L, sqrt(feature_w), "*")
+    sum(R * R)
+  }
+  red_obs <- dkge:::.dkge_rrr_fit_core(X = Xred, Y = Y, rank = fit$rank,
+                                       subject_weights = subject_w,
+                                       feature_weights = feature_w,
+                                       warn_rank = FALSE)
+  stat_obs_oracle <- max(0, weighted_sse(red_obs$residuals) -
+                              weighted_sse(fit$residuals))
+
+  set.seed(seed)
+  null_oracle <- numeric(B)
+  for (b in seq_len(B)) {
+    idx <- dkge:::.dkge_permute_within_blocks(blocks)
+    Yperm <- red_obs$fitted + red_obs$residuals[idx, , drop = FALSE]
+    full_b <- dkge:::.dkge_rrr_fit_core(X = X, Y = Yperm, rank = fit$rank,
+                                        subject_weights = subject_w,
+                                        feature_weights = feature_w,
+                                        warn_rank = FALSE)
+    red_b <- dkge:::.dkge_rrr_fit_core(X = Xred, Y = Yperm, rank = fit$rank,
+                                       subject_weights = subject_w,
+                                       feature_weights = feature_w,
+                                       warn_rank = FALSE)
+    null_oracle[b] <- max(0, weighted_sse(red_b$residuals) -
+                               weighted_sse(full_b$residuals))
+  }
+  p_oracle <- (1 + sum(null_oracle >= stat_obs_oracle -
+                         sqrt(.Machine$double.eps) * max(1, abs(stat_obs_oracle)))) / (B + 1)
+
+  expect_equal(perm$tests[[term]]$statistic, stat_obs_oracle, tolerance = 1e-10)
+  expect_equal(perm$tests[[term]]$null, null_oracle, tolerance = 1e-10)
+  expect_equal(perm$summary$p, p_oracle)
+})
+
+test_that("between permutation results do not depend on the parallel flag", {
+  set.seed(2182)
+  n <- 10L
+  dat <- data.frame(subject_id = paste0("s", seq_len(n)),
+                    x = seq(-1, 1, length.out = n))
+  design <- dkge_subject_model(~ x, dat)
+  Y <- design$X %*% matrix(c(0, 1, 0.5, -1), 2, 2) +
+    matrix(rnorm(2 * n, sd = 0.15), n, 2)
+  target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+  fit <- dkge_between_rrr(target, design, rank = 1)
+
+  serial <- dkge_between_permute(fit, terms = "x", B = 8, seed = 7,
+                                 scope = "both", feature_adjust = "maxT")
+  # suppressWarnings(): future.apply relays package-build notes from the worker.
+  parallel <- suppressWarnings(
+    dkge_between_permute(fit, terms = "x", B = 8, seed = 7,
+                         scope = "both", feature_adjust = "maxT",
+                         parallel = TRUE)
+  )
+
+  expect_equal(serial$tests$x$null, parallel$tests$x$null)
+  expect_equal(serial$summary$p, parallel$summary$p)
+  expect_equal(serial$feature_tests$x$p, parallel$feature_tests$x$p)
+  expect_equal(serial$feature_tests$x$null_max, parallel$feature_tests$x$null_max)
+})
+
+test_that("dkge_between_rrr validates `tol`", {
+  set.seed(717)
+  X <- cbind("(Intercept)" = 1, x = rnorm(6))
+  rownames(X) <- paste0("s", 1:6)
+  Y <- X %*% matrix(rnorm(4), 2, 2) + matrix(rnorm(12, sd = 0.1), 6, 2)
+  rownames(Y) <- rownames(X)
+  target <- dkge_make_target(Y = Y)
+
+  for (bad in list(0, -1, NA_real_, Inf, c(1e-8, 1e-8), "1e-8", NULL)) {
+    expect_error(dkge_between_rrr(target, X, rank = 1, tol = bad),
+                 "must be a single positive finite number")
+  }
+  expect_equal(dkge_between_rrr(target, X, rank = 1, tol = 1e-10)$tol, 1e-10)
+})
+
+test_that("permutation refits inherit the fit's rank tolerance", {
+  # x1 and x2 are collinear to within 1e-9: full rank under tol = 1e-12, rank
+  # deficient under the 1e-8 default. Every refit inside the permutation --
+  # including the reduced model -- must use the tolerance the fit was accepted
+  # with, otherwise a model that fits errors as soon as it is tested.
+  set.seed(222)
+  n <- 28L
+  x1 <- scale(seq(-1, 1, length.out = n), center = TRUE, scale = FALSE)[, 1]
+  z <- rnorm(n)
+  set.seed(9)
+  x2 <- x1 + rnorm(n, sd = 1e-9)
+  X <- cbind("(Intercept)" = 1, x1 = x1, x2 = x2, z = z)
+  rownames(X) <- paste0("s", seq_len(n))
+  expect_lt(qr(X, tol = 1e-8)$rank, ncol(X))
+  expect_equal(qr(X, tol = 1e-12)$rank, ncol(X))
+
+  beta <- matrix(rnorm(ncol(X) * 4), ncol(X), 4,
+                 dimnames = list(colnames(X), paste0("f", seq_len(4))))
+  Y <- X %*% beta + matrix(rnorm(n * 4, sd = 0.01), n, 4)
+  rownames(Y) <- rownames(X)
+  colnames(Y) <- colnames(beta)
+  target <- dkge_make_target(Y = Y)
+
+  fit <- dkge_between_rrr(target, X, rank = 2, tol = 1e-12)
+  expect_equal(fit$tol, 1e-12)
+
+  # The reduced design is exactly what the default tolerance rejects.
+  expect_error(
+    dkge:::.dkge_rrr_fit_core(X = X[, c("(Intercept)", "x1", "x2"), drop = FALSE],
+                              Y = Y, rank = 2, warn_rank = FALSE),
+    "rank deficient"
+  )
+
+  perm <- dkge_between_permute(fit, terms = "z", B = 5, seed = 1)
+  expect_equal(length(perm$tests$z$null), 5L)
+  expect_true(is.finite(perm$summary$p))
+
+  # Featurewise scope exercises the coefficient backsolve path too.
+  perm_feat <- dkge_between_permute(fit, terms = "z", B = 5, seed = 1,
+                                    scope = "both")
+  expect_equal(perm_feat$summary$p, perm$summary$p)
+  expect_equal(length(perm_feat$feature_tests$z$p), ncol(Y))
+})
+
+test_that("between RRR stores its rank tolerance for permutation setups", {
+  set.seed(2183)
+  n <- 8L
+  dat <- data.frame(subject_id = paste0("s", seq_len(n)),
+                    x = seq(-1, 1, length.out = n))
+  design <- dkge_subject_model(~ x, dat)
+  Y <- design$X %*% matrix(c(0, 1, 0, -1), 2, 2) +
+    matrix(rnorm(2 * n, sd = 0.1), n, 2)
+  target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+
+  fit <- dkge_between_rrr(target, design, rank = 1, tol = 1e-6)
+  expect_equal(fit$tol, 1e-6)
+
+  perm <- dkge_between_permute(fit, terms = "x", B = 4, seed = 1)
+  expect_equal(length(perm$tests$x$null), 4L)
 })

@@ -14,7 +14,7 @@ dkge_one_se(scores, param_col = "param", metric_col = "score")
 \item{metric_col}{Column name holding the metric (larger is better).}
 }
 \value{
-List with `best`, `pick`, and `summary` table of mean/se by parameter.
+List with \code{best}, \code{pick}, and \code{summary} table of mean/se by parameter.
 }
 \description{
 Aggregates cross-validation scores by parameter setting and returns both the

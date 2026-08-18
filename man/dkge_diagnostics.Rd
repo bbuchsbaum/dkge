@@ -7,7 +7,7 @@
 dkge_diagnostics(fit)
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 }
 \value{
 List with variance table, subject weights, and rank info.

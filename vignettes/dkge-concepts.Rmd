@@ -40,38 +40,46 @@ together.
 ## What DKGE actually decomposes
 
 A naive group decomposition would eigendecompose the raw subject covariance
-\(C = \sum_s B_s B_s^\top\). DKGE never does that. It eigendecomposes the
-kernel-whitened covariance
+\(\sum_s B_s B_s^\top\). Current DKGE separates that calculation into two
+auditable stages. First it constructs a pooled raw-effect moment \(M\), which
+may include coverage masks, effect precision, and finite-trial debiasing. It
+then eigendecomposes
 
 \[
-\widehat C \;=\; K^{1/2} \, C \, K^{1/2}
+\widehat C \;=\; K^{1/2} R^\top M R K^{1/2},
 \]
 
-and maps the resulting eigenvectors back through \(K^{-1/2}\) to obtain the
-group basis \(U\). Two consequences follow that are worth internalising before
-choosing a kernel:
+where \(R\) is the pooled design ruler. With `effect_scaling = "none"`, \(R\)
+is the identity. DKGE maps the resulting eigenvectors back through
+\(K^{-1/2}\) to obtain the group basis \(U\). Three consequences follow that
+are worth internalising before choosing a kernel:
 
 1. **\(K\) is a metric, not a basis.** DKGE does not project effects onto
    pre-chosen kernel directions; it changes the inner product under which the
    covariance is diagonalised. Components are free to be any direction in
    q-space — the kernel only re-weights how "large" each direction looks during
    the eigensolve.
-2. **The data \(C\) still does the work.** If the empirical covariance has a
+2. **The data \(M\) still does the work.** If the empirical moment has a
    dominant direction, that direction will surface regardless of \(K\) (subject
    to scaling). The kernel amplifies directions it considers smooth /
    structurally plausible and attenuates rough or "unrelated" ones. It does not
    manufacture structure that the data does not already support.
+3. **Coverage and precision are resolved before the metric mixes rows.** A
+   missing cell, a low-count cell, and a noisy cell change \(M\), not \(K\).
+   The kernel can subsequently smooth their pooled evidence, but it does not
+   decide whether a subject observed a row or how precise that row was.
 
 In aggregate-target mode (`dkge_aggregate_fit()`) the same machinery applies to
 \(Y Y^\top\) where \(Y\) is a cells × features matrix — useful when you want a
 PLSC-style decomposition that still admits a design kernel. The subject-level
-fit `dkge_fit()` differs only in that \(C\) is the pooled, design-row-standardised
-subject covariance, not raw cell means.
+fit `dkge_fit()` instead pools subject effect moments in \(M\), then applies
+the design ruler \(R\) before the kernel congruence.
 
 ### Identity-K is the unconstrained baseline
 
-`K = diag(q)` collapses the whitening to the identity, leaving you with an
-eigendecomposition of \(C\) itself (after the standard q-space compression).
+`K = diag(q)` collapses the kernel transform to the identity, leaving an
+eigendecomposition of \(R^\top M R\) under pooled design scaling, or of \(M\)
+when `effect_scaling = "none"`.
 There is no kernel-imposed similarity, smoothness, or hierarchy among effects.
 For an aggregate fit this is essentially the left-singular-vector structure of
 \(Y Y^\top\) — i.e. ordinary cell-mean PCA, the "let the data speak" mode.
@@ -79,7 +87,9 @@ For an aggregate fit this is essentially the left-singular-vector structure of
 For a full subject-level fit, identity-\(K\) is *not* equivalent to ignoring
 design entirely: rows are still GLM effects, and DKGE still row-standardises
 through the pooled design Cholesky factor \(R\). What identity-\(K\) means is
-"do not couple effects beyond their GLM/design scaling".
+"do not couple effects beyond their GLM/design scaling". If you explicitly use
+`effect_scaling = "none"`, identity-\(K\) instead diagonalises the pooled raw-
+effect moment directly.
 
 ### Structured K is prior-regularised
 
@@ -143,9 +153,28 @@ Two questions to ask of this table:
 
 Either result is acceptable; the obligation is to *know which* and to say so.
 
+## How do missing cells, unequal counts, and trial noise differ?
+
+These three issues enter the same q-space moment but represent different
+estimands.
+
+| Issue | Stored evidence | Fit control | Diagnostic |
+|---|---|---|---|
+| Subject did not observe an effect | observation mask | `missingness` | `pair_counts` |
+| Subject observed it with low precision | count or explicit precision | `effect_weights` | `pair_weight`, `pair_ess` |
+| Estimated effect contains finite-trial noise | residual variance and \((X^\top X)^{-1}\), or split betas | `debias` | `moment_diagnostics` |
+
+`dkge_trial_subject()` reduces trial-by-feature maps to these sufficient
+statistics without forming a feature-by-feature covariance. Count weighting
+then uses pair reliability \(\sqrt{p_{sc}p_{sc'}}\), while analytic debiasing
+subtracts the expected effect-space noise moment. The operations precede the
+\(R\) and \(K^{1/2}\) congruence, so every solver sees the same explicitly
+defined pooled moment. See `vignette("dkge-partial-effect-spaces")` for the
+runnable 3 x 5 x 4 example and the policy choices.
+
 ## How DKGE conducts inference
 
-There are three distinct levels at which you can make a claim. They use
+There are four distinct levels at which you can make a claim. They use
 different machinery and answer different questions. Conflating them is the
 single most common reporting error.
 
@@ -154,6 +183,7 @@ single most common reporting error.
 | **Component** | "Is this latent direction reliable?" | singular values; subject-label permutation; identity vs structured \(K\) refit; bootstrap of \(U\) | latent dimension |
 | **Contrast** | "Is this q-space contrast non-zero?" | `dkge_contrast()` (LOSO / K-fold), `dkge_bootstrap_qspace()`, analytic SEs | linear combination of effects |
 | **Feature** | "Is this cluster / voxel salient under this contrast or component?" | `dkge_component_stats()`, `dkge_transport_contrasts_to_medoid()`, FDR adjustment | spatial unit (cluster, anchor, voxel) |
+| **Between-subject term** | "Does group or a trait explain a subject-level target?" | `dkge_between_rrr()` plus `dkge_between_permute()` | subjects |
 
 The structure is hierarchical: component-level inference asks whether a
 direction exists; contrast-level inference asks whether a chosen direction has
@@ -162,9 +192,12 @@ magnitude is concentrated. Every published finding should name its level.
 
 A few practical notes:
 
-- **Subject is the unit of inference for between-subject claims.** Permutation
-  and bootstrap routines resample subjects, never cells, anchors, or voxels.
-  This applies to both `dkge_fit()` and aggregate-target workflows.
+- **Subject is the unit of inference for between-subject claims.** The
+  between-subject RRR layer tests group, trait, and interaction terms on a
+  subject-by-feature target. Residual rotation fixes nuisance fits and rotates
+  only the residual subject space; Freedman-Lane permutes reduced-model
+  residual rows. Neither treats cells, anchors, or voxels as independent
+  subjects.
 - **Cross-fitting (LOSO / K-fold) is the bias-aware default for contrasts.**
   In-fold contrasts inherit the optimism of the same data used to fit \(U\);
   `method = "loso"` removes that.
@@ -185,8 +218,8 @@ methods you already know, plus a transport and inference layer on top.
 | **PLSC** (McIntosh & Lobaugh) | cross-block \(C^\top M\) via SVD | orthonormal contrast block | covariance-maximising LVs between design and brain |
 | **`dkge_aggregate_fit(K = I)`** | \(Y Y^\top\) | none beyond cell labels | identical in spirit to cell-mean PCA |
 | **`dkge_aggregate_fit(K = K_struct)`** | \(K^{1/2} Y Y^\top K^{1/2}\) | metric / preconditioner | LVs in the kernel-induced inner product |
-| **`dkge_fit(K = I)`** | pooled \(\sum_s \widetilde B_s \widetilde B_s^\top\) | GLM row-standardisation only | unconstrained subject-level group basis |
-| **`dkge_fit(K = K_struct)`** | \(K^{1/2}\) (pooled cov) \(K^{1/2}\) | metric / preconditioner | design-aware subject-level group basis |
+| **`dkge_fit(K = I)`** | \(R^\top M R\), or \(M\) with no effect scaling | GLM row-standardisation only | unconstrained subject-level group basis |
+| **`dkge_fit(K = K_struct)`** | \(K^{1/2}R^\top M R K^{1/2}\) | metric / preconditioner | design-aware subject-level group basis |
 
 Two broader relatives, for orientation:
 
@@ -221,11 +254,15 @@ A short checklist that maps the above to actions:
 4. **Compare identity vs structured \(K\) refits before reporting.** Diff
    singular values; compute `crossprod(U_I, U_K)`; note whether structure is
    data-asserted or prior-asserted.
-5. **Name the inference level.** Component, contrast, or feature. Use the
+5. **Resolve coverage, precision, and trial noise separately.** Use
+   `observed_rows`/`missingness`, `dkge_effect_weights()`, and `debias` for their
+   respective jobs; do not use one as a proxy for another.
+6. **Name the inference level.** Component, contrast, feature, or
+   between-subject term. Use the
    matching tool from the table above; do not transfer a permutation
    p-value from one level to another.
 
-A finding that survives all five steps is one you can defend.
+A finding that survives all six steps is one you can defend.
 
 ## See also
 
@@ -237,4 +274,6 @@ A finding that survives all five steps is one you can defend.
 - `vignette("dkge-components")` — component interpretation and rotation
 - `vignette("dkge-vs-pls")` — detailed comparison with classical PLSC
 - `vignette("dkge-partial-effect-spaces")` — partial effect coverage and
-  estimability of between-subject contrasts
+  trialwise reliability/debiasing
+- `vignette("dkge-between-subjects")` — reduced-rank group/trait models and
+  residual-rotation versus Freedman-Lane inference

@@ -16,22 +16,22 @@ dkge_predict_subjects(
 \item{object}{dkge | dkge_stream | dkge_model.}
 
 \item{betas}{Subject data. Accepts a matrix, list of matrices,
-`dkge_subject` objects, or a `dkge_data` bundle.}
+\code{dkge_subject} objects, or a \code{dkge_data} bundle.}
 
-\item{contrasts}{List or matrix accepted by [dkge_predict()].}
+\item{contrasts}{List or matrix accepted by \code{\link[=dkge_predict]{dkge_predict()}}.}
 
 \item{ids}{Optional subject identifiers overriding those inferred from
-`betas`.}
+\code{betas}.}
 
 \item{return_loadings}{Logical; when TRUE, include projected loadings in the
 result bundle.}
 }
 \value{
-Output from [dkge_predict()] with harmonised subject names.
+Output from \code{\link[=dkge_predict]{dkge_predict()}} with harmonised subject names.
 }
 \description{
-Harmonises a variety of beta inputs (matrices, `dkge_subject` objects, or
-`dkge_data` bundles) before forwarding to [dkge_predict()]. This allows
-callers to work with tidy inputs without manually assembling `B_list`
+Harmonises a variety of beta inputs (matrices, \code{dkge_subject} objects, or
+\code{dkge_data} bundles) before forwarding to \code{\link[=dkge_predict]{dkge_predict()}}. This allows
+callers to work with tidy inputs without manually assembling \code{B_list}
 structures.
 }

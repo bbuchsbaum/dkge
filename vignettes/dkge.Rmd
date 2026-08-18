@@ -27,7 +27,8 @@ Design-Kernel Group Embedding (DKGE) is an R package for multi-subject fMRI
 analysis. It works in the compressed **q-space** of design effects (typically
 10–100 dimensions) rather than voxel-space, enabling memory-efficient group
 fits, leave-one-subject-out contrasts, and optimal-transport alignment to a
-common parcellation — all without ever forming large subject-by-voxel matrices.
+common parcellation — all without forming a feature-by-feature covariance
+matrix.
 
 ## Minimal example
 
@@ -54,12 +55,14 @@ The returned object is a `multiblock_biprojector` with q-space loadings in
 | Vignette | Purpose |
 |----------|---------|
 | **You are here** | Overview and entry point |
-| [Concepts](dkge-concepts.html) | What DKGE actually decomposes, what K does, and the three levels of inference — read before your first fit |
+| [Concepts](dkge-concepts.html) | What DKGE actually decomposes, what K does, and the four levels of inference — read before your first fit |
 | [Workflow](dkge-workflow.html) | Complete fit → contrast → transport → visualise pipeline |
 | [Design Kernels](dkge-design-kernels.html) | Encoding factor structure with `design_kernel()` |
+| [Unbalanced and Partial Effect Spaces](dkge-partial-effect-spaces.html) | Missing cells, unequal trial counts, trialwise reduction, and debiasing |
 | [Contrasts & Inference](dkge-contrasts-inference.html) | LOSO contrasts, analytic and bootstrap inference |
+| [Between-Subject Models](dkge-between-subjects.html) | Reduced-rank group/trait models and calibrated resampling choices |
 | [Classification](dkge-classification.html) | Cross-validated decoding with `dkge_classify()` |
-| [Weighting Strategies](dkge-weighting.html) | Spatial (`Omega_list`), subject, and transport weights |
+| [Weighting Strategies](dkge-weighting.html) | Spatial, subject-by-effect, subject, and transport weights |
 | [Adaptive Voxel Weighting](dkge-adaptive-weighting.html) | Fold-safe `dkge_weights()` API |
 | [Components](dkge-components.html) | Inspecting group-level components and loadings |
 | [Plotting](dkge-plotting.html) | `theme_dkge()`, scree plots, contribution maps |
@@ -68,7 +71,7 @@ The returned object is a `multiblock_biprojector` with q-space loadings in
 | [CPCA](dkge-cpca.html) | Contrastive PCA inside the DKGE framework |
 | [DKGE vs PLS](dkge-vs-pls.html) | Comparison with partial least squares approaches |
 | [Performance](dkge-performance.html) | Mapper selection, warm starts, custom backends |
-| [Architecture](dkge-architecture.html) | Design document: planned modular refactor (not current API) |
+| [Architecture](dkge-architecture.html) | Current fit stages, q-space moment contracts, and solver boundaries |
 
 ## Key concepts at a glance
 
@@ -78,6 +81,11 @@ and `id`.
 
 **`dkge_data(betas, designs)`** — bundles a list of subjects, aligns
 partially-overlapping effect sets, and records provenance.
+
+**`dkge_trial_subject(Y, X)`** — reduces trial-by-feature data to effect
+estimates, counts, residual variances, effect-noise covariance, and optional
+split halves. Use these records with `dkge_effect_weights()` and `debias` when
+cell estimates have unequal precision or finite-trial noise.
 
 **`dkge(subjects, K, rank)`** — main entry point. `K` is the `q × q` design
 kernel; pass `design_kernel(factors, basis = "effect")` for structured factor
@@ -90,6 +98,11 @@ to a common parcellation.
 **`dkge_classify(fit, targets, method = "lda")`** — fully cross-validated
 decoding with optional permutation tests. Supply targets via
 `dkge_targets(fit, ~ factor1 + factor2)` or a plain contrast weight matrix.
+
+**`dkge_between_rrr(target, design, rank)`** — models group, trait, and
+interaction terms on a common subject-by-feature target. Use
+`dkge_between_permute()` with an explicitly chosen resampling method for
+term-level inference.
 
 ## Getting help
 

@@ -14,16 +14,16 @@ dkge_fit_cpca(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object from [dkge_fit()] or [dkge()].}
+\item{fit}{A \code{dkge} object from \code{\link[=dkge_fit]{dkge_fit()}} or \code{\link[=dkge]{dkge()}}.}
 
 \item{blocks}{Optional integer vector of effect indices defining the subspace
-(used when `T` is not supplied).}
+(used when \code{T} is not supplied).}
 
-\item{T}{Optional explicit qxq0 basis matrix; overrides `blocks` when given.}
+\item{T}{Optional explicit qxq0 basis matrix; overrides \code{blocks} when given.}
 
 \item{part}{Which portion to return: "design", "resid", or "both".}
 
-\item{rank}{Target rank for the returned bases (defaults to `ncol(fit$U)`).}
+\item{rank}{Target rank for the returned bases (defaults to \code{ncol(fit$U)}).}
 
 \item{ridge}{Optional ridge term applied before the eigen decompositions.}
 }

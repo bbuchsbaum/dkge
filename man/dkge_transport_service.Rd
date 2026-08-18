@@ -7,12 +7,12 @@
 dkge_transport_service(spec = NULL, ...)
 }
 \arguments{
-\item{spec}{Transport specification (list or `dkge_transport_spec`).}
+\item{spec}{Transport specification (list or \code{dkge_transport_spec}).}
 
 \item{...}{Additional key-value pairs merged into the specification.}
 }
 \value{
-Object of class `dkge_transport_service`.
+Object of class \code{dkge_transport_service}.
 }
 \description{
 Construct a transport service

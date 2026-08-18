@@ -14,3 +14,10 @@ Rplots.pdf
 docs
 /doc/
 /Meta/
+
+# local data / generated analysis outputs (never commit)
+/testdata/
+/artifacts/
+.mote/
+.omc/
+repomix-output.*

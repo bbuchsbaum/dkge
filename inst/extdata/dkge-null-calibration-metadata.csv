@@ -1,0 +1,2 @@
+"calibration_version","started_utc","completed_utc","elapsed_seconds","plan_sha256","git_head","package_version","r_version","platform"
+"null-calibration-v1","2026-08-16 15:23:17 UTC","2026-08-16 15:47:22 UTC",1445.03577589989,"d671401031967ce8260ee4399c2cfe592af1ca4b0dd17289fbdd013fc31c7a74","953d2a64ff356d55f4a6fd3278a7f11db018fea6","0.0.0.9000","R version 4.5.1 (2025-06-13)","aarch64-apple-darwin20"

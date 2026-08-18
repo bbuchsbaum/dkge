@@ -8,11 +8,11 @@
 a \%||\% b
 }
 \arguments{
-\item{a}{Primary value tested for `NULL`.}
+\item{a}{Primary value tested for \code{NULL}.}
 
-\item{b}{Fallback value returned when `a` is `NULL`.}
+\item{b}{Fallback value returned when \code{a} is \code{NULL}.}
 }
 \description{
-Returns `b` when `a` is `NULL`, otherwise returns `a`.
+Returns \code{b} when \code{a} is \code{NULL}, otherwise returns \code{a}.
 }
 \keyword{internal}

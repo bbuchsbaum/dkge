@@ -1,6 +1,7 @@
 ^doc$
 ^Meta$
 ^\.claude$
+^\.mote$
 ^CLAUDE\.md$
 ^Rplots\.pdf$
 ^data-raw$
@@ -14,6 +15,8 @@
 ^repomix-output\.txt$
 ^_pkgdown\.yml$
 ^pkgdown$
+^artifacts$
+^testdata$
 ^\.github$
 ^\.planning$
 ^\.omc$
@@ -23,3 +26,5 @@
 ^src/.*\.(o|so)$
 ^src/symbols\.rds$
 ^\.rcmdcheck.*\.rds$
+^AGENTS\.md$
+^inst/examples/.*\.pdf$

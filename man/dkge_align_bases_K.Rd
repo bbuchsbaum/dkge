@@ -19,7 +19,7 @@ dkge_align_bases_K(
 
 \item{ref}{reference basis or index (default 1)}
 
-\item{allow_reflection}{logical passed to `dkge_procrustes_K`}
+\item{allow_reflection}{logical passed to \code{dkge_procrustes_K}}
 
 \item{weights}{optional numeric weights (stored for convenience)}
 }

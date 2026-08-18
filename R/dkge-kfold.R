@@ -195,10 +195,12 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 #' @noRd
 .dkge_contrast_kfold <- function(fit, contrast_list, folds, ridge,
                                 parallel, verbose, align = FALSE,
-                                missingness = c("none", "rescale", "mask", "shrink"),
-                                miss_args = list(), ...) {
+                                missingness = NULL,
+                                miss_args = NULL, ...) {
   # Prepare folds
-  missingness <- match.arg(missingness)
+  missingness <- missingness %||% fit$missingness %||% "none"
+  missingness <- match.arg(missingness, c("none", "rescale", "mask", "shrink"))
+  miss_args <- miss_args %||% fit$miss_args %||% list()
   fold_info_raw <- .dkge_normalize_folds(folds, fit)
   folds <- fold_info_raw$folds
 

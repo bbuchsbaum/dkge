@@ -22,7 +22,7 @@ dkge_plot_suite(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{one_se_pick}{Optional integer component chosen by one-SE rule.}
 
@@ -37,9 +37,9 @@ stability panel.}
 
 \item{base_labels}{Optional labels for the supplied bases.}
 
-\item{info_haufe}{Optional result from [dkge_info_map_haufe()].}
+\item{info_haufe}{Optional result from \code{\link[=dkge_info_map_haufe]{dkge_info_map_haufe()}}.}
 
-\item{info_loco}{Optional result from [dkge_info_map_loco()].}
+\item{info_loco}{Optional result from \code{\link[=dkge_info_map_loco]{dkge_info_map_loco()}}.}
 
 \item{top}{Number of anchors to annotate in information plots (set to 0 to
 disable).}

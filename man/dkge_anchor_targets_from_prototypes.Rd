@@ -13,29 +13,29 @@ dkge_anchor_targets_from_prototypes(
 )
 }
 \arguments{
-\item{anchors}{Matrix of anchor coordinates (`L x d`).}
+\item{anchors}{Matrix of anchor coordinates (\verb{L x d}).}
 
 \item{prototypes}{Named list whose elements are matrices (rows = prototypes
-in the same feature space as `anchors`). List names become class labels.}
+in the same feature space as \code{anchors}). List names become class labels.}
 
 \item{negatives}{Optional named list of matrices providing negative
-prototypes per class (matched by name). When `NULL`, classes are contrasted
+prototypes per class (matched by name). When \code{NULL}, classes are contrasted
 against the origin.}
 
 \item{sigma}{Optional bandwidth passed to
-[dkge_anchor_contrast_from_prototypes()]. Defaults to the per-class median
+\code{\link[=dkge_anchor_contrast_from_prototypes]{dkge_anchor_contrast_from_prototypes()}}. Defaults to the per-class median
 heuristic.}
 
 \item{normalize}{Logical indicator forwarded to
-[dkge_anchor_contrast_from_prototypes()].}
+\code{\link[=dkge_anchor_contrast_from_prototypes]{dkge_anchor_contrast_from_prototypes()}}.}
 }
 \value{
-Matrix with one row per class and `nrow(anchors)` columns.
+Matrix with one row per class and \code{nrow(anchors)} columns.
 }
 \description{
 Convenience helper that stacks calls to
-[dkge_anchor_contrast_from_prototypes()] so the resulting matrix can be fed
-directly to [dkge_classify()] as a weight specification.
+\code{\link[=dkge_anchor_contrast_from_prototypes]{dkge_anchor_contrast_from_prototypes()}} so the resulting matrix can be fed
+directly to \code{\link[=dkge_classify]{dkge_classify()}} as a weight specification.
 }
 \examples{
 anchors <- matrix(rnorm(10 * 4), 10, 4)

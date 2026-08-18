@@ -14,30 +14,30 @@ dkge_targets(
 )
 }
 \arguments{
-\item{fit}{dkge object containing `kernel_info$map` metadata.}
+\item{fit}{dkge object containing \code{kernel_info$map} metadata.}
 
-\item{spec}{Target specification. Accepts a formula (e.g. `~ A + B + A:B`),
+\item{spec}{Target specification. Accepts a formula (e.g. \code{~ A + B + A:B}),
 a character vector of term labels, the string "fullcell", or an existing
-list of `dkge_target` objects (returned unchanged).}
+list of \code{dkge_target} objects (returned unchanged).}
 
-\item{residualize}{Logical; if `TRUE` (default) residualise higher-order
+\item{residualize}{Logical; if \code{TRUE} (default) residualise higher-order
 targets against previously constructed lower-order targets.}
 
 \item{collapse}{Optional named list describing how to collapse factors that do
-not appear in a target. Each entry may be `"mean"`,
-`list(method = "mean", window = 3:8)`, or a numeric vector of length equal
+not appear in a target. Each entry may be \code{"mean"},
+\code{list(method = "mean", window = 3:8)}, or a numeric vector of length equal
 to the number of levels providing custom weights (automatically normalised).}
 
 \item{scope}{Permutation/exchangeability scope stored with each target
 (default "within_subject").}
 
 \item{restrict_factors}{Optional character vector restricting the factors used
-when `spec = "fullcell"`. When `NULL`, all factors are used.}
+when \code{spec = "fullcell"}. When \code{NULL}, all factors are used.}
 }
 \value{
-List of objects with class `dkge_target`. Each target contains
-  `name`, `factors`, `labels`, `weight_matrix`, `indicator`, `residualized`,
-  `collapse`, and `scope` fields.
+List of objects with class \code{dkge_target}. Each target contains
+\code{name}, \code{factors}, \code{labels}, \code{weight_matrix}, \code{indicator}, \code{residualized},
+\code{collapse}, and \code{scope} fields.
 }
 \description{
 Generates a list of target specifications that map cell-level design

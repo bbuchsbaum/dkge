@@ -72,7 +72,7 @@ test_that("dkge_subject rejects dimension mismatch between beta and design", {
 
   expect_error(
     dkge_subject(beta_wrong_dim, design = design),
-    "match|Row names",
+    "3 effect rows but the design has 2 columns",
     info = "Beta rows must match design columns"
   )
 })

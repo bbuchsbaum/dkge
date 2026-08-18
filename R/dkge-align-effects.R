@@ -31,7 +31,7 @@
 #'   intersection to \code{"all_subjects"} (default) or \code{"train_only"}.
 #' @param effect_prior Optional PSD matrix indexed by effect IDs used to seed
 #'   zero-coverage entries of the group kernel.
-#' @param prior_weight Blend factor in [0, 1] applied to `effect_prior` when
+#' @param prior_weight Blend factor in \[0, 1\] applied to `effect_prior` when
 #'   available.
 #' @param verbose Logical; emit messages when `TRUE`.
 #'

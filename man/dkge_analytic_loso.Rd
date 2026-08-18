@@ -7,7 +7,7 @@
 dkge_analytic_loso(fit, s, contrasts, tol = 1e-06, fallback = TRUE, ridge = 0)
 }
 \arguments{
-\item{fit}{A `dkge` object from [dkge_fit()]}
+\item{fit}{A \code{dkge} object from \code{\link[=dkge_fit]{dkge_fit()}}}
 
 \item{s}{Subject index (1-based) to leave out}
 
@@ -21,10 +21,12 @@ dkge_analytic_loso(fit, s, contrasts, tol = 1e-06, fallback = TRUE, ridge = 0)
 }
 \value{
 List with fields:
-  - `v`: Cluster contrast values for subject s
-  - `alpha`: Contrast coordinates in latent space
-  - `basis`: Approximated held-out basis U^(-s)
-  - `method`: "analytic" or "fallback" if full eigen was used
+\itemize{
+\item \code{v}: Cluster contrast values for subject s
+\item \code{alpha}: Contrast coordinates in latent space
+\item \code{basis}: Approximated held-out basis U^(-s)
+\item \code{method}: "analytic" or "fallback" if full eigen was used
+}
 }
 \description{
 Approximates leave-one-subject-out contrast values using first-order
@@ -37,14 +39,18 @@ described in the paper. For the held-out compressed covariance:
 Chat^(-s) ~ Chat - w_s S_s
 
 The eigenvalues and eigenvectors are updated using:
-- deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
-- deltav_j = -w_s Sum over k!=j of (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
+\itemize{
+\item deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
+\item deltav_j = -w_s Sum over k!=j of (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
+}
 
 This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r) operations
 where r is the rank. The approximation is accurate when:
-1. Subject weights w_s are small (no single subject dominates)
-2. Eigenvalue gaps are large (well-separated components)
-3. The perturbation S_s is not aligned with transition regions
+\enumerate{
+\item Subject weights w_s are small (no single subject dominates)
+\item Eigenvalue gaps are large (well-separated components)
+\item The perturbation S_s is not aligned with transition regions
+}
 
 When these conditions are violated (detected via condition number or
 eigenvalue gaps), the function can fall back to full eigen-decomposition.

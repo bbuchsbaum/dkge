@@ -15,20 +15,20 @@ dkge_write_group_map(
 \item{group_values}{Numeric vector of medoid-cluster values (length Q). When
 named, entries are matched to label IDs before fallback to positional order.}
 
-\item{medoid_labels}{A `neuroim2::BrainVolume` containing integer medoid labels.}
+\item{medoid_labels}{A \code{neuroim2::BrainVolume} containing integer medoid labels.}
 
 \item{label_table}{Optional data frame with cluster metadata (currently unused).}
 
-\item{out_file}{Optional output path (`.nii` or `.nii.gz`). When `NULL`, the
+\item{out_file}{Optional output path (\code{.nii} or \code{.nii.gz}). When \code{NULL}, the
 painted volume is returned without writing to disk.}
 }
 \value{
-Either the output path (when `out_file` is supplied) or a
-  `neuroim2::BrainVolume`.
+Either the output path (when \code{out_file} is supplied) or a
+\code{neuroim2::BrainVolume}.
 }
 \description{
 Paints medoid-level values onto the reference parcellation and either
-returns a `neuroim2::BrainVolume` or writes it to disk.
+returns a \code{neuroim2::BrainVolume} or writes it to disk.
 }
 \examples{
 \donttest{

@@ -7,7 +7,7 @@
 dkge_project_cluster(fit, b, omega = 1, w = 1)
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 
 \item{b}{Numeric vector of length q (effects).}
 
@@ -16,7 +16,7 @@ dkge_project_cluster(fit, b, omega = 1, w = 1)
 \item{w}{Optional scalar subject weight.}
 }
 \value{
-Numeric vector of length `rank` (component scores).
+Numeric vector of length \code{rank} (component scores).
 }
 \description{
 Project a new cluster/voxel vector onto DKGE components

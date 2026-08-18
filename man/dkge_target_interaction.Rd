@@ -13,16 +13,16 @@ dkge_target_interaction(
 )
 }
 \arguments{
-\item{fit}{dkge object containing `kernel_info$map` metadata.}
+\item{fit}{dkge object containing \code{kernel_info$map} metadata.}
 
 \item{factors}{Character vector of factor names to include in the interaction.}
 
-\item{residualize}{Logical; if `TRUE` (default) residualise higher-order
+\item{residualize}{Logical; if \code{TRUE} (default) residualise higher-order
 targets against previously constructed lower-order targets.}
 
 \item{collapse}{Optional named list describing how to collapse factors that do
-not appear in a target. Each entry may be `"mean"`,
-`list(method = "mean", window = 3:8)`, or a numeric vector of length equal
+not appear in a target. Each entry may be \code{"mean"},
+\code{list(method = "mean", window = 3:8)}, or a numeric vector of length equal
 to the number of levels providing custom weights (automatically normalised).}
 
 \item{scope}{Permutation/exchangeability scope stored with each target

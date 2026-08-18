@@ -7,7 +7,7 @@
 dkge_clear_sinkhorn_cache()
 }
 \value{
-Logical `TRUE` invisibly.
+Logical \code{TRUE} invisibly.
 }
 \description{
 Releases memory held by the internal Sinkhorn cache. Call this after large

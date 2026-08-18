@@ -18,36 +18,36 @@ dkge_transport_loadings_to_medoid(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object used to compute the loadings.}
+\item{fit}{A \code{dkge} object used to compute the loadings.}
 
 \item{medoid}{Integer index of the reference subject (1-based).}
 
 \item{centroids}{List of subject cluster centroids (each P_s x 3 matrix).}
 
 \item{loadings}{Optional list of subject loadings (P_s x r). When omitted,
-they are recomputed from `betas`.}
+they are recomputed from \code{betas}.}
 
 \item{betas}{Optional list of subject betas used to recompute loadings when
-`loadings` is `NULL`.}
+\code{loadings} is \code{NULL}.}
 
 \item{sizes}{Optional list of cluster masses (defaults to uniform weights).}
 
-\item{mapper}{Optional mapper specification created by [dkge_mapper_spec()].
-When `NULL`, defaults to Sinkhorn with the supplied parameters.}
+\item{mapper}{Optional mapper specification created by \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}.
+When \code{NULL}, defaults to Sinkhorn with the supplied parameters.}
 
 \item{method}{Backwards-compatible alias; currently only "sinkhorn" is
 supported.}
 
-\item{transport_cache}{Optional cache from [dkge_prepare_transport()]. When
+\item{transport_cache}{Optional cache from \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}. When
 supplied, cached operators are reused for all components.}
 
 \item{...}{Additional parameters passed when building the default mapper
-specification (e.g. `epsilon`, `lambda_emb`).}
+specification (e.g. \code{epsilon}, \code{lambda_emb}).}
 }
 \value{
-List with `group` (medoid cluster vectors per component),
-  `subjects` (per-subject transported values), and `cache` (transport cache
-  reused for future calls).
+List with \code{group} (medoid cluster vectors per component),
+\code{subjects} (per-subject transported values), and \code{cache} (transport cache
+reused for future calls).
 }
 \description{
 Transport component loadings to a medoid parcellation

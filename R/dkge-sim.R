@@ -149,7 +149,7 @@ dkge_sim_toy <- function(factors,
 #' @param U Matrix with `q` rows.
 #' @param V Matrix with `q` rows.
 #' @param K Symmetric positive (semi-)definite matrix defining the metric.
-#' @return Numeric vector of singular values in [0, 1].
+#' @return Numeric vector of singular values in \[0, 1\].
 #' @export
 dkge_cosines_K <- function(U, V, K) {
   s <- svd(t(U) %*% K %*% V, nu = 0, nv = 0)$d

@@ -12,9 +12,9 @@ dkge_anchor_contrast_from_direction(
 )
 }
 \arguments{
-\item{anchors}{Matrix of anchor coordinates (`L x d`).}
+\item{anchors}{Matrix of anchor coordinates (\verb{L x d}).}
 
-\item{direction}{Numeric vector (length `d`) describing a linear probe in the
+\item{direction}{Numeric vector (length \code{d}) describing a linear probe in the
 shared feature space.}
 
 \item{sigma}{Optional bandwidth; defaults to the anchor median heuristic.}
@@ -22,7 +22,7 @@ shared feature space.}
 \item{normalize}{Logical; L2-normalise the resulting contrast.}
 }
 \value{
-Numeric vector of length `L` suitable for [dkge_contrast()].
+Numeric vector of length \code{L} suitable for \code{\link[=dkge_contrast]{dkge_contrast()}}.
 }
 \description{
 Build an anchor contrast from a feature-space direction

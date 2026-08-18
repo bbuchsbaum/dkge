@@ -16,36 +16,36 @@ dkge_cv_train_latent_classifier(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
-\item{y}{Either a factor of length `S` (subject-level labels) or a list of
-length `S` supplying per-sample labels for each subject.}
+\item{y}{Either a factor of length \code{S} (subject-level labels) or a list of
+length \code{S} supplying per-sample labels for each subject.}
 
 \item{Z_by_subject}{Optional list of latent feature matrices
-(`P_s x r`). When `NULL`, [dkge_project_clusters_to_latent()] is used.}
+(\verb{P_s x r}). When \code{NULL}, \code{\link[=dkge_project_clusters_to_latent]{dkge_project_clusters_to_latent()}} is used.}
 
-\item{folds}{Either an integer `K` or a `dkge_folds` object created with
-[dkge_define_folds()].}
+\item{folds}{Either an integer \code{K} or a \code{dkge_folds} object created with
+\code{\link[=dkge_define_folds]{dkge_define_folds()}}.}
 
-\item{model}{Binary classifier: `"lda"` (pooled covariance linear
-discriminant, default), `"ridge_logit"` (ridge-penalised logistic
-regression via glmnet when available), or `"lsvm"` (placeholder falling
+\item{model}{Binary classifier: \code{"lda"} (pooled covariance linear
+discriminant, default), \code{"ridge_logit"} (ridge-penalised logistic
+regression via glmnet when available), or \code{"lsvm"} (placeholder falling
 back to LDA).}
 
 \item{ridge}{Ridge penalty added to the pooled covariance matrix when using
 LDA. Ensures numerical stability when the latent dimension is high.}
 
-\item{level}{Training granularity: `"subject"` averages each subject's
-clusters, while `"sample"` stacks all cluster samples from training
+\item{level}{Training granularity: \code{"subject"} averages each subject's
+clusters, while \code{"sample"} stacks all cluster samples from training
 subjects.}
 
-\item{standardize}{Logical; when `TRUE` (default) latent features are
+\item{standardize}{Logical; when \code{TRUE} (default) latent features are
 standardised within each training fold before fitting. Stored weight
 vectors are converted back to the original latent scale.}
 }
 \value{
-An object of class `dkge_clf` containing fold models, per-subject
-  weight vectors, and metadata required by downstream mapping utilities.
+An object of class \code{dkge_clf} containing fold models, per-subject
+weight vectors, and metadata required by downstream mapping utilities.
 }
 \description{
 Trains a binary linear classifier on DKGE latent features using subject-level

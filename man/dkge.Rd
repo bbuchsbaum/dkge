@@ -18,99 +18,119 @@ dkge(
   weights = NULL,
   kernel = NULL,
   omega = NULL,
+  effect_weights = NULL,
+  debias = c("none", "analytic", "split_half"),
+  effect_scaling = c("pooled_design", "none"),
+  effects = NULL,
   ...
 )
 }
 \arguments{
 \item{betas}{Either (i) a list of qxP_s beta matrices (one per subject), (ii)
-a list/tibble of [dkge_subject()] objects, or (iii) a pre-built `dkge_data`
+a list/tibble of \code{\link[=dkge_subject]{dkge_subject()}} objects, or (iii) a pre-built \code{dkge_data}
 bundle. Rows must align with design effects.}
 
 \item{designs}{Optional list of T_sxq design matrices from the subject GLMs.
 Each column corresponds to an effect/regressor; column names become the
-canonical effect labels enforced across subjects. Ignored when `betas`
-already carries `dkge_subject`/`dkge_data` entries.}
+canonical effect labels enforced across subjects. Ignored when \code{betas}
+already carries \code{dkge_subject}/\code{dkge_data} entries.}
 
 \item{K}{Design kernel that expresses similarity or smoothness between
 effects in the design space (e.g. identity for nominal factors, RBF for
 ordinal factors, Kronecker combinations for interactions). Supply either a
-qxq numeric matrix or the list returned by [design_kernel()], whose `K`
-element is extracted automatically. Matches the `K` parameter name used by
-[dkge_fit()].}
+qxq numeric matrix or the list returned by \code{\link[=design_kernel]{design_kernel()}}, whose \code{K}
+element is extracted automatically. Matches the \code{K} parameter name used by
+\code{\link[=dkge_fit]{dkge_fit()}}.}
 
 \item{Omega_list}{Optional list overriding per-subject spatial weights. Each
-element may be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix.
-When betas are voxelwise (e.g. coming from `NeuroVec`), these weights
+element may be \code{NULL}, a length-P_s numeric vector, or a P_sxP_s matrix.
+When betas are voxelwise (e.g. coming from \code{NeuroVec}), these weights
 operate on spatial units (voxels) rather than clusters; equal weights are
-assumed when omitted. Matches the `Omega_list` parameter name used by
-[dkge_fit()].}
+assumed when omitted. Matches the \code{Omega_list} parameter name used by
+\code{\link[=dkge_fit]{dkge_fit()}}.}
 
 \item{subject_ids}{Optional subject identifiers used when raw matrices are
-provided. Ignored when `betas` carries IDs already.}
+provided. Ignored when \code{betas} carries IDs already.}
 
-\item{keep_inputs}{Logical; when `TRUE` (default) the returned object stores the
-canonicalised `dkge_data` bundle under `$input` for later inspection or
+\item{keep_inputs}{Logical; when \code{TRUE} (default) the returned object stores the
+canonicalised \code{dkge_data} bundle under \verb{$input} for later inspection or
 prediction.}
 
 \item{cpca_blocks}{Optional integer vector specifying the effect rows that
-span a CPCA design subspace. Ignored when `cpca_part = "none"` or when
-`cpca_T` is provided.}
+span a CPCA design subspace. Ignored when \code{cpca_part = "none"} or when
+\code{cpca_T} is provided.}
 
 \item{cpca_T}{Optional qxq0 matrix giving the CPCA design basis explicitly.
-Overrides `cpca_blocks` when supplied.}
+Overrides \code{cpca_blocks} when supplied.}
 
-\item{cpca_part}{Which CPCA-filtered component to fit: `"none"` (default)
-performs the standard DKGE fit; `"design"` uses only the CPCA design part;
-`"resid"` uses the residual part; `"both"` fits the design part but also
+\item{cpca_part}{Which CPCA-filtered component to fit: \code{"none"} (default)
+performs the standard DKGE fit; \code{"design"} uses only the CPCA design part;
+\code{"resid"} uses the residual part; \code{"both"} fits the design part but also
 stores the residual basis.}
 
 \item{cpca_ridge}{Optional ridge applied to the CPCA-filtered matrices before
 eigen-decomposition.}
 
-\item{weights}{Optional [`dkge_weights()`] specification that overrides the
+\item{weights}{Optional \code{\link[=dkge_weights]{dkge_weights()}} specification that overrides the
 default adaptive weighting behaviour when accumulating covariance. Use this
 to inject custom spatial reliabilities or to reuse a precomputed weighting
-recipe produced by [dkge_weights()].}
+recipe produced by \code{\link[=dkge_weights]{dkge_weights()}}.}
 
-\item{kernel}{Deprecated. Use `K` instead.}
+\item{kernel}{Deprecated. Use \code{K} instead.}
 
-\item{omega}{Deprecated. Use `Omega_list` instead.}
+\item{omega}{Deprecated. Use \code{Omega_list} instead.}
 
-\item{...}{Additional arguments forwarded to [dkge_fit()] (e.g. `rank`,
-`ridge`, `w_method`, `weights`).}
+\item{effect_weights}{Optional \code{\link[=dkge_effect_weights]{dkge_effect_weights()}} specification for
+subject-by-effect count or precision weighting.}
+
+\item{debias}{Effect-moment estimator passed to \code{\link[=dkge_fit]{dkge_fit()}}: observed
+(\code{"none"}), analytic finite-trial subtraction (\code{"analytic"}), or a
+split-half cross-moment (\code{"split_half"}).}
+
+\item{effect_scaling}{Effect-space scaling passed to \code{\link[=dkge_fit]{dkge_fit()}}. Use
+\code{"none"} when input rows already share an absolute scale, such as
+AUC-minus-chance cell maps.}
+
+\item{effects}{Optional character vector pinning the global effect order,
+forwarded to \code{\link[=dkge_data]{dkge_data()}}. Ignored (and checked for agreement) when
+\code{betas} is already a \code{dkge_data} bundle.}
+
+\item{...}{Additional arguments forwarded to \code{\link[=dkge_fit]{dkge_fit()}} (e.g. \code{rank},
+\code{ridge}, \code{w_method}, \code{weights}).}
 }
 \value{
-A `dkge` object containing the learned basis (`$U`), eigenvalues,
-  pooled design Cholesky factor (`$R`), compressed covariance matrix, subject weights, and
-  metadata (subject IDs, effect names, cluster identifiers) derived from the
-  input bundle.
+A \code{dkge} object containing the learned basis (\verb{$U}), eigenvalues,
+pooled design Cholesky factor (\verb{$R}), compressed covariance matrix, subject weights, and
+metadata (subject IDs, effect names, cluster identifiers) derived from the
+input bundle.
 }
 \description{
-This high-level wrapper prepares subject-level inputs and calls [dkge_fit()]
+This high-level wrapper prepares subject-level inputs and calls \code{\link[=dkge_fit]{dkge_fit()}}
 to estimate the shared Design-Kernel Group Embedding (DKGE) basis. Provide a
 design kernel in effect space together with per-subject GLM coefficients and
-design matrices, and receive a `dkge` object ready for LOSO contrasts, medoid
+design matrices, and receive a \code{dkge} object ready for LOSO contrasts, medoid
 transport, or out-of-sample prediction.
 }
 \details{
-The design matrices `X_s` supplied here are the same T_sxq regressors
-  used to fit the subject-level GLMs; their columns must align with the effects
-  encoded by the kernel. The kernel `K` captures how effects relate to one
-  another-identity recovers standard OLS scaling, while structured kernels (e.g.
-  RBF for ordinal factors, circulant for wrapped factors, Kronecker products for
-  interactions) encourage shared smoothness or coupling between design effects.
+The design matrices \code{X_s} supplied here are the same T_sxq regressors
+used to fit the subject-level GLMs; their columns must align with the effects
+encoded by the kernel. The kernel \code{K} captures how effects relate to one
+another-identity recovers standard OLS scaling, while structured kernels (e.g.
+RBF for ordinal factors, circulant for wrapped factors, Kronecker products for
+interactions) encourage shared smoothness or coupling between design effects.
 
-  DKGE itself operates entirely in this low-dimensional design space: (1) the
-  pooled Gram matrix across subjects yields a shared Cholesky factor `R`; (2) each beta
-  matrix is row-standardised; (3) compressed covariance is accumulated in the
-  K-metric with optional subject weighting; and (4) a tiny eigenproblem produces
-  the K-orthonormal group basis. The input harmonisation performed by this
-  wrapper ensures consistent effect naming, subject identifiers, and spatial
-  weights so downstream utilities such as [dkge_loso_contrast()] can work without
-  additional bookkeeping. Use [dkge_subject()] to build subjects from raw
-  matrices, `NeuroVec`, or `ClusteredNeuroVec` sources prior to calling `dkge()`.
+DKGE itself operates entirely in this low-dimensional design space: (1) the
+pooled Gram matrix across subjects yields a shared Cholesky factor \code{R}; (2) each beta
+matrix is row-standardised; (3) compressed covariance is accumulated in the
+K-metric with optional subject and effect weighting; and (4) a tiny
+symmetric eigenproblem produces
+the K-orthonormal group basis. The input harmonisation performed by this
+wrapper ensures consistent effect naming, subject identifiers, and spatial
+weights so downstream utilities such as \code{\link[=dkge_loso_contrast]{dkge_loso_contrast()}} can work without
+additional bookkeeping. Use \code{\link[=dkge_subject]{dkge_subject()}} to build subjects from raw
+matrices, \code{NeuroVec}, or \code{ClusteredNeuroVec} sources prior to calling \code{dkge()}.
 }
 \seealso{
-[dkge_subject()], [dkge_data()], [design_kernel()], [dkge_fit()],
-  [dkge_loso_contrast()]
+\code{\link[=dkge_subject]{dkge_subject()}}, \code{\link[=dkge_data]{dkge_data()}}, \code{\link[=design_kernel]{design_kernel()}}, \code{\link[=dkge_fit]{dkge_fit()}},
+\code{\link[=dkge_loso_contrast]{dkge_loso_contrast()}}
 }

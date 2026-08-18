@@ -2,12 +2,12 @@
 % Please edit documentation in R/dkge-plot.R
 \name{dkge_plot_effect_loadings}
 \alias{dkge_plot_effect_loadings}
-\title{Effect-space loadings heatmap (K \%*\% U)}
+\title{Effect-space loadings heatmap (\code{K \%*\% U})}
 \usage{
 dkge_plot_effect_loadings(fit, comps = NULL, zscore = FALSE)
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{comps}{Components to include (defaults to first min(rank,6)).}
 
@@ -17,13 +17,13 @@ dkge_plot_effect_loadings(fit, comps = NULL, zscore = FALSE)
 A ggplot object.
 }
 \description{
-Effect-space loadings heatmap (K \%*\% U)
+Effect-space loadings heatmap (\code{K \%*\% U})
 }
 \examples{
 toy <- dkge_sim_toy(
   factors = list(A = list(L = 2), B = list(L = 3)),
   active_terms = c("A", "B"), S = 3, P = 15, snr = 5
 )
-fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
+fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 dkge_plot_effect_loadings(fit, comps = 1:2)
 }

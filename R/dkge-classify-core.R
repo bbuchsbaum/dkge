@@ -10,7 +10,7 @@
 #' Anchor-based fits produced by [dkge_anchor_fit()] do not retain the
 #' design-factor metadata that `dkge_targets()` expects. In that setting you must
 #' supply explicit weight matrices (rows = classes, columns = effects) or
-#' ready-made [`dkge_target`] objects—helpers such as
+#' ready-made `dkge_target` objects—helpers such as
 #' [dkge_anchor_targets_from_prototypes()] and
 #' [dkge_anchor_targets_from_directions()] can be used to construct them.
 #' @param y Optional subject-level labels for delta-mode targets. Can be a vector

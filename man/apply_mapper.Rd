@@ -7,7 +7,7 @@
 apply_mapper(fitted_mapper, values, ...)
 }
 \arguments{
-\item{fitted_mapper}{Mapping object returned by [fit_mapper()].}
+\item{fitted_mapper}{Mapping object returned by \code{\link[=fit_mapper]{fit_mapper()}}.}
 
 \item{values}{Numeric vector or matrix of source-space values.}
 
@@ -17,7 +17,7 @@ apply_mapper(fitted_mapper, values, ...)
 Numeric vector or matrix of mapped values.
 }
 \description{
-Alias to [predict_mapper()] that mirrors the terminology used by the
+Alias to \code{\link[=predict_mapper]{predict_mapper()}} that mirrors the terminology used by the
 dense rendering helpers.
 }
 \examples{

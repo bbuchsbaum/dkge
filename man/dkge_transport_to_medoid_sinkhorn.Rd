@@ -53,7 +53,7 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 \item{epsilon, max_iter, tol}{Sinkhorn parameters.}
 
-\item{transport_cache}{Optional cache returned by [dkge_prepare_transport()].
+\item{transport_cache}{Optional cache returned by \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.
 When supplied, cached operators are reused and the mapper configuration
 stored in the cache takes precedence.}
 
@@ -61,7 +61,7 @@ stored in the cache takes precedence.}
 }
 \value{
 List containing summary statistics, transported subject maps, and
-  the per-subject transport operators.
+the per-subject transport operators.
 }
 \description{
 Transport cluster values to a medoid via entropic Sinkhorn OT

@@ -11,13 +11,13 @@ dkge_k_orthonormalize(W, K, Kroots = NULL)
 
 \item{K}{qxq design kernel (PSD)}
 
-\item{Kroots}{optional precomputed kernel roots from `.dkge_kernel_roots`}
+\item{Kroots}{optional precomputed kernel roots from \code{.dkge_kernel_roots}}
 }
 \value{
 qxr matrix with K-orthonormal columns
 }
 \description{
-Ensures the columns of `W` are orthonormal with respect to the
+Ensures the columns of \code{W} are orthonormal with respect to the
 design kernel metric: U^T K U = I.
 }
 \examples{

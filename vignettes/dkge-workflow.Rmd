@@ -36,10 +36,11 @@ data prep → fit → component inspection → inference → bootstrap.
 
 > **Before you fit.** If you are new to DKGE, read
 > `vignette("dkge-concepts")` first. It covers what DKGE actually
-> decomposes (it eigendecomposes \(K^{1/2} C K^{1/2}\), so the kernel is a
-> metric, not a basis), why identity-\(K\) is the unconstrained baseline that
-> structured kernels should be compared against, and the three levels at
-> which DKGE supports inference (component, contrast, feature). The choices
+> decomposes (it pools a raw effect moment \(M\), then eigendecomposes
+> \(K^{1/2}R^\top M R K^{1/2}\), so the kernel is a metric, not a basis), why
+> identity-\(K\) is the unconstrained baseline that structured kernels should
+> be compared against, and the four levels at which DKGE supports inference
+> (component, contrast, feature, and between-subject term). The choices
 > made below — `K = diag(q)`, `method = "loso"`, `dkge_component_stats()` —
 > map directly onto those concepts.
 
@@ -64,6 +65,12 @@ data_bundle <- dkge_data(subjects)
 
 `dkge_subject()` pairs each beta matrix with its design matrix. `dkge_data()`
 harmonises effect ordering and subject IDs across the list.
+
+When beta rows are estimated from unequal trial counts, construct each record
+with `dkge_trial_subject()` instead. It retains cell estimates, counts,
+effect-noise covariance, residual variances, and optional split halves, which
+support `effect_weights` and `debias` without retaining the trial-by-feature
+matrix. See `vignette("dkge-partial-effect-spaces")` for a runnable example.
 
 ## Fitting
 
@@ -153,5 +160,7 @@ perturbation theory when thousands of draws are needed.
 | Hypothesis contrasts | `dkge_contrast()`, `dkge_pipeline()` |
 | Out-of-sample scoring | `dkge_project_blocks()` |
 | Structured design kernels | `design_kernel()` |
+| Partial cells and unequal trial counts | `dkge_trial_subject()`, `dkge_effect_weights()` |
+| Between-subject group/trait tests | `dkge_between_rrr()`, `dkge_between_permute()` |
 | Classification / decoding | `dkge_classify()` — see `vignette("dkge-classification")` |
 | Inference details | `vignette("dkge-contrasts-inference")` |

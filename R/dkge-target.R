@@ -29,6 +29,16 @@
 #' @param provenance Optional provenance metadata.
 #' @param ... Additional arguments forwarded to contrast/transport helpers.
 #'
+#' @details
+#' For `type = "transported_maps"`, every contrast in `contrast_obj` becomes a
+#' block of columns of `Y`; earlier versions kept only the first contrast when
+#' `centroids` was `NULL` and silently dropped the rest. Feature identifiers are
+#' the contrast name joined to the within-contrast feature label by `":"`
+#' (`"c1:v1"`, or `"c1:1"`, `"c1:2"`, ... when the values carry no column
+#' names), so they are stable across calls and identical on the centroid and
+#' no-centroid paths. Unnamed contrasts are labelled `contrast1`, `contrast2`,
+#' and so on.
+#'
 #' @return Object of class `dkge_target`.
 #' @export
 dkge_make_target <- function(fit = NULL,
@@ -290,8 +300,40 @@ dkge_make_target <- function(fit = NULL,
   }
 
   if (is.null(centroids)) {
-    first <- contrast_obj$values[[1]]
-    Y <- .dkge_values_to_matrix(first)
+    contrast_names <- names(contrast_obj$values)
+    if (is.null(contrast_names) || any(!nzchar(contrast_names))) {
+      contrast_names <- paste0("contrast", seq_along(contrast_obj$values))
+    }
+    mats <- Map(function(vals, nm) {
+      M <- .dkge_values_to_matrix(vals)
+      colnames(M) <- paste(nm, colnames(M) %||% seq_len(ncol(M)), sep = ":")
+      M
+    }, contrast_obj$values, contrast_names)
+    subject_ids <- rownames(mats[[1]])
+    if (is.null(subject_ids)) {
+      subject_ids <- if (!is.null(fit$subject_ids) &&
+                          length(fit$subject_ids) == nrow(mats[[1]])) {
+        fit$subject_ids
+      } else {
+        paste0("subj", seq_len(nrow(mats[[1]])))
+      }
+      rownames(mats[[1]]) <- subject_ids
+    }
+    mats <- lapply(mats, function(M) {
+      if (is.null(rownames(M))) {
+        if (nrow(M) != length(subject_ids)) {
+          stop("All contrast value matrices must have the same number of subjects.",
+               call. = FALSE)
+        }
+        rownames(M) <- subject_ids
+      }
+      ord <- match(subject_ids, rownames(M))
+      if (anyNA(ord)) {
+        stop("All contrast values must contain the same subject IDs.", call. = FALSE)
+      }
+      M[ord, , drop = FALSE]
+    })
+    Y <- do.call(cbind, mats)
     return(list(Y = Y,
                 feature_ids = colnames(Y),
                 subject_ids = rownames(Y),

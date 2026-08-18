@@ -27,17 +27,17 @@ dkge_cv_kernel_rank(
 
 \item{Omega_list}{Optional list of spatial weights.}
 
-\item{ridge}{Optional ridge parameter passed to [dkge_fit()].}
+\item{ridge}{Optional ridge parameter passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
-\item{w_method}{Subject-level weighting scheme passed to [dkge_fit()].}
+\item{w_method}{Subject-level weighting scheme passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
-\item{w_tau}{Shrinkage parameter toward equal weights passed to [dkge_fit()].}
+\item{w_tau}{Shrinkage parameter toward equal weights passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
 \item{top_k}{Number of kernels to keep after pre-screening.}
 }
 \value{
-List with the selected `kernel` and `rank`, alignment and CV tables,
-  and a per-kernel summary of scores at the selected rank.
+List with the selected \code{kernel} and \code{rank}, alignment and CV tables,
+and a per-kernel summary of scores at the selected rank.
 }
 \description{
 Runs kernel alignment pre-screening followed by LOSO explained-variance

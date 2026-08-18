@@ -1,6 +1,24 @@
 # dkge-bootstrap.R
 # Fast bootstrap approximations for DKGE fits.
 
+#' Is the fit's moment pooling non-linear in the subject weights?
+#'
+#' `Chat` is a plain weighted sum of the stored per-subject contributions,
+#' `Chat = sum_s w_s contribs[[s]]`, only when neither adaptive effect weighting
+#' nor a coverage (missingness) policy is active. Both of those renormalise the
+#' pool as a function of the weights, so a reweighted draw must be re-pooled
+#' rather than obtained by a matrix-vector product. Resampling and
+#' perturbation code paths share this predicate so they cannot drift apart.
+#'
+#' @param fit A fitted `dkge` object.
+#' @return `TRUE` when pooling is non-linear in the subject weights.
+#' @keywords internal
+#' @noRd
+.dkge_fit_pool_is_nonlinear <- function(fit) {
+  !identical(fit$effect_weight_spec$method %||% "none", "none") ||
+    !identical(fit$missingness %||% "none", "none")
+}
+
 #' Subject-level projection bootstrap in medoid space
 #'
 #' Resamples transported subject vectors (already aligned in the medoid
@@ -181,12 +199,37 @@ dkge_bootstrap_qspace <- function(fit,
   weights_base <- as.numeric(fit$weights)
   contribs <- fit$contribs
   contrib_matrix <- vapply(contribs, function(M) as.numeric(M), numeric(q * q))
+  # Hoisted out of the replicate loop: when pooling is linear in the subject
+  # weights, a reweighted Chat is one q^2-by-S matvec instead of re-pooling S
+  # q-by-q moments per draw.
+  nonlinear_pool <- .dkge_fit_pool_is_nonlinear(fit)
 
   for (b in seq_len(B)) {
     xi <- .dkge_bootstrap_multipliers(scheme, S)
     coeff <- weights_base * xi
-    Chat_vec <- contrib_matrix %*% coeff
-    Chat_b <- matrix(Chat_vec, q, q)
+    Chat_b <- NULL
+    if (nonlinear_pool) {
+      repooled <- .dkge_repool_fit(fit, sample_weights = xi)
+      if (is.null(repooled)) {
+        # Falling through to the linear matvec here would silently return a
+        # differently-normalised Chat than the fit itself uses (coverage
+        # rescaling / pair-normalised effect weights are not linear in the
+        # subject weights), so the bootstrap would be reported as if it matched
+        # the fit when it does not.
+        stop(
+          "This fit pools non-linearly (effect weighting or a missingness ",
+          "policy is active) but does not carry the q-space effect moments ",
+          "needed to re-pool a bootstrap draw. Refit with `dkge_fit()` so ",
+          "`$effect_moments` is stored, or use missingness = 'none' with ",
+          "`dkge_effect_weights('none')`.",
+          call. = FALSE
+        )
+      }
+      Chat_b <- repooled$Chat
+    }
+    if (is.null(Chat_b)) {
+      Chat_b <- matrix(contrib_matrix %*% coeff, q, q)
+    }
     if (ridge > 0) {
       diag(Chat_b) <- diag(Chat_b) + ridge
     }
@@ -204,6 +247,13 @@ dkge_bootstrap_qspace <- function(fit,
     Ub <- sweep(Ub, 2, corr_sign, `*`)
 
     A_list <- lapply(KBtil_t, function(mat) mat %*% Ub)
+    # Deliberate asymmetry: under non-linear pooling `Chat_b` comes from
+    # `.dkge_repool_fit()`, which renormalises the pool internally (coverage
+    # rescaling, pair-normalised effect weights), while the subject maps are
+    # averaged with the raw multiplier weights `w_s * xi_s`. The basis and the
+    # map average therefore use different weightings by design: the basis must
+    # respect the fit's coverage convention, whereas the map average is a plain
+    # multiplier-bootstrap mean over subjects.
     weights_boot <- coeff
     w_sum <- sum(weights_boot)
     if (!is.finite(w_sum) || w_sum <= 0) w_sum <- 1
@@ -293,6 +343,18 @@ dkge_bootstrap_analytic <- function(fit,
                                  seed = seed, transport_cache = transport_cache,
                                  mapper = mapper, centroids = centroids, sizes = sizes,
                                  medoid = medoid, voxel_operator = voxel_operator, ...))
+  }
+
+  if (.dkge_fit_pool_is_nonlinear(fit)) {
+    warning("Analytic bootstrap does not linearize pair-normalized effect pooling; falling back to q-space bootstrap.",
+            call. = FALSE)
+    return(dkge_bootstrap_qspace(fit, contrasts, B = B, scheme = scheme,
+                                 ridge = ridge, align = align,
+                                 allow_reflection = allow_reflection,
+                                 seed = seed, transport_cache = transport_cache,
+                                 mapper = mapper, centroids = centroids,
+                                 sizes = sizes, medoid = medoid,
+                                 voxel_operator = voxel_operator, ...))
   }
 
   if (is.null(fit$eig_vectors_full) || is.null(fit$eig_values_full)) {

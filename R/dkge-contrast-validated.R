@@ -62,6 +62,8 @@ dkge_contrast_validated <- function(fit,
   completed_missingness <- match.arg(completed_missingness)
 
   contrast_list <- .normalize_contrasts(contrasts, fit)
+  contrast_info <- .dkge_classify_contrasts(contrast_list, fit)
+  .dkge_warn_contrast_inference(contrast_info, "kfold")
   folds_obj <- .dkge_validated_coerce_folds(fit, folds)
 
   observed_res <- .dkge_contrast_kfold(
@@ -104,6 +106,17 @@ dkge_contrast_validated <- function(fit,
   comp_scores <- .dkge_validated_subject_means(completed_res$values, subject_ids)
 
   summary_tbl <- .dkge_validated_summary(obs_scores, comp_scores, subject_weights, names(contrast_list))
+  # Column-bind rather than merge(): summary rows and estimability rows are both
+  # built in contrast order, and merging on a duplicated `contrast` name would
+  # produce a cartesian blow-up (k rows per duplicated name).
+  info_cols <- setdiff(names(contrast_info), "contrast")
+  if (nrow(contrast_info) == nrow(summary_tbl)) {
+    summary_tbl <- cbind(summary_tbl, contrast_info[, info_cols, drop = FALSE])
+  } else {
+    idx <- match(summary_tbl$contrast, contrast_info$contrast)
+    summary_tbl <- cbind(summary_tbl, contrast_info[idx, info_cols, drop = FALSE])
+  }
+  rownames(summary_tbl) <- NULL
 
   provenance <- .dkge_validated_provenance(fit, folds_obj, observed_res, completed_res)
 
@@ -111,7 +124,8 @@ dkge_contrast_validated <- function(fit,
     observed = observed_res,
     completed = completed_res,
     summary = summary_tbl,
-    provenance = provenance
+    provenance = provenance,
+    contrast_estimability = contrast_info
   )
   class(out) <- "dkge_contrast_validated"
   out
@@ -135,16 +149,17 @@ dkge_contrast_validated <- function(fit,
 }
 
 .dkge_validated_subject_means <- function(values, subject_ids) {
-  contrasts <- names(values)
-  res <- matrix(NA_real_, nrow = length(subject_ids), ncol = length(contrasts),
+  contrasts <- names(values) %||% paste0("contrast", seq_along(values))
+  res <- matrix(NA_real_, nrow = length(subject_ids), ncol = length(values),
                 dimnames = list(subject_ids, contrasts))
-  for (contrast_name in contrasts) {
-    subj_vals <- values[[contrast_name]]
+  # Indexed by position, not by name: contrast names are not guaranteed unique.
+  for (j in seq_along(values)) {
+    subj_vals <- values[[j]]
     for (id in names(subj_vals)) {
       if (!id %in% subject_ids) next
       v <- subj_vals[[id]]
       if (is.null(v)) next
-      res[id, contrast_name] <- mean(as.numeric(v), na.rm = TRUE)
+      res[id, j] <- mean(as.numeric(v), na.rm = TRUE)
     }
   }
   res
@@ -163,8 +178,8 @@ dkge_contrast_validated <- function(fit,
   names(w_vec) <- rownames(obs_scores)
   summary_rows <- lapply(seq_along(contrast_names), function(i) {
     cname <- contrast_names[[i]]
-    obs <- obs_scores[, cname, drop = TRUE]
-    comp <- comp_scores[, cname, drop = TRUE]
+    obs <- obs_scores[, i, drop = TRUE]
+    comp <- comp_scores[, i, drop = TRUE]
     mu_obs <- .dkge_validated_weighted_mean(obs, w_vec)
     mu_comp <- .dkge_validated_weighted_mean(comp, w_vec)
     delta <- mu_comp - mu_obs

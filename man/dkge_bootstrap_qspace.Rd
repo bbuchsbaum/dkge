@@ -23,42 +23,42 @@ dkge_bootstrap_qspace(
 )
 }
 \arguments{
-\item{fit}{A fitted `dkge` object.}
+\item{fit}{A fitted \code{dkge} object.}
 
-\item{contrasts}{Contrast specification accepted by [dkge_contrast()].}
+\item{contrasts}{Contrast specification accepted by \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 
 \item{B}{Number of bootstrap replicates.}
 
-\item{scheme}{Multiplier distribution (`"poisson"`, `"exp"`, or `"bayes"`).}
+\item{scheme}{Multiplier distribution (\code{"poisson"}, \code{"exp"}, or \code{"bayes"}).}
 
 \item{ridge}{Optional ridge added to the reweighted compressed covariance.}
 
-\item{align}{Logical; when `TRUE` the resampled bases are aligned to the
+\item{align}{Logical; when \code{TRUE} the resampled bases are aligned to the
 baseline basis via K-Procrustes before contrasts are evaluated.}
 
-\item{allow_reflection}{Passed to [dkge_procrustes_K()] when aligning bases.}
+\item{allow_reflection}{Passed to \code{\link[=dkge_procrustes_K]{dkge_procrustes_K()}} when aligning bases.}
 
 \item{seed}{Optional random seed for reproducibility.}
 
-\item{transport_cache}{Optional cache from [dkge_prepare_transport()].}
+\item{transport_cache}{Optional cache from \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.}
 
 \item{mapper}{Mapper specification used when a cache is not supplied.}
 
 \item{centroids}{Optional centroids overriding those stored on the fit.}
 
 \item{sizes}{Optional list of cluster weights passed to
-[dkge_prepare_transport()].}
+\code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.}
 
 \item{medoid}{Medoid index used during transport.}
 
 \item{voxel_operator}{Optional matrix mapping medoid values to voxels.}
 
-\item{...}{Additional arguments forwarded to [dkge_prepare_transport()] when
+\item{...}{Additional arguments forwarded to \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}} when
 the transport cache needs to be built.}
 }
 \value{
 List containing per-contrast bootstrap summaries and the transport
-  cache employed during resampling.
+cache employed during resampling.
 }
 \description{
 Reweights subject contributions with i.i.d. multiplier weights, recomputes

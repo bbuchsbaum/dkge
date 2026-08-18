@@ -28,11 +28,12 @@ test_that("fold builder uses training-only adaptive weights and weighted G", {
   expect_equal(f1$weights$w_total, exp_w_adapt, tolerance = 1e-4)
 
   w <- f1$weights$w_total
-  accum <- dkge:::.dkge_accumulate_chat(B_train, vector("list", length(B_train)),
-                                        diag(nrow(B_train[[1L]])),
-                                        rep(1, length(B_train)),
-                                        voxel_weights = w)
-  G_ref <- accum$Chat
+  # fit$K, fit$Khalf and the implied ruler R are all identity here, so the
+  # training Chat is just the sum of voxel-weighted subject second moments.
+  G_ref <- Reduce(`+`, lapply(B_train, function(B) {
+    Bw <- sweep(B, 2L, sqrt(pmax(w, 0)), "*")
+    tcrossprod(Bw)
+  }))
   G_ref <- G_ref + (1e-6 * sum(diag(G_ref)) / nrow(G_ref)) * diag(nrow(G_ref))
   G_ref <- 0.5 * (G_ref + t(G_ref))
   G_rec <- f1$U_minus %*% diag(f1$D_minus, ncol(f1$U_minus)) %*% t(f1$U_minus)
@@ -85,4 +86,18 @@ test_that("short voxel weight vectors trigger recycling warning", {
   )
   recycled <- attr(res, "recycled_weights_subjects")
   expect_true(length(recycled) > 0)
+})
+
+test_that("adaptive/prior voxel weights error clearly on heterogeneous P_s", {
+  source(testthat::test_path("helper-transport.R"), local = TRUE)
+  d <- create_mismatched_data()
+  expect_error(
+    dkge_fit(d$betas, d$designs, K = d$K, rank = 2,
+             weights = dkge_weights(adapt = "kenergy")),
+    "share one voxel/cluster space"
+  )
+  # uniform weighting keeps working
+  fit <- dkge_fit(d$betas, d$designs, K = d$K, rank = 2,
+                  weights = dkge_weights(adapt = "none"))
+  expect_s3_class(fit, "dkge")
 })

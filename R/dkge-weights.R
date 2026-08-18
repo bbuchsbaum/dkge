@@ -8,6 +8,11 @@
 #' specification is attached to fits and reused by fold builders to ensure
 #' cross-fitting remains leak-free.
 #'
+#' @section Shared voxel space:
+#' All voxel-level weighting (`prior` and every `adapt` other than `"none"`)
+#' assumes subjects share one voxel/cluster space (equal `ncol()` across
+#' subjects). Fitting heterogeneous-width subjects with such a spec is an error.
+#'
 #' @param prior Optional prior weights: numeric vector of length V, logical mask,
 #'   integer indices, or ROI labels (factor/character/integer of length V) per voxel. Helpers
 #'   [dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.
@@ -32,7 +37,7 @@
 #'   \item{`"prefer_prior"`}{Prior weight is used wherever it is finite and
 #'     positive; falls back to adaptive otherwise. Prior takes priority.}
 #' }
-#' @param mix Numeric in [0,1] controlling the relative influence of the adaptive
+#' @param mix Numeric in \[0,1\] controlling the relative influence of the adaptive
 #'   component. Interpreted in log-space for `combine = "product"`.
 #' @param shrink List with fields `alpha` (shrink towards uniform), `winsor`
 #'   (upper quantile cap), `normalize` (`"mean"` or `"sum"`), and optional
@@ -481,7 +486,20 @@ dkge_weights_auto <- function() {
                                         kernel_info,
                                         sigma2_list = NULL) {
   stopifnot(inherits(weights, "dkge_weights"))
-  V <- ncol(B_list[[1]])
+  Ps <- vapply(B_list, ncol, integer(1))
+  V <- Ps[[1]]
+  # Voxel weights are one vector over a shared voxel/cluster space (per-subject
+  # weights are averaged across subjects). With heterogeneous P_s there is no
+  # such space, so anything but uniform weighting is undefined; previously the
+  # first subject's profile was silently recycled onto the others.
+  if (length(unique(Ps)) > 1L &&
+      (!identical(weights$adapt, "none") || !is.null(weights$prior))) {
+    stop(sprintf(paste0(
+      "Voxel-level weighting (`prior` / `adapt`) requires all subjects to share ",
+      "one voxel/cluster space, but subjects have P = %s. Use ",
+      "dkge_weights(adapt = \"none\") without a prior, or map subjects to a ",
+      "common parcellation first."), paste(Ps, collapse = ", ")), call. = FALSE)
+  }
   w_prior <- .dkge_eval_prior(weights$prior, V)
 
   K_effects <- NULL
@@ -554,7 +572,7 @@ dkge_weights_auto <- function() {
 .dkge_weight_kernel_payload <- function(K, info) {
   levels <- NULL
   map <- NULL
-  if (!is.null(info)) {
+  if (is.list(info)) {
     map <- info$map %||% info$info$map %||% NULL
     if (!is.null(info$levels)) {
       levels <- info$levels
@@ -607,7 +625,14 @@ dkge_update_weights <- function(fit, weights = NULL) {
     cpca_T = cpca$T %||% NULL,
     cpca_part = cpca$part %||% "none",
     cpca_ridge = cpca$ridge %||% 0,
-    weights = weight_spec
+    weights = weight_spec,
+    # Carry the original moment-construction settings, otherwise a re-weighted
+    # refit silently reverts to the defaults.
+    effect_scaling = fit$effect_scaling %||% "pooled_design",
+    effect_weights = fit$effect_weight_spec,
+    debias = fit$debias %||% "none",
+    missingness = fit$missingness %||% "none",
+    miss_args = fit$miss_args %||% list()
   )
   new_fit$input <- data_bundle
   new_fit

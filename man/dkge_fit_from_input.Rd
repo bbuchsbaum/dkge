@@ -13,18 +13,18 @@ dkge_fit_from_input(input, ...)
 \method{dkge_fit_from_input}{default}(input, ...)
 }
 \arguments{
-\item{input}{Object inheriting from `dkge_input`.}
+\item{input}{Object inheriting from \code{dkge_input}.}
 
 \item{...}{Additional arguments merged into the DKGE fitting call (these are
-interpreted as DKGE core options, e.g. `w_method`).}
+interpreted as DKGE core options, e.g. \code{w_method}).}
 }
 \value{
-A fitted `dkge` object.
+A fitted \code{dkge} object.
 }
 \description{
 Dispatches to the appropriate preprocessing pipeline (anchors, raw betas,
 etc.) before invoking the DKGE core. Currently supports anchor descriptors
-created via [dkge_input_anchor()].
+created via \code{\link[=dkge_input_anchor]{dkge_input_anchor()}}.
 }
 \examples{
 \donttest{
