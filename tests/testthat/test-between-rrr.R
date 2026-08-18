@@ -486,3 +486,28 @@ test_that("singleton exchangeability blocks make Freedman-Lane null deterministi
                tolerance = 1e-10)
   expect_equal(perm$summary$p, 1)
 })
+
+test_that("dkge_between_rrr stores and validates rank tolerance", {
+  dat <- data.frame(subject_id = paste0("s", 1:8), x = seq(-1, 1, length.out = 8))
+  design <- dkge_subject_model(~ x, dat)
+  Y <- design$X %*% matrix(c(0, 1), 2, 1) + matrix(rnorm(8, sd = 0.05), 8, 1)
+  target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+
+  expect_error(dkge_between_rrr(target, design, rank = 1, tol = 0), "positive")
+  expect_error(dkge_between_rrr(target, design, rank = 1, tol = c(1e-8, 1e-6)),
+               "positive")
+  expect_equal(dkge_between_rrr(target, design, rank = 1, tol = 1e-10)$tol, 1e-10)
+})
+
+test_that("dkge_between_permute finds the shared resampling helpers", {
+  dat <- data.frame(subject_id = paste0("s", 1:8), x = seq(-1, 1, length.out = 8))
+  design <- dkge_subject_model(~ x, dat)
+  Y <- design$X %*% matrix(c(0, 1), 2, 1) + matrix(rnorm(8, sd = 0.05), 8, 1)
+  target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+  fit <- dkge_between_rrr(target, design, rank = 1, tol = 1e-6)
+
+  expect_error(dkge_between_permute(fit, terms = "x", B = 0), "positive integer")
+  perm <- dkge_between_permute(fit, terms = "x", B = 4, seed = 11)
+  expect_s3_class(perm, "dkge_between_permutation")
+  expect_equal(perm$B, 4L)
+})

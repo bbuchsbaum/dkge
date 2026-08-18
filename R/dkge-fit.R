@@ -481,7 +481,11 @@ dkge_fit <- function(data, designs = NULL, K = NULL, Omega_list = NULL,
   debias <- match.arg(debias)
   miss_args <- .dkge_validate_miss_args(missingness, miss_args)
 
-  effect_weight_spec <- effect_weights %||% dkge_effect_weights("none")
+  effect_weight_spec <- if (is.null(effect_weights)) {
+    dkge_effect_weights("none")
+  } else {
+    effect_weights
+  }
   if (identical(solver, "jd") &&
       (!identical(effect_weight_spec$method, "none") ||
        !identical(missingness, "none") ||
