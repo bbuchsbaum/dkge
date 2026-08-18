@@ -302,89 +302,137 @@
   list(assignments = fold_obj$assignments, folds = fold_obj)
 }
 
+#' Do a fold's voxel weights reproduce the ones used at fit time?
+#'
+#' When they do, `fit$effect_moments` are exactly the per-subject moments this
+#' fold would recompute from the raw betas, so `.dkge_repool_fit()` can be used
+#' instead (O(S q^2) instead of O(S q^2 P)).
+#'
+#' @keywords internal
+#' @noRd
+.dkge_voxel_weights_match <- function(fit, voxel_weights_train, train_ids) {
+  if (!length(train_ids)) return(FALSE)
+  moments <- fit[["effect_moments"]]
+  if (is.null(moments) || length(moments) < max(train_ids)) return(FALSE)
+  if (is.null(fit$Khalf) || is.null(fit$R)) return(FALSE)
+  fit_weights <- fit$voxel_weights_subject %||% fit$voxel_weights
+  same <- function(a, b) {
+    if (is.null(a) && is.null(b)) return(TRUE)
+    if (is.null(a) || is.null(b)) return(FALSE)
+    isTRUE(all.equal(as.numeric(a), as.numeric(b), tolerance = 0))
+  }
+  if (is.list(voxel_weights_train)) {
+    if (!is.list(fit_weights) || length(fit_weights) < max(train_ids)) return(FALSE)
+    if (length(voxel_weights_train) != length(train_ids)) return(FALSE)
+    return(all(vapply(seq_along(train_ids), function(j) {
+      same(fit_weights[[train_ids[[j]]]], voxel_weights_train[[j]])
+    }, logical(1))))
+  }
+  if (is.list(fit_weights)) return(FALSE)
+  same(fit_weights, voxel_weights_train)
+}
+
 #' @noRd
 .dkge_fold_weight_context <- function(fit,
                                       train_ids,
                                       weight_spec = NULL,
                                       ridge = 0,
-                                      missingness = c("none", "rescale", "mask", "shrink"),
-                                      miss_args = list()) {
+                                      missingness = NULL,
+                                      miss_args = NULL) {
   stopifnot(inherits(fit, "dkge"))
   weight_spec <- weight_spec %||% fit$weight_spec %||% dkge_weights(adapt = "none")
   stopifnot(inherits(weight_spec, "dkge_weights"))
-  missingness <- match.arg(missingness)
+  missingness <- missingness %||% fit$missingness %||% "none"
+  missingness <- match.arg(missingness, c("none", "rescale", "mask", "shrink"))
+  miss_args <- miss_args %||% fit$miss_args %||% list()
 
   kernel_payload <- .dkge_weight_kernel_payload(fit$K, fit$kernel_info)
   B_train <- fit$Btil[train_ids]
   Omega_train <- fit$Omega[train_ids]
   subject_weights <- fit$weights[train_ids]
 
+  # Reliability weighting cross-references a second run (weight_spec$B_list2),
+  # one entry per subject. It must be subset to the training subjects so its
+  # length matches B_train; otherwise .dkge_adapt_weights() errors on every
+  # fold (and, if lengths happened to align, would leak held-out run-2 data).
+  if (!is.null(weight_spec$B_list2)) {
+    weight_spec$B_list2 <- weight_spec$B_list2[train_ids]
+  }
+
   weight_eval <- .dkge_resolve_voxel_weights(weight_spec, B_train, kernel_payload)
   voxel_weights_train <- weight_eval$total_subject %||% weight_eval$total
 
-  accum <- .dkge_accumulate_chat(B_train, Omega_train, fit$Khalf, subject_weights,
-                                 voxel_weights = voxel_weights_train)
-  Chat <- accum$Chat
-
-  pair_counts <- NULL
-  prov <- fit$provenance
-  masks <- prov$obs_mask %||% NULL
-  if (!is.null(masks) && length(train_ids) > 0L) {
-    subject_ids <- fit$subject_ids %||% seq_along(fit$Btil)
-    if (!is.null(names(masks))) {
-      order_idx <- match(subject_ids, names(masks))
-      if (!anyNA(order_idx)) {
-        masks <- masks[order_idx]
-      }
-    }
-    if (length(masks) >= max(train_ids)) {
-      freq_mat <- matrix(0L, nrow = nrow(Chat), ncol = ncol(Chat))
-      dimnames(freq_mat) <- dimnames(Chat)
-      if (!is.null(prov$effect_ids) && length(prov$effect_ids) == nrow(Chat)) {
-        dimnames(freq_mat) <- list(prov$effect_ids, prov$effect_ids)
-      }
-      for (idx in train_ids) {
-        mask <- masks[[idx]]
-        if (is.null(mask)) next
-        mask <- as.logical(mask)
-        if (length(mask) != nrow(Chat)) next
-        sel <- which(mask)
-        if (!length(sel)) next
-        freq_mat[sel, sel] <- freq_mat[sel, sel] + 1L
-      }
-      pair_counts <- freq_mat
-
-      if (!identical(missingness, "none")) {
-        pc_safe <- pmax(freq_mat, 1L)
-        if (identical(missingness, "rescale")) {
-          Chat <- Chat / pc_safe
-          Chat[freq_mat == 0L] <- 0
-        } else if (identical(missingness, "mask")) {
-          threshold <- miss_args$min_pairs %||% 1L
-          mask_zero <- freq_mat < threshold
-          Chat[mask_zero] <- 0
-        } else if (identical(missingness, "shrink")) {
-          rescaled <- Chat / pc_safe
-          rescaled[freq_mat == 0L] <- 0
-          max_pc <- max(freq_mat)
-          gamma <- miss_args$gamma %||% 1
-          if (max_pc <= 0) {
-            weights_mat <- matrix(0, nrow = nrow(Chat), ncol = ncol(Chat))
-          } else {
-            weights_mat <- (freq_mat / max_pc)^gamma
-          }
-          if (!is.null(dimnames(Chat))) {
-            dimnames(weights_mat) <- dimnames(Chat)
-          }
-          diag_part <- diag(diag(Chat), nrow = nrow(Chat), ncol = ncol(Chat))
-          if (!is.null(dimnames(Chat))) {
-            dimnames(diag_part) <- dimnames(Chat)
-          }
-          Chat <- weights_mat * rescaled + (1 - weights_mat) * diag_part
-        }
-      }
+  # When the fold's voxel weights match the ones the fit used, the per-subject
+  # raw-effect moments are unchanged and only the pooling has to be redone.
+  if (.dkge_voxel_weights_match(fit, voxel_weights_train, train_ids)) {
+    pool <- .dkge_repool_fit(fit, indices = train_ids,
+                             missingness = missingness, miss_args = miss_args)
+    if (!is.null(pool)) {
+      Chat <- pool$Chat
+      if (ridge > 0) Chat <- Chat + ridge * diag(nrow(Chat))
+      Chat <- (Chat + t(Chat)) / 2
+      return(list(
+        Chat = Chat,
+        weights = weight_eval,
+        train_ids = train_ids,
+        weight_spec = weight_spec,
+        pair_counts = pool$pair_counts,
+        pair_weight = pool$pair_weight,
+        pair_ess = pool$pair_ess,
+        missingness = missingness,
+        miss_args = miss_args
+      ))
     }
   }
+
+  subject_ids <- fit$subject_ids %||% seq_along(fit$Btil)
+  obs_masks_all <- .dkge_obs_masks_from_provenance(fit$provenance,
+                                                   subject_ids,
+                                                   nrow(fit$K))
+  if (is.null(obs_masks_all)) {
+    obs_masks_all <- replicate(length(fit$Btil), rep(TRUE, nrow(fit$K)),
+                               simplify = FALSE)
+  }
+  obs_masks_train <- obs_masks_all[train_ids]
+
+  Braw_all <- fit$Braw
+  if (is.null(Braw_all)) {
+    Braw_all <- if (identical(fit$effect_scaling, "none") || is.null(fit$R)) {
+      fit$Btil
+    } else {
+      lapply(fit$Btil, function(B) forwardsolve(t(fit$R), B))
+    }
+  }
+  subjects_all <- fit$subjects
+  if (is.null(subjects_all)) {
+    subjects_all <- lapply(seq_along(Braw_all), function(s) list(
+      id = subject_ids[[s]], effect_noise_cov = NULL,
+      residual_variance = NULL, noise_trace = NULL
+    ))
+  }
+  effect_precision_all <- fit$effect_precision
+  if (is.null(effect_precision_all)) {
+    effect_precision_all <- lapply(obs_masks_all, as.numeric)
+  }
+
+  R_fit <- fit$R %||% diag(nrow(fit$K))
+  accum <- .dkge_build_moment_pool(
+    subjects = subjects_all[train_ids],
+    B_list = Braw_all[train_ids],
+    Omega_list = Omega_train,
+    voxel_weights = voxel_weights_train,
+    obs_masks = obs_masks_train,
+    subject_weights = subject_weights,
+    effect_precision = effect_precision_all[train_ids],
+    effect_method = fit$effect_weight_spec$method %||% "none",
+    R = R_fit,
+    Khalf = fit$Khalf,
+    missingness = missingness,
+    miss_args = miss_args,
+    debias = fit$debias %||% "none",
+    contribs = FALSE
+  )
+  Chat <- accum$Chat
 
   if (ridge > 0) Chat <- Chat + ridge * diag(nrow(Chat))
   Chat <- (Chat + t(Chat)) / 2
@@ -394,7 +442,9 @@
     weights = weight_eval,
     train_ids = train_ids,
     weight_spec = weight_spec,
-    pair_counts = pair_counts,
+    pair_counts = accum$pair_counts,
+    pair_weight = accum$pair_weight,
+    pair_ess = accum$pair_ess,
     missingness = missingness,
     miss_args = miss_args
   )

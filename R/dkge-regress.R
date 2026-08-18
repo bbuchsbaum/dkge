@@ -140,6 +140,9 @@ dkge_regress <- function(fit,
               dimnames = list(effect_ids, colnames(Y)))
   models <- vector("list", length(folds))
 
+  # Seed here too so glmnet's internal CV is reproducible even when outer folds
+  # were supplied by the caller (the fold-allocation seed above is skipped then).
+  set.seed(seed)
   for (f in seq_along(folds)) {
     test_ids <- folds[[f]]
     train_ids <- setdiff(effect_ids, test_ids)
@@ -175,10 +178,13 @@ dkge_regress <- function(fit,
       if (!requireNamespace("glmnet", quietly = TRUE)) {
         stop("Engine 'glmnet' requires the glmnet package. Install it or choose another engine.")
       }
+      # intercept = FALSE to match the intercept-free `lm` engine, so the two
+      # engines share a convention on non-centered targets.
       fit_obj <- glmnet::cv.glmnet(x = X_train,
                                    y = Y_train,
                                    family = "mgaussian",
                                    alpha = alpha,
+                                   intercept = FALSE,
                                    standardize = standardize)
       pred <- stats::predict(fit_obj, newx = X_test, s = "lambda.min")
       pred <- pred[, , 1, drop = FALSE]

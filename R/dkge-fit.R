@@ -295,6 +295,61 @@
   (Chat + t(Chat)) / 2
 }
 
+#' Accumulate compressed covariance in the K-metric
+#'
+#' Used by fold re-pooling ([.dkge_fold_weight_context()]) to rebuild `Chat`
+#' from a training subset of `Btil` without going through the full fit
+#' pipeline. Subject contributions are `K^{1/2} B_s B_s' K^{1/2}` (or the
+#' Omega-weighted analogue), then pooled with the supplied subject weights.
+#'
+#' @param Btil List of row-standardised betas.
+#' @param Omega_list Optional spatial weights aligned with `Btil`.
+#' @param Khalf Kernel square root used to project into the K-metric.
+#' @param weights Subject weights applied during accumulation.
+#' @param voxel_weights Optional per-subject or shared voxel/parcel weights.
+#' @return List with the symmetrised compressed covariance (`Chat`) and
+#'   per-subject contributions.
+#' @keywords internal
+#' @noRd
+.dkge_accumulate_chat <- function(Btil, Omega_list, Khalf, weights,
+                                  voxel_weights = NULL) {
+  S <- length(Btil)
+  q <- nrow(Btil[[1]])
+  Chat <- matrix(0, q, q)
+  contribs <- vector("list", S)
+
+  scale_columns <- function(B, w) {
+    if (is.null(w) || length(w) == 0L) return(B)
+    if (length(w) != ncol(B)) {
+      w <- rep(w, length.out = ncol(B))
+    }
+    sweep(B, 2L, sqrt(pmax(w, 0)), "*")
+  }
+
+  for (s in seq_len(S)) {
+    Bts <- Btil[[s]]
+    w_s <- if (is.list(voxel_weights)) voxel_weights[[s]] else voxel_weights
+    Bw <- scale_columns(Bts, w_s)
+    Omega <- Omega_list[[s]]
+    right <- if (is.null(Omega)) {
+      Bw %*% t(Bw)
+    } else if (is.vector(Omega)) {
+      stopifnot(length(Omega) == ncol(Bw))
+      W <- sweep(Bw, 2L, sqrt(pmax(Omega, 0)), "*")
+      W %*% t(W)
+    } else {
+      Omega <- as.matrix(Omega)
+      stopifnot(nrow(Omega) == ncol(Bw), ncol(Omega) == ncol(Bw))
+      Bw %*% Omega %*% t(Bw)
+    }
+    S_s <- Khalf %*% right %*% Khalf
+    S_s <- (S_s + t(S_s)) / 2
+    contribs[[s]] <- S_s
+    Chat <- Chat + weights[s] * S_s
+  }
+  list(Chat = (Chat + t(Chat)) / 2, contribs = contribs)
+}
+
 # -------------------------------------------------------------------------
 # Core fit ----------------------------------------------------------------
 # -------------------------------------------------------------------------

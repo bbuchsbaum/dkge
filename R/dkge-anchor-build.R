@@ -104,7 +104,9 @@
     sqmin <- pmin(sqmin, rowSums(diff * diff))
   }
   while (length(sel) < L) {
-    j <- which.max(sqmin)
+    cand <- setdiff(seq_len(n), sel)
+    if (!length(cand)) break  # fewer than L distinct points; caller pads
+    j <- cand[which.max(sqmin[cand])]
     sel <- c(sel, j)
     diff <- X - matrix(X[j, ], n, d, byrow = TRUE)
     sqmin <- pmin(sqmin, rowSums(diff * diff))
@@ -136,7 +138,7 @@
     if (!is.finite(tot) || tot <= 0) {
       cand <- setdiff(seq_len(n), sel)
       if (!length(cand)) break
-      j <- sample(cand, 1L)
+      j <- cand[sample.int(length(cand), 1L)]
     } else {
       prob <- prob / tot
       j <- sample.int(n, 1L, prob = prob)
@@ -331,7 +333,8 @@ dkge_build_anchor_kernels <- function(features_list,
       if (length(idx) < L) {
         filler <- setdiff(seq_len(nrow(X_train)), idx)
         if (length(filler)) {
-          idx <- c(idx, sample(filler, min(L - length(idx), length(filler))))
+          take <- min(L - length(idx), length(filler))
+          idx <- c(idx, filler[sample.int(length(filler), take)])
         }
       }
       idx <- unique(idx)[seq_len(min(length(idx), L))]

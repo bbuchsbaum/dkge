@@ -414,3 +414,42 @@ test_that("check_condition returns condition number", {
   expect_true(is.numeric(cond))
   expect_true(cond > 0)
 })
+
+test_that("dkge_fit rejects non-finite betas with an informative error", {
+  set.seed(1)
+  q <- 3L; P <- 6L; S <- 3L; T <- 12L
+  betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+  designs <- replicate(S, qr.Q(qr(matrix(rnorm(T * q), T, q))), simplify = FALSE)
+  betas[[2]][1, 3] <- NaN
+  expect_error(
+    dkge_fit(betas, designs, K = diag(q), rank = 2),
+    regexp = "finite|NaN|Inf|infinite", ignore.case = TRUE
+  )
+})
+
+test_that("small-magnitude betas do not spuriously collapse the effective rank", {
+  set.seed(5)
+  q <- 3L; P <- 20L; S <- 4L; T <- 30L
+  designs <- replicate(S, qr.Q(qr(matrix(rnorm(T * q), T, q))), simplify = FALSE)
+  base <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+  betas <- lapply(base, function(B) B * 1e-9)   # tiny magnitude -> Chat evals ~1e-18
+  fit <- dkge_fit(betas, designs, K = diag(q), rank = 2, w_method = "none")
+  expect_equal(fit$rank, 2L)
+  expect_gte(fit$effective_rank, 2L)
+})
+
+test_that("dkge_fit does not perturb the caller's RNG stream (deterministic weights)", {
+  set.seed(7)
+  q <- 4L; P <- 12L; S <- 3L; T <- 20L
+  betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+  designs <- replicate(S, qr.Q(qr(matrix(rnorm(T * q), T, q))), simplify = FALSE)
+
+  set.seed(123)
+  invisible(dkge_fit(betas, designs, K = diag(q), rank = 2, w_method = "mfa_sigma1"))
+  after_fit <- runif(3)
+
+  set.seed(123)
+  baseline <- runif(3)
+
+  expect_equal(after_fit, baseline)
+})

@@ -14,5 +14,8 @@ arma::mat pairwise_sqdist_cpp(const arma::mat& A, const arma::mat& B) {
   arma::vec An = sum(square(A), 1);
   arma::vec Bn = sum(square(B), 1);
   arma::mat C = repmat(An, 1, m) + repmat(Bn.t(), n, 1) - 2.0 * (A * B.t());
+  // Floating-point cancellation can yield tiny negatives for near-coincident
+  // points; clamp to 0 to match the R fallback (dkge-transport.R).
+  C.elem(arma::find(C < 0)).zeros();
   return C;
 }

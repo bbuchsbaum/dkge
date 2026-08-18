@@ -163,3 +163,42 @@ test_that("sinkhorn mapper leverages features when geometry is ambiguous", {
   expect_lt(plan[1, 2], 0.05)
   expect_lt(plan[2, 1], 0.05)
 })
+
+test_that("knn mapper accumulates contributions when clusters share an anchor", {
+  # Two source clusters (1, 2) map to anchor 1; cluster 3 maps to anchor 2.
+  # The buggy scatter-add `anchor[js] <- anchor[js] + ...` kept only the last
+  # write, dropping cluster 1's contribution to anchor 1.
+  fit <- structure(
+    list(type = "knn",
+         idx = matrix(c(1L, 1L, 2L), nrow = 3, ncol = 1),
+         weights = matrix(1, nrow = 3, ncol = 1),
+         Q = 2L,
+         P = 3L,
+         reliab = NULL),
+    class = "dkge_mapper_fit_knn"
+  )
+  values <- c(2, 4, 7)
+
+  unnorm <- apply_mapper(fit, values, normalize_by_reliab = FALSE)
+  expect_equal(unnorm, c(2 + 4, 7))
+
+  norm <- apply_mapper(fit, values, normalize_by_reliab = TRUE)
+  expect_equal(norm, c((2 + 4) / 2, 7))
+})
+
+test_that("knn mapper reliability weighting handles shared anchors", {
+  fit <- structure(
+    list(type = "knn",
+         idx = matrix(c(1L, 1L, 2L), nrow = 3, ncol = 1),
+         weights = matrix(1, nrow = 3, ncol = 1),
+         Q = 2L,
+         P = 3L,
+         reliab = NULL),
+    class = "dkge_mapper_fit_knn"
+  )
+  values <- c(2, 4, 7)
+  r <- c(1, 3, 1)
+  # anchor 1 = sum(r*w*value) / sum(r*w) = (1*2 + 3*4) / (1 + 3) = 14/4
+  out <- apply_mapper(fit, values, reliab = r, normalize_by_reliab = TRUE)
+  expect_equal(out, c((1 * 2 + 3 * 4) / (1 + 3), 7))
+})

@@ -59,7 +59,8 @@ dkge_component_stats <- function(fit,
   # Build mapper specification
   mapper_spec <- .dkge_resolve_mapper_spec(mapper, method = NULL, dots = list(...))
 
-  loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+  KU <- fit$K %*% fit$U
+  loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% KU)
   rank <- ncol(loadings[[1]])
 
   if (is.null(components)) {
@@ -77,6 +78,11 @@ dkge_component_stats <- function(fit,
                                                  sizes = sizes,
                                                  mapper = mapper_spec)
 
+  # transport$subjects is a length-`rank` list (one S x Q matrix per component);
+  # select the requested components, not columns (clusters) of every component.
+  if (any(is.na(comp_idx)) || any(comp_idx < 1L) || any(comp_idx > length(transport$subjects))) {
+    stop("`components` must index existing components (1..rank).", call. = FALSE)
+  }
   subj_mats <- transport$subjects[comp_idx]
 
   inference_res <- .dkge_component_inference(subj_mats, inference)
