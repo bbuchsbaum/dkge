@@ -16,9 +16,9 @@
 #   effects            character  effect names
 #   rank               integer    number of latent dimensions kept
 #   Chat_sym           q x q    symmetric compressed covariance (used by tests)
-#   scores_matrix      S x r    subject scores matrix (alias of s; used by tests)
-#   v                  q x r    loadings (alias of U in multivarious sense)
-#   s                  S x r    scores
+#   scores_matrix      q x r    q-space spectral factor (alias of s)
+#   v                  sum(P_s) x r or NULL  exact block loadings when available
+#   s                  q x r    retained positive q-space spectral factor
 #   sdev               r        standard deviations per dimension
 #   KU                 q x r    K %*% U (precomputed product)
 #
@@ -43,10 +43,107 @@
 #   voxel_weights_adapt    numeric  adaptive voxel weights
 #   w_method           character  weighting method
 #   w_tau              numeric    weighting tau parameter
+#   pair_counts        matrix     effect-pair coverage counts used by missingness
+#   missingness        character  partial-effect missingness policy used at fit time
+#   miss_args          list       missingness policy arguments
 #   ridge_input        numeric    ridge penalty applied to input
 #   rank_requested     integer    rank requested by caller
 #   effective_rank     integer    effective rank after regularisation
 #   rank_reduced       logical    whether rank was reduced from requested
+#   representation     character  block_biprojector or qspace_moment
+#   reconstruction     list       explicit reconstruction domain and target
+
+#' Kernel roots for the fitting metric
+#'
+#' Unlike the historical helper used by post-fit alignment, this uses a
+#' Moore-Penrose inverse on the numerical support of K. This is what makes the
+#' fitted basis K-orthonormal for positive-semidefinite as well as positive-
+#' definite kernels.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_fit_kernel_roots <- function(K) {
+  Ksym <- (K + t(K)) / 2
+  eig <- eigen(Ksym, symmetric = TRUE)
+  scale <- max(abs(eig$values))
+  tol <- if (scale == 0) 0 else max(1e-12, nrow(K) * .Machine$double.eps) * scale
+  support <- eig$values > tol
+  vals <- ifelse(support, eig$values, 0)
+  inv_sqrt <- numeric(length(vals))
+  inv_sqrt[support] <- 1 / sqrt(vals[support])
+  V <- eig$vectors
+  Khalf <- V %*% diag(sqrt(vals), length(vals)) %*% t(V)
+  Kihalf <- V %*% diag(inv_sqrt, length(vals)) %*% t(V)
+  list(
+    Khalf = (Khalf + t(Khalf)) / 2,
+    Kihalf = (Kihalf + t(Kihalf)) / 2,
+    eigen = eig,
+    support = support,
+    support_rank = sum(support),
+    support_tolerance = tol
+  )
+}
+
+#' Scale-relative threshold for retaining positive moment eigenpairs
+#'
+#' @keywords internal
+#' @noRd
+.dkge_positive_eigen_tolerance <- function(values) {
+  scale <- max(abs(values))
+  if (!is.finite(scale) || scale == 0) return(0)
+  max(1e-12, length(values) * .Machine$double.eps) * scale
+}
+
+#' Enforce structural missingness before any effect-coordinate transformation
+#'
+#' @keywords internal
+#' @noRd
+.dkge_sanitize_unobserved_effects <- function(dataset) {
+  masks <- .dkge_obs_masks_from_provenance(
+    dataset$provenance %||% NULL,
+    dataset$subject_ids,
+    dataset$q
+  )
+  if (is.null(masks)) {
+    masks <- replicate(dataset$n_subjects, rep(TRUE, dataset$q), simplify = FALSE)
+  }
+
+  for (s in seq_len(dataset$n_subjects)) {
+    mask <- as.logical(masks[[s]])
+    if (length(mask) != dataset$q) mask <- rep(TRUE, dataset$q)
+    if (any(!mask)) {
+      dataset$betas[[s]][!mask, ] <- 0
+      dataset$designs[[s]][, !mask] <- 0
+      if (!is.null(dataset$split_betas[[s]])) {
+        dataset$split_betas[[s]] <- lapply(dataset$split_betas[[s]], function(B) {
+          B[!mask, ] <- 0
+          B
+        })
+      }
+      if (!is.null(dataset$effect_noise_cov[[s]])) {
+        dataset$effect_noise_cov[[s]][!mask, ] <- 0
+        dataset$effect_noise_cov[[s]][, !mask] <- 0
+      }
+      if (!is.null(dataset$effect_information[[s]])) {
+        dataset$effect_information[[s]][!mask, ] <- 0
+        dataset$effect_information[[s]][, !mask] <- 0
+      }
+      if (!is.null(dataset$effect_score[[s]])) {
+        dataset$effect_score[[s]][!mask, ] <- 0
+      }
+    }
+    if (!is.null(dataset$subjects) && length(dataset$subjects) >= s) {
+      dataset$subjects[[s]]$beta <- dataset$betas[[s]]
+      dataset$subjects[[s]]$design <- dataset$designs[[s]]
+      dataset$subjects[[s]]$split_betas <- dataset$split_betas[[s]]
+      dataset$subjects[[s]]$effect_noise_cov <- dataset$effect_noise_cov[[s]]
+      dataset$subjects[[s]]$effect_information <- dataset$effect_information[[s]]
+      dataset$subjects[[s]]$effect_score <- dataset$effect_score[[s]]
+      dataset$subjects[[s]]$observed_rows <- which(mask)
+    }
+  }
+  list(dataset = dataset, obs_masks = masks)
+}
 
 #' Prepare DKGE inputs for fitting
 #'
@@ -60,7 +157,10 @@
                               K = NULL,
                               Omega_list = NULL,
                               weights = NULL,
-                              rank = NULL) {
+                              effect_weights = NULL,
+                              rank = NULL,
+                              effect_scaling = c("pooled_design", "none")) {
+  effect_scaling <- match.arg(effect_scaling)
   if (inherits(data, "dkge_data")) {
     dataset <- data
     if (!is.null(Omega_list)) {
@@ -72,6 +172,9 @@
     dataset <- dkge_data(data, designs = designs, omega = Omega_list)
   }
 
+  sanitized <- .dkge_sanitize_unobserved_effects(dataset)
+  dataset <- sanitized$dataset
+  obs_masks <- sanitized$obs_masks
   betas <- dataset$betas
   bad_finite <- which(vapply(betas, function(B) any(!is.finite(B)), logical(1)))
   if (length(bad_finite)) {
@@ -105,6 +208,14 @@
   }
 
   stopifnot(is.matrix(K), nrow(K) == q, ncol(K) == q)
+  kernel_rows <- rownames(K)
+  kernel_cols <- colnames(K)
+  labels_match <- !is.null(kernel_rows) && !is.null(kernel_cols) &&
+    !anyDuplicated(kernel_rows) && !anyDuplicated(kernel_cols) &&
+    setequal(kernel_rows, effects) && setequal(kernel_cols, effects)
+  if (labels_match) {
+    K <- K[effects, effects, drop = FALSE]
+  }
   K <- .dkge_validate_kernel(K)
 
   rank_requested <- if (is.null(rank)) q else rank
@@ -117,11 +228,28 @@
                     Omega_list, betas)
   dataset$omega <- Omega_list
 
-  ruler <- .dkge_compute_shared_ruler(designs)
-  Btil <- .dkge_row_standardize(betas, ruler$R)
-  kernels <- .dkge_kernel_roots(K)
+  if (identical(effect_scaling, "pooled_design")) {
+    ruler <- .dkge_compute_shared_ruler(
+      designs,
+      information_list = dataset$effect_information %||% NULL
+    )
+    Btil <- .dkge_row_standardize(betas, ruler$R)
+  } else {
+    R_identity <- diag(1, q)
+    if (!is.null(effects)) {
+      dimnames(R_identity) <- list(effects, effects)
+    }
+    ruler <- list(R = R_identity, G_pool = R_identity)
+    Btil <- betas
+  }
+  kernels <- .dkge_fit_kernel_roots(K)
   weight_spec <- if (is.null(weights)) dkge_weights(adapt = "none") else weights
   stopifnot(inherits(weight_spec, "dkge_weights"))
+  effect_weight_spec <- effect_weights %||% dkge_effect_weights("none")
+  if (!inherits(effect_weight_spec, "dkge_effect_weights")) {
+    stop("`effect_weights` must be created by `dkge_effect_weights()`.",
+         call. = FALSE)
+  }
 
   kernel_payload <- .dkge_weight_kernel_payload(K, kernel_info)
   weight_eval <- .dkge_resolve_voxel_weights(weight_spec, Btil, kernel_payload)
@@ -134,10 +262,13 @@
     kernel_info = kernel_info,
     K = K,
     weight_spec = weight_spec,
+    effect_weight_spec = effect_weight_spec,
     weight_eval = weight_eval,
     subject_ids = subject_ids,
     effects = effects,
     provenance = provenance,
+    obs_masks = obs_masks,
+    effect_scaling = effect_scaling,
     rank = rank,
     rank_requested = rank_requested,
     q = q,
@@ -154,29 +285,92 @@
 #' @noRd
 .dkge_fit_accumulate <- function(prepped,
                                  w_method,
-                                 w_tau) {
+                                 w_tau,
+                                 missingness = c("none", "rescale", "mask", "shrink"),
+                                 miss_args = list(),
+                                 debias = c("none", "analytic", "split_half")) {
+  missingness <- match.arg(missingness)
+  debias <- match.arg(debias)
   Btil <- prepped$Btil
   Omega_list <- prepped$dataset$omega
   kernels <- prepped$kernels
-
-  subject_weights <- .dkge_subject_weights(Btil, Omega_list, kernels$Khalf,
-                                           w_method, w_tau)
+  obs_masks <- prepped$obs_masks %||% .dkge_obs_masks_from_provenance(
+    prepped$provenance, prepped$subject_ids, prepped$q
+  )
 
   voxel_weights <- prepped$weight_eval$total
   voxel_weights_subject <- prepped$weight_eval$total_subject
   voxel_payload <- voxel_weights_subject %||% voxel_weights
 
-  accum <- .dkge_accumulate_chat(Btil, Omega_list, kernels$Khalf,
-                                 subject_weights,
-                                 voxel_weights = voxel_payload)
+  if (is.null(obs_masks)) {
+    obs_masks <- replicate(prepped$S, rep(TRUE, prepped$q), simplify = FALSE)
+  }
+  subject_weights <- .dkge_subject_weights(
+    prepped$dataset$betas,
+    Omega_list,
+    kernels$Khalf,
+    w_method,
+    w_tau,
+    obs_masks = obs_masks,
+    R = prepped$ruler$R,
+    voxel_weights = voxel_payload
+  )
+  effect_precision <- .dkge_resolve_effect_precision(
+    prepped$dataset,
+    prepped$effect_weight_spec,
+    obs_masks = obs_masks
+  )
+  effect_precision_diagnostics <- attr(effect_precision, "diagnostics")
+  subjects <- prepped$dataset$subjects
+  if (is.null(subjects)) {
+    subjects <- lapply(seq_len(prepped$S), function(s) list(
+      id = prepped$subject_ids[[s]],
+      effect_noise_cov = prepped$dataset$effect_noise_cov[[s]],
+      residual_variance = prepped$dataset$residual_variance[[s]],
+      residual_df = prepped$dataset$residual_df[[s]],
+      noise_trace = prepped$dataset$noise_trace[[s]]
+    ))
+  }
+
+  accum <- .dkge_build_moment_pool(
+    subjects = subjects,
+    B_list = prepped$dataset$betas,
+    Omega_list = Omega_list,
+    voxel_weights = voxel_payload,
+    obs_masks = obs_masks,
+    subject_weights = subject_weights,
+    effect_precision = effect_precision,
+    effect_method = prepped$effect_weight_spec$method,
+    R = prepped$ruler$R,
+    Khalf = kernels$Khalf,
+    missingness = missingness,
+    miss_args = miss_args,
+    debias = debias
+  )
+  Chat <- accum$Chat
 
   list(
-    Chat = accum$Chat,
-    Chat_sym = (accum$Chat + t(accum$Chat)) / 2,
+    Chat = Chat,
+    Chat_sym = (Chat + t(Chat)) / 2,
     contribs = accum$contribs,
     subject_weights = subject_weights,
     voxel_weights = voxel_weights,
-    voxel_weights_subject = voxel_weights_subject
+    voxel_weights_subject = voxel_weights_subject,
+    pair_counts = accum$pair_counts,
+    pair_weight = accum$pair_weight,
+    pair_ess = accum$pair_ess,
+    effect_precision = effect_precision,
+    effect_precision_diagnostics = effect_precision_diagnostics,
+    effect_weight_spec = prepped$effect_weight_spec,
+    effect_moment = accum$pooled,
+    effect_moments = accum$moments,
+    effect_moments_raw = accum$moments_raw,
+    noise_moments = accum$noise_moments,
+    moment_diagnostics = accum$diagnostics,
+    debias = debias,
+    missingness = missingness,
+    miss_args = miss_args,
+    obs_masks = obs_masks
   )
 }
 
@@ -276,10 +470,10 @@
     eig_vectors_full <- eigChat$vectors
     eig_values_full <- eigChat$values
 
-    # Scale-relative positivity tolerance: an absolute 1e-12 spuriously collapses
-    # the rank when betas are small-magnitude (Chat eigenvalues scale as beta^2).
-    # Never looser than 1e-12 so well-scaled fits keep their existing behavior.
-    eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
+    # Retain only eigenpairs that are positive relative to the observed
+    # spectral scale. There is deliberately no absolute floor: uniformly
+    # rescaling a valid moment must not change its effective rank.
+    eig_tol <- .dkge_positive_eigen_tolerance(eig_values_full)
     effective_rank <- sum(eig_values_full > eig_tol)
     rank_reduced <- FALSE
 
@@ -384,8 +578,8 @@
   eig_vectors_full <- jd_res$Q
   eig_values_full <- jd_res$diag_vals
 
-  # Scale-relative positivity tolerance (see the pooled branch above).
-  eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
+  # Scale-relative positivity tolerance; see the pooled branch above.
+  eig_tol <- .dkge_positive_eigen_tolerance(eig_values_full)
   effective_rank <- sum(eig_values_full > eig_tol)
   rank_reduced <- FALSE
 
@@ -468,6 +662,143 @@
   )
 }
 
+#' Classify the algebra represented by a fitted moment
+#'
+#' @keywords internal
+#' @noRd
+.dkge_fit_representation <- function(prepped, accum, solved, ridge,
+                                     force_qspace = FALSE) {
+  reasons <- character(0)
+  if (isTRUE(force_qspace)) {
+    reasons <- c(reasons, "q-space representation was explicitly requested")
+  }
+  if (!identical(solved$solver, "pooled")) {
+    reasons <- c(reasons, "solver is not the pooled symmetric eigensolver")
+  }
+  effect_method <- accum$effect_weight_spec$method %||% "none"
+  if (!identical(effect_method, "none")) {
+    reasons <- c(reasons, "effect-pair reliability normalization is active")
+  }
+  if (!identical(accum$missingness %||% "none", "none")) {
+    reasons <- c(reasons, "a missingness transformation is active")
+  }
+  if (!identical(accum$debias %||% "none", "none")) {
+    reasons <- c(reasons, "a debiased or cross-half moment is active")
+  }
+  if (!is.null(solved$cpca_info)) {
+    reasons <- c(reasons, "CPCA filtering is active")
+  }
+  if (!isTRUE(all.equal(as.numeric(ridge), 0))) {
+    reasons <- c(reasons, "a ridge term is present in Chat")
+  }
+  list(
+    kind = if (length(reasons)) "qspace_moment" else "block_biprojector",
+    reasons = reasons
+  )
+}
+
+#' Build the exact physical block matrix for a factorizable DKGE moment
+#'
+#' Missing effect rows are zeroed in the raw effect coordinate before the
+#' pooled ruler or kernel can mix rows.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_build_xstar <- function(prepped, accum) {
+  dataset <- prepped$dataset
+  S <- dataset$n_subjects
+  q <- prepped$q
+  total_clusters <- 0L
+  block_indices <- vector("list", S)
+  X_blocks <- vector("list", S)
+
+  for (s in seq_len(S)) {
+    B <- as.matrix(dataset$betas[[s]])
+    mask_s <- if (is.null(accum$obs_masks) || length(accum$obs_masks) < s) {
+      NULL
+    } else {
+      accum$obs_masks[[s]]
+    }
+    P_s <- ncol(B)
+    block_indices[[s]] <- seq_len(P_s) + total_clusters
+    total_clusters <- total_clusters + P_s
+
+    w_s <- if (is.list(accum$voxel_weights_subject)) {
+      accum$voxel_weights_subject[[s]]
+    } else {
+      accum$voxel_weights_subject
+    }
+    if (is.null(w_s)) w_s <- accum$voxel_weights
+    Omega <- dataset$omega[[s]]
+    B <- .dkge_right_weighted_beta(B, Omega, w_s, mask_s)
+
+    block <- prepped$kernels$Khalf %*% t(prepped$ruler$R) %*% B
+    block <- sqrt(max(accum$subject_weights[s], 0)) * block
+    X_blocks[[s]] <- block
+  }
+
+  list(
+    Xstar = if (length(X_blocks)) do.call(cbind, X_blocks) else NULL,
+    block_indices = block_indices,
+    total_clusters = total_clusters
+  )
+}
+
+#' Validate fit-object algebra before exposing it to downstream consumers
+#'
+#' @keywords internal
+#' @noRd
+.dkge_validate_fit_algebra <- function(fit, Xstar = NULL, tolerance = 1e-10) {
+  r <- fit$rank
+  if (r > 0L) {
+    metric_error <- max(abs(crossprod(fit$U, fit$K %*% fit$U) - diag(r)))
+    if (!is.finite(metric_error) || metric_error > tolerance) {
+      stop(sprintf(
+        "Internal DKGE algebra error: U is not K-orthonormal (max error %.3e).",
+        metric_error
+      ), call. = FALSE)
+    }
+    if (identical(fit$solver, "pooled")) {
+      spectral_target <- fit$eig_vectors_full[, seq_len(r), drop = FALSE] %*%
+        diag(fit$eig_values_full[seq_len(r)], r) %*%
+        t(fit$eig_vectors_full[, seq_len(r), drop = FALSE])
+      spectral_error <- norm(tcrossprod(fit$s) - spectral_target, "F") /
+        max(1, norm(spectral_target, "F"))
+      if (!is.finite(spectral_error) || spectral_error > tolerance) {
+        stop(sprintf(
+          "Internal DKGE algebra error: q-space scores do not reconstruct the retained spectrum (relative error %.3e).",
+          spectral_error
+        ), call. = FALSE)
+      }
+    }
+  }
+
+  if (identical(fit$representation, "block_biprojector")) {
+    if (is.null(Xstar)) {
+      stop("Internal DKGE algebra error: block representation has no Xstar factor.",
+           call. = FALSE)
+    }
+    chat_error <- norm(fit$Chat - tcrossprod(Xstar), "F") /
+      max(1, norm(fit$Chat, "F"))
+    if (!is.finite(chat_error) || chat_error > tolerance) {
+      stop(sprintf(
+        "Internal DKGE algebra error: Chat is not Xstar Xstar' (relative error %.3e).",
+        chat_error
+      ), call. = FALSE)
+    }
+    if (r > 0L) {
+      v_error <- max(abs(crossprod(fit$v) - diag(r)))
+      if (!is.finite(v_error) || v_error > tolerance) {
+        stop(sprintf(
+          "Internal DKGE algebra error: advertised block loadings are not orthonormal (max error %.3e).",
+          v_error
+        ), call. = FALSE)
+      }
+    }
+  }
+  invisible(fit)
+}
+
 #' Assemble the final dkge fit object
 #'
 #' Combines prepared payload, accumulation results, and eigen solution into the
@@ -481,7 +812,11 @@
                                keep_X,
                                w_method,
                                w_tau,
-                               ridge) {
+                               ridge,
+                               force_qspace = FALSE,
+                               missingness = c("none", "rescale", "mask", "shrink"),
+                               miss_args = list()) {
+  missingness <- match.arg(missingness)
   dataset <- prepped$dataset
   S <- dataset$n_subjects
   Btil <- prepped$Btil
@@ -490,75 +825,73 @@
   rank <- solved$rank
   q <- prepped$q
 
-  total_clusters <- 0L
-  block_indices <- vector("list", S)
-  X_blocks <- vector("list", S)
-  for (s in seq_len(S)) {
-    Bts <- Btil[[s]]
-    P_s <- ncol(Bts)
-    idx <- seq_len(P_s) + total_clusters  # empty when P_s == 0 (avoids reversed `:`)
-    block_indices[[s]] <- idx
-    total_clusters <- total_clusters + P_s
-
-    w_s <- if (is.list(accum$voxel_weights_subject)) {
-      accum$voxel_weights_subject[[s]]
-    } else {
-      accum$voxel_weights_subject
-    }
-    if (is.null(w_s)) w_s <- accum$voxel_weights
-    if (!is.null(w_s) && length(w_s) != ncol(Bts)) {
-      w_s <- rep(w_s, length.out = ncol(Bts))
-    }
-    Bw <- if (is.null(w_s) || length(w_s) == 0L) {
-      Bts
-    } else {
-      sweep(Bts, 2L, sqrt(pmax(w_s, 0)), "*")
-    }
-    Omega <- Omega_list[[s]]
-    if (is.null(Omega)) {
-      block <- Bw
-    } else if (is.vector(Omega)) {
-      stopifnot(length(Omega) == ncol(Bw))
-      block <- sweep(Bw, 2L, sqrt(pmax(Omega, 0)), "*")
-    } else {
-      Omega <- as.matrix(Omega)
-      stopifnot(nrow(Omega) == ncol(Bw), ncol(Omega) == ncol(Bw))
-      block <- Bw %*% sqrtm_sym(Omega)
-    }
-    block <- kernels$Khalf %*% block
-    block <- sqrt(max(accum$subject_weights[s], 0)) * block
-    X_blocks[[s]] <- block
-  }
-
-  X_concat <- if (length(X_blocks)) do.call(cbind, X_blocks) else NULL
-  if (rank > 0) {
-    safe_sdev <- ifelse(solved$sdev > 0, solved$sdev, 1)
-    V <- t(X_concat) %*% solved$U_hat %*% diag(1 / safe_sdev, nrow = rank)
-    zero_cols <- which(solved$sdev <= 0)
-    if (length(zero_cols) > 0) {
-      V[, zero_cols] <- 0
-    }
-    scores <- solved$U_hat %*% diag(solved$sdev, nrow = rank)
-  } else {
-    V <- matrix(0, nrow = total_clusters, ncol = 0)
-    scores <- matrix(0, nrow = q, ncol = 0)
-  }
-
-  x_for_preproc <- X_concat
-  if (is.null(x_for_preproc)) {
-    x_for_preproc <- matrix(numeric(0), nrow = q, ncol = 0)
-  }
-  preproc_obj <- multivarious::fit(multivarious::pass(), x_for_preproc)
-  multivarious_obj <- multivarious::multiblock_biprojector(
-    v = V,
-    s = scores,
-    sdev = solved$sdev,
-    preproc = preproc_obj,
-    block_indices = block_indices,
-    classes = "dkge_core"
+  representation <- .dkge_fit_representation(
+    prepped, accum, solved, ridge, force_qspace = force_qspace
   )
+  if (keep_X && !identical(representation$kind, "block_biprojector")) {
+    stop(sprintf(
+      paste0("`keep_X = TRUE` is unavailable for representation='qspace_moment' (%s). ",
+             "The fitted moment has no exact subject-by-voxel block factor."),
+      paste(representation$reasons, collapse = "; ")
+    ), call. = FALSE)
+  }
 
-  X_store <- if (keep_X) X_concat else NULL
+  if (identical(representation$kind, "block_biprojector")) {
+    block_layout <- .dkge_build_xstar(prepped, accum)
+    X_concat <- block_layout$Xstar
+    block_indices <- block_layout$block_indices
+    total_clusters <- block_layout$total_clusters
+  } else {
+    widths <- vapply(Btil, ncol, integer(1))
+    ends <- cumsum(widths)
+    starts <- ends - widths + 1L
+    block_indices <- Map(
+      function(from, to, width) if (width > 0L) seq.int(from, to) else integer(0),
+      starts, ends, widths
+    )
+    total_clusters <- sum(widths)
+    X_concat <- NULL
+  }
+
+  scores <- if (rank > 0L) {
+    solved$U_hat %*% diag(solved$sdev, nrow = rank)
+  } else {
+    matrix(0, nrow = q, ncol = 0)
+  }
+  V <- if (identical(representation$kind, "block_biprojector")) {
+    if (rank > 0L) {
+      t(X_concat) %*% solved$U_hat %*%
+        diag(1 / solved$sdev, nrow = rank)
+    } else {
+      matrix(0, nrow = total_clusters, ncol = 0)
+    }
+  } else {
+    NULL
+  }
+
+  multivarious_obj <- NULL
+  if (identical(representation$kind, "block_biprojector")) {
+    preproc_obj <- multivarious::fit(multivarious::pass(), X_concat)
+    multivarious_obj <- multivarious::multiblock_biprojector(
+      v = V,
+      s = scores,
+      sdev = solved$sdev,
+      preproc = preproc_obj,
+      block_indices = block_indices,
+      classes = "dkge_core"
+    )
+  }
+
+  X_store <- if (keep_X && identical(representation$kind, "block_biprojector")) {
+    X_concat
+  } else {
+    NULL
+  }
+
+  fit_provenance <- prepped$provenance
+  error_models <- lapply(dataset$subjects, `[[`, "error_model")
+  names(error_models) <- prepped$subject_ids
+  fit_provenance$error_models <- error_models
 
   fit <- list(
     v = V,
@@ -572,12 +905,22 @@
     Kihalf = kernels$Kihalf,
     Chat = solved$Chat,
     contribs = accum$contribs,
+    effect_moment = accum$effect_moment,
+    effect_moments = accum$effect_moments,
+    effect_moments_raw = accum$effect_moments_raw,
+    noise_moments = accum$noise_moments,
+    moment_diagnostics = accum$moment_diagnostics,
     weights = accum$subject_weights,
+    Braw = dataset$betas,
     Btil = Btil,
     Omega = Omega_list,
     subject_ids = prepped$subject_ids,
     effects = prepped$effects,
-    provenance = prepped$provenance,
+    provenance = fit_provenance,
+    error_models = error_models,
+    subjects = dataset$subjects,
+    effect_scaling = prepped$effect_scaling,
+    ruler_source = prepped$ruler$source %||% "identity",
     kernel_info = prepped$kernel_info,
     block_indices = block_indices,
     X_concat = X_store,
@@ -588,26 +931,52 @@
     solver = solved$solver,
     jd = solved$jd,
     weight_spec = prepped$weight_spec,
+    effect_weight_spec = accum$effect_weight_spec,
+    effect_precision = accum$effect_precision,
+    effect_precision_diagnostics = accum$effect_precision_diagnostics,
     voxel_weights = accum$voxel_weights,
     voxel_weights_subject = accum$voxel_weights_subject,
     voxel_weights_prior = prepped$weight_eval$prior,
     voxel_weights_adapt = prepped$weight_eval$adapt,
     w_method = w_method,
     w_tau = w_tau,
+    pair_counts = accum$pair_counts,
+    pair_weight = accum$pair_weight,
+    pair_ess = accum$pair_ess,
+    debias = accum$debias,
+    missingness = missingness,
+    miss_args = miss_args,
     ridge_input = ridge,
     rank_requested = prepped$rank_requested,
     effective_rank = solved$effective_rank,
     rank_reduced = solved$rank_reduced
   )
 
-  fit$Chat_sym <- accum$Chat_sym
+  fit$representation <- representation$kind
+  fit$representation_reasons <- representation$reasons
+  fit$moment_estimator <- .dkge_moment_estimator_name(fit)
+  fit$reconstruction <- if (identical(representation$kind, "block_biprojector")) {
+    list(domain = "block_matrix", target = "rank_r_svd_of_Xstar")
+  } else if (identical(solved$solver, "pooled")) {
+    list(domain = "q_space", target = "retained_positive_spectrum_of_Chat")
+  } else {
+    list(domain = "q_space", target = "solver_specific_joint_diagonalization")
+  }
+
+  fit$Chat_sym <- solved$Chat
   fit$KU <- fit$K %*% fit$U
 
   fit$scores_matrix <- fit$s
 
-  for (nm in names(fit)) {
-    multivarious_obj[[nm]] <- fit[[nm]]
+  .dkge_validate_fit_algebra(fit, Xstar = X_concat)
+
+  if (identical(representation$kind, "block_biprojector")) {
+    for (nm in names(fit)) {
+      multivarious_obj[[nm]] <- fit[[nm]]
+    }
+    class(multivarious_obj) <- unique(c("dkge", class(multivarious_obj)))
+    return(multivarious_obj)
   }
-  class(multivarious_obj) <- unique(c("dkge", class(multivarious_obj)))
-  multivarious_obj
+  class(fit) <- c("dkge_qspace", "dkge", "list")
+  fit
 }

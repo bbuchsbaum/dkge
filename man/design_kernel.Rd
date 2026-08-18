@@ -14,6 +14,7 @@ design_kernel(
   basis = c("cell", "effect"),
   contrasts = NULL,
   block_structure = NULL,
+  block_factors = NULL,
   normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
   jitter = 1e-08
 )
@@ -27,6 +28,7 @@ dkge_design_kernel(
   basis = c("cell", "effect"),
   contrasts = NULL,
   block_structure = NULL,
+  block_factors = NULL,
   normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
   jitter = 1e-08
 )
@@ -63,6 +65,11 @@ a single column of ones for continuous factors.}
 
 \item{block_structure}{Optional ordering of effect blocks (names matching
 terms). If NULL, uses the order of `terms`.}
+
+\item{block_factors}{Optional factor names forced to use their factor kernel
+in every cell-space term. This gives block-diagonal replication across
+between-subject factors such as group instead of accidental all-ones
+coupling through terms that omit the block factor.}
 
 \item{normalize}{One of "unit_trace", "none", "unit_fro", "max_diag".
 Controls how the kernel is scaled after construction (default "unit_trace").}

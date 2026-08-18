@@ -1,6 +1,45 @@
 # dkge-project.R
 # Projection helpers wrapping the multivarious interface for DKGE objects.
 
+#' Require an exact subject-by-voxel block factor
+#'
+#' @keywords internal
+#' @noRd
+.dkge_require_block_biprojector <- function(fit, operation) {
+  representation <- fit$representation %||% "block_biprojector"
+  if (!identical(representation, "block_biprojector") || is.null(fit$v)) {
+    reasons <- fit$representation_reasons %||% "the fitted moment is q-space only"
+    stop(sprintf(
+      paste0("%s requires representation='block_biprojector', but this fit uses ",
+             "representation='%s' (%s). Use q-space loadings or contrast ",
+             "functions instead."),
+      operation, representation, paste(reasons, collapse = "; ")
+    ), call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+#' @export
+#' @importFrom multivarious project
+#' @noRd
+project.dkge_qspace <- function(x, new_data, ...) {
+  .dkge_require_block_biprojector(x, "multivarious::project()")
+}
+
+#' @export
+#' @importFrom multivarious project_block
+#' @noRd
+project_block.dkge_qspace <- function(x, new_data, block, least_squares = TRUE, ...) {
+  .dkge_require_block_biprojector(x, "multivarious::project_block()")
+}
+
+#' @export
+#' @importFrom multivarious transfer
+#' @noRd
+transfer.dkge_qspace <- function(x, new_data, from, to, opts = list(), ...) {
+  .dkge_require_block_biprojector(x, "multivarious::transfer()")
+}
+
 #' Preprocess a subject block into DKGE training space
 #'
 #' Applies the same transformations used during fitting (pooled design Cholesky factor,
@@ -56,6 +95,7 @@ dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL) {
 #' @export
 dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_preprocess_blocks()")
   S <- length(B_list)
   if (is.null(Omega_list)) Omega_list <- vector("list", S)
   if (is.null(w)) w <- rep(1, S)
@@ -83,6 +123,7 @@ dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @keywords internal
 #' @export
 dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
+  .dkge_require_block_biprojector(fit, "dkge_project_blocks()")
   Xnew <- dkge_preprocess_blocks(fit, B_list, Omega_list, w)
   multivarious::project(fit, Xnew)
 }
@@ -113,11 +154,11 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' dim(A)
 dkge_project_btil <- function(fit, Btil) {
   stopifnot(inherits(fit, "dkge"))
-  KsU <- fit$K %*% fit$U
   project_one <- function(mat) {
     mat <- as.matrix(mat)
     stopifnot(nrow(mat) == nrow(fit$U))
-    t(mat) %*% KsU
+    .dkge_basis_loadings(mat, fit$U, fit$K,
+                         input_scale = "standardized")
   }
   if (is.list(Btil)) {
     lapply(Btil, project_one)
@@ -140,6 +181,7 @@ dkge_project_btil <- function(fit, Btil) {
 dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
                                least_squares = TRUE) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_project_block()")
   stopifnot(s >= 1L, s <= length(fit$block_indices))
   Xs <- dkge_transform_block(fit, B_s, Omega_s, w_s)
   if (ncol(Xs) != length(fit$block_indices[[s]])) {
@@ -160,6 +202,7 @@ dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
 #' @export
 dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_project_cluster()")
   b <- as.numeric(b)
   stopifnot(length(b) == nrow(fit$U))
   ctil <- t(fit$R) %*% matrix(b, ncol = 1)
@@ -186,6 +229,7 @@ dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
 #' @export
 dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_project_clusters()")
   B <- as.matrix(B)
   stopifnot(nrow(B) == nrow(fit$U))
   ctil <- t(fit$R) %*% B

@@ -15,6 +15,111 @@ test_that("cell-basis kernel is PSD and sized correctly", {
   expect_true(all(eigvals >= -1e-8))
 })
 
+test_that("effect grid records scopes and cell labels", {
+  grid <- dkge_effect_grid(
+    factors = list(
+      group = c("control", "sdam"),
+      task = c("recog", "nback"),
+      measure = c("low_mid", "high_sem")
+    ),
+    scope = c(group = "between", task = "within", measure = "within"),
+    block_factors = "group"
+  )
+
+  expect_s3_class(grid, "dkge_effect_grid")
+  expect_equal(grid$scope["group"], c(group = "between"))
+  expect_equal(
+    grid$cell_labels,
+    c("control:recog:low_mid", "control:recog:high_sem",
+      "control:nback:low_mid", "control:nback:high_sem",
+      "sdam:recog:low_mid", "sdam:recog:high_sem",
+      "sdam:nback:low_mid", "sdam:nback:high_sem")
+  )
+})
+
+test_that("design_kernel carries scope metadata and cell dimnames", {
+  grid <- dkge_effect_grid(
+    factors = list(
+      group = c("control", "sdam"),
+      task = c("recog", "nback"),
+      measure = c("low_mid", "high_sem")
+    ),
+    scope = c(group = "between", task = "within", measure = "within")
+  )
+
+  Kres <- design_kernel(
+    grid,
+    terms = list("group", "task", c("group", "task")),
+    basis = "cell",
+    normalize = "none",
+    include_intercept = FALSE,
+    jitter = 0
+  )
+
+  expect_equal(Kres$info$term_scope["group"], c(group = "between"))
+  expect_equal(Kres$info$term_scope["task"], c(task = "within"))
+  expect_equal(Kres$info$term_scope["group:task"], c("group:task" = "mixed"))
+  expect_equal(rownames(Kres$K), grid$cell_labels)
+  expect_equal(Kres$info$blocks$cells, seq_along(grid$cell_labels))
+})
+
+test_that("scope is metadata and three-factor defaults omit two-way terms", {
+  factors <- list(A = c("a1", "a2"), B = c("b1", "b2"),
+                  response = c("1", "2", "3"))
+  within <- dkge_effect_grid(factors)
+  mixed <- dkge_effect_grid(
+    factors,
+    scope = c(A = "between", B = "within", response = "within")
+  )
+  terms <- list("A", "B", "response", c("A", "B"),
+                c("A", "response"), c("B", "response"),
+                c("A", "B", "response"))
+  K_within <- design_kernel(within, terms = terms, normalize = "none")
+  K_mixed <- design_kernel(mixed, terms = terms, normalize = "none")
+  expect_equal(K_within$K, K_mixed$K, tolerance = 0)
+  expect_false(identical(K_within$info$term_scope,
+                         K_mixed$info$term_scope))
+
+  default <- design_kernel(within, normalize = "none")
+  expect_equal(default$info$term_names,
+               c("A", "B", "response", "A:B:response"))
+  expect_false(any(c("A:B", "A:response", "B:response") %in%
+                     default$info$term_names))
+})
+
+test_that("block factors prevent accidental cross-group coupling", {
+  grid <- dkge_effect_grid(
+    factors = list(
+      group = c("control", "sdam"),
+      task = c("recog", "nback"),
+      measure = c("low_mid", "high_sem")
+    ),
+    scope = c(group = "between", task = "within", measure = "within"),
+    block_factors = "group"
+  )
+
+  terms <- list("task", "measure", c("task", "measure"))
+  K_block <- design_kernel(
+    grid,
+    terms = terms,
+    basis = "cell",
+    normalize = "none",
+    include_intercept = FALSE,
+    jitter = 0
+  )$K
+  K_coupled <- design_kernel(
+    grid$factors,
+    terms = terms,
+    basis = "cell",
+    normalize = "none",
+    include_intercept = FALSE,
+    jitter = 0
+  )$K
+
+  expect_true(all(K_block[1:4, 5:8] == 0))
+  expect_true(any(K_coupled[1:4, 5:8] > 0))
+})
+
 test_that("effect-basis map matches block metadata", {
   factors <- list(A = list(L = 3, type = "nominal"),
                   B = list(L = 4, type = "ordinal", l = 1.0))

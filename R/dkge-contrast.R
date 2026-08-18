@@ -181,8 +181,6 @@ dkge_contrast <- function(fit, contrasts,
   )
   folds <- fold_info$folds
 
-  c_tilde_list <- lapply(contrast_list, function(ct) backsolve(fit$R, ct, transpose = FALSE))
-
   values <- vector("list", n_contrasts)
   names(values) <- names(contrast_list)
   alphas <- vector("list", n_contrasts)
@@ -198,7 +196,9 @@ dkge_contrast <- function(fit, contrasts,
 
     for (fold in folds) {
       U_fold <- fold$basis
-      alpha_vec <- as.numeric(t(U_fold) %*% fit$K %*% c_tilde_list[[i]])
+      c_tilde <- backsolve(fold$R %||% fit$R, contrast_list[[i]],
+                           transpose = FALSE)
+      alpha_vec <- as.numeric(t(U_fold) %*% fit$K %*% c_tilde)
       alpha_mat[fold$index, seq_along(alpha_vec)] <- alpha_vec
 
       holdout <- fold$subjects
@@ -231,10 +231,14 @@ dkge_contrast <- function(fit, contrasts,
   }
 
   metadata <- list(
+    folds = folds,
     bases = lapply(folds, `[[`, "basis"),
     aligned_bases = lapply(folds, `[[`, "basis_aligned"),
     rotations = lapply(folds, `[[`, "rotation"),
     alphas = alphas,
+    estimators = lapply(folds, `[[`, "estimator"),
+    pair_counts = lapply(folds, `[[`, "pair_counts"),
+    pair_ess = lapply(folds, `[[`, "pair_ess"),
     ridge = ridge,
     procrustes = if (align) list(alignment = fold_info$alignment, consensus = fold_info$consensus) else NULL
   )

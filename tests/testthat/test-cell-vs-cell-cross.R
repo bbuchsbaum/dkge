@@ -12,7 +12,10 @@ test_that("cell mode loaders use the global fit$U for every fold", {
     factors = list(A = list(L = 2)), active_terms = "A",
     S = 5, P = 12, snr = 5, seed = 1
   )
-  fit  <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+  # The one-factor toy kernel is rank 1. Add supported metric directions so a
+  # rank-2 fold basis exists without relying on numerical null-space jitter.
+  K_full <- toy$K + 0.1 * diag(nrow(toy$K))
+  fit  <- dkge(toy$B_list, toy$X_list, K = K_full, rank = 2)
   fold_bundle <- .dkge_prepare_folds(fit, NULL)
 
   fi <- .dkge_build_global_fold_loaders(fit, fold_bundle$assignments)
@@ -28,7 +31,8 @@ test_that("cell_cross mode loaders use fold-specific LOSO bases", {
     factors = list(A = list(L = 2)), active_terms = "A",
     S = 5, P = 12, snr = 5, seed = 1
   )
-  fit  <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+  K_full <- toy$K + 0.1 * diag(nrow(toy$K))
+  fit  <- dkge(toy$B_list, toy$X_list, K = K_full, rank = 2)
   fold_bundle <- .dkge_prepare_folds(fit, NULL)
 
   fi <- .dkge_build_fold_bases(fit, fold_bundle$assignments,
@@ -47,7 +51,8 @@ test_that("held-out subject Y matrix differs between cell and cell_cross", {
     factors = list(A = list(L = 2)), active_terms = "A",
     S = 5, P = 12, snr = 5, seed = 3
   )
-  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+  K_full <- toy$K + 0.1 * diag(nrow(toy$K))
+  fit <- dkge(toy$B_list, toy$X_list, K = K_full, rank = 2)
   fold_bundle <- .dkge_prepare_folds(fit, NULL)
 
   fi_cell  <- .dkge_build_global_fold_loaders(fit, fold_bundle$assignments)
@@ -113,7 +118,10 @@ test_that("cell mode basis includes held-out subject (documented leakage)", {
     factors = list(A = list(L = 2)), active_terms = "A",
     S = 4, P = 10, snr = 5, seed = 5
   )
-  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
+  # A rank-1 kernel fixes the sole supported direction, so LOSO cannot rotate
+  # it. Use a full-rank metric to test the intended leakage distinction.
+  K_full <- toy$K + 0.1 * diag(nrow(toy$K))
+  fit <- dkge(toy$B_list, toy$X_list, K = K_full, rank = 1)
   fold_bundle <- .dkge_prepare_folds(fit, NULL)
 
   fi_cell <- .dkge_build_global_fold_loaders(fit, fold_bundle$assignments)

@@ -1,0 +1,165 @@
+---
+title: "Unbalanced Trialwise and Partial Effect Spaces"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Unbalanced Trialwise and Partial Effect Spaces}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(dkge)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(digits = 3)
+set.seed(73101)
+```
+
+DKGE can represent a common factorial effect space even when subjects have
+unequal trial counts or locally empty cells. The key distinction is between the
+*global* 60-cell coordinate system and each subject's observed subset. Missing
+cells are declared structurally; they are not supplied as ordinary zero beta
+rows.
+
+## Declare the complete design and every intended term
+
+This 3 by 5 design has an ordinal response with four levels. The ordinal kernel
+uses distances between level indices, so adjacent responses are more similar
+than responses 1 and 4.
+
+```{r grid}
+grid <- dkge_effect_grid(list(
+  A = list(L = 3, type = "nominal", levels = paste0("A", 1:3)),
+  B = list(L = 5, type = "nominal", levels = paste0("B", 1:5)),
+  response = list(L = 4, type = "ordinal", levels = as.character(1:4), l = 1)
+))
+
+terms <- list(
+  "A", "B", "response",
+  c("A", "B"), c("A", "response"), c("B", "response"),
+  c("A", "B", "response")
+)
+kernel <- design_kernel(grid, terms = terms, basis = "cell",
+                        normalize = "max_diag")
+c(cells = nrow(grid$cells), kernel_rows = nrow(kernel$K))
+```
+
+Spell out `terms`: with three factors the default is the three main effects
+plus the full three-way interaction, not all two-way interactions. The grid's
+`scope` field labels terms for downstream contrast routing; changing it does
+not change `kernel$K`.
+
+## Combine subjects with local empty cells
+
+Here each subject observes 50 of the 60 global cells. Counts differ strongly
+within subject, and different subjects omit different cells. A local subject
+contains only its observed rows; `dkge_data()` constructs and records the
+global union.
+
+```{r partial-subjects}
+q <- nrow(grid$cells)
+P <- 12
+response_index <- as.numeric(grid$cells$response)
+effect_signal <- as.numeric(scale(response_index +
+  0.3 * as.integer(factor(grid$cells$A, levels = paste0("A", 1:3))),
+  scale = FALSE))
+spatial_signal <- cos(seq(0, 2 * pi, length.out = P))
+
+subjects <- lapply(1:6, function(s) {
+  observed <- setdiff(seq_len(q), seq.int(s, q, by = 6))
+  counts <- 2 + ((observed * (s + 2)) %% 18)
+  beta <- tcrossprod(effect_signal[observed], spatial_signal) +
+    matrix(rnorm(length(observed) * P), length(observed), P) /
+      sqrt(counts)
+  rownames(beta) <- grid$cell_labels[observed]
+  design <- diag(length(observed))
+  colnames(design) <- rownames(beta)
+  covariance <- diag(1 / counts, length(observed))
+  dimnames(covariance) <- list(rownames(beta), rownames(beta))
+  suppressWarnings(dkge_subject(
+    beta, design, id = paste0("s", s),
+    effect_n = setNames(counts, rownames(beta)),
+    effect_noise_cov = covariance,
+    residual_variance = rep(1, P), residual_df = 80
+  ))
+})
+bundle <- dkge_data(subjects)
+range(diag(bundle$provenance$pair_counts))
+```
+
+Count weighting treats precision as proportional to the number of trials.
+Random-effects weighting combines within-subject uncertainty with a capped
+between-subject variance estimate. Both are explicit choices. Analytic
+correction addresses the finite-trial diagonal bias; weighting alone does not.
+
+```{r fits}
+fit_count <- dkge_fit(
+  bundle, K = kernel, rank = 3, w_method = "none",
+  effect_weights = dkge_effect_weights("count"),
+  debias = "analytic", missingness = "rescale"
+)
+fit_random <- dkge_fit(
+  bundle, K = kernel, rank = 3, w_method = "none",
+  effect_weights = dkge_effect_weights("random_effects", within = "noise"),
+  debias = "analytic", missingness = "rescale"
+)
+summary(fit_random)
+```
+
+The summary makes the estimator auditable: coverage, pair effective sample
+size, negative spectral mass, error-model provenance, and the q-space versus
+physical-block representation are visible before inference.
+
+## Supply trial covariance when trialwise betas are correlated
+
+`dkge_trial_subject()` fits `Y = X B + E` in trial space. Its IID default is
+appropriate only when trial-estimate errors are independent with a common
+scale model. Overlapping first-level estimates or temporal dependence require
+a covariance or precision matrix.
+
+```{r covariance-input}
+trial_cell <- rep(1:6, each = 4)
+X <- model.matrix(~ 0 + factor(trial_cell, levels = 1:6))
+colnames(X) <- paste0("cell", 1:6)
+truth <- matrix(rnorm(6 * 10), 6, 10)
+Sigma <- outer(seq_len(nrow(X)), seq_len(nrow(X)),
+               function(i, j) 0.35^abs(i - j))
+Y <- X %*% truth + t(chol(Sigma)) %*%
+  matrix(rnorm(nrow(X) * 10), nrow(X), 10)
+trial_subject <- dkge_trial_subject(Y, X, trial_covariance = Sigma)
+trial_subject$error_model[c("estimator", "trial_dependence")]
+```
+
+The constructor stores the `T x q` design and q-space sufficient statistics,
+but not `Y`. At imaging scale, stream feature blocks so the full `T x P`
+matrix is never materialized:
+
+```{r chunks}
+chunked <- dkge_trial_subject_chunks(
+  list(Y[, 1:4, drop = FALSE], Y[, 5:10, drop = FALSE]),
+  X, trial_covariance = Sigma
+)
+chunked$error_model[c("storage", "n_chunks", "effect_score_retained")]
+```
+
+A saturated 60-cell trialwise design must observe every fitted local column to
+be full rank. For a subject with empty cells, either fit only its observed cell
+columns and let `dkge_data()` align the named subset, or use a lower-dimensional
+second-stage basis whose coefficients remain estimable. Do not insert empty
+cells as observed zero rows.
+
+## Split moments require an independence argument
+
+Within-cell alternation balances counts but does not prove that halves are
+independent. Run-disjoint splitting establishes a stronger provenance contract;
+otherwise DKGE labels the cross-moment exploratory. Setting
+`split_independent = TRUE` is an assertion by the analyst, not a test performed
+by the package.
+
+The tracked 20-seed simulation under `inst/extdata` is deliberately mixed: the
+covariance-aware analytic and split estimators reduce inverse-count artifacts,
+but reliability weighting alone does not pass that bias gate, and analytic
+interval coverage remains below its predeclared target. These failures are part
+of the evidence, not hidden by the API.

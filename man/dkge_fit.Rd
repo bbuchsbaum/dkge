@@ -13,13 +13,19 @@ dkge_fit(
   w_tau = 0.3,
   ridge = 0,
   rank = NULL,
+  effect_scaling = c("pooled_design", "none"),
   keep_X = FALSE,
+  force_qspace = FALSE,
   cpca_blocks = NULL,
   cpca_T = NULL,
   cpca_part = c("none", "design", "resid", "both"),
   cpca_ridge = 0,
   weights = NULL,
+  effect_weights = NULL,
+  debias = c("none", "analytic", "split_half"),
   solver = c("pooled", "jd"),
+  missingness = c("none", "rescale", "mask", "shrink"),
+  miss_args = list(),
   jd_control = dkge_jd_control(),
   jd_mask = NULL,
   jd_init = NULL
@@ -54,8 +60,21 @@ weights, 1 forces equal weighting.}
 
 \item{rank}{Desired rank for the decomposition. If NULL, uses full rank.}
 
+\item{effect_scaling}{Effect-space scaling applied before accumulating the
+compressed covariance. `"pooled_design"` (default) multiplies each subject
+beta/effect matrix by the pooled design Cholesky factor, preserving the
+original GLM-beta behaviour. `"none"` leaves rows on their input scale and
+uses an identity contrast ruler, which is appropriate when rows already have
+a common absolute interpretation such as AUC minus chance.}
+
 \item{keep_X}{Logical; when `TRUE`, store the concatenated training matrix
-used to build the multiblock projection (can be large).}
+used to build the exact multiblock projection (can be large). This is only
+available when the fitted moment has a physical block factor; pairwise
+reliability normalization, debiasing, ridge, CPCA, and JD fits fail closed.}
+
+\item{force_qspace}{Logical; force the fitted object to use the q-space-only
+representation even when an exact physical block factor exists. This is
+used by resampling refits, which need only the effect-space eigensystem.}
 
 \item{cpca_blocks}{Optional integer vector specifying which effect rows span
 the CPCA design subspace. Ignored when `cpca_part = "none"` or when
@@ -77,9 +96,33 @@ by `w_method`, or a [`dkge_weights()`] specification controlling additional
 voxel/anchor-level weighting. When supplied, it must inherit from
 `dkge_weights` and is resolved via [dkge_weights()].}
 
+\item{effect_weights}{Optional [dkge_effect_weights()] specification. Count
+explicit precision, or random-effects weighting is applied to raw q-space
+effect moments before the pooled ruler and design kernel mix effect rows.}
+
+\item{debias}{Finite-trial noise treatment. `"none"` preserves the observed
+second moment. `"analytic"` subtracts
+`noise_trace * effect_noise_cov` for each subject before pooling; these
+sufficient statistics are produced by [dkge_trial_subject()].
+`"split_half"` uses the symmetrized cross-product of two independently
+estimated trial halves and requires `dkge_trial_subject(split = ...)`.
+The fitted `$moment_estimator` distinguishes IID analytic,
+covariance-aware analytic, independent split, and exploratory split
+estimators; `debias = "analytic"` by itself does not imply IID errors.}
+
 \item{solver}{Solver used for the q-space problem. `"pooled"` keeps the
 original eigen-decomposition; `"jd"` performs joint diagonalisation using
 [dkge_jd_control()] settings.}
+
+\item{missingness}{Partial-effect coverage policy used when subjects do not
+all observe the same effect rows. `"none"` keeps the raw zero-filled union
+accumulation, `"rescale"` divides entries by observed pair counts,
+`"mask"` zeros under-covered entries, and `"shrink"` blends rescaled entries
+toward the diagonal according to coverage. These policies operate on raw
+q-space effect moments before the pooled ruler and design kernel mix rows.}
+
+\item{miss_args}{List of arguments for `missingness`; currently
+`min_pairs` for `"mask"` and `gamma` for `"shrink"`.}
 
 \item{jd_control}{Control parameters for the JD solver.}
 
@@ -91,9 +134,17 @@ recycled across subjects.}
 the whitened \eqn{K^{1/2}} metric (qxq matrix).}
 }
 \value{
-A fitted `dkge` object. When the \pkg{multivarious} package is installed
-  the return value additionally inherits from `multiblock_biprojector`, making
-  it compatible with the multivarious multiblock interface.
+A fitted `dkge` object. Exact unregularized pooled block moments
+  additionally inherit from `multiblock_biprojector` and advertise physical
+  block loadings in `$v`. Pair-normalized, debiased, ridge, CPCA, and JD fits
+  instead inherit from `dkge_qspace`, set `$v` and `$X_concat` to `NULL`, and
+  expose only the coherent q-space eigensystem. `$representation` records the
+  active contract.
+  The object also records `$effect_moment`, `$pair_weight`, `$pair_ess`,
+  `$effect_precision_diagnostics`, and `$moment_diagnostics` for auditing
+  reliability weighting, subject dominance, and any negative spectral mass
+  introduced by debiasing. [summary.dkge()] presents these diagnostics in a
+  compact report.
 }
 \description{
 Fit a Design-Kernel Group Embedding (DKGE) model

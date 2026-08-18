@@ -154,7 +154,9 @@ dkge_bootstrap_qspace <- function(fit,
   q <- nrow(fit$U)
   r <- ncol(fit$U)
 
-  loadings_ref <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+  loadings_ref <- lapply(fit$Btil, function(Bts) {
+    .dkge_basis_loadings(Bts, fit$U, fit$K, input_scale = "standardized")
+  })
   cache <- .dkge_bootstrap_prepare_cache(fit, transport_cache, mapper, centroids,
                                          loadings_ref, sizes, medoid, ...)
   operators <- cache$operators
@@ -165,7 +167,6 @@ dkge_bootstrap_qspace <- function(fit,
     stop("voxel_operator must have as many rows as medoid clusters.")
   }
 
-  KBtil_t <- lapply(fit$Btil, function(Bts) t(fit$K %*% Bts))
   Kctil_list <- lapply(contrast_list, function(c) {
     ctil <- backsolve(fit$R, c, transpose = FALSE)
     fit$K %*% ctil
@@ -185,8 +186,13 @@ dkge_bootstrap_qspace <- function(fit,
   for (b in seq_len(B)) {
     xi <- .dkge_bootstrap_multipliers(scheme, S)
     coeff <- weights_base * xi
-    Chat_vec <- contrib_matrix %*% coeff
-    Chat_b <- matrix(Chat_vec, q, q)
+    repooled <- .dkge_repool_fit(fit, sample_weights = xi)
+    if (is.null(repooled)) {
+      Chat_vec <- contrib_matrix %*% coeff
+      Chat_b <- matrix(Chat_vec, q, q)
+    } else {
+      Chat_b <- repooled$Chat
+    }
     if (ridge > 0) {
       diag(Chat_b) <- diag(Chat_b) + ridge
     }
@@ -203,13 +209,41 @@ dkge_bootstrap_qspace <- function(fit,
     corr_sign <- ifelse(corr_diag < 0, -1, 1)
     Ub <- sweep(Ub, 2, corr_sign, `*`)
 
-    A_list <- lapply(KBtil_t, function(mat) mat %*% Ub)
-    weights_boot <- coeff
+    literal_refit <- identical(repooled$refit %||% NULL,
+                               "literal_subject_multiset")
+    R_boot <- repooled$R %||% fit$R
+    Btil_boot <- if (literal_refit &&
+                     !identical(fit$effect_scaling %||% "pooled_design", "none")) {
+      lapply(fit$Braw, function(B) t(R_boot) %*% B)
+    } else if (literal_refit) {
+      fit$Braw
+    } else {
+      fit$Btil
+    }
+    A_list <- lapply(Btil_boot, function(Bts) {
+      .dkge_basis_loadings(Bts, Ub, fit$K, input_scale = "standardized")
+    })
+    weights_boot <- if (literal_refit) {
+      out <- numeric(S)
+      for (j in seq_along(repooled$expanded_indices)) {
+        out[repooled$expanded_indices[[j]]] <-
+          out[repooled$expanded_indices[[j]]] + repooled$subject_weights[[j]]
+      }
+      out
+    } else {
+      coeff
+    }
     w_sum <- sum(weights_boot)
     if (!is.finite(w_sum) || w_sum <= 0) w_sum <- 1
 
     for (idx_con in seq_len(n_contrasts)) {
-      alpha_b <- as.numeric(crossprod(Ub, Kctil_list[[idx_con]]))
+      Kctil_b <- if (literal_refit) {
+        fit$K %*% backsolve(R_boot, contrast_list[[idx_con]],
+                            transpose = FALSE)
+      } else {
+        Kctil_list[[idx_con]]
+      }
+      alpha_b <- as.numeric(crossprod(Ub, Kctil_b))
       subject_maps <- matrix(0, S, Q)
       for (s in seq_len(S)) {
         v_s <- as.numeric(A_list[[s]] %*% alpha_b)
@@ -295,6 +329,32 @@ dkge_bootstrap_analytic <- function(fit,
                                  medoid = medoid, voxel_operator = voxel_operator, ...))
   }
 
+  nonlinear_pool <- !identical(fit$effect_weight_spec$method %||% "none", "none") ||
+    !identical(fit$missingness %||% "none", "none")
+  if (nonlinear_pool) {
+    warning("Analytic bootstrap does not linearize pair-normalized effect pooling; falling back to q-space bootstrap.",
+            call. = FALSE)
+    return(dkge_bootstrap_qspace(fit, contrasts, B = B, scheme = scheme,
+                                 ridge = ridge, align = align,
+                                 allow_reflection = allow_reflection,
+                                 seed = seed, transport_cache = transport_cache,
+                                 mapper = mapper, centroids = centroids,
+                                 sizes = sizes, medoid = medoid,
+                                 voxel_operator = voxel_operator, ...))
+  }
+
+  if (!identical(fit$debias %||% "none", "none")) {
+    warning("Analytic bootstrap does not linearize covariance-aware or split-half moments; falling back to q-space bootstrap.",
+            call. = FALSE)
+    return(dkge_bootstrap_qspace(fit, contrasts, B = B, scheme = scheme,
+                                 ridge = ridge, align = align,
+                                 allow_reflection = allow_reflection,
+                                 seed = seed, transport_cache = transport_cache,
+                                 mapper = mapper, centroids = centroids,
+                                 sizes = sizes, medoid = medoid,
+                                 voxel_operator = voxel_operator, ...))
+  }
+
   if (is.null(fit$eig_vectors_full) || is.null(fit$eig_values_full)) {
     warning("Full eigendecomposition not stored on fit; falling back to q-space bootstrap.",
             call. = FALSE)
@@ -313,7 +373,9 @@ dkge_bootstrap_analytic <- function(fit,
   q <- nrow(fit$U)
   r <- ncol(fit$U)
 
-  loadings_ref <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+  loadings_ref <- lapply(fit$Btil, function(Bts) {
+    .dkge_basis_loadings(Bts, fit$U, fit$K, input_scale = "standardized")
+  })
   cache <- .dkge_bootstrap_prepare_cache(fit, transport_cache, mapper, centroids,
                                          loadings_ref, sizes, medoid, ...)
   operators <- cache$operators
@@ -324,7 +386,6 @@ dkge_bootstrap_analytic <- function(fit,
     stop("voxel_operator must have as many rows as medoid clusters.")
   }
 
-  KBtil_t <- lapply(fit$Btil, function(Bts) t(fit$K %*% Bts))
   Kctil_list <- lapply(contrast_list, function(c) {
     ctil <- backsolve(fit$R, c, transpose = FALSE)
     fit$K %*% ctil
@@ -379,7 +440,9 @@ dkge_bootstrap_analytic <- function(fit,
     if (!is.finite(w_sum) || w_sum <= 0) w_sum <- 1
 
     # A_s depends only on the bootstrap basis, not the contrast; hoist it.
-    A_list <- lapply(seq_len(S), function(s) KBtil_t[[s]] %*% Ub)
+    A_list <- lapply(fit$Btil, function(Bts) {
+      .dkge_basis_loadings(Bts, Ub, fit$K, input_scale = "standardized")
+    })
     for (idx_con in seq_len(n_contrasts)) {
       alpha_b <- as.numeric(crossprod(Ub, Kctil_list[[idx_con]]))
       for (s in seq_len(S)) {

@@ -37,10 +37,9 @@ dkge_project_clusters_to_latent <- function(fit) {
   stopifnot(is.list(Bs_list), !is.null(U), !is.null(K))
   stopifnot(ncol(U) >= 1L)
 
-  KU <- K %*% U
   lapply(Bs_list, function(Bs) {
     stopifnot(is.matrix(Bs))
-    proj <- crossprod(Bs, KU)  # P_s x r
+    proj <- .dkge_basis_loadings(Bs, U, K, input_scale = "standardized")
     as.matrix(proj)
   })
 }
@@ -61,10 +60,10 @@ dkge_cluster_loadings <- function(fit) {
   K <- fit$K
   stopifnot(is.list(Bs_list), !is.null(U), !is.null(K))
 
-  KU <- K %*% U
   lapply(Bs_list, function(Bs) {
     stopifnot(is.matrix(Bs))
-    loadings <- crossprod(Bs, KU)
+    loadings <- .dkge_basis_loadings(Bs, U, K,
+                                     input_scale = "standardized")
     as.matrix(loadings)
   })
 }

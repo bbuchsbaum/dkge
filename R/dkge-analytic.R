@@ -75,6 +75,30 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                    diagnostic = diag_info))
   }
 
+  nonlinear_pool <- !identical(fit$effect_weight_spec$method %||% "none", "none") ||
+    !identical(fit$missingness %||% "none", "none")
+  if (nonlinear_pool) {
+    diag_info <- list(reason = "pair_normalized_pooling",
+                      min_eigengap = NA_real_,
+                      max_abs_coeff = NA_real_,
+                      threshold_eigengap = NA_real_,
+                      threshold_coeff = NA_real_)
+    return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
+                                   reason = "pair_normalized_pooling",
+                                   diagnostic = diag_info))
+  }
+
+  if (!identical(fit$debias %||% "none", "none")) {
+    diag_info <- list(reason = "covariance_aware_moment",
+                      min_eigengap = NA_real_,
+                      max_abs_coeff = NA_real_,
+                      threshold_eigengap = NA_real_,
+                      threshold_coeff = NA_real_)
+    return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
+                                   reason = "covariance_aware_moment",
+                                   diagnostic = diag_info))
+  }
+
   if (!is.null(fit$voxel_weights)) {
     uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
     if (!uniform) {
@@ -180,13 +204,12 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   V_ortho <- qr.Q(qr(V_new))
 
   U_minus <- fit$Kihalf %*% V_ortho
-  KU_minus <- fit$K %*% U_minus
-
   c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(U_minus) %*% fit$K %*% c_tilde
 
   Bts <- fit$Btil[[s]]
-  A_s <- t(Bts) %*% KU_minus
+  A_s <- .dkge_basis_loadings(Bts, U_minus, fit$K,
+                              input_scale = "standardized")
   v_s <- as.numeric(A_s %*% alpha)
 
   diag_info <- list(

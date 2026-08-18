@@ -58,7 +58,8 @@ theme_dkge <- function(base_size = 12, base_family = "") {
  energy <- matrix(NA_real_, nrow = S, ncol = r)
  for (s in seq_len(S)) {
  B_t <- fit$Btil[[s]]
- A_s <- t(B_t) %*% fit$K %*% fit$U
+ A_s <- .dkge_basis_loadings(B_t, fit$U, fit$K,
+                             input_scale = "standardized")
  energy[s, ] <- colSums(A_s * A_s)
  }
  rownames(energy) <- fit$subject_ids %||% paste0("sub", seq_len(S))

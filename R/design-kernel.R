@@ -31,6 +31,10 @@
 #'   a single column of ones for continuous factors.
 #' @param block_structure Optional ordering of effect blocks (names matching
 #'   terms). If NULL, uses the order of `terms`.
+#' @param block_factors Optional factor names forced to use their factor kernel
+#'   in every cell-space term. This gives block-diagonal replication across
+#'   between-subject factors such as group instead of accidental all-ones
+#'   coupling through terms that omit the block factor.
 #' @param normalize One of "unit_trace", "none", "unit_fro", "max_diag".
 #'   Controls how the kernel is scaled after construction (default "unit_trace").
 #' @param jitter Small diagonal jitter added to `K_cell` for numerical stability
@@ -61,15 +65,32 @@ design_kernel <- function(factors,
                           basis = c("cell", "effect"),
                           contrasts = NULL,
                           block_structure = NULL,
+                          block_factors = NULL,
                           normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
                           jitter = 1e-8) {
   basis <- match.arg(basis)
   normalize <- match.arg(normalize)
 
+  effect_grid <- NULL
+  if (inherits(factors, "dkge_effect_grid")) {
+    effect_grid <- factors
+    factors <- effect_grid$factors
+    if (is.null(block_factors)) {
+      block_factors <- effect_grid$block_factors
+    }
+  }
+
   stopifnot(is.list(factors), length(factors) > 0)
   fact_names <- names(factors)
   if (is.null(fact_names) || any(!nzchar(fact_names)) || any(duplicated(fact_names))) {
     stop("`factors` must be a named list with unique names.")
+  }
+  if (!is.null(block_factors)) {
+    block_factors <- as.character(block_factors)
+    missing_blocks <- setdiff(block_factors, fact_names)
+    if (length(missing_blocks)) {
+      stop("Unknown block factor(s): ", paste(missing_blocks, collapse = ", "))
+    }
   }
 
   # Normalise factor specifications
@@ -89,6 +110,16 @@ design_kernel <- function(factors,
   Ls <- vapply(factors, function(f) f$L, integer(1))
   types <- vapply(factors, function(f) f$type, character(1))
   Qcell <- prod(Ls)
+  grid_labels <- if (is.null(effect_grid)) {
+    .dkge_effect_grid_cell_labels(factors)
+  } else {
+    list(cells = effect_grid$cells, labels = effect_grid$cell_labels)
+  }
+  factor_scope <- if (is.null(effect_grid)) {
+    setNames(rep("within", length(fact_names)), fact_names)
+  } else {
+    effect_grid$scope
+  }
 
   .rbf1d <- function(x, l) {
     x <- as.numeric(x)
@@ -140,7 +171,7 @@ design_kernel <- function(factors,
   .kron_all <- function(mats) Reduce(kronecker, mats)
 
   per_term_kron <- function(S) {
-    mats <- Map(function(nm, i) if (nm %in% S) K_fac[[nm]] else J_fac[[i]],
+    mats <- Map(function(nm, i) if (nm %in% S || nm %in% block_factors) K_fac[[nm]] else J_fac[[i]],
                 fact_names, seq_along(fact_names))
     .kron_all(mats)
   }
@@ -151,6 +182,7 @@ design_kernel <- function(factors,
   }
   if (include_intercept && rho0 > 0) K_cell <- K_cell + rho0 * diag(Qcell)
   if (jitter > 0)                     K_cell <- K_cell + jitter * diag(Qcell)
+  dimnames(K_cell) <- list(grid_labels$labels, grid_labels$labels)
 
   if (normalize == "unit_trace") {
     tr <- sum(diag(K_cell)); if (tr > 0) K_cell <- K_cell / tr
@@ -163,12 +195,19 @@ design_kernel <- function(factors,
   info <- list(levels = Ls,
                factor_names = fact_names,
                term_names = tnames,
+               factor_scope = factor_scope,
+               term_scope = setNames(vapply(terms, .dkge_term_scope, character(1),
+                                             factor_scope = factor_scope), tnames),
+               block_factors = block_factors,
+               cells = grid_labels$cells,
+               cell_labels = grid_labels$labels,
                basis = basis,
                map = NULL,
                blocks = NULL,
                dims = list(Qcell = Qcell))
 
   if (basis == "cell") {
+    info$blocks <- list(cells = seq_len(Qcell))
     return(list(K = K_cell, K_cell = K_cell, info = info))
   }
 
@@ -207,6 +246,7 @@ design_kernel <- function(factors,
   T_list <- T_blocks[block_structure]
   out_cols <- vapply(T_list, function(T) attr(T, "out_dim"), integer(1))
   T <- do.call(cbind, T_list)
+  rownames(T) <- grid_labels$labels
 
   block_idx <- split(seq_len(sum(out_cols)),
                      rep(block_structure, times = out_cols))
@@ -216,6 +256,10 @@ design_kernel <- function(factors,
   info$dims$q <- ncol(T)
 
   K <- crossprod(T, K_cell %*% T)
+  effect_names <- unlist(Map(function(block, n) {
+    if (n == 1L) block else paste0(block, seq_len(n))
+  }, block_structure, out_cols), use.names = FALSE)
+  dimnames(K) <- list(effect_names, effect_names)
   list(K = K, K_cell = K_cell, info = info)
 }
 
@@ -279,6 +323,8 @@ kernel_roots <- function(K, jitter = 1e-10) {
 
   Khalf  <- V %*% diag(sqrt_vals, length(sqrt_vals)) %*% t(V)
   Kihalf <- V %*% diag(inv_sqrt_vals, length(inv_sqrt_vals)) %*% t(V)
+  dimnames(Khalf) <- dimnames(Ks)
+  dimnames(Kihalf) <- dimnames(Ks)
 
   rank_est <- sum(vals > .Machine$double.eps)
 

@@ -59,6 +59,40 @@ dkge_freeze <- function(fit) {
   stop("Row names required to align prediction betas with partial overlap.", call. = FALSE)
 }
 
+#' Canonical effect-basis loadings for a subject beta block
+#'
+#' This helper defines the q-space subject projection used by prediction,
+#' contrasts, and classification. It is deliberately independent of physical
+#' multiblock right loadings and therefore applies to q-space-only fits.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_basis_loadings <- function(B, U, K, R = NULL,
+                                 input_scale = c("raw", "standardized"),
+                                 voxel_weights = NULL) {
+  input_scale <- match.arg(input_scale)
+  B <- as.matrix(B)
+  Btil <- if (identical(input_scale, "raw")) {
+    if (is.null(R)) stop("Raw beta projection requires the pooled ruler R.",
+                         call. = FALSE)
+    t(R) %*% B
+  } else {
+    B
+  }
+  if (!is.null(voxel_weights) && length(voxel_weights)) {
+    if (length(voxel_weights) != ncol(Btil)) {
+      voxel_weights <- rep(voxel_weights, length.out = ncol(Btil))
+    }
+    Btil <- sweep(Btil, 2L, sqrt(pmax(as.numeric(voxel_weights), 0)), "*")
+  }
+  project_cpp <- get0("dkge_project_loadings_cpp", mode = "function")
+  if (is.function(project_cpp)) {
+    project_cpp(Btil, K, U)
+  } else {
+    t(Btil) %*% K %*% U
+  }
+}
+
 #' Predict DKGE loadings for new subjects (out-of-sample)
 #'
 #' @param object dkge | dkge_stream | dkge_model
@@ -73,13 +107,8 @@ dkge_predict_loadings <- function(object, B_list) {
     if (!is.null(attr(Bs, "coverage_rows"))) {
       attr(Bs, "coverage_rows") <- NULL
     }
-    Btil <- t(comps$R) %*% Bs
-    project_cpp <- get0("dkge_project_loadings_cpp", mode = "function")
-    if (is.function(project_cpp)) {
-      project_cpp(Btil, comps$K, comps$U)
-    } else {
-      t(Btil) %*% comps$K %*% comps$U
-    }
+    .dkge_basis_loadings(Bs, comps$U, comps$K, R = comps$R,
+                         input_scale = "raw")
   })
 }
 
@@ -278,8 +307,8 @@ dkge_predict_stream <- function(object, loader, contrasts) {
   A_list <- vector("list", S)
   for (s in seq_len(S)) {
     Bs <- .dkge_align_effects(.dkge_coerce_beta(loader$B(s)), comps$effects)
-    Btil <- t(comps$R) %*% Bs
-    A <- t(Btil) %*% comps$K %*% comps$U
+    A <- .dkge_basis_loadings(Bs, comps$U, comps$K, R = comps$R,
+                              input_scale = "raw")
     A_list[[s]] <- A
     res <- sapply(alpha_list, function(a) as.numeric(A %*% a))
     if (is.matrix(res) && length(alpha_list) > 1) {

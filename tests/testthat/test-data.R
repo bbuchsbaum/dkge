@@ -17,8 +17,58 @@ test_that("dkge_subject aligns effect names and sets defaults", {
   subj <- dkge_subject(fx$beta, design = fx$design)
   expect_s3_class(subj, "dkge_subject")
   expect_equal(rownames(subj$beta), colnames(subj$design))
+  expect_equal(subj$observed_rows, seq_len(nrow(subj$beta)))
   expect_equal(subj$n_clusters, ncol(fx$beta))
   expect_true(all(grepl("cluster_", subj$cluster_ids)))
+})
+
+test_that("dkge_subject carries explicit observed rows", {
+  fx <- make_subject_fixture()
+  subj <- dkge_subject(fx$beta, design = fx$design,
+                       observed_rows = c(1L, 3L))
+  expect_equal(subj$observed_rows, c(1L, 3L))
+
+  subj_logical <- dkge_subject(fx$beta, design = fx$design,
+                               observed_rows = c(TRUE, FALSE, TRUE))
+  expect_equal(subj_logical$observed_rows, c(1L, 3L))
+
+  expect_error(
+    dkge_subject(fx$beta, design = fx$design,
+                 observed_rows = c(TRUE, FALSE)),
+    "logical `observed_rows`",
+    fixed = TRUE
+  )
+})
+
+test_that("dkge_data honours observed rows when effect labels are identical", {
+  fx <- make_subject_fixture()
+  s1 <- dkge_subject(fx$beta, fx$design, id = "s1",
+                     observed_rows = c(1L, 3L))
+  s2 <- dkge_subject(fx$beta, fx$design, id = "s2")
+  dat <- dkge_data(list(s1, s2))
+
+  expect_equal(dat$observed_rows[[1]], c(1L, 3L))
+  expect_false(dat$provenance$obs_mask[[1]][2])
+  expect_equal(unname(diag(dat$provenance$pair_counts)), c(2L, 1L, 2L))
+  expect_true(all(dat$betas[[1]][2, ] == 0))
+  expect_true(all(dat$designs[[1]][, 2] == 0))
+})
+
+test_that("unobserved row values cannot leak into the fitted moment", {
+  fx <- make_subject_fixture(q = 3, P = 4)
+  design <- fx$design[, match(rownames(fx$beta), colnames(fx$design)), drop = FALSE]
+  beta_garbage <- fx$beta
+  beta_garbage[2, ] <- 1e12
+  s1 <- suppressWarnings(dkge_subject(beta_garbage, design, id = "s1",
+                                      observed_rows = c(1L, 3L)))
+  s2 <- dkge_subject(fx$beta, design, id = "s2")
+  fit <- suppressWarnings(dkge_fit(
+    dkge_data(list(s1, s2)), K = diag(3), rank = 2,
+    w_method = "none", effect_scaling = "none"
+  ))
+  expected <- tcrossprod(rbind(fx$beta[1, ], 0, fx$beta[3, ])) +
+    tcrossprod(fx$beta)
+  expect_equal(unname(fit$effect_moment), unname(expected), tolerance = 1e-12)
 })
 
 test_that("dkge_subject validates omega", {
@@ -84,6 +134,10 @@ test_that("dkge_data aligns partial effect overlaps and records provenance", {
   expect_equal(length(prov$effect_ids), 3)
   expect_false(prov$obs_mask[[1]][3])
   expect_false(prov$obs_mask[[2]][1])
+  expect_equal(dat$observed_rows[[1]], c(1L, 2L))
+  expect_equal(dat$observed_rows[[2]], c(2L, 3L))
+  expect_equal(prov$observed_rows[[1]], c(1L, 2L))
+  expect_equal(prov$observed_rows[[2]], c(2L, 3L))
   expect_equal(unname(diag(prov$pair_counts)), c(1L, 2L, 1L))
 })
 
@@ -96,6 +150,8 @@ test_that("dkge_data respects provided subject ids and omega", {
   expect_equal(dat$subject_ids, c("A", "B"))
   expect_equal(dat$omega[[1]], omega[[1]])
   expect_equal(dat$omega[[2]], omega[[2]])
+  expect_equal(dat$observed_rows[[1]], seq_len(dat$q))
+  expect_equal(dat$provenance$observed_rows[["A"]], seq_len(dat$q))
 })
 
 test_that("dkge_data errors on mismatched effects", {
@@ -212,6 +268,8 @@ test_that("provenance correctly tracks effect coverage with partial overlap", {
   expect_equal(prov$pair_counts["e2", "e2"], 2L)
   expect_equal(prov$pair_counts["e3", "e3"], 1L)
   expect_equal(prov$pair_counts["e1", "e3"], 0L)  # No subject has both
+  expect_equal(prov$observed_rows[[1]], c(1L, 2L))
+  expect_equal(prov$observed_rows[[2]], c(2L, 3L))
 })
 
 test_that("effect alignment produces correct values after reordering", {

@@ -37,10 +37,11 @@ test_that("Between-subject permutation p-values remain calibrated in a longer nu
   for (term in names(pvals)) {
     p <- pvals[[term]]
     ks <- suppressWarnings(stats::ks.test(p, "punif"))
-    expect_gt(ks$p.value, 0.05, info = paste("KS test for", term))
+    expect_true(ks$p.value > 0.05, info = paste("KS test for", term))
     q_emp <- as.numeric(stats::quantile(p, probs = c(0.1, 0.25, 0.5, 0.75, 0.9)))
-    expect_lt(max(abs(q_emp - c(0.1, 0.25, 0.5, 0.75, 0.9))),
-              0.09,
-              info = paste("quantiles for", term))
+    expect_true(
+      max(abs(q_emp - c(0.1, 0.25, 0.5, 0.75, 0.9))) < 0.09,
+      info = paste("quantiles for", term)
+    )
   }
 })

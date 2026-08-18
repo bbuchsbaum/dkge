@@ -14,7 +14,13 @@ dkge_subject(x, ...)
 
 \item{...}{Additional arguments passed to methods. For the matrix method:
 `design` (Subject design matrix T_s x q), `id` (Optional subject identifier),
-`omega` (Optional cluster weights - numeric vector length P or PxP matrix).
+`omega` (Optional cluster weights - numeric vector length P or PxP matrix),
+`observed_rows` (Optional observed effect-row indices in a global effect
+space; defaults to all local rows), `effect_n` (per-effect trial counts),
+`effect_precision` (direct per-effect precision), `effect_noise_cov`
+(q-by-q covariance multiplier such as `(X'X)^-1`), `residual_variance`
+(per-column residual variances), `noise_trace` (optional precomputed spatial
+noise trace), and `split_betas` (two q-by-P half estimates).
 For ClusteredNeuroVec method: omega defaults to cluster sizes if not provided}
 }
 \value{

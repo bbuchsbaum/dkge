@@ -49,6 +49,107 @@ test_that("subject weights handle MFA and Omega matrices", {
   expect_true(all(w_mat > 0))
 })
 
+test_that("subject weights ignore zero-filled unobserved rows", {
+  K <- matrix(0.35, 3, 3)
+  diag(K) <- 1
+  Khalf <- dkge:::.dkge_kernel_roots(K)$Khalf
+
+  B2 <- list(
+    matrix(c(1, 2,
+             3, 4), 2, 2, byrow = TRUE),
+    matrix(c(2, 1,
+             4, 3), 2, 2, byrow = TRUE)
+  )
+  B3 <- list(
+    rbind(B2[[1]], 0),
+    rbind(B2[[2]][1, , drop = FALSE], 0, B2[[2]][2, , drop = FALSE])
+  )
+  masks <- list(c(TRUE, TRUE, FALSE), c(TRUE, FALSE, TRUE))
+
+  raw_ref <- vapply(seq_along(B3), function(s) {
+    Bzero <- B3[[s]]
+    Bzero[!masks[[s]], ] <- 0
+    X <- Khalf %*% Bzero
+    1 / (sum(X * X) + 1e-12)
+  }, numeric(1))
+  w_ref <- raw_ref / mean(raw_ref)
+  w_masked <- dkge:::.dkge_subject_weights(B3, list(NULL, NULL), Khalf,
+                                           w_method = "energy", w_tau = 0,
+                                           obs_masks = masks)
+  w_unmasked <- dkge:::.dkge_subject_weights(B3, list(NULL, NULL), Khalf,
+                                             w_method = "energy", w_tau = 0)
+
+  expect_equal(w_masked, w_ref, tolerance = 1e-10)
+  expect_equal(length(w_unmasked), length(w_ref))
+})
+
+test_that("subject contributions mask raw rows before the full kernel transform", {
+  K <- matrix(0.35, 3, 3)
+  diag(K) <- 1
+  Khalf <- dkge:::.dkge_kernel_roots(K)$Khalf
+
+  B2 <- list(
+    matrix(c(1, 2,
+             3, 4), 2, 2, byrow = TRUE),
+    matrix(c(2, 1,
+             4, 3), 2, 2, byrow = TRUE)
+  )
+  B3 <- lapply(B2, function(B) rbind(B, 0))
+  masks <- replicate(2, c(TRUE, TRUE, FALSE), simplify = FALSE)
+
+  acc_masked <- dkge:::.dkge_accumulate_chat(
+    B3, list(NULL, NULL), Khalf,
+    weights = c(1, 1),
+    obs_masks = masks
+  )
+
+  Bzero <- B3[[1]]
+  Bzero[!masks[[1]], ] <- 0
+  expected <- tcrossprod(Khalf %*% Bzero)
+  expect_equal(acc_masked$contribs[[1]], expected, tolerance = 1e-10)
+  expect_true(any(abs(acc_masked$contribs[[1]][3, ]) > 0))
+})
+
+test_that("missingness helper implements shared coverage policies", {
+  Chat <- matrix(c(4, 2, 6,
+                   2, 8, 3,
+                   6, 3, 9), 3, 3, byrow = TRUE)
+  pair_counts <- matrix(c(2L, 1L, 0L,
+                          1L, 2L, 1L,
+                          0L, 1L, 1L), 3, 3, byrow = TRUE)
+
+  expect_equal(
+    dkge:::.dkge_apply_missingness(Chat, pair_counts, "none"),
+    Chat
+  )
+
+  expected_rescale <- Chat / pmax(pair_counts, 1L)
+  expected_rescale[pair_counts == 0L] <- 0
+  expect_equal(
+    dkge:::.dkge_apply_missingness(Chat, pair_counts, "rescale"),
+    expected_rescale
+  )
+
+  expected_mask <- Chat
+  expected_mask[pair_counts < 2L] <- 0
+  expect_equal(
+    dkge:::.dkge_apply_missingness(Chat, pair_counts, "mask",
+                                   list(min_pairs = 2L)),
+    expected_mask
+  )
+
+  weights_mat <- pair_counts / max(pair_counts)
+  rescaled <- Chat / pmax(pair_counts, 1L)
+  rescaled[pair_counts == 0L] <- 0
+  expected_shrink <- weights_mat * rescaled +
+    (1 - weights_mat) * diag(diag(Chat), 3, 3)
+  expect_equal(
+    dkge:::.dkge_apply_missingness(Chat, pair_counts, "shrink",
+                                   list(gamma = 1)),
+    expected_shrink
+  )
+})
+
 test_that("dkge_fit accepts raw lists and dkge_data", {
   fixture <- make_fit_fixture()
   fit1 <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K, rank = 2,
@@ -61,6 +162,80 @@ test_that("dkge_fit accepts raw lists and dkge_data", {
   expect_true(!is.null(fit1$X_concat))
   expect_null(fit2$X_concat)
   expect_equal(fit1$K, fixture$K)
+})
+
+test_that("dkge_fit can leave effect rows on input scale", {
+  fixture <- make_fit_fixture(S = 3, q = 4, P = 6, T = 20)
+  fit <- dkge_fit(
+    fixture$betas,
+    fixture$designs,
+    K = fixture$K,
+    rank = 2,
+    w_method = "none",
+    effect_scaling = "none"
+  )
+
+  expect_equal(fit$effect_scaling, "none")
+  expect_equal(fit$R, diag(4), tolerance = 1e-12, ignore_attr = TRUE)
+  expect_equal(fit$Btil, fixture$betas, tolerance = 1e-12, ignore_attr = TRUE)
+})
+
+test_that("dkge_fit default missingness leaves full-coverage fits unchanged", {
+  fixture <- make_fit_fixture()
+  fit_default <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K,
+                          rank = 2, w_method = "none")
+  fit_none <- dkge_fit(fixture$betas, fixture$designs, K = fixture$K,
+                       rank = 2, w_method = "none", missingness = "none")
+
+  expect_equal(fit_default$Chat, fit_none$Chat)
+  expect_equal(fit_default$pair_counts, fit_none$pair_counts)
+  expect_equal(unique(as.integer(fit_default$pair_counts)), length(fixture$betas))
+})
+
+test_that("dkge_fit applies partial-effect missingness to training Chat", {
+  betas <- list(
+    matrix(c(1, 2,
+             3, 4), 2, 2, byrow = TRUE,
+           dimnames = list(c("e1", "e2"), NULL)),
+    matrix(c(5, 6,
+             7, 8), 2, 2, byrow = TRUE,
+           dimnames = list(c("e2", "e3"), NULL))
+  )
+  designs <- list(
+    matrix(c(1, 0,
+             0, 1,
+             1, 0,
+             0, 1), 4, 2, byrow = TRUE,
+           dimnames = list(NULL, c("e1", "e2"))),
+    matrix(c(1, 0,
+             0, 1,
+             1, 0,
+             0, 1), 4, 2, byrow = TRUE,
+           dimnames = list(NULL, c("e2", "e3")))
+  )
+  data <- dkge_data(betas, designs, subject_ids = c("s1", "s2"))
+  K <- matrix(0.25, 3, 3)
+  diag(K) <- 1
+  dimnames(K) <- list(data$effects, data$effects)
+
+  fit_none <- dkge_fit(data, K = K, rank = 2, w_method = "none",
+                       missingness = "none")
+  fit_mask <- dkge_fit(data, K = K, rank = 2, w_method = "none",
+                       missingness = "mask",
+                       miss_args = list(min_pairs = 1L))
+
+  expect_equal(fit_mask$pair_counts["e1", "e3"], 0L)
+  # Coverage policies act in raw effect space, before R and K mix rows.
+  expect_equal(unname(fit_mask$effect_moment["e1", "e3"]), 0)
+  expect_equal(unname(fit_mask$effect_moment["e3", "e1"]), 0)
+
+  ctx <- dkge:::.dkge_fold_weight_context(
+    fit_none,
+    train_ids = seq_along(fit_none$Btil),
+    missingness = "mask",
+    miss_args = list(min_pairs = 1L)
+  )
+  expect_equal(fit_mask$Chat, ctx$Chat, tolerance = 1e-10)
 })
 
 test_that("dkge_fit defaults to full rank when rank is NULL", {

@@ -98,7 +98,13 @@
 #'   - ClusteredNeuroVec: Cluster time-series (TxK), betas computed via GLM
 #' @param ... Additional arguments passed to methods. For the matrix method:
 #'   `design` (Subject design matrix T_s x q), `id` (Optional subject identifier),
-#'   `omega` (Optional cluster weights - numeric vector length P or PxP matrix).
+#'   `omega` (Optional cluster weights - numeric vector length P or PxP matrix),
+#'   `observed_rows` (Optional observed effect-row indices in a global effect
+#'   space; defaults to all local rows), `effect_n` (per-effect trial counts),
+#'   `effect_precision` (direct per-effect precision), `effect_noise_cov`
+#'   (q-by-q covariance multiplier such as `(X'X)^-1`), `residual_variance`
+#'   (per-column residual variances), `noise_trace` (optional precomputed spatial
+#'   noise trace), and `split_betas` (two q-by-P half estimates).
 #'   For ClusteredNeuroVec method: omega defaults to cluster sizes if not provided
 #' @return Object of class `dkge_subject`
 #' @export
@@ -116,8 +122,129 @@ dkge_subject.dkge_subject <- function(x, ...) {
   x
 }
 
+.validate_observed_rows <- function(observed_rows, q) {
+  if (is.null(observed_rows)) {
+    return(seq_len(q))
+  }
+  if (is.logical(observed_rows)) {
+    if (length(observed_rows) != q) {
+      stop("logical `observed_rows` must have length equal to the number of effects.",
+           call. = FALSE)
+    }
+    observed_rows <- which(observed_rows)
+    if (!length(observed_rows)) {
+      stop("`observed_rows` must select at least one effect row.", call. = FALSE)
+    }
+    return(observed_rows)
+  }
+  observed_rows <- as.integer(observed_rows)
+  if (!length(observed_rows)) {
+    stop("`observed_rows` must select at least one effect row.", call. = FALSE)
+  }
+  if (anyNA(observed_rows) || any(observed_rows < 1L) || any(observed_rows > q)) {
+    stop("`observed_rows` must contain valid 1-based effect-row indices.",
+         call. = FALSE)
+  }
+  sort(unique(observed_rows))
+}
+
+.validate_effect_vector <- function(x, effects, name,
+                                    nonnegative = TRUE,
+                                    allow_na = FALSE) {
+  if (is.null(x)) return(NULL)
+  x_names <- names(x)
+  x <- as.numeric(x)
+  if (length(x) != length(effects)) {
+    stop(sprintf("`%s` must have one entry per design effect.", name),
+         call. = FALSE)
+  }
+  if (!is.null(x_names)) {
+    idx <- match(effects, x_names)
+    if (anyNA(idx)) {
+      stop(sprintf("Named `%s` must contain every design effect.", name),
+           call. = FALSE)
+    }
+    x <- x[idx]
+  }
+  if ((!allow_na && anyNA(x)) || any(!is.finite(x[!is.na(x)]))) {
+    stop(sprintf("`%s` must contain only finite values%s.", name,
+                 if (allow_na) " or NA" else ""), call. = FALSE)
+  }
+  if (nonnegative && any(x < 0, na.rm = TRUE)) {
+    stop(sprintf("`%s` must be non-negative.", name), call. = FALSE)
+  }
+  names(x) <- effects
+  x
+}
+
+.validate_effect_covariance <- function(x, effects, name = "effect_noise_cov") {
+  if (is.null(x)) return(NULL)
+  x <- as.matrix(x)
+  q <- length(effects)
+  if (!identical(dim(x), c(q, q))) {
+    stop(sprintf("`%s` must be a q x q matrix.", name), call. = FALSE)
+  }
+  if (any(!is.finite(x))) {
+    stop(sprintf("`%s` must contain only finite values.", name), call. = FALSE)
+  }
+  if (!is.null(rownames(x)) || !is.null(colnames(x))) {
+    if (is.null(rownames(x)) || is.null(colnames(x)) ||
+        !setequal(rownames(x), effects) || !setequal(colnames(x), effects)) {
+      stop(sprintf("Dimnames of `%s` must match the design effects.", name),
+           call. = FALSE)
+    }
+    x <- x[effects, effects, drop = FALSE]
+  }
+  asym <- max(abs(x - t(x)))
+  scale <- max(1, max(abs(x)))
+  if (asym > 1e-8 * scale) {
+    stop(sprintf("`%s` must be symmetric.", name), call. = FALSE)
+  }
+  x <- (x + t(x)) / 2
+  ev <- eigen(x, symmetric = TRUE, only.values = TRUE)$values
+  if (min(ev) < -1e-8 * max(1, max(abs(ev)))) {
+    stop(sprintf("`%s` must be positive semidefinite.", name), call. = FALSE)
+  }
+  dimnames(x) <- list(effects, effects)
+  x
+}
+
+.validate_split_betas <- function(x, effects, P, cluster_ids = NULL) {
+  if (is.null(x)) return(NULL)
+  if (!is.list(x) || length(x) != 2L) {
+    stop("`split_betas` must be a two-element list of q x P matrices.",
+         call. = FALSE)
+  }
+  out <- lapply(x, function(B) {
+    B <- as.matrix(B)
+    if (!identical(dim(B), c(length(effects), P)) || any(!is.finite(B))) {
+      stop("Each `split_betas` entry must be a finite q x P matrix.",
+           call. = FALSE)
+    }
+    if (!is.null(rownames(B))) {
+      idx <- match(effects, rownames(B))
+      if (anyNA(idx)) stop("Split-beta row names must match design effects.", call. = FALSE)
+      B <- B[idx, , drop = FALSE]
+    }
+    rownames(B) <- effects
+    if (!is.null(cluster_ids)) colnames(B) <- cluster_ids
+    B
+  })
+  names(out) <- names(x) %||% c("first", "second")
+  out
+}
+
 #' @export
-dkge_subject.matrix <- function(x, design, id = NULL, omega = NULL, ...) {
+dkge_subject.matrix <- function(x, design, id = NULL, omega = NULL,
+                                observed_rows = NULL,
+                                effect_n = NULL,
+                                effect_precision = NULL,
+                                effect_noise_cov = NULL,
+                                residual_variance = NULL,
+                                residual_df = NULL,
+                                noise_trace = NULL,
+                                split_betas = NULL,
+                                ...) {
   stopifnot(is.matrix(x), is.matrix(design))
   aligned <- .align_effects(x, design)
   beta <- aligned$beta
@@ -125,6 +252,30 @@ dkge_subject.matrix <- function(x, design, id = NULL, omega = NULL, ...) {
   effects <- aligned$effects
   P <- ncol(beta)
   omega <- .validate_omega(omega, P)
+  observed_rows <- .validate_observed_rows(observed_rows, length(effects))
+  effect_n <- .validate_effect_vector(effect_n, effects, "effect_n")
+  effect_precision <- .validate_effect_vector(effect_precision, effects,
+                                              "effect_precision")
+  effect_noise_cov <- .validate_effect_covariance(effect_noise_cov, effects)
+  split_betas <- .validate_split_betas(split_betas, effects, P, colnames(beta))
+  residual_variance <- .validate_effect_vector(
+    residual_variance,
+    colnames(beta) %||% paste0("cluster_", seq_len(P)),
+    "residual_variance",
+    allow_na = TRUE
+  )
+  if (!is.null(residual_df)) {
+    residual_df <- as.numeric(residual_df)
+    if (length(residual_df) != 1L || !is.finite(residual_df) || residual_df < 0) {
+      stop("`residual_df` must be a finite non-negative scalar.", call. = FALSE)
+    }
+  }
+  if (!is.null(noise_trace)) {
+    noise_trace <- as.numeric(noise_trace)
+    if (length(noise_trace) != 1L || !is.finite(noise_trace) || noise_trace < 0) {
+      stop("`noise_trace` must be a finite non-negative scalar.", call. = FALSE)
+    }
+  }
 
   # Check for rank deficiency (warnings only, does not block construction)
   .dkge_check_rank(design, beta, subject_id = id)
@@ -137,6 +288,14 @@ dkge_subject.matrix <- function(x, design, id = NULL, omega = NULL, ...) {
     design = design,
     omega = omega,
     effects = effects,
+    observed_rows = observed_rows,
+    effect_n = effect_n,
+    effect_precision = effect_precision,
+    effect_noise_cov = effect_noise_cov,
+    residual_variance = residual_variance,
+    residual_df = residual_df,
+    noise_trace = noise_trace,
+    split_betas = split_betas,
     n_clusters = P,
     cluster_ids = colnames(beta)
   ), class = "dkge_subject")
@@ -145,7 +304,16 @@ dkge_subject.matrix <- function(x, design, id = NULL, omega = NULL, ...) {
 #' @export
 dkge_subject.list <- function(x, ...) {
   stopifnot(!is.null(x$beta), !is.null(x$design))
-  dkge_subject(as.matrix(x$beta), design = as.matrix(x$design), id = x$id, omega = x$omega, ...)
+  dkge_subject(as.matrix(x$beta), design = as.matrix(x$design), id = x$id,
+               omega = x$omega, observed_rows = x$observed_rows,
+               effect_n = x$effect_n,
+               effect_precision = x$effect_precision,
+               effect_noise_cov = x$effect_noise_cov,
+               residual_variance = x$residual_variance,
+               residual_df = x$residual_df,
+               noise_trace = x$noise_trace,
+               split_betas = x$split_betas,
+               ...)
 }
 
 #' @export
@@ -379,10 +547,24 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
     rownames(subj$beta) <- effects_ref
     colnames(subj$design) <- effects_ref
     subj$effects <- effects_ref
+    mask <- as.logical(provenance$obs_mask[[i]] %||%
+                         rep(TRUE, length(effects_ref)))
+    subj$observed_rows <- unname(which(mask))
+    if (any(!mask)) {
+      subj$beta[!mask, ] <- 0
+      subj$design[, !mask] <- 0
+      if (!is.null(subj$split_betas)) {
+        subj$split_betas <- lapply(subj$split_betas, function(B) {
+          B[!mask, ] <- 0
+          B
+        })
+      }
+    }
     subjects[[i]] <- subj
   }
 
   structure(list(
+    subjects = subjects,
     betas = lapply(subjects, `[[`, "beta"),
     designs = lapply(subjects, `[[`, "design"),
     omega = lapply(subjects, `[[`, "omega"),
@@ -391,6 +573,21 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
     q = length(effects_ref),
     n_subjects = length(subjects),
     cluster_ids = lapply(subjects, `[[`, "cluster_ids"),
+    observed_rows = lapply(subjects, `[[`, "observed_rows"),
+    effect_n = lapply(subjects, `[[`, "effect_n"),
+    effect_precision = lapply(subjects, `[[`, "effect_precision"),
+    effect_noise_cov = lapply(subjects, `[[`, "effect_noise_cov"),
+    residual_variance = lapply(subjects, `[[`, "residual_variance"),
+    residual_df = lapply(subjects, `[[`, "residual_df"),
+    noise_trace = lapply(subjects, `[[`, "noise_trace"),
+    noise_trace_scope = lapply(subjects, `[[`, "noise_trace_scope"),
+    residual_sum_squares = lapply(subjects, `[[`, "residual_sum_squares"),
+    effect_information = lapply(subjects, `[[`, "effect_information"),
+    effect_score = lapply(subjects, `[[`, "effect_score"),
+    error_model = lapply(subjects, `[[`, "error_model"),
+    split_betas = lapply(subjects, `[[`, "split_betas"),
+    split_provenance = lapply(subjects, `[[`, "split_provenance"),
+    split_reliability = lapply(subjects, `[[`, "split_reliability"),
     provenance = provenance
   ), class = "dkge_data")
 }
@@ -448,6 +645,14 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #'   default adaptive weighting behaviour when accumulating covariance. Use this
 #'   to inject custom spatial reliabilities or to reuse a precomputed weighting
 #'   recipe produced by [dkge_weights()].
+#' @param effect_weights Optional [dkge_effect_weights()] specification for
+#'   subject-by-effect count or precision weighting.
+#' @param debias Effect-moment estimator passed to [dkge_fit()]: observed
+#'   (`"none"`), analytic finite-trial subtraction (`"analytic"`), or a
+#'   split-half cross-moment (`"split_half"`).
+#' @param effect_scaling Effect-space scaling passed to [dkge_fit()]. Use
+#'   `"none"` when input rows already share an absolute scale, such as
+#'   AUC-minus-chance cell maps.
 #' @param ... Additional arguments forwarded to [dkge_fit()] (e.g. `rank`,
 #'   `ridge`, `w_method`, `weights`).
 #'
@@ -461,7 +666,8 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL) {
 #'   DKGE itself operates entirely in this low-dimensional design space: (1) the
 #'   pooled Gram matrix across subjects yields a shared Cholesky factor `R`; (2) each beta
 #'   matrix is row-standardised; (3) compressed covariance is accumulated in the
-#'   K-metric with optional subject weighting; and (4) a tiny eigenproblem produces
+#'   K-metric with optional subject and effect weighting; and (4) a tiny
+#'   symmetric eigenproblem produces
 #'   the K-orthonormal group basis. The input harmonisation performed by this
 #'   wrapper ensures consistent effect naming, subject identifiers, and spatial
 #'   weights so downstream utilities such as [dkge_loso_contrast()] can work without
@@ -479,7 +685,9 @@ dkge <- function(betas, designs = NULL, K = NULL, Omega_list = NULL,
                  subject_ids = NULL,
                  keep_inputs = TRUE, cpca_blocks = NULL, cpca_T = NULL,
                  cpca_part = c("none", "design", "resid", "both"),
-                 cpca_ridge = 0, weights = NULL,
+                 cpca_ridge = 0, weights = NULL, effect_weights = NULL,
+                 debias = c("none", "analytic", "split_half"),
+                 effect_scaling = c("pooled_design", "none"),
                  kernel = NULL, omega = NULL, ...) {
   # Deprecated aliases
   if (!is.null(kernel) && is.null(K)) {
@@ -492,6 +700,8 @@ dkge <- function(betas, designs = NULL, K = NULL, Omega_list = NULL,
   }
 
   cpca_part <- match.arg(cpca_part)
+  debias <- match.arg(debias)
+  effect_scaling <- match.arg(effect_scaling)
   omega_override <- NULL
   if (inherits(betas, "dkge_data")) {
     data <- betas
@@ -508,7 +718,8 @@ dkge <- function(betas, designs = NULL, K = NULL, Omega_list = NULL,
   fit <- dkge_fit(data, K = K_mat, Omega_list = omega_override,
                      cpca_blocks = cpca_blocks, cpca_T = cpca_T,
                      cpca_part = cpca_part, cpca_ridge = cpca_ridge,
-                     weights = weights, ...)
+                     weights = weights, effect_weights = effect_weights,
+                     debias = debias, effect_scaling = effect_scaling, ...)
   fit$kernel_info <- kernel_info
   if (keep_inputs) fit$input <- data
   fit

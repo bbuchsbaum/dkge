@@ -31,18 +31,39 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   Chat_minus <- ctx$Chat
   weight_eval <- ctx$weights
 
-  eig_minus <- eigen(Chat_minus, symmetric = TRUE)
-  r <- ncol(fit$U)
-  Uminus <- fit$Kihalf %*% eig_minus$vectors[, seq_len(r), drop = FALSE]
+  if (!is.null(ctx$fit)) {
+    Uminus <- ctx$fit$U
+    eig_values <- ctx$fit$eig_values_full
+  } else {
+    eig_minus <- eigen(Chat_minus, symmetric = TRUE)
+    r <- ncol(fit$U)
+    Uminus <- fit$Kihalf %*% eig_minus$vectors[, seq_len(r), drop = FALSE]
+    eig_values <- eig_minus$values
+  }
 
-  c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
+  c_tilde <- backsolve(ctx$R %||% fit$R, contrasts, transpose = FALSE)
   alpha <- t(Uminus) %*% fit$K %*% c_tilde
 
-  Bts <- fit$Btil[[s]]
+  Bts <- if (!is.null(ctx$R) &&
+             !identical(fit$effect_scaling %||% "pooled_design", "none")) {
+    t(ctx$R) %*% fit$Braw[[s]]
+  } else if (!is.null(ctx$R)) {
+    fit$Braw[[s]]
+  } else {
+    fit$Btil[[s]]
+  }
   loader_weights <- .dkge_subject_loader_weights(weight_eval$total, Bts)
-  Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
-  A_s <- t(Bw) %*% fit$K %*% Uminus
+  A_s <- .dkge_basis_loadings(
+    Bts, Uminus, fit$K, input_scale = "standardized",
+    voxel_weights = loader_weights
+  )
   v_s <- as.numeric(A_s %*% alpha)
 
-  list(v = v_s, alpha = alpha, basis = Uminus, evals = eig_minus$values)
+  list(
+    v = v_s, alpha = alpha, basis = Uminus, evals = eig_values,
+    R = ctx$R %||% fit$R,
+    pair_counts = ctx$pair_counts,
+    pair_ess = ctx$pair_ess,
+    estimator = ctx$estimator
+  )
 }

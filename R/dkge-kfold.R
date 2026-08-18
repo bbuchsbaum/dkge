@@ -195,10 +195,12 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 #' @noRd
 .dkge_contrast_kfold <- function(fit, contrast_list, folds, ridge,
                                 parallel, verbose, align = FALSE,
-                                missingness = c("none", "rescale", "mask", "shrink"),
-                                miss_args = list(), ...) {
+                                missingness = NULL,
+                                miss_args = NULL, ...) {
   # Prepare folds
-  missingness <- match.arg(missingness)
+  missingness <- missingness %||% fit$missingness %||% "none"
+  missingness <- match.arg(missingness, c("none", "rescale", "mask", "shrink"))
+  miss_args <- miss_args %||% fit$miss_args %||% list()
   fold_info_raw <- .dkge_normalize_folds(folds, fit)
   folds <- fold_info_raw$folds
 
@@ -227,8 +229,6 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
   )
 
   folds_internal <- fold_info$folds
-  c_tilde_list <- lapply(contrast_list, function(ct) backsolve(fit$R, ct, transpose = FALSE))
-
   values <- vector("list", n_contrasts)
   names(values) <- names(contrast_list)
   fold_alphas <- vector("list", n_contrasts)
@@ -243,7 +243,9 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 
     for (fold in folds_internal) {
       U_fold <- fold$basis
-      alpha_vec <- as.numeric(t(U_fold) %*% fit$K %*% c_tilde_list[[i]])
+      c_tilde <- backsolve(fold$R %||% fit$R, contrast_list[[i]],
+                           transpose = FALSE)
+      alpha_vec <- as.numeric(t(U_fold) %*% fit$K %*% c_tilde)
       alpha_mat[fold$index, seq_along(alpha_vec)] <- alpha_vec
 
       holdout <- fold$subjects
@@ -285,6 +287,8 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
     missingness = missingness,
     miss_args = miss_args,
     pair_counts = lapply(folds_internal, `[[`, "pair_counts"),
+    pair_ess = lapply(folds_internal, `[[`, "pair_ess"),
+    estimators = lapply(folds_internal, `[[`, "estimator"),
     procrustes = if (align) list(alignment = fold_info$alignment, consensus = fold_info$consensus) else NULL
   )
 
