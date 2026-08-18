@@ -1,6 +1,21 @@
 testthat::local_edition(3)
 library(dkge)
 
+test_that("advertised plot/component helpers are exported", {
+  exported <- getNamespaceExports("dkge")
+  expect_true(all(c(
+    "dkge_effect_grid",
+    "dkge_effect_weights",
+    "dkge_component_saliences",
+    "dkge_component_contrast_scores",
+    "dkge_design_basis",
+    "dkge_plot_component_saliences",
+    "dkge_plot_component_contrast_scores",
+    "dkge_plot_subject_component_projections",
+    "dkge_subject_component_projections"
+  ) %in% exported))
+})
+
 test_that(".dkge_leading_sv_squared is exact and deterministic", {
   set.seed(321)
   X <- matrix(rnorm(25), 5, 5)

@@ -14,28 +14,28 @@ dkge_subject_component_projections(
 )
 }
 \arguments{
-\item{fit}{Fitted \code{dkge} object.}
+\item{fit}{Fitted `dkge` object.}
 
 \item{groups}{Optional vector of group labels, or a data frame with subject
 and group columns. Named vectors are matched by subject name and must cover
 every subject; unnamed vectors are matched positionally.}
 
-\item{mode}{\code{"loso"} for held-out supplementary projections or \code{"pooled"} for
+\item{mode}{`"loso"` for held-out supplementary projections or `"pooled"` for
 descriptive projections on the pooled fit.}
 
 \item{comps}{Components to include.}
 
 \item{align}{Rotate each LOSO fold basis onto the pooled component axes
-(\code{fit$U}) by K-Procrustes before scoring.}
+(`fit$U`) by K-Procrustes before scoring.}
 
 \item{ridge}{Ridge passed to the LOSO fold basis builder.}
 }
 \value{
 Tidy data frame with subject, group, component, component_id,
-projection, and mode.
+  projection, and mode.
 }
 \description{
-Computes one \strong{signed} scalar per subject and component: the subject's mean
+Computes one **signed** scalar per subject and component: the subject's mean
 cluster brain score along that component.
 }
 \details{
@@ -49,24 +49,24 @@ The reported projection is their average over clusters,
 Equivalently it is the K-inner product between the component salience
 \eqn{K u_j} and the subject's cluster-averaged effect-space profile.
 
-This quantity is \strong{linear} in the subject's betas, so it is signed and
+This quantity is **linear** in the subject's betas, so it is signed and
 \eqn{\pi_{s,j}} flips sign when \eqn{\tilde B_s} is negated. That is the
 point of the function: it complements the sign-blind quadratic participation
 measure \eqn{\lVert \tilde B_s^\top K u_j \rVert^2} reported by
-\code{\link[=dkge_plot_subject_contrib]{dkge_plot_subject_contrib()}}, which cannot distinguish a subject expressing
+[dkge_plot_subject_contrib()], which cannot distinguish a subject expressing
 a component from a subject expressing its mirror image. Averaging over
 clusters is what makes the score subject-independent in cluster space and
 therefore comparable across subjects with different parcel counts; a subject
 whose cluster scores are large but evenly split in sign will have a small
 projection and a large energy.
 
-In \code{"loso"} mode the same definition is applied with the basis
+In `"loso"` mode the same definition is applied with the basis
 \eqn{U^{(-s)}} estimated without subject \eqn{s}, using the fold loaders'
-voxel weighting. When \code{align = TRUE} each fold basis is rotated onto the
-\emph{pooled} basis \code{fit$U} by K-Procrustes (\code{\link[=dkge_procrustes_K]{dkge_procrustes_K()}}), so component
+voxel weighting. When `align = TRUE` each fold basis is rotated onto the
+*pooled* basis `fit$U` by K-Procrustes ([dkge_procrustes_K()]), so component
 \eqn{j} names the same pooled axis for every subject. (The fold builder's own
-alignment uses fold 1 as its reference, not \code{fit$U}, and is deliberately not
-reused here.) With \code{align = FALSE} component signs and order are only defined
+alignment uses fold 1 as its reference, not `fit$U`, and is deliberately not
+reused here.) With `align = FALSE` component signs and order are only defined
 up to each fold's own eigen-solve, so cross-subject comparison is not
 meaningful.
 
@@ -74,9 +74,9 @@ Voxel weights are normalised to mean 1 and applied as \eqn{\sqrt{w}} column
 scales — the same convention as the training blocks — so a uniform weight
 of any magnitude leaves the projection unchanged. This is not the
 column-wise weighted mean \eqn{\sum_p w_p b_p / \sum_p w_p}; that would
-change the scale relative to \code{\link[=dkge_plot_subject_contrib]{dkge_plot_subject_contrib()}} energy, which
+change the scale relative to [dkge_plot_subject_contrib()] energy, which
 uses the same \eqn{\sqrt{w}} reweighting. Weights produced by
-\code{\link[=dkge_fit]{dkge_fit()}} already have mean 1.
+[dkge_fit()] already have mean 1.
 }
 \examples{
 toy <- dkge_sim_toy(

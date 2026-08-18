@@ -16,7 +16,10 @@
 #' @param weights `"none"`, `"target"`, or a list with optional `subject` and
 #'   `feature` numeric weights.
 #' @param feature_mask Optional logical vector selecting target features.
-#' @param tol Numerical tolerance for rank checks.
+#' @param tol Numerical tolerance for rank checks; a single positive finite
+#'   number. It is stored on the fit and reused for every refit performed by
+#'   [dkge_between_permute()], so a design accepted here is also accepted by the
+#'   permutation machinery.
 #'
 #' @return Object of class `dkge_between_rrr`.
 #' @export
@@ -28,6 +31,12 @@ dkge_between_rrr <- function(target,
                              tol = 1e-8) {
   target <- .dkge_as_target(target)
   design <- .dkge_as_subject_model(design, target$subject_ids)
+  # `tol` is stored on the fit and reused by every downstream refit
+  # (`dkge_between_permute()`), so an invalid value must be caught here rather
+  # than surfacing as a rank-deficiency error hundreds of permutations later.
+  if (!is.numeric(tol) || length(tol) != 1L || !is.finite(tol) || tol <= 0) {
+    stop("`tol` must be a positive finite scalar.", call. = FALSE)
+  }
   if (!is.list(weights)) {
     weights <- match.arg(weights)
   }
@@ -85,6 +94,7 @@ dkge_between_rrr <- function(target,
     target_mask = mask,
     subject_weights = subject_w,
     feature_weights = feature_w,
+    tol = tol,
     call = match.call()
   )
   class(out) <- c("dkge_between_rrr", "list")
