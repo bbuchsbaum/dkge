@@ -4,17 +4,21 @@
 \alias{dkge_transform_block}
 \title{Preprocess a subject block into DKGE training space}
 \usage{
-dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL)
+dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL, subject = NULL)
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 
 \item{B_s}{qxP matrix of subject betas.}
 
 \item{Omega_s}{Optional weights (vector length P or PxP matrix) matching the
-columns of `B_s`.}
+columns of \code{B_s}.}
 
 \item{w_s}{Optional subject-level weight (defaults to 1 when omitted).}
+
+\item{subject}{Optional training-subject index or id. Required when the fit
+carries non-trivial voxel weights, so the matching
+\code{fit$voxel_weights_subject} / \code{fit$voxel_weights} profile can be applied.}
 }
 \value{
 qxP matrix in the DKGE training space.

@@ -1,0 +1,94 @@
+# dkge 0.0.0.9000
+
+## New features
+
+* **Partial effect spaces.** Subjects may observe only a subset of the design
+  effects (`observed_rows` on `dkge_subject()`; `dkge_effect_grid()` for a
+  canonical cell grid). Coverage provenance (`obs_mask`, `pair_counts`) flows
+  into `dkge_fit()`, which gains `missingness = c("none", "mask", "rescale",
+  "shrink")` and `miss_args`. Masking acts in raw effect space *before* the
+  `R`/`K^{1/2}` congruence; a coupling kernel therefore spreads observed energy
+  into unobserved coordinates by design — use `block_factors` in
+  `design_kernel()` for strict separation. See
+  `vignette("dkge-partial-effect-spaces")`.
+* **Effect-reliability weighting and debiasing.** `dkge_effect_weights()`
+  (`"none"`, `"count"`, `"precision"`) and `dkge_fit(debias =
+  c("none", "analytic", "split_half"))` on top of a new central moment-pooling
+  engine. `dkge_trial_subject()` builds subjects from trial-level designs with
+  the sufficient statistics debiasing needs.
+* **Aggregate (cell-mean) decomposition.** `dkge_aggregate_target()`,
+  `dkge_aggregate_fit()`, `dkge_aggregate_align()`, `dkge_aggregate_stat()`,
+  `dkge_aggregate_permute()`, `dkge_aggregate_bootstrap()`: a PLS-style
+  decomposition of group-by-cell aggregate maps in the kernel metric with
+  permutation and bootstrap inference (`alternative`, `parallel`).
+* **Component diagnostics and plots.** `dkge_component_saliences()`,
+  `dkge_component_contrast_scores()`, `dkge_design_basis()`,
+  `dkge_subject_component_projections()`, `dkge_principal_angles_K()`, and
+  `dkge_plot_*` counterparts.
+* `dkge_data()`/`dkge()` gain `effects=` to pin the effect union order (e.g. to
+  `dkge_effect_grid()$cell_labels`). `dkge_fit()` reorders a kernel whose
+  dimnames are a permutation of the data's effects and errors on a set
+  mismatch.
+* `dkge_fit(effect_scaling = "none")` keeps effect rows on the input scale.
+* `dkge_between_permute()` gains `method = "rotation"` for Haar rotation in
+  the reduced model's residual space. It is finite-sample exact under the
+  documented matrix-normal row-sphericity model, preserves `crossprod(Y)`, and
+  fails closed for weights, multiple blocks, or fewer than two residual
+  dimensions. It remains opt-in: a frozen 8,100-result audit fixed the earlier
+  Freedman–Lane null inflation under a global Gaussian null, but missed one
+  nuisance-null promotion gate and both predeclared power gates (Freedman–Lane's
+  raw power advantage is mostly size inflation). The function
+  also gains `parallel=`; both methods use compressed evaluation and give
+  seeded serial/parallel-identical results.
+* `dkge_subject_model()` gains `subject_id_col`.
+* Contrast estimability (`between`/`within`/`mixed`) is now classified
+  structurally from the kernel's factor scopes, so `dkge_contrast(method =
+  "loso")` warns on between-subject contrasts regardless of how they are named.
+
+## Bug fixes
+
+* `dkge_procrustes_K()` returned the transpose of the optimal rotation; the
+  error was invisible at rank ≤ 2 (transpositions are involutions) but permuted
+  components at rank ≥ 3. All K-Procrustes call sites (bootstrap, analytic,
+  folds, aggregate alignment, neuralign adapter) are affected.
+* `design_kernel()`: the RBF length-scale was read as `f$l`, which partially
+  matched `f$levels`, breaking ordinal/circular/continuous factors carrying
+  level labels.
+* Duplicate subject IDs are now rejected in `dkge_data()`.
+* Subject weights under the default `w_method = "mfa_sigma1"` were computed
+  by a randomly seeded power iteration, so `dkge_fit()` results (including
+  component signs) depended on ambient RNG state. The leading singular value
+  is now computed exactly and fits are bit-reproducible.
+* Contrast estimability now prefers structural evidence over a contrast's
+  name, so a between-subject contrast named after a within-subject term is
+  still flagged.
+* `dkge_update_weights()` refits now preserve `effect_scaling`,
+  `effect_weights`, `debias`, `missingness`, and `miss_args`.
+
+## Breaking / behaviour changes
+
+* Cross-fitting helpers (`dkge_loso_contrast()`, `dkge_cv_*`, k-fold builders)
+  now inherit `missingness` from the fit instead of defaulting to `"none"`.
+  Numerically identical for full-coverage fits.
+* `dkge_design_basis()` / `dkge_component_contrast_scores()` default to
+  `normalize = "unit_K"` (unit K-norm) instead of unit Euclidean norm;
+  `dkge_component_saliences(scale = "unit")` now means unit K-norm.
+* `fit$subjects` no longer retains per-subject `beta`/`design`/`omega`
+  (only debiasing sufficient statistics); `fit$effect_moments_raw` aliases
+  `fit$effect_moments` and `fit$noise_moments` is `NULL` when
+  `debias = "none"`.
+* New arguments to `dkge_fit()`, `dkge()`, and `dkge_subject_model()` are
+  appended after all pre-existing ones; positional calls from earlier
+  releases are unaffected.
+* `dkge_make_target(type = "transported_maps", centroids = NULL)` now keeps
+  every supplied contrast (previously contrasts after the first were silently
+  dropped) and labels features `<contrast>:<index>`, so `ncol(Y)` grows with
+  the number of contrasts.
+* `dkge_fit()`: a design kernel whose labels cannot be reconciled with the
+  data's effect names (duplicated labels) now warns; a kernel with
+  `rownames != colnames` is an error.
+* Adaptive/prior voxel weighting (`dkge_weights()`) now errors when subjects
+  have different numbers of voxels/clusters instead of silently recycling one
+  subject's weights onto another.
+* Roxygen markdown mode is enabled package-wide (documentation now renders
+  cross-reference links and code spans correctly).

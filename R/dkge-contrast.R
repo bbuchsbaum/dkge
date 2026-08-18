@@ -83,6 +83,8 @@ dkge_contrast <- function(fit, contrasts,
 
   # Normalize contrast input
   contrast_list <- .normalize_contrasts(contrasts, fit)
+  contrast_info <- .dkge_classify_contrasts(contrast_list, fit)
+  .dkge_warn_contrast_inference(contrast_info, method)
 
   # Dispatch to method
   result <- switch(method,
@@ -94,6 +96,7 @@ dkge_contrast <- function(fit, contrasts,
   if (is.null(result$metadata)) {
     result$metadata <- list()
   }
+  result$metadata$contrast_estimability <- contrast_info
   if (is.null(result$metadata$provenance) && !is.null(fit$provenance)) {
     result$metadata$provenance <- fit$provenance
   }
@@ -118,6 +121,37 @@ dkge_contrast <- function(fit, contrasts,
   structure(result, class = "dkge_contrasts")
 }
 
+#' Fill in default names for an unnamed or partly named contrast collection
+#'
+#' Every downstream consumer indexes contrasts by name (`.dkge_classify_contrasts()`
+#' builds a `contrast` column, `dkge_contrast_validated()` builds one summary row
+#' per name), so a `NULL`/blank name is filled with the same `contrast<j>` label
+#' `dkge_contrast()` already uses for unnamed vectors and unnamed matrix columns.
+#'
+#' @noRd
+.dkge_default_contrast_names <- function(nms, n) {
+  default <- paste0("contrast", seq_len(n))
+  if (is.null(nms)) return(default)
+  nms <- as.character(nms)
+  length(nms) <- n
+  blank <- is.na(nms) | !nzchar(nms)
+  nms[blank] <- default[blank]
+  nms
+}
+
+#' Convert one contrast to a plain numeric vector, keeping its element names
+#'
+#' `as.numeric()` drops names, which silently discards the effect labels a
+#' matrix contrast carries in its row names; those labels are the only handle
+#' name-based matching downstream has on the effect ordering.
+#'
+#' @noRd
+.dkge_contrast_vector <- function(x, nms = names(x)) {
+  y <- as.numeric(x)
+  if (!is.null(nms) && length(nms) == length(y)) names(y) <- as.character(nms)
+  y
+}
+
 #' Normalize contrast specifications
 #'
 #' @param contrasts Various input formats
@@ -131,26 +165,222 @@ dkge_contrast <- function(fit, contrasts,
   if (is.numeric(contrasts) && is.null(dim(contrasts))) {
     # Single vector
     stopifnot(length(contrasts) == q)
-    return(list(contrast1 = as.numeric(contrasts)))
+    out <- list(contrast1 = .dkge_contrast_vector(contrasts))
+    attr(out[[1]], "dkge_scope") <- attr(contrasts, "dkge_scope", exact = TRUE)
+    attr(out[[1]], "dkge_term") <- attr(contrasts, "dkge_term", exact = TRUE)
+    .dkge_validate_scope_attr(attr(out[[1]], "dkge_scope"))
+    return(out)
   }
 
   if (is.matrix(contrasts)) {
     # Matrix: columns are contrasts
     stopifnot(nrow(contrasts) == q)
-    cn <- colnames(contrasts)
-    if (is.null(cn)) cn <- paste0("contrast", seq_len(ncol(contrasts)))
-    contrast_list <- lapply(seq_len(ncol(contrasts)), function(j) contrasts[, j])
+    cn <- .dkge_default_contrast_names(colnames(contrasts), ncol(contrasts))
+    rn <- rownames(contrasts)
+    scope_attr <- attr(contrasts, "dkge_scope", exact = TRUE)
+    term_attr <- attr(contrasts, "dkge_term", exact = TRUE)
+    pick <- function(a, j) {
+      if (is.null(a)) return(NULL)
+      if (length(a) == 1L) return(a[[1]])
+      if (length(a) >= j) return(a[[j]])
+      NULL
+    }
+    contrast_list <- lapply(seq_len(ncol(contrasts)), function(j) {
+      # Carry the matrix row names onto each column: they name the design
+      # effects the weights refer to.
+      y <- .dkge_contrast_vector(contrasts[, j], rn)
+      attr(y, "dkge_scope") <- pick(scope_attr, j)
+      attr(y, "dkge_term") <- pick(term_attr, j)
+      y
+    })
     names(contrast_list) <- cn
+    .dkge_validate_scope_attr(scope_attr)
     return(contrast_list)
   }
 
   if (is.list(contrasts)) {
-    # Named list
+    # List, named or not
     stopifnot(all(vapply(contrasts, length, integer(1)) == q))
-    return(lapply(contrasts, as.numeric))
+    out <- lapply(contrasts, function(x) {
+      y <- .dkge_contrast_vector(x)
+      attr(y, "dkge_scope") <- attr(x, "dkge_scope", exact = TRUE)
+      attr(y, "dkge_term") <- attr(x, "dkge_term", exact = TRUE)
+      .dkge_validate_scope_attr(attr(y, "dkge_scope"))
+      y
+    })
+    names(out) <- .dkge_default_contrast_names(names(contrasts), length(out))
+    return(out)
   }
 
   stop("contrasts must be a numeric vector, matrix, or named list")
+}
+
+.dkge_contrast_recommendation <- function(estimability) {
+  if (identical(estimability, "within")) {
+    return("LOSO/k-fold cross-fitting")
+  }
+  if (estimability %in% c("between", "mixed")) {
+    return("subject-label permutation or dkge_between_* inference")
+  }
+  "unknown; inspect contrast scope"
+}
+
+#' Structural estimability scope for a contrast over design cells
+#'
+#' Classifies a contrast by *which design factors it actually varies over*,
+#' rather than by matching its name against kernel term names. For each factor
+#' the contrast weights are grouped by the levels of all other factors; the
+#' contrast depends on that factor when the weights differ within at least one
+#' such group. The scope is then `"between"` when only between-scope factors are
+#' involved, `"within"` when only within-scope factors are, and `"mixed"` when
+#' both are. A contrast with constant weights (a grand mean) depends on no
+#' factor and is reported as `"within"`, since every subject can estimate it.
+#'
+#' Returns `NULL` when the fit carries no usable cell metadata (for example an
+#' effect-basis kernel, whose coordinates are not design cells), leaving the
+#' caller to fall back to other evidence.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_contrast_structural_scope <- function(contrast, fit, tol = 1e-10) {
+  info <- fit$kernel_info
+  if (is.null(info)) return(NULL)
+  factor_scope <- info$factor_scope
+  if (is.null(factor_scope) || is.null(names(factor_scope))) {
+    return(NULL)
+  }
+  cells <- .dkge_match_kernel_cells(
+    fit, info,
+    message_on_miss = paste(
+      "kernel_info$cell_labels do not match fit$effects;",
+      "structural estimability scope is unavailable."
+    )
+  )
+  cvec <- as.numeric(contrast)
+  if (is.null(cells) || !nrow(cells) || nrow(cells) != length(cvec) || anyNA(cvec)) {
+    return(NULL)
+  }
+  factor_names <- intersect(names(factor_scope), names(cells))
+  if (!length(factor_names)) return(NULL)
+
+  scale <- max(abs(cvec), 1)
+  depends <- vapply(factor_names, function(nm) {
+    others <- setdiff(factor_names, nm)
+    key <- if (length(others)) {
+      do.call(paste, c(lapply(others, function(o) as.character(cells[[o]])), sep = "\r"))
+    } else {
+      rep("", nrow(cells))
+    }
+    spreads <- tapply(cvec, key, function(z) max(z) - min(z))
+    any(spreads > tol * scale)
+  }, logical(1))
+  names(depends) <- factor_names
+
+  scopes <- as.character(factor_scope[factor_names])
+  between_factors <- factor_names[scopes == "between"]
+  within_factors <- setdiff(factor_names, between_factors)
+  uses_between <- any(depends[between_factors])
+  uses_within <- any(depends[within_factors])
+
+  if (uses_between && uses_within) return("mixed")
+  if (uses_between) return("between")
+  "within"
+}
+
+.dkge_allowed_scope <- c("within", "between", "mixed")
+
+.dkge_validate_scope_attr <- function(scope) {
+  if (is.null(scope)) return(invisible(NULL))
+  scope <- as.character(scope)
+  bad <- setdiff(unique(scope[!is.na(scope)]), .dkge_allowed_scope)
+  if (length(bad)) {
+    stop(sprintf(
+      "`dkge_scope` must be one of %s; got %s.",
+      paste(shQuote(.dkge_allowed_scope), collapse = ", "),
+      paste(shQuote(bad), collapse = ", ")
+    ), call. = FALSE)
+  }
+  invisible(scope)
+}
+
+.dkge_classify_one_contrast <- function(name, contrast, fit, tol = 1e-10) {
+  scope_attr <- attr(contrast, "dkge_scope", exact = TRUE)
+  if (!is.null(scope_attr)) {
+    .dkge_validate_scope_attr(scope_attr)
+    return(as.character(scope_attr)[[1]])
+  }
+
+  term_attr <- attr(contrast, "dkge_term", exact = TRUE)
+  term_scope <- fit$kernel_info$term_scope %||% NULL
+  if (!is.null(term_attr) && !is.null(term_scope) && term_attr %in% names(term_scope)) {
+    return(unname(term_scope[[term_attr]]))
+  }
+
+  # Structural evidence (does the contrast vary across levels of a
+  # between-subject factor?) is authoritative when available. A contrast NAME
+  # that happens to match a kernel term is only a hint: names are arbitrary
+  # user labels, so a between-subject vector named "task" must not be
+  # classified as within. Where the two disagree, take the structural answer.
+  structural <- .dkge_contrast_structural_scope(contrast, fit, tol = tol)
+  if (!is.null(structural)) {
+    return(structural)
+  }
+  if (!is.null(term_scope) && !is.null(name) && name %in% names(term_scope)) {
+    return(unname(term_scope[[name]]))
+  }
+
+  blocks <- fit$kernel_info$blocks %||% NULL
+  if (!is.null(blocks) && !is.null(term_scope)) {
+    active <- names(blocks)[vapply(blocks, function(idx) {
+      any(abs(contrast[idx]) > tol)
+    }, logical(1))]
+    active <- intersect(active, names(term_scope))
+    if (length(active)) {
+      scopes <- unname(term_scope[active])
+      if (all(scopes == "within")) {
+        return("within")
+      }
+      if (all(scopes == "between")) {
+        return("between")
+      }
+      return("mixed")
+    }
+  }
+
+  "unknown"
+}
+
+.dkge_classify_contrasts <- function(contrast_list, fit) {
+  contrast_names <- names(contrast_list) %||% paste0("contrast", seq_along(contrast_list))
+  estimability <- vapply(seq_along(contrast_list), function(i) {
+    .dkge_classify_one_contrast(contrast_names[[i]], contrast_list[[i]], fit)
+  }, character(1))
+  data.frame(
+    contrast = contrast_names,
+    estimability = unname(estimability),
+    recommended_inference = unname(vapply(estimability, .dkge_contrast_recommendation, character(1))),
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+}
+
+.dkge_warn_contrast_inference <- function(contrast_info, method) {
+  if (!method %in% c("loso", "kfold", "analytic")) {
+    return(invisible(NULL))
+  }
+  needs_between <- contrast_info$estimability %in% c("between", "mixed")
+  if (any(needs_between)) {
+    bad <- contrast_info$contrast[needs_between]
+    warning(
+      sprintf(
+        "Contrast(s) %s are between/mixed effects; %s results are descriptive. Use subject-label permutation or dkge_between_* inference for group-effect testing.",
+        paste(shQuote(bad), collapse = ", "),
+        method
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
 }
 
 #' LOSO contrast implementation

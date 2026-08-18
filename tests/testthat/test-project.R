@@ -47,11 +47,26 @@ test_that("subject weights shrink correctly", {
 })
 
 test_that("Omega vector accumulation matches sqrt weighting", {
-  Btil <- list(matrix(c(1, 2, 3, 4), 2, 2))
+  B <- list(matrix(c(1, 2, 3, 4), 2, 2))
   Omega <- list(c(1.5, 0.5))
   Khalf <- diag(2)
-  res <- dkge:::.dkge_accumulate_chat(Btil, Omega, Khalf, weights = 1)
-  W <- Btil[[1]] * rep(sqrt(Omega[[1]]), each = 2)
+  R <- diag(2)
+  res <- dkge:::.dkge_build_moment_pool(
+    subjects = list(list(id = "s1")),
+    B_list = B,
+    Omega_list = Omega,
+    voxel_weights = NULL,
+    obs_masks = list(rep(TRUE, 2)),
+    subject_weights = 1,
+    effect_precision = list(rep(1, 2)),
+    effect_method = "none",
+    R = R,
+    Khalf = Khalf,
+    missingness = "none",
+    miss_args = list(),
+    debias = "none"
+  )
+  W <- B[[1]] * rep(sqrt(Omega[[1]]), each = 2)
   expected <- Khalf %*% (W %*% t(W)) %*% Khalf
   expect_equal(res$contribs[[1]], expected)
   expect_equal(res$Chat, expected)
@@ -150,4 +165,64 @@ test_that("contrast transport to medoid matches loadings", {
   first_subject <- res[[1]]$subj_values[1, ]
   base_vals <- contrast$values[[1]][[1]]
   expect_equal(first_subject, base_vals, tolerance = 1e-6)
+})
+
+test_that("transform of a training subject applies the voxel prior", {
+  set.seed(21)
+  S <- 2; q <- 3; P <- 4
+  effects <- paste0("e", seq_len(q))
+  betas <- replicate(S, {
+    B <- matrix(rnorm(q * P), q, P)
+    dimnames(B) <- list(effects, paste0("v", seq_len(P)))
+    B
+  }, simplify = FALSE)
+  designs <- replicate(S, {
+    X <- diag(q)
+    colnames(X) <- effects
+    X
+  }, simplify = FALSE)
+  prior <- c(0.2, 1, 3, 0.5)
+  fit <- dkge_fit(betas, designs, K = diag(q), rank = 2, keep_X = TRUE,
+                  w_method = "none",
+                  weights = dkge_weights(prior = prior, adapt = "none"))
+
+  expect_error(dkge_transform_block(fit, betas[[1]], w_s = fit$weights[1]),
+               "subject")
+
+  block <- fit$X_concat[, fit$block_indices[[1]], drop = FALSE]
+  transformed <- dkge_transform_block(fit, betas[[1]], w_s = fit$weights[1],
+                                      subject = 1)
+  expect_equal(unname(transformed), unname(block), tolerance = 1e-12)
+
+  by_id <- dkge_transform_block(fit, betas[[1]], w_s = fit$weights[1],
+                                subject = fit$subject_ids[[1]])
+  expect_equal(unname(by_id), unname(block), tolerance = 1e-12)
+})
+
+test_that("preprocess_blocks keeps new-data column names", {
+  set.seed(22)
+  q <- 3; P <- 4
+  effects <- paste0("e", seq_len(q))
+  train <- replicate(2, {
+    B <- matrix(rnorm(q * P), q, P)
+    dimnames(B) <- list(effects, paste0("train", seq_len(P)))
+    B
+  }, simplify = FALSE)
+  designs <- replicate(2, {
+    X <- diag(q)
+    colnames(X) <- effects
+    X
+  }, simplify = FALSE)
+  fit <- dkge_fit(train, designs, K = diag(q), rank = 2, keep_X = TRUE,
+                  w_method = "none")
+
+  new_betas <- lapply(train, function(B) {
+    B2 <- B + 0.1
+    colnames(B2) <- paste0("new", seq_len(P))
+    B2
+  })
+  X_new <- dkge_preprocess_blocks(fit, new_betas, w = fit$weights)
+  expect_equal(colnames(X_new),
+               c(paste0("new", seq_len(P)), paste0("new", seq_len(P))))
+  expect_false(identical(colnames(X_new), colnames(fit$X_concat)))
 })

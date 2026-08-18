@@ -26,13 +26,25 @@
 #   Khalf              q x q    K^{1/2} factor
 #   Kihalf             q x q    K^{-1/2} factor
 #   Chat               q x q    raw compressed covariance accumulator
-#   contribs           list     per-subject contribution matrices
+#   contribs           list     per-subject contribution matrices in the K-metric,
+#                               unweighted (contribs[[s]] = A' M_s A). The subject
+#                               weights are applied when pooling, so the identity
+#                               is sum_s weights[s] * contribs[[s]] == Chat, and
+#                               only when pooling is linear: missingness="none"
+#                               and no effect weighting.
 #   weights            numeric  per-subject weights
+#   Braw               list[S]  input betas (q x P_s), zero-filled on unobserved rows
 #   Omega              list[S]  per-subject AR/noise covariance structures
+#   subjects           list[S]  slim subject records (debiasing sufficient
+#                               statistics; beta/design/omega stripped)
 #   provenance         list     data provenance metadata
 #   kernel_info        list     kernel construction metadata
 #   block_indices      list     multivarious block index mapping
-#   X_concat           matrix   concatenated design matrices (NULL if keep_X=FALSE)
+#   X_concat           matrix   concatenated *training* blocks in K^{1/2} space
+#                               (NULL if keep_X=FALSE). Under debias or
+#                               missingness != "none", Chat is the debiased /
+#                               coverage-adjusted moment and is not in general
+#                               equal to X_concat %*% t(X_concat).
 #   cpca               list     CPCA partitioning info (when cpca_part != "none")
 #   solver             character  solver used
 #   jd                 list     joint-diagonalisation info (when applicable)
@@ -43,10 +55,170 @@
 #   voxel_weights_adapt    numeric  adaptive voxel weights
 #   w_method           character  weighting method
 #   w_tau              numeric    weighting tau parameter
+#   effect_scaling     character  "pooled_design" or "none"
+#   effect_moment      q x q      pooled raw-effect-space moment (pre-K, pre-R)
+#   effect_moments     list[S]    per-subject raw-effect-space moments (post-debias)
+#   effect_moments_raw list[S]    moments before analytic noise subtraction. Only
+#                                 debias="analytic" produces a distinct copy; for
+#                                 every other setting this aliases effect_moments.
+#                                 Under debias="split_half" that alias is the
+#                                 debiased split cross-moment itself -- there is no
+#                                 separate "raw" second moment on that path.
+#   noise_moments      list[S]    subtracted noise moments (NULL unless debias="analytic")
+#   effect_weight_spec list       dkge_effect_weights() specification used
+#   effect_precision   list[S]    resolved per-effect precision vectors
+#   pool_cache         list       sample-independent pair matrices reused when re-pooling
+#   moment_diagnostics list       spectral diagnostics of the effect-space and
+#                                 transformed moments
+#   debias             character  finite-trial noise treatment used
+#   pair_counts        matrix     sample-weighted effect-pair coverage mass used by
+#                                 missingness (a plain count only when the sample
+#                                 weights are all 1, as in a batch fit)
+#   pair_weight        matrix     summed precision weight per effect pair
+#   pair_ess           matrix     Kish effective sample size per effect pair
+#   missingness        character  partial-effect missingness policy used at fit time
+#   miss_args          list       missingness policy arguments
 #   ridge_input        numeric    ridge penalty applied to input
 #   rank_requested     integer    rank requested by caller
 #   effective_rank     integer    effective rank after regularisation
 #   rank_reduced       logical    whether rank was reduced from requested
+
+#' Reconcile design-kernel labels with the dataset effect order
+#'
+#' `dkge_data()` fixes a global effect order; a kernel carrying its own
+#' dimnames (as [design_kernel()] returns) must index the same effects. A set
+#' mismatch is an error, and a permutation is repaired rather than silently
+#' reindexing the kernel.
+#'
+#' @return A list with the reconciled kernel (`K`), the effect labels the fit
+#'   should carry (`effects`), and `kernel_info` permuted to the same order
+#'   whenever `K` is. The labels only change on the placeholder path, where
+#'   the kernel's own (unique) names are more informative than
+#'   `effect1...effectq`.
+#' @keywords internal
+#' @noRd
+.dkge_align_kernel_effects <- function(K, effects, kernel_info = NULL) {
+  out <- function(K, effects, kernel_info) {
+    list(K = K, effects = effects, kernel_info = kernel_info)
+  }
+  if (is.null(effects)) return(out(K, effects, kernel_info))
+  rn <- rownames(K)
+  cn <- colnames(K)
+  # Checked before any early return: a kernel whose rows and columns carry
+  # different labels cannot be reconciled with anything, and letting it through
+  # on the placeholder / duplicate-label paths allowed `fit$effects` to disagree
+  # with `rownames(fit$K)`.
+  if (!is.null(rn) && !is.null(cn) && !identical(as.character(rn), as.character(cn))) {
+    stop("Design kernel row and column names must be identical.", call. = FALSE)
+  }
+  labels <- rn %||% cn
+  if (is.null(labels)) return(out(K, effects, kernel_info))
+  labels <- as.character(labels)
+  effects <- as.character(effects)
+  # `effect1...effectq` are the placeholders `dkge_subject()` invents when the
+  # designs carry no column names: there is nothing to reconcile against, so the
+  # kernel's own order stands. Its labels are the only real effect names in play,
+  # so the fit adopts them -- unless they repeat, in which case they cannot
+  # identify effects and are dropped rather than left to contradict
+  # `fit$effects`.
+  if (identical(effects, .default_effect_names(length(effects)))) {
+    if (anyDuplicated(labels)) {
+      dimnames(K) <- NULL
+      return(out(K, effects, kernel_info))
+    }
+    dimnames(K) <- list(labels, labels)
+    return(out(K, labels, kernel_info))
+  }
+  # Duplicated kernel labels cannot be matched by name; keep the kernel's own
+  # order but say so, since a permuted kernel would then be used as-is.
+  if (anyDuplicated(labels)) {
+    if (!identical(labels, effects)) {
+      warning(
+        "Design kernel labels contain duplicates and cannot be matched to the ",
+        "data effect names; the kernel is used in its own order.",
+        call. = FALSE
+      )
+    }
+    return(out(K, effects, kernel_info))
+  }
+  if (!setequal(labels, effects)) {
+    missing_eff <- setdiff(effects, labels)
+    extra_eff <- setdiff(labels, effects)
+    stop(sprintf(
+      paste0("Design kernel labels do not match the data effects.%s%s ",
+             "Give the kernel dimnames matching the effect labels, ",
+             "or drop them with `dimnames(K) <- NULL` if they are incidental."),
+      if (length(missing_eff)) sprintf(" Missing from kernel: %s.", paste(missing_eff, collapse = ", ")) else "",
+      if (length(extra_eff)) sprintf(" Unknown in kernel: %s.", paste(extra_eff, collapse = ", ")) else ""
+    ), call. = FALSE)
+  }
+  if (!identical(labels, effects)) {
+    idx <- match(effects, labels)
+    K <- K[idx, idx, drop = FALSE]
+    dimnames(K) <- list(effects, effects)
+    kernel_info <- .dkge_permute_kernel_info(kernel_info, idx)
+    message("Design kernel reordered to match the data effect order.")
+  } else {
+    dimnames(K) <- list(effects, effects)
+  }
+  out(K, effects, kernel_info)
+}
+
+.dkge_permute_kernel_info <- function(info, idx) {
+  if (!is.list(info)) {
+    return(info)
+  }
+  q <- length(idx)
+  # Cell-space metadata (`cell_labels`, `cells`) is length-q only for a
+  # cell-basis kernel. Effect-basis kernels keep those in Qcell and must
+  # not be row-permuted with the q-dimensional `K`.
+  if (!is.null(info$cell_labels) && length(info$cell_labels) == q) {
+    info$cell_labels <- info$cell_labels[idx]
+  }
+  if (!is.null(info$cells)) {
+    cells <- as.data.frame(info$cells, stringsAsFactors = FALSE)
+    if (nrow(cells) == q) {
+      info$cells <- cells[idx, , drop = FALSE]
+      rownames(info$cells) <- NULL
+    }
+  }
+  if (!is.null(info$blocks)) {
+    info$blocks <- lapply(info$blocks, function(b) {
+      if (!is.numeric(b)) return(b)
+      match(as.integer(b), idx)
+    })
+  }
+  if (!is.null(info$map) && is.matrix(info$map) && ncol(info$map) == q) {
+    info$map <- info$map[, idx, drop = FALSE]
+  }
+  known <- c("cell_labels", "cells", "blocks", "map", "levels",
+             "factor_names", "term_names", "factor_scope", "term_scope",
+             "block_factors", "basis", "dims")
+  for (nm in setdiff(names(info), known)) {
+    val <- info[[nm]]
+    if (is.atomic(val) && is.null(dim(val)) && length(val) == q) {
+      info[[nm]] <- val[idx]
+    }
+  }
+  info
+}
+
+.dkge_check_kernel_info <- function(fit) {
+  info <- fit$kernel_info
+  if (!is.list(info) || is.null(info$cell_labels) || is.null(fit$effects)) {
+    return(invisible(fit))
+  }
+  # Effect-basis kernels keep cell_labels in cell space (Qcell != q); the
+  # invariant applies only when the labels index the same rows as `K`.
+  if (length(info$cell_labels) != length(fit$effects)) {
+    return(invisible(fit))
+  }
+  if (!identical(as.character(info$cell_labels), as.character(fit$effects))) {
+    stop("kernel_info$cell_labels must match fit$effects after kernel alignment.",
+         call. = FALSE)
+  }
+  invisible(fit)
+}
 
 #' Prepare DKGE inputs for fitting
 #'
@@ -60,7 +232,10 @@
                               K = NULL,
                               Omega_list = NULL,
                               weights = NULL,
-                              rank = NULL) {
+                              effect_weights = NULL,
+                              rank = NULL,
+                              effect_scaling = c("pooled_design", "none")) {
+  effect_scaling <- match.arg(effect_scaling)
   if (inherits(data, "dkge_data")) {
     dataset <- data
     if (!is.null(Omega_list)) {
@@ -95,6 +270,16 @@
   }
 
   stopifnot(is.matrix(K), nrow(K) == q, ncol(K) == q)
+  aligned <- .dkge_align_kernel_effects(K, effects, kernel_info)
+  K <- aligned$K
+  kernel_info <- aligned$kernel_info
+  if (!identical(aligned$effects, effects)) {
+    # The kernel supplied real effect labels where the data only had
+    # `effect1...effectq` placeholders; carry them onto the fit and the dataset
+    # so `fit$effects` and `rownames(fit$K)` stay the same vector.
+    effects <- aligned$effects
+    dataset$effects <- effects
+  }
   K <- .dkge_validate_kernel(K)
 
   rank_requested <- if (is.null(rank)) q else rank
@@ -107,11 +292,25 @@
                     Omega_list, betas)
   dataset$omega <- Omega_list
 
-  ruler <- .dkge_compute_shared_ruler(designs)
-  Btil <- .dkge_row_standardize(betas, ruler$R)
+  if (identical(effect_scaling, "pooled_design")) {
+    ruler <- .dkge_compute_shared_ruler(designs)
+    Btil <- .dkge_row_standardize(betas, ruler$R)
+  } else {
+    R_identity <- diag(1, q)
+    if (!is.null(effects)) {
+      dimnames(R_identity) <- list(effects, effects)
+    }
+    ruler <- list(R = R_identity, G_pool = R_identity)
+    Btil <- betas
+  }
   kernels <- .dkge_kernel_roots(K)
   weight_spec <- if (is.null(weights)) dkge_weights(adapt = "none") else weights
   stopifnot(inherits(weight_spec, "dkge_weights"))
+  effect_weight_spec <- effect_weights %||% dkge_effect_weights("none")
+  if (!inherits(effect_weight_spec, "dkge_effect_weights")) {
+    stop("`effect_weights` must be created by `dkge_effect_weights()`.",
+         call. = FALSE)
+  }
 
   kernel_payload <- .dkge_weight_kernel_payload(K, kernel_info)
   weight_eval <- .dkge_resolve_voxel_weights(weight_spec, Btil, kernel_payload)
@@ -124,10 +323,12 @@
     kernel_info = kernel_info,
     K = K,
     weight_spec = weight_spec,
+    effect_weight_spec = effect_weight_spec,
     weight_eval = weight_eval,
     subject_ids = subject_ids,
     effects = effects,
     provenance = provenance,
+    effect_scaling = effect_scaling,
     rank = rank,
     rank_requested = rank_requested,
     q = q,
@@ -144,29 +345,87 @@
 #' @noRd
 .dkge_fit_accumulate <- function(prepped,
                                  w_method,
-                                 w_tau) {
+                                 w_tau,
+                                 missingness = c("none", "rescale", "mask", "shrink"),
+                                 miss_args = list(),
+                                 debias = c("none", "analytic", "split_half")) {
+  missingness <- match.arg(missingness)
+  debias <- match.arg(debias)
   Btil <- prepped$Btil
   Omega_list <- prepped$dataset$omega
   kernels <- prepped$kernels
+  obs_masks <- .dkge_obs_masks_from_provenance(prepped$provenance,
+                                               prepped$subject_ids,
+                                               prepped$q)
 
   subject_weights <- .dkge_subject_weights(Btil, Omega_list, kernels$Khalf,
-                                           w_method, w_tau)
+                                           w_method, w_tau,
+                                           obs_masks = obs_masks)
 
   voxel_weights <- prepped$weight_eval$total
   voxel_weights_subject <- prepped$weight_eval$total_subject
   voxel_payload <- voxel_weights_subject %||% voxel_weights
 
-  accum <- .dkge_accumulate_chat(Btil, Omega_list, kernels$Khalf,
-                                 subject_weights,
-                                 voxel_weights = voxel_payload)
+  if (is.null(obs_masks)) {
+    obs_masks <- replicate(prepped$S, rep(TRUE, prepped$q), simplify = FALSE)
+  }
+  effect_precision <- .dkge_resolve_effect_precision(
+    prepped$dataset,
+    prepped$effect_weight_spec,
+    obs_masks = obs_masks
+  )
+  subjects <- prepped$dataset$subjects
+  if (is.null(subjects)) {
+    subjects <- lapply(seq_len(prepped$S), function(s) list(
+      id = prepped$subject_ids[[s]],
+      effect_noise_cov = prepped$dataset$effect_noise_cov[[s]],
+      residual_variance = prepped$dataset$residual_variance[[s]],
+      residual_df = prepped$dataset$residual_df[[s]],
+      noise_trace = prepped$dataset$noise_trace[[s]]
+    ))
+  }
+
+  accum <- .dkge_build_moment_pool(
+    subjects = subjects,
+    B_list = prepped$dataset$betas,
+    Omega_list = Omega_list,
+    voxel_weights = voxel_payload,
+    obs_masks = obs_masks,
+    subject_weights = subject_weights,
+    effect_precision = effect_precision,
+    effect_method = prepped$effect_weight_spec$method,
+    R = prepped$ruler$R,
+    Khalf = kernels$Khalf,
+    missingness = missingness,
+    miss_args = miss_args,
+    debias = debias
+  )
+  Chat <- accum$Chat
 
   list(
-    Chat = accum$Chat,
-    Chat_sym = (accum$Chat + t(accum$Chat)) / 2,
+    Chat = Chat,
+    Chat_sym = (Chat + t(Chat)) / 2,
     contribs = accum$contribs,
     subject_weights = subject_weights,
     voxel_weights = voxel_weights,
-    voxel_weights_subject = voxel_weights_subject
+    voxel_weights_subject = voxel_weights_subject,
+    pair_counts = accum$pair_counts,
+    pair_weight = accum$pair_weight,
+    pair_ess = accum$pair_ess,
+    effect_precision = effect_precision,
+    effect_weight_spec = prepped$effect_weight_spec,
+    effect_moment = accum$pooled,
+    effect_moments = accum$moments,
+    # Only analytic debiasing makes the raw moments differ from `moments`;
+    # otherwise this aliases the same matrices instead of copying them.
+    effect_moments_raw = accum$moments_raw %||% accum$moments,
+    noise_moments = accum$noise_moments,
+    pool_cache = accum$pool_cache,
+    moment_diagnostics = accum$diagnostics,
+    debias = debias,
+    missingness = missingness,
+    miss_args = miss_args,
+    obs_masks = obs_masks
   )
 }
 
@@ -467,7 +726,10 @@
                                keep_X,
                                w_method,
                                w_tau,
-                               ridge) {
+                               ridge,
+                               missingness = c("none", "rescale", "mask", "shrink"),
+                               miss_args = list()) {
+  missingness <- match.arg(missingness)
   dataset <- prepped$dataset
   S <- dataset$n_subjects
   Btil <- prepped$Btil
@@ -486,32 +748,39 @@
     block_indices[[s]] <- idx
     total_clusters <- total_clusters + P_s
 
-    w_s <- if (is.list(accum$voxel_weights_subject)) {
-      accum$voxel_weights_subject[[s]]
-    } else {
-      accum$voxel_weights_subject
-    }
-    if (is.null(w_s)) w_s <- accum$voxel_weights
-    if (!is.null(w_s) && length(w_s) != ncol(Bts)) {
-      w_s <- rep(w_s, length.out = ncol(Bts))
-    }
-    Bw <- if (is.null(w_s) || length(w_s) == 0L) {
-      Bts
-    } else {
-      sweep(Bts, 2L, sqrt(pmax(w_s, 0)), "*")
-    }
+    # Resolve to this subject's width exactly as `.dkge_build_moment_pool()`
+    # does, so the training blocks stay consistent with Chat.
+    w_s <- .dkge_subject_voxel_weights(
+      accum$voxel_weights_subject %||% accum$voxel_weights,
+      s, P_s, prepped$subject_ids[[s]]
+    )
+    Bw <- .dkge_scale_effect_columns(Bts, w_s)
     Omega <- Omega_list[[s]]
-    if (is.null(Omega)) {
-      block <- Bw
+    block <- if (is.null(Omega)) {
+      Bw
     } else if (is.vector(Omega)) {
       stopifnot(length(Omega) == ncol(Bw))
-      block <- sweep(Bw, 2L, sqrt(pmax(Omega, 0)), "*")
+      sweep(Bw, 2L, sqrt(pmax(Omega, 0)), "*")
     } else {
       Omega <- as.matrix(Omega)
       stopifnot(nrow(Omega) == ncol(Bw), ncol(Omega) == ncol(Bw))
-      block <- Bw %*% sqrtm_sym(Omega)
+      Bw %*% sqrtm_sym(Omega)
     }
+    # Rows this subject does not observe are already zero in *raw* effect
+    # space, so `Btil = R' B` carries the masking through the pooled ruler and
+    # the full `Khalf` congruence applies. Restricting to `Khalf[obs, obs]`
+    # would break `Chat == X X'` and desync these blocks from
+    # `dkge_transform_block()`.
     block <- kernels$Khalf %*% block
+    # Rows are dropped from the effect labelling on purpose: after the `Khalf`
+    # congruence each row is a K^{1/2}-weighted mixture of effects, not the
+    # effect it would be named after. `.dkge_kernel_roots()` leaves the roots
+    # unnamed for the same reason, so `dkge_transform_block()` -- which produces
+    # this very matrix for new data -- returns unnamed rows; labelling the
+    # training blocks here would desync the two. Column (parcel) labels are
+    # genuine and are preserved through the Omega multiplication.
+    rownames(block) <- NULL
+    colnames(block) <- colnames(Bts)
     block <- sqrt(max(accum$subject_weights[s], 0)) * block
     X_blocks[[s]] <- block
   }
@@ -558,12 +827,26 @@
     Kihalf = kernels$Kihalf,
     Chat = solved$Chat,
     contribs = accum$contribs,
+    effect_moment = accum$effect_moment,
+    effect_moments = accum$effect_moments,
+    effect_moments_raw = accum$effect_moments_raw,
+    noise_moments = accum$noise_moments,
+    pool_cache = accum$pool_cache,
+    moment_diagnostics = accum$moment_diagnostics,
     weights = accum$subject_weights,
+    Braw = dataset$betas,
     Btil = Btil,
     Omega = Omega_list,
     subject_ids = prepped$subject_ids,
     effects = prepped$effects,
     provenance = prepped$provenance,
+    # Slim subject records: downstream re-pooling only needs the debiasing
+    # sufficient statistics. `beta` lives in `$Braw` and the T_s x q designs are
+    # not used after the pooled ruler is built.
+    subjects = lapply(dataset$subjects, function(s) {
+      s[setdiff(names(s), c("beta", "design", "omega"))]
+    }),
+    effect_scaling = prepped$effect_scaling,
     kernel_info = prepped$kernel_info,
     block_indices = block_indices,
     X_concat = X_store,
@@ -574,12 +857,20 @@
     solver = solved$solver,
     jd = solved$jd,
     weight_spec = prepped$weight_spec,
+    effect_weight_spec = accum$effect_weight_spec,
+    effect_precision = accum$effect_precision,
     voxel_weights = accum$voxel_weights,
     voxel_weights_subject = accum$voxel_weights_subject,
     voxel_weights_prior = prepped$weight_eval$prior,
     voxel_weights_adapt = prepped$weight_eval$adapt,
     w_method = w_method,
     w_tau = w_tau,
+    pair_counts = accum$pair_counts,
+    pair_weight = accum$pair_weight,
+    pair_ess = accum$pair_ess,
+    debias = accum$debias,
+    missingness = missingness,
+    miss_args = miss_args,
     ridge_input = ridge,
     rank_requested = prepped$rank_requested,
     effective_rank = solved$effective_rank,
@@ -595,5 +886,6 @@
     multivarious_obj[[nm]] <- fit[[nm]]
   }
   class(multivarious_obj) <- unique(c("dkge", class(multivarious_obj)))
+  .dkge_check_kernel_info(multivarious_obj)
   multivarious_obj
 }
