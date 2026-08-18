@@ -12,9 +12,13 @@
 #' @param Omega_s Optional weights (vector length P or PxP matrix) matching the
 #'   columns of `B_s`.
 #' @param w_s Optional subject-level weight (defaults to 1 when omitted).
+#' @param subject Optional training-subject index or id. Required when the fit
+#'   carries non-trivial voxel weights, so the matching
+#'   `fit$voxel_weights_subject` / `fit$voxel_weights` profile can be applied.
 #' @return qxP matrix in the DKGE training space.
 #' @export
-dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL) {
+dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL,
+                                 subject = NULL) {
   stopifnot(inherits(fit, "dkge"))
   effects <- fit$effects
   B_s <- as.matrix(B_s)
@@ -32,6 +36,20 @@ dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL) {
   Khalf <- fit$Khalf
   stopifnot(nrow(B_s) == nrow(R))
   Btil <- t(R) %*% B_s
+  vw_spec <- fit$voxel_weights_subject %||% fit$voxel_weights
+  if (.dkge_active_voxel_weights(vw_spec)) {
+    if (is.null(subject)) {
+      stop("This fit carries voxel weights; pass `subject` as a training ",
+           "index or id so the matching weights can be applied.",
+           call. = FALSE)
+    }
+    s <- .dkge_resolve_subject(fit, subject)
+    vw <- .dkge_subject_voxel_weights(
+      vw_spec, s, ncol(Btil),
+      fit$subject_ids[[s]] %||% as.character(s)
+    )
+    Btil <- .dkge_scale_effect_columns(Btil, vw)
+  }
   if (!is.null(Omega_s)) {
     if (is.vector(Omega_s)) {
       stopifnot(length(Omega_s) == ncol(Btil))
@@ -65,12 +83,19 @@ dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   X <- matrix(0, q, total_cols)
   for (s in seq_len(S)) {
     idx <- fit$block_indices[[s]]
-    Xs <- dkge_transform_block(fit, B_list[[s]], Omega_list[[s]], w[s])
+    Xs <- dkge_transform_block(fit, B_list[[s]], Omega_list[[s]], w[s],
+                               subject = s)
     if (ncol(Xs) != length(idx)) {
       stop(sprintf("Block %d produced %d columns but %d were expected.",
                    s, ncol(Xs), length(idx)))
     }
     X[, idx] <- Xs
+    if (!is.null(colnames(Xs))) {
+      cn <- colnames(X)
+      if (is.null(cn)) cn <- rep(NA_character_, ncol(X))
+      cn[idx] <- colnames(Xs)
+      colnames(X) <- cn
+    }
   }
   X
 }
@@ -141,7 +166,7 @@ dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
                                least_squares = TRUE) {
   stopifnot(inherits(fit, "dkge"))
   stopifnot(s >= 1L, s <= length(fit$block_indices))
-  Xs <- dkge_transform_block(fit, B_s, Omega_s, w_s)
+  Xs <- dkge_transform_block(fit, B_s, Omega_s, w_s, subject = s)
   if (ncol(Xs) != length(fit$block_indices[[s]])) {
     stop("New block has different width than training block.")
   }

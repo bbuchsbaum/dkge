@@ -18,7 +18,12 @@ library(dkge)
 set.seed(2026)
 ```
 
-If you have one brain-derived representation per subject and want to test group, trait, or covariate effects jointly, the between-subject DKGE layer gives you a supervised multivariate model instead of a voxel-by-voxel second-level GLM.
+Suppose you have one brain-derived feature vector per subject and want to ask
+whether group, trait, or covariate effects are distributed across that vector.
+The between-subject DKGE layer fits one supervised multivariate model and
+returns a coefficient map and a resampling test for each model term. The
+features may be component scores, transported parcels, or any common-space
+subject-by-feature matrix.
 
 The workflow has three steps:
 
@@ -36,7 +41,7 @@ Y = X B + E, \qquad \mathrm{rank}(B) \le r
 
 Here `Y` is a subject-by-feature matrix, `X` is the subject-level design matrix, and `B` contains distributed coefficient maps for your terms of interest.
 
-## Start from a direct subject-by-feature matrix
+## How do you fit a direct subject-by-feature matrix?
 
 In the simplest case you already have a common-space matrix with one row per subject.
 
@@ -68,12 +73,16 @@ You can inspect the fitted term map directly.
 round(dkge_term_map(fit_between, "grouppatient:trait"), 2)
 ```
 
-And you can run a permutation test that keeps the formula structure intact.
+For an unweighted, single-block model with a scientifically defensible
+Gaussian row-sphericity assumption, request a residual-space rotation test.
+The `terms` argument controls which formula terms are tested; it does not
+refit a different full model for each term.
 
 ```{r quick-permutation}
 perm_between <- dkge_between_permute(
   fit_between,
   terms = c("group", "trait", "group:trait"),
+  method = "rotation",
   B = 99,
   seed = 42,
   scope = "both",
@@ -83,14 +92,139 @@ perm_between <- dkge_between_permute(
 perm_between$summary[, c("term", "statistic", "p", "p_adjusted")]
 ```
 
+The global statistic is the reduction in residual sum of squares when the
+tested term is restored to the reduced model, with both models constrained to
+the fitted reduced rank. P-values use the finite-resample correction
+`(1 + exceedances) / (B + 1)`. With `scope = "both"`, the result also contains
+featurewise tests; `feature_adjust = "maxT"` controls multiplicity against the
+largest feature statistic in each resample.
+
 ```{r quick-permutation-checks, include = FALSE}
 stopifnot(all(is.finite(fitted(fit_between))))
 stopifnot(all(is.finite(residuals(fit_between))))
 stopifnot(all(perm_between$summary$p >= 0 & perm_between$summary$p <= 1))
 stopifnot(all(perm_between$feature_tests[["group:trait"]]$p_adjusted >= 0))
+stopifnot(all(perm_between$feature_tests[["group:trait"]]$p_adjusted <= 1))
 ```
 
-## Build the target from a DKGE fit
+## What is residual-space rotation doing?
+
+For a tested term, let \(X_0\) be the design with that term removed. Write
+\(Q_0\) for an orthonormal basis of the nuisance space spanned by \(X_0\), and
+\(Q_e\) for its orthogonal complement. A null replicate is
+
+\[
+Y^* = Q_0 Q_0^\top Y + Q_e G Q_e^\top Y,
+\]
+
+where \(G\) is a random orthogonal matrix. The first term fixes the fitted
+nuisance signal. The second rotates only the residual coordinates. Because
+the transformation is orthogonal, it preserves `crossprod(Y)` exactly and
+retains arbitrary covariance among features.
+
+This produces an exact finite-sample randomization test under a matrix-normal
+null with independent, homoscedastic subject rows. It is only approximate for
+heteroscedastic, clustered, or non-Gaussian subject errors. The result records
+that contract rather than asking you to remember it:
+
+```{r rotation-contract}
+unlist(perm_between$resampling_assumptions)
+```
+
+The implementation evaluates each replicate from compressed design-by-feature
+cross-products. It forms a square rotation only in the residual subject
+dimension and never constructs a feature-by-feature covariance matrix.
+
+## Which resampling method should you choose?
+
+Neither method is a universal confirmatory default.
+
+| Situation | Method | Interpretation |
+|---|---|---|
+| Unweighted fit, one block, Gaussian row-sphericity is plausible | `method = "rotation"` | Sharpest exactness contract; may lose power in small samples. |
+| Subject/feature weights or nontrivial exchangeability blocks are required | `method = "freedman_lane"` | Supported legacy approximation; small-sample calibration is imperfect. |
+| Heteroscedasticity or dependence is scientifically central | Neither automatically | Treat the result as exploratory or justify a design-specific resampling model. |
+
+`"freedman_lane"` remains the compatibility default, so use `method =` in
+analysis scripts to make the inferential choice visible. Rotation fails before
+resampling when weights, multiple blocks, missing block labels, or fewer than
+two residual dimensions put the fit outside its supported scope.
+
+### What did the frozen calibration show?
+
+The tables below are generated from the machine-readable artifacts shipped
+with the package. The null rows report rejection frequency at nominal 0.05 for
+20 subjects and 399 resamples.
+
+```{r calibration-data, include = FALSE}
+rotation_calibration <- read.csv(
+  system.file("extdata", "dkge-between-rotation-summary.csv", package = "dkge"),
+  stringsAsFactors = FALSE
+)
+legacy_calibration <- read.csv(
+  system.file("extdata", "dkge-null-calibration-summary.csv", package = "dkge"),
+  stringsAsFactors = FALSE
+)
+term_order <- c("group", "trait", "group:trait")
+rotation_global <- subset(rotation_calibration, arm == "gaussian_global_null")
+rotation_partial <- subset(rotation_calibration, arm == "gaussian_partial_null")
+legacy_primary <- subset(legacy_calibration,
+                         family == "between_freedman_lane" &
+                         setting == "primary_n20")
+rotation_global <- rotation_global[match(term_order, rotation_global$term), ]
+rotation_partial <- rotation_partial[match(term_order, rotation_partial$term), ]
+legacy_primary <- legacy_primary[match(term_order, legacy_primary$estimand), ]
+calibration_table <- data.frame(
+  term = term_order,
+  rotation_global = rotation_global$rejection_005,
+  rotation_with_nuisance = rotation_partial$rejection_005,
+  freedman_lane_global = legacy_primary$empirical_size_0.05,
+  rotation_gate = ifelse(rotation_global$gate_pass & rotation_partial$gate_pass,
+                         "pass", "fail")
+)
+power_table <- subset(rotation_calibration,
+                      arm == "strong_interaction_power",
+                      c("method", "rejection_005", "wilson_lower", "wilson_upper"))
+rownames(power_table) <- NULL
+stopifnot(nrow(calibration_table) == 3L)
+stopifnot(all(rotation_global$gate_pass))
+stopifnot(identical(rotation_partial$gate_pass, c(TRUE, TRUE, FALSE)))
+stopifnot(power_table$rejection_005[power_table$method == "rotation"] == 0.43)
+```
+
+```{r calibration-table, echo = FALSE}
+knitr::kable(
+  calibration_table,
+  digits = 3,
+  col.names = c("Term", "Rotation: global null",
+                "Rotation: nuisance null", "Freedman-Lane: global null",
+                "Rotation gate")
+)
+```
+
+Rotation removed the material global-null inflation seen for Freedman-Lane,
+but the nuisance-interaction arm rejected 33 of 500 nulls (0.066), one result
+above the frozen 0.065 promotion ceiling. Its Wilson interval still contained
+0.05 and its other uniformity diagnostics passed. The predeclared rule did not
+permit replacing that seed family or relaxing the threshold.
+
+```{r power-table, echo = FALSE}
+knitr::kable(
+  power_table,
+  digits = 3,
+  col.names = c("Method", "Detection rate", "Wilson lower", "Wilson upper")
+)
+```
+
+In the frozen strong-interaction simulation (shared DGP, power arm `B = 199`),
+rotation detected 43% and Freedman-Lane 58%. That raw gap is mostly
+Freedman-Lane size inflation: at matched conditions rotation's size is 0.050
+and Freedman-Lane's is 0.086, and size-matched Freedman-Lane power is about
+0.49. The predeclared absolute and relative gates still fail, so rotation
+remains opt-in. Increasing `B` improves Monte Carlo resolution; it does not
+repair either method's assumptions or recover the unadjusted power gap.
+
+## How do you build the target from a DKGE fit?
 
 The more DKGE-native path is to let DKGE construct the subject representation first, then model subjects in that common target space.
 
@@ -160,6 +294,7 @@ fit_transport <- dkge_between_rrr(transported_target, between_design, rank = 1)
 perm_transport <- dkge_between_permute(
   fit_transport,
   terms = c("group", "trait", "group:trait"),
+  method = "rotation",
   B = 49,
   seed = 7
 )
@@ -179,10 +314,19 @@ There are three outputs worth checking first:
 
 - `coef(fit_transport)` gives the full coefficient matrix in target space
 - `dkge_term_map(fit_transport, "group:trait")` extracts the term-specific map
-- `perm_transport$summary` gives a global multivariate permutation test for each term
+- `perm_transport$summary` gives a global multivariate resampling test for each term
 
 If you asked for featurewise inference, `perm_between$feature_tests[["group:trait"]]` adds per-feature statistics and adjusted p-values in the same target space.
 
+Report the target construction, fitted rank, tested term, resampling method,
+number of resamples, exchangeability assumptions, and multiplicity adjustment.
+Do not describe a term-level p-value as evidence that every feature in its map
+is individually significant.
+
 ## Where to go next
 
-Use `type = "component_scores"` in `dkge_make_target()` when you want a compact latent target, and use `type = "transported_maps"` when spatial interpretation in a common map space matters.
+Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
+latent target, and use `type = "transported_maps"` when spatial interpretation
+in a common map space matters. See `vignette("dkge-partial-effect-spaces")` for
+unequal trial counts and partial within-subject cells, and
+`vignette("dkge-contrasts-inference")` for within-subject contrast inference.

@@ -1,12 +1,14 @@
 testthat::local_edition(3)
 library(dkge)
 
-test_that('.dkge_leading_sv_squared approximates leading singular value', {
+test_that(".dkge_leading_sv_squared is exact and deterministic", {
   set.seed(321)
   X <- matrix(rnorm(25), 5, 5)
-  approx <- dkge:::.dkge_leading_sv_squared(X, tol = 1e-8, max_iter = 100)
+  got <- dkge:::.dkge_leading_sv_squared(X)
   exact <- svd(X, nu = 0, nv = 0)$d[1]^2
-  expect_equal(approx, exact, tolerance = 1e-4)
+  expect_equal(got, exact, tolerance = 1e-10)
+  expect_equal(dkge:::.dkge_leading_sv_squared(X), got)
+  expect_equal(dkge:::.dkge_leading_sv_squared(matrix(0, 3, 0)), 0)
 })
 
 test_that(".dkge_fit_prepare harmonises inputs", {

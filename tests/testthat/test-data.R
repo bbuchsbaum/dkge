@@ -17,8 +17,58 @@ test_that("dkge_subject aligns effect names and sets defaults", {
   subj <- dkge_subject(fx$beta, design = fx$design)
   expect_s3_class(subj, "dkge_subject")
   expect_equal(rownames(subj$beta), colnames(subj$design))
+  expect_equal(subj$observed_rows, seq_len(nrow(subj$beta)))
   expect_equal(subj$n_clusters, ncol(fx$beta))
   expect_true(all(grepl("cluster_", subj$cluster_ids)))
+})
+
+test_that("dkge_subject carries explicit observed rows", {
+  fx <- make_subject_fixture()
+  subj <- dkge_subject(fx$beta, design = fx$design,
+                       observed_rows = c(1L, 3L))
+  expect_equal(subj$observed_rows, c(1L, 3L))
+
+  subj_logical <- dkge_subject(fx$beta, design = fx$design,
+                               observed_rows = c(TRUE, FALSE, TRUE))
+  expect_equal(subj_logical$observed_rows, c(1L, 3L))
+
+  expect_error(
+    dkge_subject(fx$beta, design = fx$design,
+                 observed_rows = c(TRUE, FALSE)),
+    "logical `observed_rows`",
+    fixed = TRUE
+  )
+})
+
+test_that("dkge_data honours observed rows when effect labels are identical", {
+  fx <- make_subject_fixture()
+  s1 <- dkge_subject(fx$beta, fx$design, id = "s1",
+                     observed_rows = c(1L, 3L))
+  s2 <- dkge_subject(fx$beta, fx$design, id = "s2")
+  dat <- dkge_data(list(s1, s2))
+
+  expect_equal(dat$observed_rows[[1]], c(1L, 3L))
+  expect_false(dat$provenance$obs_mask[[1]][2])
+  expect_equal(unname(diag(dat$provenance$pair_counts)), c(2L, 1L, 2L))
+  expect_true(all(dat$betas[[1]][2, ] == 0))
+  expect_true(all(dat$designs[[1]][, 2] == 0))
+})
+
+test_that("unobserved row values cannot leak into the fitted moment", {
+  fx <- make_subject_fixture(q = 3, P = 4)
+  design <- fx$design[, match(rownames(fx$beta), colnames(fx$design)), drop = FALSE]
+  beta_garbage <- fx$beta
+  beta_garbage[2, ] <- 1e12
+  s1 <- suppressWarnings(dkge_subject(beta_garbage, design, id = "s1",
+                                      observed_rows = c(1L, 3L)))
+  s2 <- dkge_subject(fx$beta, design, id = "s2")
+  fit <- suppressWarnings(dkge_fit(
+    dkge_data(list(s1, s2)), K = diag(3), rank = 2,
+    w_method = "none", effect_scaling = "none"
+  ))
+  expected <- tcrossprod(rbind(fx$beta[1, ], 0, fx$beta[3, ])) +
+    tcrossprod(fx$beta)
+  expect_equal(unname(fit$effect_moment), unname(expected), tolerance = 1e-12)
 })
 
 test_that("dkge_subject validates omega", {
@@ -57,6 +107,55 @@ test_that("dkge_subject default method errors", {
   expect_error(dkge_subject(1:5), "Unsupported")
 })
 
+test_that("duplicated effect labels are rejected on subject, bundle, and union paths", {
+  B <- matrix(seq_len(6), 3, 2,
+              dimnames = list(c("a", "a", "b"), c("v1", "v2")))
+  X <- diag(3)
+  colnames(X) <- c("a", "a", "b")
+  expect_error(suppressWarnings(dkge_subject(B, X)), "duplicated")
+  expect_error(suppressWarnings(dkge_subject(B, X)), "a")
+
+  expect_error(
+    suppressWarnings(dkge_data(list(B, B), list(X, X))),
+    "duplicated"
+  )
+
+  # Union path: s1 has a repeated label, s2 introduces a new one. Today
+  # match() collapses the two `a` rows into one and zero-fills with
+  # obs_mask still TRUE. The aligner must refuse instead of dropping a row.
+  make_hand <- function(id, labels) {
+    q <- length(labels)
+    X <- diag(q)
+    colnames(X) <- labels
+    structure(list(
+      id = id,
+      beta = matrix(seq_len(q), q, 1, dimnames = list(labels, "v")),
+      design = X,
+      effects = labels,
+      observed_rows = seq_len(q),
+      omega = NULL,
+      effect_n = NULL,
+      effect_precision = NULL,
+      effect_noise_cov = NULL,
+      split_betas = NULL
+    ), class = "dkge_subject")
+  }
+  expect_error(
+    dkge:::.dkge_align_subjects_to_union(list(
+      make_hand("s1", c("a", "a", "b")),
+      make_hand("s2", c("a", "b", "c"))
+    )),
+    "duplicated"
+  )
+  expect_error(
+    dkge_data(list(
+      make_hand("s1", c("a", "a", "b")),
+      make_hand("s2", c("a", "b", "c"))
+    )),
+    "duplicated"
+  )
+})
+
 test_that("dkge_data bundles raw matrices and normalises ids", {
   fx <- make_subject_fixture()
   betas <- replicate(3, fx$beta, simplify = FALSE)
@@ -84,6 +183,10 @@ test_that("dkge_data aligns partial effect overlaps and records provenance", {
   expect_equal(length(prov$effect_ids), 3)
   expect_false(prov$obs_mask[[1]][3])
   expect_false(prov$obs_mask[[2]][1])
+  expect_equal(dat$observed_rows[[1]], c(1L, 2L))
+  expect_equal(dat$observed_rows[[2]], c(2L, 3L))
+  expect_equal(prov$observed_rows[[1]], c(1L, 2L))
+  expect_equal(prov$observed_rows[[2]], c(2L, 3L))
   expect_equal(unname(diag(prov$pair_counts)), c(1L, 2L, 1L))
 })
 
@@ -96,6 +199,8 @@ test_that("dkge_data respects provided subject ids and omega", {
   expect_equal(dat$subject_ids, c("A", "B"))
   expect_equal(dat$omega[[1]], omega[[1]])
   expect_equal(dat$omega[[2]], omega[[2]])
+  expect_equal(dat$observed_rows[[1]], seq_len(dat$q))
+  expect_equal(dat$provenance$observed_rows[["A"]], seq_len(dat$q))
 })
 
 test_that("dkge_data errors on mismatched effects", {
@@ -212,6 +317,8 @@ test_that("provenance correctly tracks effect coverage with partial overlap", {
   expect_equal(prov$pair_counts["e2", "e2"], 2L)
   expect_equal(prov$pair_counts["e3", "e3"], 1L)
   expect_equal(prov$pair_counts["e1", "e3"], 0L)  # No subject has both
+  expect_equal(prov$observed_rows[[1]], c(1L, 2L))
+  expect_equal(prov$observed_rows[[2]], c(2L, 3L))
 })
 
 test_that("effect alignment produces correct values after reordering", {
@@ -238,4 +345,216 @@ test_that("effect alignment produces correct values after reordering", {
   expect_equal(data1$betas[[1]]["A", ], data2$betas[[1]]["A", ])
   expect_equal(data1$betas[[1]]["B", ], data2$betas[[1]]["B", ])
   expect_equal(data1$betas[[1]]["C", ], data2$betas[[1]]["C", ])
+})
+
+# -------------------------------------------------------------------------
+# Subject identity, effect order, and coverage guards
+# -------------------------------------------------------------------------
+
+test_that("dkge_data rejects duplicate subject identifiers", {
+  fx <- make_subject_fixture()
+  betas <- replicate(3, fx$beta, simplify = FALSE)
+  designs <- replicate(3, fx$design, simplify = FALSE)
+
+  expect_error(
+    dkge_data(betas, designs, subject_ids = c("s1", "s1", "s2")),
+    "unique"
+  )
+
+  # Also when the duplicate arrives on pre-built dkge_subject objects.
+  subs <- lapply(betas, function(B) {
+    dkge_subject(B, design = fx$design, id = "same")
+  })
+  expect_error(dkge_data(subs), "unique")
+})
+
+test_that("duplicate ids cannot make two subjects share one observation mask", {
+  beta1 <- matrix(1:4, 2, 2, dimnames = list(c("eff1", "eff2"), NULL))
+  beta2 <- matrix(5:8, 2, 2, dimnames = list(c("eff2", "eff3"), NULL))
+  design1 <- matrix(seq_len(10), 5, 2, dimnames = list(NULL, c("eff1", "eff2")))
+  design2 <- matrix(seq_len(10), 5, 2, dimnames = list(NULL, c("eff2", "eff3")))
+
+  expect_error(
+    dkge_data(list(beta1, beta2), list(design1, design2),
+              subject_ids = c("dup", "dup")),
+    "unique"
+  )
+})
+
+test_that("dkge_data(effects=) pins the global effect order", {
+  beta1 <- matrix(1:4, 2, 2, dimnames = list(c("eff1", "eff2"), NULL))
+  beta2 <- matrix(5:8, 2, 2, dimnames = list(c("eff2", "eff3"), NULL))
+  design1 <- matrix(seq_len(10), 5, 2, dimnames = list(NULL, c("eff1", "eff2")))
+  design2 <- matrix(seq_len(10), 5, 2, dimnames = list(NULL, c("eff2", "eff3")))
+
+  default <- dkge_data(list(beta1, beta2), list(design1, design2))
+  expect_equal(default$effects, c("eff1", "eff2", "eff3"))
+
+  pinned <- dkge_data(list(beta1, beta2), list(design1, design2),
+                      effects = c("eff3", "eff1", "eff2"))
+  expect_equal(pinned$effects, c("eff3", "eff1", "eff2"))
+
+  perm <- match(pinned$effects, default$effects)
+  # Betas, designs, masks and pair counts all follow the pinned order.
+  expect_equal(pinned$betas[[1]], default$betas[[1]][perm, , drop = FALSE])
+  expect_equal(pinned$designs[[2]], default$designs[[2]][, perm, drop = FALSE])
+  expect_equal(unname(pinned$provenance$obs_mask[[2]]),
+               unname(default$provenance$obs_mask[[2]])[perm])
+  expect_equal(unname(pinned$provenance$pair_counts),
+               unname(default$provenance$pair_counts[perm, perm]))
+  expect_equal(pinned$provenance$coverage$effect, pinned$effects)
+
+  expect_error(
+    dkge_data(list(beta1, beta2), list(design1, design2),
+              effects = c("eff1", "eff2")),
+    "permutation"
+  )
+  expect_error(
+    dkge_data(list(beta1, beta2), list(design1, design2),
+              effects = c("eff1", "eff2", "eff3", "eff4")),
+    "Unknown: eff4"
+  )
+})
+
+test_that("dkge_data(effects=) reorders per-effect subject metadata", {
+  q <- 3
+  P <- 4
+  effects <- paste0("eff", seq_len(q))
+  design <- matrix(rnorm(12 * q), 12, q, dimnames = list(NULL, effects))
+  make_subj <- function(id, seed) {
+    set.seed(seed)
+    beta <- matrix(rnorm(q * P), q, P, dimnames = list(effects, NULL))
+    noise <- diag(c(1, 2, 3))
+    dimnames(noise) <- list(effects, effects)
+    dkge_subject(beta, design = design, id = id,
+                 effect_n = stats::setNames(c(10, 20, 30), effects),
+                 effect_precision = stats::setNames(c(0.1, 0.2, 0.3), effects),
+                 effect_noise_cov = noise,
+                 split_betas = list(beta, beta))
+  }
+  subs <- list(make_subj("a", 1), make_subj("b", 2))
+
+  base <- dkge_data(subs)
+  pinned <- dkge_data(subs, effects = c("eff3", "eff1", "eff2"))
+  perm <- match(pinned$effects, base$effects)
+
+  expect_equal(unname(pinned$effect_n[[1]]), unname(base$effect_n[[1]])[perm])
+  expect_equal(names(pinned$effect_n[[1]]), pinned$effects)
+  expect_equal(unname(pinned$effect_precision[[2]]),
+               unname(base$effect_precision[[2]])[perm])
+  expect_equal(unname(pinned$effect_noise_cov[[1]]),
+               unname(base$effect_noise_cov[[1]][perm, perm]))
+  expect_equal(dimnames(pinned$effect_noise_cov[[1]]),
+               list(pinned$effects, pinned$effects))
+  expect_equal(pinned$split_betas[[1]][[1]],
+               base$split_betas[[1]][[1]][perm, , drop = FALSE])
+  expect_equal(pinned$betas[[1]], base$betas[[1]][perm, , drop = FALSE])
+})
+
+test_that("dkge_data rejects effects that no subject observes", {
+  effects <- c("eff1", "eff2", "eff3")
+  design <- matrix(rnorm(30), 10, 3, dimnames = list(NULL, effects))
+  beta <- matrix(rnorm(12), 3, 4, dimnames = list(effects, NULL))
+  subs <- list(
+    dkge_subject(beta, design = design, id = "a", observed_rows = c(1L, 2L)),
+    dkge_subject(beta, design = design, id = "b", observed_rows = c(1L, 2L))
+  )
+  expect_error(dkge_data(subs), "observed by no subject: eff3")
+})
+
+test_that("dkge_subject.list forwards observed_rows and reliability metadata", {
+  effects <- c("eff1", "eff2", "eff3")
+  design <- matrix(rnorm(30), 10, 3, dimnames = list(NULL, effects))
+  beta <- matrix(rnorm(12), 3, 4, dimnames = list(effects, NULL))
+  subj <- dkge_subject(list(
+    beta = beta,
+    design = design,
+    id = "s7",
+    observed_rows = c(1L, 3L),
+    effect_n = stats::setNames(c(4, 0, 9), effects)
+  ))
+  expect_s3_class(subj, "dkge_subject")
+  expect_equal(subj$id, "s7")
+  expect_equal(subj$observed_rows, c(1L, 3L))
+  expect_equal(unname(subj$effect_n), c(4, 0, 9))
+})
+
+test_that("effect labels are adopted from whichever side carries them", {
+  B <- matrix(rnorm(15), 3, 5, dimnames = list(c("a", "b", "c"), NULL))
+  X_unnamed <- matrix(rnorm(30), 10, 3)
+
+  # Named betas + unnamed design: adopt the beta row names rather than
+  # inventing effect1..effect3 and then reporting a clash.
+  subj <- dkge_subject(B, X_unnamed)
+  expect_equal(subj$effects, c("a", "b", "c"))
+  expect_equal(colnames(subj$design), c("a", "b", "c"))
+
+  # Unnamed betas + named design: design names win (unchanged behaviour).
+  X_named <- X_unnamed
+  colnames(X_named) <- c("p", "q", "r")
+  subj2 <- dkge_subject(unname(B), X_named)
+  expect_equal(subj2$effects, c("p", "q", "r"))
+
+  # Neither labelled: placeholders.
+  subj3 <- dkge_subject(unname(B), X_unnamed)
+  expect_equal(subj3$effects, paste0("effect", 1:3))
+
+  # Both labelled and disagreeing: still an error.
+  X_bad <- X_unnamed
+  colnames(X_bad) <- c("a", "b", "zz")
+  expect_error(dkge_subject(B, X_bad), "must match design column names")
+
+  expect_error(dkge_subject(B, matrix(rnorm(40), 10, 4)),
+               "3 effect rows but the design has 4 columns")
+})
+
+test_that("dkge_sim_toy output round-trips through dkge()", {
+  toy <- dkge_sim_toy(factors = list(A = list(L = 2), B = list(L = 3)),
+                      active_terms = c("A", "B"), S = 3, P = 15, snr = 5)
+  fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+  expect_equal(fit$rank, 2)
+  expect_lt(max(abs(t(fit$U) %*% fit$K %*% fit$U - diag(fit$rank))), 1e-8)
+})
+
+test_that("cohort voxel weights are resolved per subject when widths differ", {
+  # Uninformative (constant) cohort weights apply to any width.
+  expect_equal(dkge:::.dkge_subject_voxel_weights(rep(1, 3), 1L, 5L),
+               rep(1, 5))
+  expect_equal(dkge:::.dkge_subject_voxel_weights(rep(2, 3), 1L, 5L),
+               rep(2, 5))
+  # A matching-length vector is passed through untouched.
+  expect_equal(dkge:::.dkge_subject_voxel_weights(c(1, 2, 3), 1L, 3L),
+               c(1, 2, 3))
+  # A varying vector of the wrong width is a real mismatch.
+  expect_error(dkge:::.dkge_subject_voxel_weights(c(1, 2, 3), 1L, 5L, "s1"),
+               "do not apply to subject s1")
+  # Per-subject lists are indexed, not recycled.
+  expect_equal(
+    dkge:::.dkge_subject_voxel_weights(list(c(1, 2), c(3, 4, 5)), 2L, 3L),
+    c(3, 4, 5)
+  )
+  expect_null(dkge:::.dkge_subject_voxel_weights(NULL, 1L, 4L))
+})
+
+test_that("subjects with different cluster counts fit under cohort weights", {
+  set.seed(4)
+  effects <- paste0("e", 1:3)
+  design <- matrix(rnorm(30), 10, 3, dimnames = list(NULL, effects))
+  widths <- c(4L, 7L, 5L)
+  betas <- lapply(widths, function(P) {
+    matrix(rnorm(3 * P), 3, P, dimnames = list(effects, NULL))
+  })
+  fit <- dkge_fit(betas, replicate(3, design, simplify = FALSE),
+                  K = diag(3), rank = 2, keep_X = TRUE)
+  expect_equal(vapply(fit$Btil, ncol, integer(1)), widths)
+  expect_equal(fit$Chat, tcrossprod(fit$X_concat),
+               tolerance = 1e-10, ignore_attr = TRUE)
+})
+
+test_that("dkge_data stamps normalised ids onto the subject objects", {
+  d <- dkge_data(lapply(c(4, 6), function(p) matrix(rnorm(3 * p), 3, p)),
+                 designs = list(diag(3), diag(3)))
+  expect_equal(d$subject_ids, c("sub01", "sub02"))
+  expect_equal(vapply(d$subjects, function(s) s$id, character(1)),
+               c("sub01", "sub02"))
 })
