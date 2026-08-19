@@ -477,6 +477,31 @@ test_that("aggregate fit reproduces the SVD of K^{1/2} Y", {
                reference$d[1:4], tolerance = 1e-10)
 })
 
+test_that("aggregate fit preserves the null space of a rank-deficient kernel", {
+  set.seed(33)
+  row_ids <- paste0("r", 1:4)
+  Y <- matrix(rnorm(20), 4, 5, dimnames = list(row_ids, paste0("v", 1:5)))
+  V <- qr.Q(qr(matrix(rnorm(16), 4)))
+  K <- V %*% diag(c(3, 1.5, 0, 0)) %*% t(V)
+  dimnames(K) <- list(row_ids, row_ids)
+
+  fit <- dkge_aggregate_fit(Y, K = K, rank = 4)
+  ek <- eigen((K + t(K)) / 2, symmetric = TRUE)
+  Khalf <- ek$vectors %*% diag(sqrt(pmax(ek$values, 0))) %*% t(ek$vectors)
+  reference <- svd(Khalf %*% Y)
+
+  expect_equal(fit$rank, 2L)
+  expect_equal(unname(fit$singular_values), reference$d[1:2], tolerance = 1e-10)
+  expect_equal(unname(sqrt(colSums(fit$scores_feature^2))),
+               unname(fit$singular_values), tolerance = 1e-12)
+  expect_equal(unname(t(fit$U) %*% K %*% fit$U), diag(2), tolerance = 1e-10)
+  expect_equal(fit$saliences, K %*% fit$U, tolerance = 1e-12)
+  roots <- dkge:::.dkge_aggregate_kernel_roots(K)
+  expect_equal(unname(roots$Khalf %*% roots$Khalf), unname(K),
+               tolerance = 1e-10)
+  expect_equal(roots$rank, 2L)
+})
+
 test_that("aggregate fit matches kernels on whichever dimnames are present", {
   set.seed(32)
   row_ids <- paste0("r", 1:5)

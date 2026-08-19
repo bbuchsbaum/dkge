@@ -22,7 +22,9 @@ number of subject-level GLM effects used elsewhere in the package: `K` must
 therefore be `nrow(target$Y)` by `nrow(target$Y)`. When `K` carries
 dimnames they are matched against the aggregate row IDs; a kernel with only
 row names (or only column names) is validated and reordered on whichever
-labels are present.}
+labels are present. Rank-deficient PSD kernels keep a true square
+root: null directions stay at zero rather than receiving the jitter
+that \code{.dkge_kernel_roots()} uses for invertibility elsewhere.}
 
 \item{rank}{Number of components to retain.}
 

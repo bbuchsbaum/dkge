@@ -545,7 +545,9 @@ dkge_aggregate_target <- function(values,
 #'   therefore be `nrow(target$Y)` by `nrow(target$Y)`. When `K` carries
 #'   dimnames they are matched against the aggregate row IDs; a kernel with only
 #'   row names (or only column names) is validated and reordered on whichever
-#'   labels are present.
+#'   labels are present. Rank-deficient PSD kernels keep a true square
+#'   root: null directions stay at zero rather than receiving the jitter
+#'   that [`.dkge_kernel_roots()`] uses for invertibility elsewhere.
 #' @param rank Number of components to retain.
 #' @param center Centering applied to the aggregate matrix before fitting.
 #'   The default `"none"` keeps the grand mean in the decomposition, which makes
@@ -600,11 +602,13 @@ dkge_aggregate_fit <- function(target,
   }
   rank <- min(rank, q, ncol(Yc))
 
-  roots <- .dkge_kernel_roots(K)
+  roots <- .dkge_aggregate_kernel_roots(K)
   Chat <- roots$Khalf %*% (Yc %*% t(Yc)) %*% roots$Khalf
   Chat <- (Chat + t(Chat)) / 2
   eg <- eigen(Chat, symmetric = TRUE)
   vals <- pmax(eg$values, 0)
+  chat_tol <- 1e-10 * max(1, max(vals))
+  rank <- min(rank, max(1L, sum(vals > chat_tol)))
   keep <- seq_len(rank)
   U <- roots$Kihalf %*% eg$vectors[, keep, drop = FALSE]
   colnames(U) <- paste0("LV", keep)
@@ -614,7 +618,9 @@ dkge_aggregate_fit <- function(target,
   scores_feature <- t(Yc) %*% saliences
   rownames(scores_feature) <- colnames(Yc)
   colnames(scores_feature) <- colnames(U)
-  singular_values <- sqrt(vals[keep])
+  # Energy is the feature-score norm so it stays identical after alignment
+  # and cannot pick up jitter that K itself annihilates.
+  singular_values <- sqrt(colSums(scores_feature^2))
   names(singular_values) <- colnames(U)
 
   out <- list(
@@ -635,6 +641,34 @@ dkge_aggregate_fit <- function(target,
   )
   class(out) <- c("dkge_aggregate_fit", "list")
   out
+}
+
+#' True PSD square-root / pseudoinverse for aggregate kernels
+#'
+#' Unlike [`.dkge_kernel_roots()`], null eigenvalues stay zero. Jittering them
+#' would put energy into `Chat` in directions that `K` still annihilates, so
+#' `singular_values` and `scores_feature` would disagree.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_aggregate_kernel_roots <- function(K, tol = NULL) {
+  Ksym <- (K + t(K)) / 2
+  ee <- eigen(Ksym, symmetric = TRUE)
+  vals <- pmax(ee$values, 0)
+  scale <- max(1, max(vals))
+  tol <- tol %||% (1e-10 * scale)
+  pos <- vals > tol
+  sqrt_vals <- sqrt(vals)
+  inv_sqrt <- numeric(length(vals))
+  inv_sqrt[pos] <- 1 / sqrt_vals[pos]
+  V <- ee$vectors
+  n <- length(vals)
+  list(
+    Khalf = V %*% diag(sqrt_vals, n) %*% t(V),
+    Kihalf = V %*% diag(inv_sqrt, n) %*% t(V),
+    evals = vals,
+    rank = sum(pos)
+  )
 }
 
 .dkge_as_aggregate_target <- function(target) {
