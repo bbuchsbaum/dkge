@@ -190,3 +190,32 @@ test_that("the 3 by 5 by 4 trialwise design stays in 60-dimensional effect space
     is.matrix(x) && identical(dim(x), c(12L, 12L))
   }, logical(1))))
 })
+
+test_that("a supplied noise trace is used for unweighted analytic debiasing", {
+  set.seed(117)
+  X <- model.matrix(~ 0 + factor(rep(1:2, each = 4)))
+  colnames(X) <- c("e1", "e2")
+  Y1 <- matrix(rnorm(16), 8, 2)
+  Y2 <- matrix(rnorm(16), 8, 2)
+  auto1 <- dkge_trial_subject(Y1, X, id = "s1")
+  supplied <- sum(auto1$residual_variance) + 0.25
+  s1 <- dkge_trial_subject(Y1, X, id = "s1", noise_trace = supplied)
+  s2 <- dkge_trial_subject(Y2, X, id = "s2", noise_trace = supplied)
+  expect_equal(s1$noise_trace, supplied)
+  expect_equal(s1$noise_trace_scope, "supplied")
+  expect_equal(dkge:::.dkge_noise_trace(s1), supplied)
+  expect_false(isTRUE(all.equal(s1$noise_trace, sum(s1$residual_variance))))
+
+  fit <- suppressWarnings(dkge_fit(
+    dkge_data(list(s1, s2)), K = diag(2), rank = 1, w_method = "none",
+    effect_scaling = "none", debias = "analytic"
+  ))
+  expect_equal(fit$noise_moments[[1]], supplied * s1$effect_noise_cov,
+               tolerance = 1e-11)
+  expect_equal(fit$noise_moments[[2]], supplied * s2$effect_noise_cov,
+               tolerance = 1e-11)
+  expected <- Reduce(`+`, lapply(list(s1, s2), function(s) {
+    tcrossprod(s$beta) - supplied * s$effect_noise_cov
+  }))
+  expect_equal(fit$effect_moment, expected, tolerance = 1e-11)
+})

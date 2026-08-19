@@ -53,7 +53,9 @@ variances. The default is the (weighted for GLS) residual sum of squares
 divided by the residual degrees of freedom.}
 
 \item{noise_trace}{Optional externally supplied unweighted spatial noise
-trace. By default this is `sum(residual_variance)` when estimable.}
+trace. By default this is `sum(residual_variance)` when estimable.
+A supplied value is used by analytic debiasing when no extra spatial
+weights are applied.}
 
 \item{split}{Optional split-half sufficient statistic. `"within_cell"`
 deterministically balances trials within each one-hot cell; `"alternate"`

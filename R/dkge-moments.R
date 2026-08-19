@@ -212,13 +212,16 @@
 #' @noRd
 .dkge_noise_trace <- function(subject, Omega = NULL, voxel_weights = NULL) {
   # A precomputed trace is only safe when it already includes the same
-  # spatial/voxel weights the caller is asking for. The chunked constructor
-  # used to store an unweighted sum; that short-circuit is gone, and any
-  # leftover unweighted cache is ignored here.
+  # spatial/voxel weights the caller is asking for, or when the caller
+  # supplied an explicit override and no extra spatial weights are applied.
+  # Auto-computed unweighted caches are ignored so voxel/Omega weights can
+  # recompute `sum(vw * omega * sigma2)`.
   cached <- subject$noise_trace
   if (!is.null(cached) &&
-      identical(subject$noise_trace_scope, "weighted") &&
-      is.null(Omega) && is.null(voxel_weights)) {
+      is.null(Omega) &&
+      !.dkge_active_voxel_weights(voxel_weights) &&
+      (identical(subject$noise_trace_scope, "weighted") ||
+       identical(subject$noise_trace_scope, "supplied"))) {
     return(as.numeric(cached))
   }
   sigma2 <- subject$residual_variance

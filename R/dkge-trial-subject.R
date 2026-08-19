@@ -33,6 +33,8 @@
 #'   divided by the residual degrees of freedom.
 #' @param noise_trace Optional externally supplied unweighted spatial noise
 #'   trace. By default this is `sum(residual_variance)` when estimable.
+#'   A supplied value is used by analytic debiasing when no extra spatial
+#'   weights are applied.
 #' @param split Optional split-half sufficient statistic. `"within_cell"`
 #'   deterministically balances trials within each one-hot cell; `"alternate"`
 #'   alternates all trial rows; `"run"` assigns whole runs to halves; and
@@ -83,6 +85,9 @@ dkge_trial_subject <- function(y, design, id = NULL, omega = NULL,
                                tol = 1e-8) {
   split_was_missing <- missing(split)
   split <- match.arg(split)
+  split <- .dkge_resolve_trial_split(
+    split, split_was_missing, split_labels, run_labels
+  )
   y <- as.matrix(y)
   design <- as.matrix(design)
   if (!is.numeric(y) || !is.numeric(design) || any(!is.finite(y)) ||
@@ -102,15 +107,6 @@ dkge_trial_subject <- function(y, design, id = NULL, omega = NULL,
   if (!is.logical(split_independent) || length(split_independent) != 1L ||
       is.na(split_independent)) {
     stop("`split_independent` must be TRUE or FALSE.", call. = FALSE)
-  }
-  if (!is.null(split_labels)) {
-    if (!split_was_missing && !split %in% c("none", "explicit")) {
-      stop("`split_labels` cannot be combined with another split mode.",
-           call. = FALSE)
-    }
-    split <- "explicit"
-  } else if (!is.null(run_labels) && split_was_missing) {
-    split <- "run"
   }
   if (identical(split, "explicit") && is.null(split_labels)) {
     stop("split='explicit' requires `split_labels`.", call. = FALSE)
@@ -370,7 +366,11 @@ dkge_trial_subject <- function(y, design, id = NULL, omega = NULL,
   subject$effect_information <- effect_information
   subject$effect_score <- effect_score
   subject$residual_sum_squares <- residual_sum_squares
-  subject$noise_trace_scope <- "unweighted"
+  subject$noise_trace_scope <- if (supplied_noise_trace) {
+    "supplied"
+  } else {
+    "unweighted"
+  }
   subject$split_provenance <- split_provenance
   subject$error_model <- list(
     estimator = if (identical(weighting$type, "iid")) "ols" else "gls",
@@ -437,7 +437,11 @@ dkge_trial_subject_chunks <- function(
     split_independent = FALSE,
     tol = 1e-8,
     max_chunks = 100000L) {
+  split_was_missing <- missing(split)
   split <- match.arg(split)
+  split <- .dkge_resolve_trial_split(
+    split, split_was_missing, split_labels, run_labels
+  )
   design <- as.matrix(design)
   if (!is.list(chunks) && !is.function(chunks)) {
     stop("`chunks` must be a list or a function source.", call. = FALSE)
@@ -449,16 +453,9 @@ dkge_trial_subject_chunks <- function(
   split_precision <- is.character(effect_precision) &&
     identical(effect_precision, "split_half")
   block_precision <- if (split_precision) NULL else effect_precision
-  get_chunk <- if (is.function(chunks)) {
-    chunks
-  } else {
-    function(i) if (i <= length(chunks)) chunks[[i]] else NULL
-  }
 
   records <- list()
-  for (i in seq_len(as.integer(max_chunks))) {
-    y <- get_chunk(i)
-    if (is.null(y)) break
+  reduce_chunk <- function(y, i) {
     if (is.list(y) && !is.null(y$y)) y <- y$y
     y <- as.matrix(y)
     if (!is.numeric(y) || nrow(y) != nrow(design) || !ncol(y)) {
@@ -496,14 +493,34 @@ dkge_trial_subject_chunks <- function(
     # duplicate the dominant q-by-P object and defeat the memory benefit of
     # chunking at imaging scale.
     record$effect_score <- NULL
-    records[[length(records) + 1L]] <- record
+    records[[length(records) + 1L]] <<- record
   }
-  if (!length(records)) {
-    stop("`chunks` produced no feature blocks.", call. = FALSE)
-  }
-  if (is.function(chunks) && length(records) == as.integer(max_chunks)) {
-    stop("Chunk source reached `max_chunks` without returning NULL.",
-         call. = FALSE)
+
+  if (is.list(chunks)) {
+    if (!length(chunks)) {
+      stop("`chunks` produced no feature blocks.", call. = FALSE)
+    }
+    for (i in seq_along(chunks)) {
+      if (is.null(chunks[[i]])) {
+        stop(sprintf(
+          "Chunk %d is NULL; list chunks must be numeric matrices.", i
+        ), call. = FALSE)
+      }
+      reduce_chunk(chunks[[i]], i)
+    }
+  } else {
+    for (i in seq_len(as.integer(max_chunks))) {
+      y <- chunks(i)
+      if (is.null(y)) break
+      reduce_chunk(y, i)
+    }
+    if (!length(records)) {
+      stop("`chunks` produced no feature blocks.", call. = FALSE)
+    }
+    if (length(records) == as.integer(max_chunks)) {
+      stop("Chunk source reached `max_chunks` without returning NULL.",
+           call. = FALSE)
+    }
   }
 
   cluster_ids <- unlist(lapply(records, `[[`, "cluster_ids"), use.names = FALSE)
@@ -525,9 +542,14 @@ dkge_trial_subject_chunks <- function(
       do.call(cbind, lapply(records, function(record) record$split_betas[[half]]))
     })
   }
-  noise_trace <- sum(vapply(records, function(record) {
-    record$noise_trace %||% sum(record$residual_variance)
-  }, numeric(1)))
+  block_traces <- lapply(records, `[[`, "noise_trace")
+  noise_trace <- if (all(vapply(block_traces, Negate(is.null), logical(1)))) {
+    sum(unlist(block_traces, use.names = FALSE))
+  } else if (all(is.finite(residual_variance))) {
+    sum(residual_variance)
+  } else {
+    NULL
+  }
 
   subject <- dkge_subject(
     beta,
@@ -547,7 +569,15 @@ dkge_trial_subject_chunks <- function(
   subject$effect_information <- first$effect_information
   subject$effect_score <- NULL
   subject$residual_sum_squares <- residual_sum_squares
-  subject$noise_trace_scope <- "unweighted"
+  subject$noise_trace_scope <- if (
+    all(vapply(records, function(record) {
+      identical(record$noise_trace_scope, "supplied")
+    }, logical(1)))
+  ) {
+    "supplied"
+  } else {
+    "unweighted"
+  }
   subject$split_provenance <- first$split_provenance
   subject$error_model <- first$error_model
   subject$error_model$storage <- "feature_chunked"
@@ -558,6 +588,25 @@ dkge_trial_subject_chunks <- function(
     subject$split_reliability <- attr(subject$effect_precision, "diagnostics")
   }
   subject
+}
+
+#' Resolve implicit split modes shared by dense and chunked constructors
+#'
+#' @keywords internal
+#' @noRd
+.dkge_resolve_trial_split <- function(split, split_was_missing,
+                                      split_labels, run_labels) {
+  if (!is.null(split_labels)) {
+    if (!split_was_missing && !split %in% c("none", "explicit")) {
+      stop("`split_labels` cannot be combined with another split mode.",
+           call. = FALSE)
+    }
+    return("explicit")
+  }
+  if (!is.null(run_labels) && isTRUE(split_was_missing)) {
+    return("run")
+  }
+  split
 }
 
 #' Validate and construct a trial-space precision action

@@ -94,4 +94,43 @@ test_that("chunk sources fail clearly on malformed or unterminated input", {
     dkge_trial_subject_chunks(list(matrix(1, 3, 2)), X),
     "T x P_block"
   )
+  expect_error(
+    dkge_trial_subject_chunks(list(matrix(1, 4, 1), NULL, matrix(1, 4, 1)), X),
+    "Chunk 2 is NULL"
+  )
+})
+
+test_that("chunked construction preserves omitted-split run labels", {
+  set.seed(19407)
+  rows <- expand.grid(repeat_id = 1:2, effect = 1:2, run = 1:4)
+  X <- model.matrix(~ 0 + factor(rows$effect, levels = 1:2))
+  colnames(X) <- c("e1", "e2")
+  Y <- matrix(rnorm(nrow(X) * 6), nrow(X), 6)
+  run <- paste0("run", rows$run)
+  dense <- dkge_trial_subject(
+    Y, X, run_labels = run, effect_precision = "split_half"
+  )
+  chunked <- dkge_trial_subject_chunks(
+    list(Y[, 1:2], Y[, 3:6]), X, run_labels = run,
+    effect_precision = "split_half"
+  )
+  expect_equal(dense$split_provenance$mode, "run")
+  expect_equal(chunked$split_provenance$mode, "run")
+  expect_equal(chunked$split_betas, dense$split_betas,
+               tolerance = 1e-12, ignore_attr = TRUE)
+  expect_equal(chunked$effect_precision, dense$effect_precision,
+               tolerance = 1e-12, ignore_attr = TRUE)
+})
+
+test_that("saturated chunked designs keep an unavailable noise trace", {
+  X <- diag(2)
+  colnames(X) <- c("e1", "e2")
+  blocks <- list(matrix(rnorm(4), 2, 2), matrix(rnorm(4), 2, 2))
+  colnames(blocks[[1]]) <- c("v1", "v2")
+  colnames(blocks[[2]]) <- c("v3", "v4")
+  dense <- dkge_trial_subject(do.call(cbind, blocks), X)
+  chunked <- dkge_trial_subject_chunks(blocks, X)
+  expect_null(dense$noise_trace)
+  expect_null(chunked$noise_trace)
+  expect_true(all(is.na(chunked$residual_variance)))
 })
