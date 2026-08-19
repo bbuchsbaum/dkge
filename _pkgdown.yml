@@ -76,6 +76,9 @@ reference:
       - dkge_inference_spec
       - dkge_define_folds
       - dkge_subject
+      - dkge_trial_subject
+      - dkge_trial_subject_chunks
+      - dkge_split_effect_precision
       - dkge_data
       - dkge_prepare_transport
       - dkge_pipeline
