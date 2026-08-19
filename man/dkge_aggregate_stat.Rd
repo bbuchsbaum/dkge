@@ -57,3 +57,17 @@ contrast to the selected component's singular-value-scaled aggregate
 saliences. It should not be interpreted as a replacement for
 [dkge_between_rrr()] or [dkge_between_permute()] on subject-level targets.
 }
+\examples{
+set.seed(1)
+values <- lapply(1:4, function(i) {
+  M <- matrix(rnorm(2 * 3), 2, 3)
+  dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+  M
+})
+names(values) <- paste0("s", 1:4)
+subject_data <- data.frame(subject_id = names(values),
+                           grp = c("A", "A", "B", "B"))
+target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+fit <- dkge_aggregate_fit(target, rank = 1)
+dkge_aggregate_stat(fit, "singular_value")
+}

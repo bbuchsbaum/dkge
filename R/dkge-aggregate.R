@@ -34,6 +34,18 @@
 #'   aggregate rows could be given the same row ID; violations are rejected.
 #'
 #' @return Object of class `dkge_aggregate_target`.
+#' @examples
+#' set.seed(1)
+#' values <- lapply(1:4, function(i) {
+#'   M <- matrix(rnorm(2 * 3), 2, 3)
+#'   dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+#'   M
+#' })
+#' names(values) <- paste0("s", 1:4)
+#' subject_data <- data.frame(subject_id = names(values),
+#'                            grp = c("A", "A", "B", "B"))
+#' target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+#' nrow(target$Y)
 #' @export
 dkge_aggregate_target <- function(values,
                                   subject_data,
@@ -114,6 +126,12 @@ dkge_aggregate_target <- function(values,
     if (anyNA(ord)) {
       stop("Every subject in `subject_data` must have a matching values entry.",
            call. = FALSE)
+    }
+    extra <- setdiff(value_ids, subject_ids)
+    if (length(extra)) {
+      warning(sprintf("`values` names not present in `subject_data` were ignored: %s.",
+                      paste(extra, collapse = ", ")),
+              call. = FALSE)
     }
     values <- values[ord]
   }
@@ -548,7 +566,8 @@ dkge_aggregate_target <- function(values,
 #'   labels are present. Rank-deficient PSD kernels keep a true square
 #'   root: null directions stay at zero rather than receiving the jitter
 #'   that [`.dkge_kernel_roots()`] uses for invertibility elsewhere.
-#' @param rank Number of components to retain.
+#' @param rank Number of components to retain. Requests larger than
+#'   `min(nrow(Y), ncol(Y))` are capped with a message.
 #' @param center Centering applied to the aggregate matrix before fitting.
 #'   The default `"none"` keeps the grand mean in the decomposition, which makes
 #'   the leading component largely a mean-level effect; under
@@ -574,6 +593,19 @@ dkge_aggregate_target <- function(values,
 #'       only \code{U}, \code{saliences}, \code{scores_feature}, and
 #'       \code{singular_values} are basis-dependent.}
 #'   }
+#' @examples
+#' set.seed(1)
+#' values <- lapply(1:4, function(i) {
+#'   M <- matrix(rnorm(2 * 3), 2, 3)
+#'   dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+#'   M
+#' })
+#' names(values) <- paste0("s", 1:4)
+#' subject_data <- data.frame(subject_id = names(values),
+#'                            grp = c("A", "A", "B", "B"))
+#' target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+#' fit <- dkge_aggregate_fit(target, rank = 1)
+#' fit$singular_values
 #' @export
 dkge_aggregate_fit <- function(target,
                                K = NULL,
@@ -595,12 +627,18 @@ dkge_aggregate_fit <- function(target,
   K <- .dkge_match_aggregate_kernel(K, rownames(Yc))
   K <- .dkge_validate_kernel(K)
 
+  requested_rank <- rank
   rank <- rank %||% min(q, ncol(Yc))
   rank <- as.integer(rank)
   if (length(rank) != 1L || is.na(rank) || rank < 1L) {
     stop("`rank` must be a positive integer.", call. = FALSE)
   }
-  rank <- min(rank, q, ncol(Yc))
+  cap <- min(q, ncol(Yc))
+  if (!is.null(requested_rank) && rank > cap) {
+    message(sprintf("`rank` (%d) exceeds min(nrow, ncol) = %d; capping to %d.",
+                    rank, cap, cap))
+  }
+  rank <- min(rank, cap)
 
   roots <- .dkge_aggregate_kernel_roots(K)
   Chat <- roots$Khalf %*% (Yc %*% t(Yc)) %*% roots$Khalf
@@ -790,6 +828,19 @@ dkge_aggregate_fit <- function(target,
 #'   `abs()` absorbs the arbitrary component sign).
 #'   [dkge_aggregate_bootstrap()] reports a percentile interval on the signed
 #'   statistic so that it can legitimately contain zero.
+#' @examples
+#' set.seed(1)
+#' values <- lapply(1:4, function(i) {
+#'   M <- matrix(rnorm(2 * 3), 2, 3)
+#'   dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+#'   M
+#' })
+#' names(values) <- paste0("s", 1:4)
+#' subject_data <- data.frame(subject_id = names(values),
+#'                            grp = c("A", "A", "B", "B"))
+#' target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+#' fit <- dkge_aggregate_fit(target, rank = 1)
+#' dkge_aggregate_stat(fit, "singular_value")
 #' @export
 dkge_aggregate_stat <- function(fit,
                                 statistic = c("singular_value",
@@ -802,6 +853,10 @@ dkge_aggregate_stat <- function(fit,
                                 ...) {
   stopifnot(inherits(fit, "dkge_aggregate_fit"))
   if (is.function(statistic)) {
+    if (!missing(component)) {
+      warning("`component` is ignored for a user-supplied statistic function.",
+              call. = FALSE)
+    }
     out <- statistic(fit, ...)
     if (!is.numeric(out) || length(out) != 1L || !is.finite(out)) {
       stop("User-supplied aggregate statistic must return one finite number.",
@@ -853,6 +908,9 @@ dkge_aggregate_stat <- function(fit,
   if (length(contrast) != length(row_ids)) {
     stop("`contrast` must have one entry per aggregate row.", call. = FALSE)
   }
+  if (!is.null(names_in) && !any(nzchar(names_in))) {
+    names_in <- NULL
+  }
   if (!is.null(names_in) && all(nzchar(names_in))) {
     ord <- match(row_ids, names_in)
     if (anyNA(ord)) {
@@ -875,7 +933,8 @@ dkge_aggregate_stat <- function(fit,
 #' @param degeneracy_tol Relative singular-value gap below which components
 #'   are flagged as near-tied. The gap is computed on the *unrotated* (sorted)
 #'   spectrum of `fit`, which is the quantity that governs how identifiable the
-#'   rotation is.
+#'   rotation is. Treat `alignment_summary$min_cosine` as the primary
+#'   diagnostic; `near_tie` is a coarse flag on this relative gap.
 #'
 #' @return Aligned `dkge_aggregate_fit` with `alignment` metadata. `U`,
 #'   `saliences`, `scores_feature`, and `singular_values` are all carried
@@ -885,11 +944,24 @@ dkge_aggregate_stat <- function(fit,
 #'   are rotation-invariant properties of the data and are left untouched, so
 #'   after alignment `singular_values` no longer equals
 #'   `sqrt(eig_values[seq_len(rank)])`.
+#' @examples
+#' set.seed(1)
+#' values <- lapply(1:4, function(i) {
+#'   M <- matrix(rnorm(2 * 3), 2, 3)
+#'   dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+#'   M
+#' })
+#' names(values) <- paste0("s", 1:4)
+#' subject_data <- data.frame(subject_id = names(values),
+#'                            grp = c("A", "A", "B", "B"))
+#' target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+#' fit <- dkge_aggregate_fit(target, rank = 1)
+#' dkge_aggregate_align(fit, fit)
 #' @export
 dkge_aggregate_align <- function(reference,
                                  fit,
                                  rank = NULL,
-                                 degeneracy_tol = 1e-6) {
+                                 degeneracy_tol = 1e-3) {
   stopifnot(inherits(reference, "dkge_aggregate_fit"),
             inherits(fit, "dkge_aggregate_fit"))
   if (!identical(dim(reference$K), dim(fit$K)) ||
@@ -1013,6 +1085,21 @@ dkge_aggregate_align <- function(reference,
 #'
 #' @return Object of class `dkge_aggregate_permutation`. `observed` and `null`
 #'   hold signed statistics; `p` is computed according to `alternative`.
+#' @examples
+#' set.seed(1)
+#' values <- lapply(1:4, function(i) {
+#'   M <- matrix(rnorm(2 * 3), 2, 3)
+#'   dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+#'   M
+#' })
+#' names(values) <- paste0("s", 1:4)
+#' subject_data <- data.frame(subject_id = names(values),
+#'                            grp = c("A", "A", "B", "B"))
+#' target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+#' \donttest{
+#' dkge_aggregate_permute(target, statistic = "singular_value",
+#'                        B = 49, rank = 1, seed = 1)
+#' }
 #' @export
 dkge_aggregate_permute <- function(target,
                                    K = NULL,
@@ -1060,6 +1147,7 @@ dkge_aggregate_permute <- function(target,
   }
 
   stat_args <- .dkge_aggregate_stat_args(statistic, component, list(...))
+  .dkge_aggregate_warn_function_component(statistic, missing(component))
   seed_state <- .dkge_seed_enter(seed)
   on.exit(.dkge_seed_exit(seed_state), add = TRUE)
   observed_fit <- dkge_aggregate_fit(target, K = K, rank = rank, center = center)
@@ -1224,6 +1312,24 @@ dkge_aggregate_permute <- function(target,
   dots
 }
 
+.dkge_aggregate_warn_function_component <- function(statistic, component_missing) {
+  if (is.function(statistic) && !isTRUE(component_missing)) {
+    warning("`component` is ignored for a user-supplied statistic function.",
+            call. = FALSE)
+  }
+}
+
+.dkge_aggregate_bootstrap_interval <- function(stats, observed, conf, type) {
+  alpha <- (1 - conf) / 2
+  qs <- stats::quantile(stats, probs = c(alpha, 1 - alpha),
+                        names = FALSE, type = 6)
+  if (identical(type, "percentile")) {
+    return(qs)
+  }
+  # Basic / reflection interval: 2*obs - quantile, then ordered.
+  sort(c(2 * observed - qs[[2]], 2 * observed - qs[[1]]))
+}
+
 .dkge_aggregate_permutation_p <- function(observed, null, alternative) {
   B <- length(null)
   tol <- sqrt(.Machine$double.eps) * max(1, abs(observed))
@@ -1270,9 +1376,14 @@ dkge_aggregate_permute <- function(target,
 #'   which an entire group level is absent, which changes the aggregate row set
 #'   and fails against the fixed observed kernel. Every draw is additionally
 #'   checked against the observed row set.
-#' @param conf Confidence level for percentile intervals. Intervals use
+#' @param conf Confidence level for the interval. Quantiles use
 #'   `stats::quantile(..., type = 6)` (Weibull plotting positions), which is
 #'   slightly wider than the default type 7 in small samples.
+#' @param interval `"percentile"` uses the bootstrap quantiles directly.
+#'   `"basic"` is the reflection interval
+#'   \eqn{(2\hat\theta - q_{1-\alpha/2},\; 2\hat\theta - q_{\alpha/2})},
+#'   which recentres a biased top singular value around the observed
+#'   statistic.
 #' @param component_contrasts Optional aggregate-row contrast matrix used to
 #'   summarize each aligned component in every bootstrap draw.
 #' @param component_scale Whether component contrasts are applied to
@@ -1282,11 +1393,31 @@ dkge_aggregate_permute <- function(target,
 #'   feature-space component maps across bootstrap draws and return streaming
 #'   mean, SD, and bootstrap-ratio z maps (`observed / bootstrap SD`, the
 #'   standard PLS bootstrap ratio).
+#' @param parallel Logical; if `TRUE`, evaluate draws with
+#'   `future.apply::future_lapply()`. Bootstrap indices are drawn up front in
+#'   the calling RNG stream, so results are identical for either setting of
+#'   `parallel` given the same `seed`.
 #'
 #' @return Object of class `dkge_aggregate_bootstrap`. `observed` and
-#'   `statistics` are signed, `interval` is the percentile interval of the
-#'   signed statistic, and `excludes_zero` reports whether that interval
-#'   excludes zero.
+#'   `statistics` are signed. `interval` is the requested bootstrap interval
+#'   of the signed statistic. `excludes_zero` reports whether that interval
+#'   excludes zero, or `NA` for the non-negative `"singular_value"` statistic
+#'   (the comparison is uninformative there).
+#' @examples
+#' set.seed(1)
+#' values <- lapply(1:4, function(i) {
+#'   M <- matrix(rnorm(2 * 3), 2, 3)
+#'   dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+#'   M
+#' })
+#' names(values) <- paste0("s", 1:4)
+#' subject_data <- data.frame(subject_id = names(values),
+#'                            grp = c("A", "A", "B", "B"))
+#' target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+#' \donttest{
+#' dkge_aggregate_bootstrap(target, statistic = "singular_value",
+#'                          B = 49, rank = 1, seed = 1, interval = "basic")
+#' }
 #' @export
 dkge_aggregate_bootstrap <- function(target,
                                      K = NULL,
@@ -1301,6 +1432,7 @@ dkge_aggregate_bootstrap <- function(target,
                                      center = c("none", "grand", "row", "column"),
                                      component = 1L,
                                      conf = 0.95,
+                                     interval = c("percentile", "basic"),
                                      component_contrasts = NULL,
                                      component_scale = c("score", "salience"),
                                      return_features = FALSE,
@@ -1313,7 +1445,9 @@ dkge_aggregate_bootstrap <- function(target,
   }
   center <- match.arg(center)
   component_scale <- match.arg(component_scale)
+  interval <- match.arg(interval)
   stat_args <- .dkge_aggregate_stat_args(statistic, component, list(...))
+  .dkge_aggregate_warn_function_component(statistic, missing(component))
   B <- .dkge_validate_resample_B(B)
   if (!is.numeric(conf) || length(conf) != 1L || conf <= 0 || conf >= 1) {
     stop("`conf` must be a scalar in (0, 1).", call. = FALSE)
@@ -1421,9 +1555,14 @@ dkge_aggregate_bootstrap <- function(target,
     rm(draws)
   }
   alignment_summary <- .dkge_aggregate_alignment_summary(alignments)
-  alpha <- (1 - conf) / 2
-  interval <- stats::quantile(stats, probs = c(alpha, 1 - alpha),
-                              names = FALSE, type = 6)
+  interval_type <- interval
+  ci <- .dkge_aggregate_bootstrap_interval(stats, observed, conf, interval_type)
+  statistic_name <- if (is.function(statistic)) "function" else match.arg(statistic)
+  excludes_zero <- if (identical(statistic_name, "singular_value")) {
+    NA
+  } else {
+    ci[[1]] > 0 || ci[[2]] < 0
+  }
   component_contrast_out <- .dkge_aggregate_component_contrast_summary(
     observed = contrast_obs,
     samples = contrast_samples,
@@ -1436,11 +1575,12 @@ dkge_aggregate_bootstrap <- function(target,
   out <- list(
     observed = observed,
     statistics = stats,
-    interval = interval,
-    excludes_zero = interval[[1]] > 0 || interval[[2]] < 0,
+    interval = ci,
+    excludes_zero = excludes_zero,
     conf = conf,
+    interval_type = interval_type,
     B = B,
-    statistic = if (is.function(statistic)) "function" else match.arg(statistic),
+    statistic = statistic_name,
     fit = observed_fit,
     alignments = alignments,
     alignment_summary = alignment_summary,
@@ -1675,9 +1815,15 @@ print.dkge_aggregate_permutation <- function(x, ...) {
 print.dkge_aggregate_bootstrap <- function(x, ...) {
   cat("<dkge_aggregate_bootstrap>\n")
   cat("  statistic: ", signif(x$observed, 4), "\n", sep = "")
+  zero_note <- if (isTRUE(x$excludes_zero)) {
+    "  (excludes 0)"
+  } else if (isFALSE(x$excludes_zero)) {
+    "  (includes 0)"
+  } else {
+    ""
+  }
   cat("  interval:  ", paste(signif(x$interval, 4), collapse = ", "),
-      if (isTRUE(x$excludes_zero)) "  (excludes 0)" else "  (includes 0)",
-      "\n", sep = "")
+      zero_note, "\n", sep = "")
   cat("  B:         ", x$B, "\n", sep = "")
   invisible(x)
 }

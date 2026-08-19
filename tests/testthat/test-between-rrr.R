@@ -328,7 +328,7 @@ test_that("transported map targets integrate with between-subject RRR and permut
     centroids = data$centroids,
     medoid = 1L,
     method = "sinkhorn",
-    epsilon = 0.1
+    epsilon = 0.25
   )
   contrast <- matrix(c(1, -1, 0), ncol = 1,
                      dimnames = list(NULL, "c1"))
@@ -510,4 +510,33 @@ test_that("dkge_between_permute finds the shared resampling helpers", {
   perm <- dkge_between_permute(fit, terms = "x", B = 4, seed = 11)
   expect_s3_class(perm, "dkge_between_permutation")
   expect_equal(perm$B, 4L)
+})
+
+test_that("dkge_subject_model drops NA rows and keeps matching IDs", {
+  dat <- data.frame(
+    subject_id = paste0("s", 1:6),
+    group = factor(c("A", "B", "A", "B", "A", "B")),
+    trait = c(-1, NA, 0.2, 0.4, -0.3, 0.8)
+  )
+  design <- dkge_subject_model(~ group + trait, dat, na.action = stats::na.omit)
+  expect_equal(design$subject_ids, c("s1", "s3", "s4", "s5", "s6"))
+  expect_equal(nrow(design$X), 5L)
+  expect_equal(rownames(design$X), design$subject_ids)
+})
+
+test_that("terms = NULL skips declared nuisance terms", {
+  dat <- data.frame(
+    subject_id = paste0("s", 1:10),
+    group = factor(rep(c("A", "B"), each = 5)),
+    trait = scale(seq(-1, 1, length.out = 10), center = TRUE, scale = FALSE)[, 1],
+    age = scale(rnorm(10), center = TRUE, scale = FALSE)[, 1]
+  )
+  design <- dkge_subject_model(~ group * trait + age, dat, nuisance = "age")
+  Y <- design$X %*% matrix(rnorm(ncol(design$X)), ncol(design$X), 1)
+  target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+  fit <- dkge_between_rrr(target, design, rank = 1)
+  perm <- dkge_between_permute(fit, terms = NULL, method = "freedman_lane",
+                              B = 5, seed = 3)
+  expect_false("age" %in% perm$terms)
+  expect_true(all(c("group", "trait", "group:trait") %in% perm$terms))
 })

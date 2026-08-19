@@ -134,3 +134,45 @@ test_that("saturated chunked designs keep an unavailable noise trace", {
   expect_null(chunked$noise_trace)
   expect_true(all(is.na(chunked$residual_variance)))
 })
+
+test_that("analytic Chat agrees for dense and chunked subjects under omega weights", {
+  set.seed(19411)
+  X <- model.matrix(~ 0 + factor(rep(1:2, each = 6)))
+  colnames(X) <- c("e1", "e2")
+  omega <- c(0.2, 1, 3, 0.5)
+  make_y <- function() {
+    truth <- matrix(c(1, -0.5, 0.25, 2, 0.4, -1, 0.7, 0.1), 2, 4)
+    Y <- X %*% truth + matrix(rnorm(nrow(X) * 4, sd = 0.35), nrow(X), 4)
+    colnames(Y) <- paste0("v", seq_len(4))
+    Y
+  }
+  Y1 <- make_y()
+  Y2 <- make_y()
+  dense <- list(
+    dkge_trial_subject(Y1, X, id = "s1", omega = omega),
+    dkge_trial_subject(Y2, X, id = "s2", omega = omega)
+  )
+  chunked <- list(
+    dkge_trial_subject_chunks(list(Y1[, 1:2], Y1[, 3:4]), X,
+                              id = "s1", omega = omega),
+    dkge_trial_subject_chunks(list(Y2[, 1:2], Y2[, 3:4]), X,
+                              id = "s2", omega = omega)
+  )
+  expect_equal(
+    dkge:::.dkge_noise_trace(dense[[1]], Omega = omega),
+    sum(omega * dense[[1]]$residual_variance),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    dkge:::.dkge_noise_trace(chunked[[1]], Omega = omega),
+    dkge:::.dkge_noise_trace(dense[[1]], Omega = omega),
+    tolerance = 1e-12
+  )
+  K <- diag(2)
+  dimnames(K) <- list(colnames(X), colnames(X))
+  fit_dense <- dkge_fit(dkge_data(dense), K = K, rank = 1, w_method = "none",
+                        effect_scaling = "none", debias = "analytic")
+  fit_chunked <- dkge_fit(dkge_data(chunked), K = K, rank = 1, w_method = "none",
+                          effect_scaling = "none", debias = "analytic")
+  expect_equal(fit_dense$Chat, fit_chunked$Chat, tolerance = 1e-12)
+})

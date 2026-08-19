@@ -9,13 +9,13 @@
   "shrink")` and `miss_args`. Masking acts in raw effect space *before* the
   `R`/`K^{1/2}` congruence; a coupling kernel therefore spreads observed energy
   into unobserved coordinates by design — use `block_factors` in
-  `design_kernel()` for strict separation. See
-  `vignette("dkge-partial-effect-spaces")`.
+  `design_kernel()` for strict separation. See `?dkge_subject` and `?dkge_fit`.
 * **Effect-reliability weighting and debiasing.** `dkge_effect_weights()`
   (`"none"`, `"count"`, `"precision"`) and `dkge_fit(debias =
   c("none", "analytic", "split_half"))` on top of a new central moment-pooling
-  engine. `dkge_trial_subject()` builds subjects from trial-level designs with
-  the sufficient statistics debiasing needs.
+  engine. `dkge_trial_subject()` and `dkge_trial_subject_chunks()` build
+  subjects from trial-level designs with the sufficient statistics debiasing
+  needs.
 * **Aggregate (cell-mean) decomposition.** `dkge_aggregate_target()`,
   `dkge_aggregate_fit()`, `dkge_aggregate_align()`, `dkge_aggregate_stat()`,
   `dkge_aggregate_permute()`, `dkge_aggregate_bootstrap()`: a PLS-style
@@ -55,6 +55,24 @@
   matched `f$levels`, breaking ordinal/circular/continuous factors carrying
   level labels.
 * Duplicate subject IDs are now rejected in `dkge_data()`.
+* Duplicated effect labels are rejected on `dkge_subject()`, `dkge_data()`,
+  and the union-alignment path instead of dropping a beta row.
+* `dkge_aggregate_permute()` evaluates the statistic on the unaligned null
+  refit (alignment is diagnostic only). `dkge_aggregate_bootstrap()` gains
+  `interval = c("percentile", "basic")` and returns `excludes_zero = NA` for
+  the non-negative `"singular_value"` statistic.
+* `dkge_aggregate_target()` keeps an inferred cell factor when
+  `cell_data = NULL`, matches rows/columns by name, and warns about unused
+  `values` names.
+* Chunked trial subjects no longer let an unweighted `noise_trace` short-circuit
+  analytic debiasing when Omega or voxel weights are present.
+* Rescale/shrink missingness divide by subject-weight mass (`pair_weight`)
+  rather than unweighted pair counts; `none`/`mask` restore observed pair mass
+  under partial coverage (no `S/k` inflation).
+* `dkge_between_permute(terms = NULL)` skips terms listed in
+  `design$nuisance`. Rotation accepts a factor with unused block levels.
+* `dkge_subject_model(na.action = na.omit)` keeps subject IDs aligned with
+  retained rows.
 * Subject weights under the default `w_method = "mfa_sigma1"` were computed
   by a randomly seeded power iteration, so `dkge_fit()` results (including
   component signs) depended on ambient RNG state. The leading singular value

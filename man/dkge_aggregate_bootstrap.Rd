@@ -16,6 +16,7 @@ dkge_aggregate_bootstrap(
   center = c("none", "grand", "row", "column"),
   component = 1L,
   conf = 0.95,
+  interval = c("percentile", "basic"),
   component_contrasts = NULL,
   component_scale = c("score", "salience"),
   return_features = FALSE,
@@ -23,6 +24,8 @@ dkge_aggregate_bootstrap(
   seed = NULL,
   ...
 )
+
+\method{print}{dkge_aggregate_bootstrap}(x, ...)
 }
 \arguments{
 \item{target}{A `dkge_aggregate_target`.}
@@ -52,9 +55,15 @@ because R's partial matching would otherwise bind a `component =` argument
 to `component_scale`/`component_contrasts`. User-supplied statistic
 functions do not receive it.}
 
-\item{conf}{Confidence level for percentile intervals. Intervals use
+\item{conf}{Confidence level for the interval. Quantiles use
 `stats::quantile(..., type = 6)` (Weibull plotting positions), which is
 slightly wider than the default type 7 in small samples.}
+
+\item{interval}{`"percentile"` uses the bootstrap quantiles directly.
+`"basic"` is the reflection interval
+\eqn{(2\hat\theta - q_{1-\alpha/2},\; 2\hat\theta - q_{\alpha/2})},
+which recentres a biased top singular value around the observed
+statistic.}
 
 \item{component_contrasts}{Optional aggregate-row contrast matrix used to
 summarize each aligned component in every bootstrap draw.}
@@ -69,7 +78,7 @@ mean, SD, and bootstrap-ratio z maps (`observed / bootstrap SD`, the
 standard PLS bootstrap ratio).}
 
 \item{parallel}{Logical; if `TRUE`, evaluate draws with
-`future.apply::future_lapply()`. Permutation indices are drawn up front in
+`future.apply::future_lapply()`. Bootstrap indices are drawn up front in
 the calling RNG stream, so results are identical for either setting of
 `parallel` given the same `seed`.}
 
@@ -82,9 +91,10 @@ one of the built-ins; `...` reaches only user-supplied statistic functions.}
 }
 \value{
 Object of class `dkge_aggregate_bootstrap`. `observed` and
-  `statistics` are signed, `interval` is the percentile interval of the
-  signed statistic, and `excludes_zero` reports whether that interval
-  excludes zero.
+  `statistics` are signed. `interval` is the requested bootstrap interval
+  of the signed statistic. `excludes_zero` reports whether that interval
+  excludes zero, or `NA` for the non-negative `"singular_value"` statistic
+  (the comparison is uninformative there).
 }
 \description{
 Resamples subjects with replacement, recomputes aggregate rows, refits the
@@ -98,4 +108,20 @@ draw preserves the observed group sizes and the aggregate row set. Pass
 `strata` explicitly (a vector, or the name of a column in the subject data)
 to stratify differently; a stratum with a single subject contributes that
 subject to every draw, which is reported with a warning.
+}
+\examples{
+set.seed(1)
+values <- lapply(1:4, function(i) {
+  M <- matrix(rnorm(2 * 3), 2, 3)
+  dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+  M
+})
+names(values) <- paste0("s", 1:4)
+subject_data <- data.frame(subject_id = names(values),
+                           grp = c("A", "A", "B", "B"))
+target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+\donttest{
+dkge_aggregate_bootstrap(target, statistic = "singular_value",
+                         B = 49, rank = 1, seed = 1, interval = "basic")
+}
 }

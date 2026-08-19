@@ -41,3 +41,16 @@ using a compact SVD of the fitted design-space response. This is intended for
 subject-level factors, traits, and covariates after DKGE has produced a
 subject-by-feature target.
 }
+\examples{
+set.seed(1)
+n <- 12
+dat <- data.frame(
+  subject_id = paste0("s", seq_len(n)),
+  group = factor(rep(c("A", "B"), length.out = n)),
+  trait = scale(rnorm(n), center = TRUE, scale = FALSE)[, 1]
+)
+design <- dkge_subject_model(~ group * trait, dat)
+Y <- design$X \%*\% matrix(c(0, 1, 0.5, -0.2), ncol(design$X), 1)
+target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+dkge_between_rrr(target, design, rank = 1)
+}

@@ -18,6 +18,8 @@ articles:
       - dkge-contrasts-inference
       - dkge-classification
       - dkge-components
+      - dkge-between-subjects
+      - dkge-concepts
   - title: "Weighting"
     navbar: Weighting
     contents:
@@ -78,6 +80,8 @@ reference:
       - dkge_subject
       - dkge_trial_subject
       - dkge_trial_subject_chunks
+      - dkge_effect_grid
+      - dkge_effect_weights
       - dkge_split_effect_precision
       - dkge_data
       - dkge_prepare_transport
@@ -112,6 +116,15 @@ reference:
       - dkge_aggregate_stat
       - dkge_aggregate_permute
       - dkge_aggregate_bootstrap
+
+  - title: "Between-subject modeling"
+    desc: "Second-level reduced-rank regression, subject design, and resampling tests"
+    contents:
+      - dkge_make_target
+      - dkge_subject_model
+      - dkge_between_rrr
+      - dkge_between_permute
+      - dkge_term_map
 
   - title: "Anchors and rendering"
     desc: "Functions for building and applying spatial anchor mappers"
@@ -158,6 +171,7 @@ reference:
       - dkge_consensus_basis_K
       - dkge_projector_K
       - dkge_cosines_K
+      - dkge_principal_angles_K
       - dkge_jd_control
       - dkge_align_effects
       - dkge_target_factor
@@ -188,6 +202,13 @@ reference:
       - dkge_plot_suite
       - dkge_diagnostics
       - dkge_component_stats
+      - dkge_component_saliences
+      - dkge_component_contrast_scores
+      - dkge_design_basis
+      - dkge_subject_component_projections
+      - dkge_plot_component_saliences
+      - dkge_plot_component_contrast_scores
+      - dkge_plot_subject_component_projections
       - dkge_variance_explained
       - dkge_info_map_from_classifier
       - dkge_info_map_haufe

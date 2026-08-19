@@ -106,8 +106,15 @@ comp <- dkge_component_stats(
 head(comp$summary)
 ```
 
-`comp$transport` holds subject × medoid matrices after alignment;
-`comp$statistics` holds raw component vectors.
+```{r component-stats-checks, include=FALSE}
+stopifnot(nrow(comp$summary) == P * fit$rank)
+stopifnot(nrow(comp$transport[[1]]) == S)
+stopifnot(ncol(comp$transport[[1]]) == P)
+```
+
+`comp$summary` has one row per (component, medoid cluster) pair.
+`comp$transport[[k]]` is the subject × medoid-cluster matrix for component
+`k` after alignment; `comp$statistics` holds the raw component vectors.
 
 ## Mapping to voxel space
 
@@ -140,7 +147,12 @@ boot_q <- dkge_bootstrap_qspace(fit, contrasts = c(1, -1, 0), B = 200,
                                 transport_cache = cache, medoid = 1, seed = 99)
 
 boot_proj$medoid$sd[1]
-boot_q$summary[[1]]$medoid$sd[1]
+boot_q$summary[[1]]$sd[1]
+```
+
+```{r bootstrap-checks, include=FALSE}
+stopifnot(is.numeric(boot_proj$medoid$sd[1]), length(boot_proj$medoid$sd[1]) == 1L)
+stopifnot(is.numeric(boot_q$summary[[1]]$sd[1]), length(boot_q$summary[[1]]$sd[1]) == 1L)
 ```
 
 `dkge_bootstrap_analytic()` offers a cheaper alternative via first-order

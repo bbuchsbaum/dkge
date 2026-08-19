@@ -49,7 +49,7 @@ The package follows standard R conventions (roxygen2, testthat, pkgdown) and lin
 1. **Coercion**: Accept raw lists or `dkge_data` bundles, validate dimensions, and attach kernel metadata.
 2. **Row standardisation**: Pool subject designs, compute the shared Cholesky factor `R`, and build `Btil` (`R^T B_s`).
 3. **Kernel preparation**: Symmetrise the kernel, derive square roots/inverses, and resolve voxel/anchor weights.
-4. **Weighting**: Compute optional subject MFA weights (`svd` per subject) and voxel weights, accumulating the compressed covariance `Chat`.
+4. **Weighting**: Compute optional subject MFA weights (`svd` per subject) and voxel weights, accumulating the compressed covariance `Chat`. Missingness policies (`none`, `mask`, `rescale`, `shrink`) restore **observed** pair mass under partial coverage, not full cohort mass.
 5. **CPCA branches**: Optionally split the covariance into design/residual parts, re-merge based on `cpca_part`, and inject ridge terms.
 6. **Eigen solve**: Run a dense `eigen()` on `Chat`, drop near-zero components, and project back to the K-metric basis.
 7. **Block assembly**: Build the concatenated subject matrix, populate the multivarious `multiblock_biprojector`, and package diagnostics (weights, contributions, CPCA payloads, cached Chat pieces).

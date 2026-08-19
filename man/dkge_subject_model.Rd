@@ -18,11 +18,15 @@ dkge_subject_model(
 
 \item{data}{Data frame containing subject-level variables.}
 
-\item{subject_ids}{Optional subject identifiers. Defaults to a `subject_id`
-column when present, then row names, then sequential IDs.}
+\item{subject_ids}{Optional subject identifiers aligned with `data` rows.
+Defaults to the `subject_id` column when present, then `rownames(data)`,
+then sequential IDs. Identifiers are stored as `rownames` of `data` before
+[stats::model.frame()] so `na.action = stats::na.omit` keeps IDs in sync
+with the retained rows.}
 
 \item{nuisance}{Optional character vector of term labels to treat as nuisance
-in downstream inference.}
+in downstream inference. When `dkge_between_permute(terms = NULL)`, these
+terms are excluded from the default test set.}
 
 \item{contrasts.arg}{Optional contrasts passed to [stats::model.matrix()].}
 
@@ -35,4 +39,12 @@ Object of class `dkge_subject_model`.
 Wraps formula handling for subject-level DKGE analyses. The result owns the
 model matrix, term metadata, and subject identifiers used by
 [dkge_between_rrr()].
+}
+\examples{
+dat <- data.frame(
+  subject_id = paste0("s", 1:8),
+  group = factor(rep(c("A", "B"), each = 4)),
+  trait = rnorm(8)
+)
+dkge_subject_model(~ group * trait, dat)
 }

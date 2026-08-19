@@ -93,10 +93,7 @@ test_that("rotation supports feature inference and records assumptions", {
   )
 })
 
-test_that("rotation setup avoids a complete subject-square QR basis", {
-  implementation <- paste(deparse(body(dkge:::.dkge_between_rotation_setup)),
-                          collapse = "\n")
-  expect_false(grepl("complete = TRUE", implementation, fixed = TRUE))
+test_that("rotation setup uses a compact residual basis", {
   fixture <- dkge_test_rotation_simulate(seed = 6124, n = 17, p = 4)
   Xred <- dkge:::.dkge_between_reduced_X(
     fixture$design, fixture$X, "trait"
@@ -250,4 +247,25 @@ test_that("two-term serial and parallel nulls match and term 2 is order-independ
                        info = paste(method, "multisession", term))
     }
   }
+})
+
+test_that("rotation accepts a factor with an unused block level", {
+  fixture <- dkge_test_rotation_simulate(seed = 6201, n = 12, p = 4)
+  blocks <- factor(rep("only", nrow(fixture$Y)), levels = c("only", "unused"))
+  expect_silent(
+    dkge_between_permute(fixture$fit, terms = "trait", method = "rotation",
+                         B = 5, seed = 1, blocks = blocks)
+  )
+})
+
+test_that("rotation energy guard uses machine-eps scaling", {
+  expect_silent(dkge:::.dkge_between_rotation_energy_guard(1, 1))
+  expect_error(dkge:::.dkge_between_rotation_energy_guard(1, 2), "energy")
+  fixture <- dkge_test_rotation_simulate(seed = 6202, n = 14, p = 3)
+  Xred <- dkge:::.dkge_between_reduced_X(fixture$design, fixture$X, "trait")
+  expect_silent(dkge:::.dkge_between_rotation_setup(
+    dkge:::.dkge_between_rrr_fast_setup(fixture$X),
+    dkge:::.dkge_between_rrr_fast_setup(Xred),
+    fixture$Y
+  ))
 })

@@ -1473,3 +1473,81 @@ test_that("shared seed and B helpers behave identically in both layers", {
                          B = 3, rank = 1, seed = 99)
   expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 })
+
+test_that("basic bootstrap interval is the reflection of the percentile interval", {
+  set.seed(81)
+  fx <- make_aggregate_fixture(n_per_group = 4, features = 3, sd = 0.15)
+  args <- list(fx$target, K = fx$K, statistic = "singular_value",
+               B = 99, rank = 1, seed = 707, conf = 0.9)
+  perc <- do.call(dkge_aggregate_bootstrap, c(args, list(interval = "percentile")))
+  basic <- do.call(dkge_aggregate_bootstrap, c(args, list(interval = "basic")))
+
+  expect_equal(unname(basic$interval),
+               sort(c(2 * basic$observed - perc$interval[[2]],
+                      2 * basic$observed - perc$interval[[1]])),
+               tolerance = 1e-12)
+  expect_identical(basic$excludes_zero, NA)
+  expect_identical(perc$excludes_zero, NA)
+  expect_gte(basic$observed, basic$interval[[1]] - 1e-10)
+  expect_lte(basic$observed, basic$interval[[2]] + 1e-10)
+})
+
+test_that("near-tie is flagged at a relative singular-value gap of 5e-4", {
+  row_ids <- paste0("r", 1:3)
+  K <- diag(3)
+  dimnames(K) <- list(row_ids, row_ids)
+  Y <- diag(3)
+  rownames(Y) <- row_ids
+  fit <- dkge_aggregate_fit(Y, K = K, rank = 2)
+  fit$singular_values <- c(1, 1 - 5e-4)
+  names(fit$singular_values) <- colnames(fit$U)
+  aligned <- dkge_aggregate_align(fit, fit, degeneracy_tol = 1e-3)
+  expect_true(aligned$alignment$near_tie)
+  aligned_tight <- dkge_aggregate_align(fit, fit, degeneracy_tol = 1e-6)
+  expect_false(aligned_tight$alignment$near_tie)
+})
+
+test_that("aggregate fit messages when rank exceeds the matrix dimensions", {
+  Y <- matrix(rnorm(8), 2, 4, dimnames = list(c("a", "b"), paste0("f", 1:4)))
+  expect_message(fit <- dkge_aggregate_fit(Y, rank = 9), "capping")
+  expect_equal(fit$rank, 2L)
+})
+
+test_that("values names absent from subject_data are warned about", {
+  fx <- make_aggregate_fixture(n_per_group = 2, features = 2, sd = 0.1)
+  extra <- fx$values
+  extra$ghost <- extra[[1]]
+  expect_warning(
+    dkge_aggregate_target(extra, fx$subject_data, fx$cell_data,
+                          group_vars = "group",
+                          cell_vars = c("task", "measure")),
+    "ghost"
+  )
+})
+
+test_that("all-blank contrast names are treated as unnamed", {
+  fx <- make_aggregate_fixture(n_per_group = 2, features = 2, sd = 0.1)
+  fit <- dkge_aggregate_fit(fx$target, K = fx$K, rank = 1)
+  unnamed <- unname(fx$row_contrast)
+  blank <- unnamed
+  names(blank) <- rep("", length(blank))
+  expect_equal(
+    dkge_aggregate_stat(fit, "salience_contrast", contrast = blank),
+    dkge_aggregate_stat(fit, "salience_contrast", contrast = unnamed)
+  )
+})
+
+test_that("component is ignored with a warning for function statistics", {
+  fx <- make_aggregate_fixture(n_per_group = 2, features = 2, sd = 0.1)
+  fit <- dkge_aggregate_fit(fx$target, K = fx$K, rank = 1)
+  stat_fun <- function(fit, ...) unname(fit$singular_values[[1]])
+  expect_warning(
+    dkge_aggregate_stat(fit, statistic = stat_fun, component = 2L),
+    "`component` is ignored"
+  )
+  expect_warning(
+    dkge_aggregate_bootstrap(fx$target, K = fx$K, statistic = stat_fun,
+                             B = 3, rank = 1, seed = 1, component = 2L),
+    "`component` is ignored"
+  )
+})

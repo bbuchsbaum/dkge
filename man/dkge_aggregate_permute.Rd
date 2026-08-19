@@ -20,6 +20,8 @@ dkge_aggregate_permute(
   seed = NULL,
   ...
 )
+
+\method{print}{dkge_aggregate_permutation}(x, ...)
 }
 \arguments{
 \item{target}{A `dkge_aggregate_target`.}
@@ -90,4 +92,20 @@ sign-ambiguous component statistics because the unaligned component sign
 is arbitrary; `"greater"` remains the natural choice for the non-negative
 `"singular_value"` statistic. Bootstrap resampling keeps alignment
 because the observed fit is a legitimate reference for a CI.
+}
+\examples{
+set.seed(1)
+values <- lapply(1:4, function(i) {
+  M <- matrix(rnorm(2 * 3), 2, 3)
+  dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+  M
+})
+names(values) <- paste0("s", 1:4)
+subject_data <- data.frame(subject_id = names(values),
+                           grp = c("A", "A", "B", "B"))
+target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+\donttest{
+dkge_aggregate_permute(target, statistic = "singular_value",
+                       B = 49, rank = 1, seed = 1)
+}
 }

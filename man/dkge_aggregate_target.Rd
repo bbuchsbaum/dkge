@@ -17,6 +17,8 @@ dkge_aggregate_target(
   aggregate = c("mean", "weighted_mean"),
   row_sep = ":"
 )
+
+\method{print}{dkge_aggregate_target}(x, ...)
 }
 \arguments{
 \item{values}{Named list of subject matrices. Each matrix is cells x
@@ -61,4 +63,17 @@ matrices. The returned object stores the source metadata required to
 recompute aggregates under subject-label permutations or subject bootstrap
 resampling. The unit of inference remains subjects; aggregate rows are never
 resampled directly.
+}
+\examples{
+set.seed(1)
+values <- lapply(1:4, function(i) {
+  M <- matrix(rnorm(2 * 3), 2, 3)
+  dimnames(M) <- list(c("c1", "c2"), paste0("f", 1:3))
+  M
+})
+names(values) <- paste0("s", 1:4)
+subject_data <- data.frame(subject_id = names(values),
+                           grp = c("A", "A", "B", "B"))
+target <- dkge_aggregate_target(values, subject_data, group_vars = "grp")
+nrow(target$Y)
 }

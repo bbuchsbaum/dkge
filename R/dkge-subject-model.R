@@ -9,14 +9,25 @@
 #'
 #' @param formula A model formula such as `~ group * trait + age + sex`.
 #' @param data Data frame containing subject-level variables.
-#' @param subject_ids Optional subject identifiers. Defaults to a `subject_id`
-#'   column when present, then row names, then sequential IDs.
+#' @param subject_ids Optional subject identifiers aligned with `data` rows.
+#'   Defaults to the `subject_id` column when present, then `rownames(data)`,
+#'   then sequential IDs. Identifiers are stored as `rownames` of `data` before
+#'   [stats::model.frame()] so `na.action = stats::na.omit` keeps IDs in sync
+#'   with the retained rows.
 #' @param nuisance Optional character vector of term labels to treat as nuisance
-#'   in downstream inference.
+#'   in downstream inference. When `dkge_between_permute(terms = NULL)`, these
+#'   terms are excluded from the default test set.
 #' @param contrasts.arg Optional contrasts passed to [stats::model.matrix()].
 #' @param na.action NA handler for the model frame. Defaults to [stats::na.fail()].
 #'
 #' @return Object of class `dkge_subject_model`.
+#' @examples
+#' dat <- data.frame(
+#'   subject_id = paste0("s", 1:8),
+#'   group = factor(rep(c("A", "B"), each = 4)),
+#'   trait = rnorm(8)
+#' )
+#' dkge_subject_model(~ group * trait, dat)
 #' @export
 dkge_subject_model <- function(formula,
                                data,
@@ -28,22 +39,35 @@ dkge_subject_model <- function(formula,
     stop("`formula` must be a formula.", call. = FALSE)
   }
   data <- as.data.frame(data)
+  n_data <- nrow(data)
+  if (is.null(subject_ids)) {
+    if ("subject_id" %in% names(data)) {
+      ids <- as.character(data$subject_id)
+    } else if (!is.null(rownames(data)) && all(nzchar(rownames(data)))) {
+      ids <- rownames(data)
+    } else {
+      ids <- paste0("subj", seq_len(n_data))
+    }
+  } else {
+    ids <- as.character(subject_ids)
+    if (length(ids) != n_data) {
+      stop("`subject_ids` must be unique, non-empty, and match the data rows.",
+           call. = FALSE)
+    }
+  }
+  if (length(ids) != n_data || any(!nzchar(ids)) || anyDuplicated(ids)) {
+    stop("`subject_ids` must be unique, non-empty, and match the data rows.",
+         call. = FALSE)
+  }
+  rownames(data) <- ids
   mf <- stats::model.frame(formula, data = data, na.action = na.action)
   tt <- stats::terms(mf)
   X <- stats::model.matrix(tt, data = mf, contrasts.arg = contrasts.arg)
-
-  if (is.null(subject_ids)) {
-    if ("subject_id" %in% names(data)) {
-      subject_ids <- as.character(data$subject_id)
-    } else if (!is.null(rownames(data)) && all(nzchar(rownames(data)))) {
-      subject_ids <- rownames(data)
-    } else {
-      subject_ids <- paste0("subj", seq_len(nrow(X)))
-    }
-  }
-  subject_ids <- as.character(subject_ids)
-  if (length(subject_ids) != nrow(X) || any(!nzchar(subject_ids)) || any(duplicated(subject_ids))) {
-    stop("`subject_ids` must be unique, non-empty, and match the model rows.", call. = FALSE)
+  subject_ids <- rownames(mf)
+  if (length(subject_ids) != nrow(X) || any(!nzchar(subject_ids)) ||
+      anyDuplicated(subject_ids)) {
+    stop("`subject_ids` must be unique, non-empty, and match the model rows.",
+         call. = FALSE)
   }
   rownames(X) <- subject_ids
 

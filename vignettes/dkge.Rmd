@@ -42,7 +42,13 @@ subjects <- lapply(seq_len(S), function(s) {
 })
 
 fit <- dkge(subjects, K = diag(q), rank = 2)
-fit          # print method shows eigenspectrum and subject count
+fit$evals
+length(fit$subject_ids)
+```
+
+```{r quick-start-checks, include=FALSE}
+stopifnot(is.numeric(fit$evals), length(fit$evals) >= 1L)
+stopifnot(length(fit$subject_ids) == S)
 ```
 
 The returned object is a `multiblock_biprojector` with q-space loadings in
@@ -79,9 +85,10 @@ and `id`.
 **`dkge_data(betas, designs)`** — bundles a list of subjects, aligns
 partially-overlapping effect sets, and records provenance.
 
-**`dkge(subjects, K, rank)`** — main entry point. `K` is the `q × q` design
-kernel; pass `design_kernel(factors, basis = "effect")` for structured factor
-designs.
+**`dkge(betas, designs, K, rank)`** — main entry point. The first argument may
+be a list of `dkge_subject` objects or a `dkge_data` bundle (then `designs` is
+omitted). `K` is the `q × q` design kernel; pass
+`design_kernel(factors, basis = "effect")` for structured factor designs.
 
 **`dkge_contrast(fit, contrast_vec, method = "loso")`** — leave-one-subject-out
 contrasts in q-space; pair with `dkge_transport_contrasts_to_medoid()` to map

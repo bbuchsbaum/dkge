@@ -74,7 +74,10 @@ subject covariance, not raw cell means.
 eigendecomposition of \(C\) itself (after the standard q-space compression).
 There is no kernel-imposed similarity, smoothness, or hierarchy among effects.
 For an aggregate fit this is essentially the left-singular-vector structure of
-\(Y Y^\top\) — i.e. ordinary cell-mean PCA, the "let the data speak" mode.
+the uncentered second moment \(Y Y^\top\) (the default
+`dkge_aggregate_fit(..., center = "none")`) — ordinary cell-mean PCA, the
+"let the data speak" mode. Use `center = "grand"` or `"column"` when you want
+a centered SVD instead.
 
 For a full subject-level fit, identity-\(K\) is *not* equivalent to ignoring
 design entirely: rows are still GLM effects, and DKGE still row-standardises
@@ -136,10 +139,18 @@ Two questions to ask of this table:
 
 - **Did the eigenspectrum change shape?** A flat-to-steep shift means the
   kernel is concentrating energy in directions it favours.
-- **Did the leading loadings change?** Compute `crossprod(fit_I$U, fit_K$U)`;
-  off-diagonal mass tells you how much the components rotated. Near-identity
-  means the data already aligned with the kernel — structured-\(K\) just made
-  it cleaner. Far-from-identity means the kernel is doing the talking.
+- **Did the leading loadings change?** Compare the two bases in the kernel
+  metric with `dkge_principal_angles_K(fit_I$U, fit_K$U, fit_K$K)`. Columns of
+  `U` are K-orthonormal, so `crossprod(fit_I$U, fit_K$U)` is not a rotation
+  matrix and cannot be near-identity. Small principal angles mean the data
+  already aligned with the kernel; large angles mean the kernel is doing the
+  talking.
+
+```{r aggregate-angles, include=FALSE}
+angles <- dkge_principal_angles_K(fit_I$U, fit_K$U, fit_K$K)
+stopifnot(is.numeric(angles), length(angles) == 3L, all(is.finite(angles)))
+stopifnot(all(angles >= 0), all(angles <= pi / 2 + 1e-8))
+```
 
 Either result is acceptable; the obligation is to *know which* and to say so.
 
@@ -151,7 +162,7 @@ single most common reporting error.
 
 | Level | Question | Tool | Unit |
 |-------|----------|------|------|
-| **Component** | "Is this latent direction reliable?" | singular values; subject-label permutation; identity vs structured \(K\) refit; bootstrap of \(U\) | latent dimension |
+| **Component** | "Is this latent direction reliable?" | singular values; `dkge_aggregate_permute()` / `dkge_between_permute()`; identity vs structured \(K\) refit; `dkge_plot_subspace_stability()` | latent dimension |
 | **Contrast** | "Is this q-space contrast non-zero?" | `dkge_contrast()` (LOSO / K-fold), `dkge_bootstrap_qspace()`, analytic SEs | linear combination of effects |
 | **Feature** | "Is this cluster / voxel salient under this contrast or component?" | `dkge_component_stats()`, `dkge_transport_contrasts_to_medoid()`, FDR adjustment | spatial unit (cluster, anchor, voxel) |
 
@@ -236,5 +247,4 @@ A finding that survives all five steps is one you can defend.
   inference details
 - `vignette("dkge-components")` — component interpretation and rotation
 - `vignette("dkge-vs-pls")` — detailed comparison with classical PLSC
-- `vignette("dkge-partial-effect-spaces")` — partial effect coverage and
-  estimability of between-subject contrasts
+- `vignette("dkge-between-subjects")` — subject-level RRR and permutation tests

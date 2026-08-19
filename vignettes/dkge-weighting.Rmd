@@ -48,7 +48,7 @@ DKGE operates with three distinct yet complementary weighting layers that work t
 
 The first layer consists of **spatial weights (`omega`)**, which operate within each individual subject block before the compressed covariance is accumulated across subjects. You can supply either vectors (which implement diagonal weights) or positive semi-definite matrices (which capture full covariances) when constructing subjects or calling the main `dkge()` function.
 
-The second layer involves **subject weights (`w_method`, `w_tau`)**, which rescale entire subject blocks based on their energy measured in the K-metric. This layer offers Multiple Factor Analysis style scaling (`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`) schemes, alongside options for manual weight overrides.
+The second layer involves **subject weights (`w_method`, `w_tau`)**, which rescale entire subject blocks based on their energy measured in the K-metric. This layer offers Multiple Factor Analysis style scaling (`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`). Pass a numeric `weights` vector only when you already have subject-level masses from outside this fit.
 
 The third layer comprises **transport weights (`sizes`)**, which shape the optimal-transport alignment process when producing consensus maps. This allows you to respect important spatial characteristics such as cluster surface areas or voxel densities during the mapping procedure.
 
@@ -183,6 +183,11 @@ rbind(mfa = fit_mfa$weights,
       none = fit_size$weights)
 ```
 
+```{r subject-weighting-checks, include=FALSE}
+stopifnot(!isTRUE(all.equal(fit_mfa$weights, fit_size$weights)))
+stopifnot(!isTRUE(all.equal(fit_energy$weights, fit_size$weights)))
+```
+
 The `w_tau` parameter provides a mechanism to shrink extreme weight values toward more equal contributions across subjects, which becomes particularly valuable when working with imbalanced cohorts or datasets that contain potential outlier subjects.
 
 ## Weighting During Transport
@@ -211,6 +216,14 @@ comp_weighted <- dkge_component_stats(
 
 data.frame(equal = head(comp_equal$summary$stat),
            size_weighted = head(comp_weighted$summary$stat))
+```
+
+```{r transport-weighting-checks, include=FALSE}
+n_medoid <- P[[1]]
+stopifnot(nrow(comp_equal$summary) == n_medoid * fit_mfa$rank)
+stopifnot(nrow(comp_weighted$summary) == n_medoid * fit_mfa$rank)
+stopifnot(ncol(comp_equal$transport[[1]]) == n_medoid)
+stopifnot(!isTRUE(all.equal(comp_equal$summary$stat, comp_weighted$summary$stat)))
 ```
 
 Even when working with identical component scores, the application of reweighting during the transport phase systematically shifts the medoid summary statistics toward larger parcels, demonstrating the distinct influence of transport-stage weighting.

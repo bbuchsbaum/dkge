@@ -11,7 +11,8 @@
 #'
 #' @param object A `dkge_between_rrr` object.
 #' @param terms Character vector of terms or model-matrix columns to test. When
-#'   `NULL`, all non-intercept formula terms are tested.
+#'   `NULL`, all non-intercept formula terms except those listed in
+#'   `object$design$nuisance` are tested.
 #' @param method Resampling method. `"rotation"` uses Haar rotations in the
 #'   orthogonal complement of the reduced design; `"freedman_lane"` permutes
 #'   reduced-model residual rows.
@@ -41,16 +42,17 @@
 #' only; unsupported weights or blocks are rejected. With non-Gaussian or
 #' heteroscedastic subject errors, rotation is approximate rather than exact.
 #'
-#' Both methods refit the reduced model at the same requested `rank` as the
-#' full model.
-#' When the tested term removes enough design columns that the reduced model's
-#' estimable rank drops below that value, the reduced fit is clipped to its own
-#' maximum rank while the full fit is not, and the reduced-minus-full residual
-#' statistic then also absorbs that rank difference. This affects the observed
-#' statistic and every permutation replicate alike, but the null is not exactly
-#' the null of the rank-matched comparison. Moreover, Freedman-Lane substitutes
-#' reduced-model residuals for unobservable errors and is not an exact finite-
-#' sample procedure for a general reduced model.
+#' Both methods refit the reduced model at the same fitted rank (`object$rank`)
+#' as the full model.
+#' For `method = "freedman_lane"`, when the tested term removes enough design
+#' columns that the reduced model's estimable rank drops below that value, the
+#' reduced fit is clipped to its own maximum rank while the full fit is not, and
+#' the reduced-minus-full residual statistic then also absorbs that rank
+#' difference. This affects the observed statistic and every permutation
+#' replicate alike, but the null is not exactly
+#' a test of the omitted term alone. Rotation does not have this caveat: the
+#' reduced design is held fixed in `Q0` and the Haar draw lives in its
+#' orthogonal complement.
 #'
 #' The legacy Freedman-Lane method's frozen package audit
 #' (`null-calibration-v1`) found empirical
@@ -78,6 +80,22 @@
 #' `inst/extdata/dkge-between-rotation-*`.
 #'
 #' @return Object of class `dkge_between_permutation`.
+#' @examples
+#' set.seed(1)
+#' n <- 12
+#' dat <- data.frame(
+#'   subject_id = paste0("s", seq_len(n)),
+#'   group = factor(rep(c("A", "B"), length.out = n)),
+#'   trait = scale(rnorm(n), center = TRUE, scale = FALSE)[, 1]
+#' )
+#' design <- dkge_subject_model(~ group * trait, dat)
+#' Y <- design$X %*% matrix(c(0, 1, 0.5, -0.2), ncol(design$X), 1)
+#' target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
+#' fit <- dkge_between_rrr(target, design, rank = 1)
+#' \donttest{
+#' dkge_between_permute(fit, terms = "group", method = "rotation",
+#'                      B = 49, seed = 1)
+#' }
 #' @export
 dkge_between_permute <- function(object,
                                  terms = NULL,
@@ -206,6 +224,10 @@ dkge_between_permute <- function(object,
   candidates <- setdiff(design$term_names, "(Intercept)")
   if (!length(candidates)) {
     candidates <- setdiff(colnames(design$X), "(Intercept)")
+  }
+  nuisance <- design$nuisance
+  if (!is.null(nuisance) && length(nuisance)) {
+    candidates <- setdiff(candidates, as.character(nuisance))
   }
   candidates
 }
@@ -417,7 +439,7 @@ dkge_between_permute <- function(object,
       "use method='freedman_lane' explicitly or refit with weights='none'."
     ), call. = FALSE)
   }
-  if (nlevels(as.factor(blocks)) != 1L) {
+  if (length(unique(as.character(blocks))) != 1L) {
     stop(paste0(
       "method='rotation' currently supports one exchangeability block only; ",
       "block-restricted rotations are not yet implemented."
@@ -447,6 +469,15 @@ dkge_between_permute <- function(object,
       nuisance_residuals = "approximate in finite samples"
     )
   }
+}
+
+.dkge_between_rotation_energy_guard <- function(yss, yss_direct) {
+  scale <- max(1, yss_direct)
+  if (abs(yss - yss_direct) > 100 * .Machine$double.eps * scale) {
+    stop("Residual-space rotation decomposition failed to preserve response energy.",
+         call. = FALSE)
+  }
+  invisible(scale)
 }
 
 #' Construct compressed residual-rotation sufficient statistics
@@ -482,11 +513,7 @@ dkge_between_permute <- function(object,
   yss <- sum(fitted_coordinates * fitted_coordinates) +
     sum(residual_coordinates * residual_coordinates)
   yss_direct <- sum(Y * Y)
-  scale <- max(1, yss_direct)
-  if (abs(yss - yss_direct) > 100 * tol * scale) {
-    stop("Residual-space rotation decomposition failed to preserve response energy.",
-         call. = FALSE)
-  }
+  .dkge_between_rotation_energy_guard(yss, yss_direct)
 
   list(
     Q0 = Q0,

@@ -94,4 +94,8 @@ power arm. All 8,100 term-level results are shipped in
 - Metadata artifact SHA-256:
   `38fcc41abc3a5a06439c2457f51704865d23e0c56adf50f86e6c7655e1833ed9`
 - Recorded source HEAD: `953d2a64ff356d55f4a6fd3278a7f11db018fea6`
+- Working-tree digest: not captured at freeze; the recorded HEAD is the
+  last commit, and the formal run used uncommitted code on that tree.
+  The two replicate CSVs were later gzipped for packaging
+  (`read.csv()` reads `.gz` transparently); uncompressed content is unchanged.
 - Runtime: 839 seconds with R 4.5.1 on `aarch64-apple-darwin20`.

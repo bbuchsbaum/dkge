@@ -93,11 +93,16 @@ perm_between$summary[, c("term", "statistic", "p", "p_adjusted")]
 ```
 
 The global statistic is the reduction in residual sum of squares when the
-tested term is restored to the reduced model, with both models constrained to
-the fitted reduced rank. P-values use the finite-resample correction
-`(1 + exceedances) / (B + 1)`. With `scope = "both"`, the result also contains
-featurewise tests; `feature_adjust = "maxT"` controls multiplicity against the
-largest feature statistic in each resample.
+tested term is restored to the reduced model. Both methods refit at the same
+fitted rank (`object$rank`). Freedman–Lane has an extra caveat: if dropping
+the tested term lowers the reduced model's estimable rank below that value,
+the reduced fit is clipped while the full fit is not, so the statistic also
+absorbs that rank difference. Rotation does not clip — the reduced design
+stays in `Q0` and the Haar draw lives in its complement. P-values use the
+finite-resample correction `(1 + exceedances) / (B + 1)`. With
+`scope = "both"`, the result also contains featurewise tests;
+`feature_adjust = "maxT"` controls multiplicity against the largest feature
+statistic in each resample.
 
 ```{r quick-permutation-checks, include = FALSE}
 stopifnot(all(is.finite(fitted(fit_between))))
@@ -146,9 +151,10 @@ Neither method is a universal confirmatory default.
 | Heteroscedasticity or dependence is scientifically central | Neither automatically | Treat the result as exploratory or justify a design-specific resampling model. |
 
 `"freedman_lane"` remains the compatibility default, so use `method =` in
-analysis scripts to make the inferential choice visible. Rotation fails before
-resampling when weights, multiple blocks, missing block labels, or fewer than
-two residual dimensions put the fit outside its supported scope.
+analysis scripts to make the inferential choice visible. Missing block labels
+(`NA` in `blocks`) are rejected for both methods. Rotation additionally fails
+before resampling when weights, multiple blocks, or fewer than two residual
+dimensions put the fit outside its supported scope.
 
 ### What did the frozen calibration show?
 
@@ -327,6 +333,4 @@ is individually significant.
 
 Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
 latent target, and use `type = "transported_maps"` when spatial interpretation
-in a common map space matters. See `vignette("dkge-partial-effect-spaces")` for
-unequal trial counts and partial within-subject cells, and
-`vignette("dkge-contrasts-inference")` for within-subject contrast inference.
+in a common map space matters. See `vignette("dkge-contrasts-inference")` for within-subject contrast inference.
