@@ -103,6 +103,16 @@ reference:
       - dkge_sim_toy
       - dkge_update_weights
 
+  - title: "Aggregate (cell-mean) decomposition"
+    desc: "PLS-style decomposition of group-by-cell aggregate maps with permutation and bootstrap inference"
+    contents:
+      - dkge_aggregate_target
+      - dkge_aggregate_fit
+      - dkge_aggregate_align
+      - dkge_aggregate_stat
+      - dkge_aggregate_permute
+      - dkge_aggregate_bootstrap
+
   - title: "Anchors and rendering"
     desc: "Functions for building and applying spatial anchor mappers"
     contents:
