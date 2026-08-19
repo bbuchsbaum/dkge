@@ -157,7 +157,14 @@ test_that("JD fit supports LOSO contrast, prediction, and transport pipelines", 
     centroids[[s]] <- matrix(runif(P * 3), P, 3)
   }
   data_obj <- dkge_data(betas, designs = designs)
-  fit_jd <- dkge_fit(data_obj, K = diag(q), rank = 3, solver = "jd", keep_X = TRUE)
+  fit_jd <- dkge_fit(data_obj, K = diag(q), rank = 3, solver = "jd")
+  expect_s3_class(fit_jd, "dkge_qspace")
+  expect_equal(fit_jd$representation, "qspace_moment")
+  expect_null(fit_jd$v)
+  expect_error(
+    dkge_fit(data_obj, K = diag(q), rank = 3, solver = "jd", keep_X = TRUE),
+    "has no exact subject-by-voxel block factor"
+  )
 
   cvec <- rnorm(q)
   loso <- dkge_loso_contrast(fit_jd, s = 1, contrasts = cvec)
@@ -179,11 +186,9 @@ test_that("JD fit supports LOSO contrast, prediction, and transport pipelines", 
     train_ids <- setdiff(seq_len(S), holdout)
     fit_train <- dkge_fit(dkge_data(betas[train_ids], designs = designs[train_ids]),
                           K = diag(q), rank = 3, solver = "jd")
-    loadings <- dkge_project_clusters(fit_train, betas[[holdout]])
-    recon <- fit_train$U %*% t(loadings)
-    cv_scores[holdout] <- sum(recon * recon) / (sum(betas[[holdout]] * betas[[holdout]]) + 1e-12)
+    loadings <- dkge_predict_loadings(fit_train, list(betas[[holdout]]))[[1]]
+    cv_scores[holdout] <- sum(loadings * loadings)
   }
   expect_true(all(is.finite(cv_scores)))
   expect_true(all(cv_scores >= 0))
-  expect_true(all(cv_scores <= 1 + 1e-6))
 })

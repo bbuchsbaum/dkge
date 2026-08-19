@@ -1,6 +1,55 @@
 # dkge-project.R
 # Projection helpers wrapping the multivarious interface for DKGE objects.
 
+#' Require an exact subject-by-voxel block factor
+#'
+#' @keywords internal
+#' @noRd
+.dkge_require_block_biprojector <- function(fit, operation) {
+  representation <- fit$representation %||% "block_biprojector"
+  if (!identical(representation, "block_biprojector") || is.null(fit$v)) {
+    reasons <- fit$representation_reasons %||% "the fitted moment is q-space only"
+    stop(sprintf(
+      paste0("%s requires representation='block_biprojector', but this fit uses ",
+             "representation='%s' (%s). Use q-space loadings or contrast ",
+             "functions instead."),
+      operation, representation, paste(reasons, collapse = "; ")
+    ), call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+#' Fail-closed multivarious methods for q-space DKGE fits
+#'
+#' Pair-normalized, debiased, ridged, CPCA, and JD fits do not inherit from
+#' `multiblock_biprojector`. These methods reject physical block projection
+#' instead of inventing incompatible loadings.
+#'
+#' @param x A `dkge_qspace` fit.
+#' @param new_data Unused; required by the multivarious generics.
+#' @param ... Unused.
+#' @param block,least_squares,from,to,opts Unused arguments of the
+#'   corresponding multivarious generics.
+#' @name dkge_qspace-multivarious
+#' @keywords internal
+#' @importFrom multivarious project project_block transfer
+#' @exportS3Method multivarious::project
+project.dkge_qspace <- function(x, new_data, ...) {
+  .dkge_require_block_biprojector(x, "multivarious::project()")
+}
+
+#' @rdname dkge_qspace-multivarious
+#' @exportS3Method multivarious::project_block
+project_block.dkge_qspace <- function(x, new_data, block, least_squares = TRUE, ...) {
+  .dkge_require_block_biprojector(x, "multivarious::project_block()")
+}
+
+#' @rdname dkge_qspace-multivarious
+#' @exportS3Method multivarious::transfer
+transfer.dkge_qspace <- function(x, new_data, from, to, opts = list(), ...) {
+  .dkge_require_block_biprojector(x, "multivarious::transfer()")
+}
+
 #' Preprocess a subject block into DKGE training space
 #'
 #' Applies the same transformations used during fitting (pooled design Cholesky factor,
@@ -74,6 +123,7 @@ dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL,
 #' @export
 dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_preprocess_blocks()")
   S <- length(B_list)
   if (is.null(Omega_list)) Omega_list <- vector("list", S)
   if (is.null(w)) w <- rep(1, S)
@@ -108,6 +158,7 @@ dkge_preprocess_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @keywords internal
 #' @export
 dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
+  .dkge_require_block_biprojector(fit, "dkge_project_blocks()")
   Xnew <- dkge_preprocess_blocks(fit, B_list, Omega_list, w)
   multivarious::project(fit, Xnew)
 }
@@ -165,6 +216,7 @@ dkge_project_btil <- function(fit, Btil) {
 dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
                                least_squares = TRUE) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_project_block()")
   stopifnot(s >= 1L, s <= length(fit$block_indices))
   Xs <- dkge_transform_block(fit, B_s, Omega_s, w_s, subject = s)
   if (ncol(Xs) != length(fit$block_indices[[s]])) {
@@ -185,6 +237,7 @@ dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
 #' @export
 dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_project_cluster()")
   b <- as.numeric(b)
   stopifnot(length(b) == nrow(fit$U))
   ctil <- t(fit$R) %*% matrix(b, ncol = 1)
@@ -211,6 +264,7 @@ dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
 #' @export
 dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_require_block_biprojector(fit, "dkge_project_clusters()")
   B <- as.matrix(B)
   stopifnot(nrow(B) == nrow(fit$U))
   ctil <- t(fit$R) %*% B

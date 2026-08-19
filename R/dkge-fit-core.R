@@ -17,10 +17,13 @@
 #   rank               integer    number of latent dimensions kept
 #   Chat_sym           q x q    symmetric compressed covariance (used by tests)
 #   scores_matrix      S x r    subject scores matrix (alias of s; used by tests)
-#   v                  q x r    loadings (alias of U in multivarious sense)
-#   s                  S x r    scores
+#   v                  P x r    physical block loadings (NULL unless
+#                               representation = block_biprojector)
+#   s                  q x r    retained positive q-space factor
 #   sdev               r        standard deviations per dimension
 #   KU                 q x r    K %*% U (precomputed product)
+#   representation     character  block_biprojector or qspace_moment
+#   representation_reasons  character  why a fit is q-space-only (empty otherwise)
 #
 # INTERNAL (may change between versions):
 #   Khalf              q x q    K^{1/2} factor
@@ -41,10 +44,10 @@
 #   kernel_info        list     kernel construction metadata
 #   block_indices      list     multivarious block index mapping
 #   X_concat           matrix   concatenated *training* blocks in K^{1/2} space
-#                               (NULL if keep_X=FALSE). Under debias or
-#                               missingness != "none", Chat is the debiased /
-#                               coverage-adjusted moment and is not in general
-#                               equal to X_concat %*% t(X_concat).
+#                               (NULL unless keep_X=TRUE and the fit is an
+#                               exact block biprojector). Chat equals
+#                               X_concat %*% t(X_concat) only for that
+#                               representation.
 #   cpca               list     CPCA partitioning info (when cpca_part != "none")
 #   solver             character  solver used
 #   jd                 list     joint-diagonalisation info (when applicable)
@@ -727,10 +730,83 @@
   )
 }
 
+#' Classify the algebra represented by a fitted moment
+#'
+#' An exact `block_biprojector` is advertised only when Chat is the Gram of a
+#' subject-by-voxel factor. Pair-normalized, missingness-transformed, debiased,
+#' ridged, CPCA, and JD moments are `qspace_moment`.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_fit_representation <- function(accum, solved, ridge,
+                                     force_qspace = FALSE) {
+  reasons <- character(0)
+  if (isTRUE(force_qspace)) {
+    reasons <- c(reasons, "q-space representation was explicitly requested")
+  }
+  if (!identical(solved$solver, "pooled")) {
+    reasons <- c(reasons, "solver is not the pooled symmetric eigensolver")
+  }
+  effect_method <- accum$effect_weight_spec$method %||% "none"
+  if (!identical(effect_method, "none")) {
+    reasons <- c(reasons, "effect-pair reliability normalization is active")
+  }
+  if (!identical(accum$missingness %||% "none", "none")) {
+    reasons <- c(reasons, "a missingness transformation is active")
+  }
+  if (!identical(accum$debias %||% "none", "none")) {
+    reasons <- c(reasons, "a debiased or cross-half moment is active")
+  }
+  if (!is.null(solved$cpca_info)) {
+    reasons <- c(reasons, "CPCA filtering is active")
+  }
+  if (!isTRUE(all.equal(as.numeric(ridge), 0))) {
+    reasons <- c(reasons, "a ridge term is present in Chat")
+  }
+  list(
+    kind = if (length(reasons)) "qspace_moment" else "block_biprojector",
+    reasons = reasons
+  )
+}
+
+#' Runtime check that an advertised block factor really factors Chat
+#'
+#' @keywords internal
+#' @noRd
+.dkge_validate_block_factor <- function(fit, Xstar, tolerance = 1e-10) {
+  if (!identical(fit$representation, "block_biprojector")) {
+    return(invisible(fit))
+  }
+  if (is.null(Xstar)) {
+    stop("Internal DKGE algebra error: block representation has no Xstar factor.",
+         call. = FALSE)
+  }
+  chat_error <- norm(fit$Chat - tcrossprod(Xstar), "F") /
+    max(1, norm(fit$Chat, "F"))
+  if (!is.finite(chat_error) || chat_error > tolerance) {
+    stop(sprintf(
+      "Internal DKGE algebra error: Chat is not Xstar Xstar' (relative error %.3e).",
+      chat_error
+    ), call. = FALSE)
+  }
+  r <- fit$rank
+  if (r > 0L && !is.null(fit$v)) {
+    v_error <- max(abs(crossprod(fit$v) - diag(r)))
+    if (!is.finite(v_error) || v_error > tolerance) {
+      stop(sprintf(
+        "Internal DKGE algebra error: advertised block loadings are not orthonormal (max error %.3e).",
+        v_error
+      ), call. = FALSE)
+    }
+  }
+  invisible(fit)
+}
+
 #' Assemble the final dkge fit object
 #'
 #' Combines prepared payload, accumulation results, and eigen solution into the
-#' multiblock object returned by `dkge_fit()`.
+#' object returned by `dkge_fit()`. Exact unregularized pooled moments inherit
+#' from `multiblock_biprojector`; every other moment is a `dkge_qspace` object.
 #'
 #' @keywords internal
 #' @noRd
@@ -752,15 +828,28 @@
   rank <- solved$rank
   q <- prepped$q
 
+  representation <- .dkge_fit_representation(accum, solved, ridge)
+  if (keep_X && !identical(representation$kind, "block_biprojector")) {
+    stop(sprintf(
+      paste0("`keep_X = TRUE` is unavailable for representation='qspace_moment' (%s). ",
+             "The fitted moment has no exact subject-by-voxel block factor."),
+      paste(representation$reasons, collapse = "; ")
+    ), call. = FALSE)
+  }
+
   total_clusters <- 0L
   block_indices <- vector("list", S)
   X_blocks <- vector("list", S)
+  build_blocks <- identical(representation$kind, "block_biprojector")
   for (s in seq_len(S)) {
     Bts <- Btil[[s]]
     P_s <- ncol(Bts)
     idx <- seq_len(P_s) + total_clusters  # empty when P_s == 0 (avoids reversed `:`)
     block_indices[[s]] <- idx
     total_clusters <- total_clusters + P_s
+    if (!build_blocks) {
+      next
+    }
 
     # Resolve to this subject's width exactly as `.dkge_build_moment_pool()`
     # does, so the training blocks stay consistent with Chat.
@@ -799,35 +888,43 @@
     X_blocks[[s]] <- block
   }
 
-  X_concat <- if (length(X_blocks)) do.call(cbind, X_blocks) else NULL
-  if (rank > 0) {
-    safe_sdev <- ifelse(solved$sdev > 0, solved$sdev, 1)
-    V <- t(X_concat) %*% solved$U_hat %*% diag(1 / safe_sdev, nrow = rank)
-    zero_cols <- which(solved$sdev <= 0)
-    if (length(zero_cols) > 0) {
-      V[, zero_cols] <- 0
-    }
-    scores <- solved$U_hat %*% diag(solved$sdev, nrow = rank)
+  scores <- if (rank > 0) {
+    solved$U_hat %*% diag(solved$sdev, nrow = rank)
   } else {
-    V <- matrix(0, nrow = total_clusters, ncol = 0)
-    scores <- matrix(0, nrow = q, ncol = 0)
+    matrix(0, nrow = q, ncol = 0)
   }
 
-  x_for_preproc <- X_concat
-  if (is.null(x_for_preproc)) {
-    x_for_preproc <- matrix(numeric(0), nrow = q, ncol = 0)
+  X_concat <- NULL
+  V <- NULL
+  multivarious_obj <- NULL
+  if (build_blocks) {
+    X_concat <- if (length(X_blocks)) do.call(cbind, X_blocks) else NULL
+    if (rank > 0) {
+      safe_sdev <- ifelse(solved$sdev > 0, solved$sdev, 1)
+      V <- t(X_concat) %*% solved$U_hat %*% diag(1 / safe_sdev, nrow = rank)
+      zero_cols <- which(solved$sdev <= 0)
+      if (length(zero_cols) > 0) {
+        V[, zero_cols] <- 0
+      }
+    } else {
+      V <- matrix(0, nrow = total_clusters, ncol = 0)
+    }
+    x_for_preproc <- X_concat
+    if (is.null(x_for_preproc)) {
+      x_for_preproc <- matrix(numeric(0), nrow = q, ncol = 0)
+    }
+    preproc_obj <- multivarious::fit(multivarious::pass(), x_for_preproc)
+    multivarious_obj <- multivarious::multiblock_biprojector(
+      v = V,
+      s = scores,
+      sdev = solved$sdev,
+      preproc = preproc_obj,
+      block_indices = block_indices,
+      classes = "dkge_core"
+    )
   }
-  preproc_obj <- multivarious::fit(multivarious::pass(), x_for_preproc)
-  multivarious_obj <- multivarious::multiblock_biprojector(
-    v = V,
-    s = scores,
-    sdev = solved$sdev,
-    preproc = preproc_obj,
-    block_indices = block_indices,
-    classes = "dkge_core"
-  )
 
-  X_store <- if (keep_X) X_concat else NULL
+  X_store <- if (keep_X && build_blocks) X_concat else NULL
 
   fit <- list(
     v = V,
@@ -891,15 +988,23 @@
     rank_reduced = solved$rank_reduced
   )
 
+  fit$representation <- representation$kind
+  fit$representation_reasons <- representation$reasons
   fit$Chat_sym <- accum$Chat_sym
   fit$KU <- fit$K %*% fit$U
-
   fit$scores_matrix <- fit$s
+  .dkge_validate_block_factor(fit, X_concat)
 
-  for (nm in names(fit)) {
-    multivarious_obj[[nm]] <- fit[[nm]]
+  if (identical(representation$kind, "block_biprojector")) {
+    for (nm in names(fit)) {
+      multivarious_obj[[nm]] <- fit[[nm]]
+    }
+    class(multivarious_obj) <- unique(c("dkge", class(multivarious_obj)))
+    .dkge_check_kernel_info(multivarious_obj)
+    return(multivarious_obj)
   }
-  class(multivarious_obj) <- unique(c("dkge", class(multivarious_obj)))
-  .dkge_check_kernel_info(multivarious_obj)
-  multivarious_obj
+
+  class(fit) <- c("dkge_qspace", "dkge", "list")
+  .dkge_check_kernel_info(fit)
+  fit
 }
