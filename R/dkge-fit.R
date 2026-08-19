@@ -377,7 +377,9 @@
 #' @param ridge Ridge regularization parameter (default 0).
 #' @param rank Desired rank for the decomposition. If NULL, uses full rank.
 #' @param keep_X Logical; when `TRUE`, store the concatenated training matrix
-#'   used to build the multiblock projection (can be large).
+#'   used to build the multiblock projection (can be large). Only available
+#'   when the fit is an exact `block_biprojector`; q-space moments have no
+#'   matching subject-by-voxel factor.
 #' @param cpca_blocks Optional integer vector specifying which effect rows span
 #'   the CPCA design subspace. Ignored when `cpca_part = "none"` or when
 #'   `cpca_T` is provided.
@@ -435,9 +437,12 @@
 #' @param miss_args List of arguments for `missingness`. Known fields are
 #'   `min_pairs` (used by `"mask"` and `"shrink"`) and `gamma` (used by
 #'   `"shrink"`). Unknown names are an error.
-#' @return A fitted `dkge` object. When the \pkg{multivarious} package is installed
-#'   the return value additionally inherits from `multiblock_biprojector`, making
-#'   it compatible with the multivarious multiblock interface.
+#' @return A fitted `dkge` object. Exact unregularized pooled moments
+#'   additionally inherit from `multiblock_biprojector` and advertise physical
+#'   block loadings `$v`. Pair-normalized, missingness-transformed, debiased,
+#'   ridged, CPCA, and JD fits inherit from `dkge_qspace` instead, set `$v`
+#'   and `$X_concat` to `NULL`, and expose only the coherent q-space
+#'   eigensystem. `$representation` records which contract applies.
 #'   The object also records `$effect_moment`, `$pair_weight`, `$pair_ess`, and
 #'   `$moment_diagnostics` for auditing reliability weighting and any negative
 #'   spectral mass introduced by debiasing.
