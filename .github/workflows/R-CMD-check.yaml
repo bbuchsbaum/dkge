@@ -25,7 +25,7 @@ jobs:
         with:
           extra-packages: |
             any::rcmdcheck
-            any::roxygen2@7.3.3
+            roxygen2@7.3.3
             any::testthat
             any::knitr
             any::rmarkdown
