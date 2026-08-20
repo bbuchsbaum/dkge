@@ -19,6 +19,7 @@ articles:
       - dkge-classification
       - dkge-components
       - dkge-between-subjects
+      - dkge-partial-effect-spaces
       - dkge-concepts
   - title: "Weighting"
     navbar: Weighting

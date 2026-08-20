@@ -36,38 +36,57 @@ theme_set(theme_dkge())
 ```
 
 
-This vignette demonstrates how to generate subject-level contrasts using DKGE methodology,
-apply both analytic and bootstrap-based statistical inference procedures, and interpret
-the resulting outputs. We will walk through the complete workflow from contrast specification
-to statistical testing and visualization.
+This vignette follows one estimand from construction to interpretation: the
+subject-level effect-1 minus effect-2 contrast on a shared simulated spatial
+support. It then distinguishes that contrast estimand from component-level
+inference and shows how a subject bootstrap quantifies sampling variation
+conditional on the fitted basis and transport operators.
 
 ## Demo Dataset
 
-We begin by setting up a simulated dataset that illustrates the key components of a DKGE analysis.
-This synthetic dataset includes multiple subjects with different design matrices, beta coefficients,
-and spatial coordinates that will serve as the foundation for our contrast and inference examples.
+The first two effect rows contain opposite halves of a smooth spatial signal, so
+their raw contrast equals `planted`. The remaining effects contain noise. Every
+subject uses the same cluster ordering with small coordinate jitter, giving the
+transport step a known target while retaining subject variation.
 
 ```{r data}
 library(dkge)
-S <- 5; q <- 4; P <- 25; T <- 60
-betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
-designs <- replicate(S, {
+S <- 8; q <- 4; P <- 25; T <- 60
+effect_names <- paste0("effect", seq_len(q))
+cluster_axis <- seq(-1, 1, length.out = P)
+planted <- exp(-5 * (cluster_axis + 0.35)^2) -
+  0.65 * exp(-7 * (cluster_axis - 0.45)^2)
+truth <- matrix(0, q, P, dimnames = list(effect_names, NULL))
+truth[1, ] <- planted / 2
+truth[2, ] <- -planted / 2
+
+betas <- lapply(seq_len(S), function(s) {
+  truth + matrix(rnorm(q * P, sd = 0.30), q, P)
+})
+designs <- lapply(seq_len(S), function(s) {
   X <- matrix(rnorm(T * q), T, q)
-  qr.Q(qr(X))
-}, simplify = FALSE)
-centroids <- replicate(S, matrix(runif(P * 3, -10, 10), P, 3), simplify = FALSE)
+  X <- qr.Q(qr(X))
+  colnames(X) <- effect_names
+  X
+})
+reference_centroids <- cbind(x = 10 * cluster_axis, y = 0, z = 0)
+centroids <- lapply(seq_len(S), function(s) {
+  reference_centroids + matrix(rnorm(P * 3, sd = 0.02), P, 3)
+})
 subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]], id = paste0("sub", s)))
- bundle <- dkge_data(subjects)
+bundle <- dkge_data(subjects)
 fit <- dkge(bundle, K = diag(q), rank = 3)
 fit$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 ```
 
 ## Leave-One-Subject-Out (LOSO) Contrasts
 
-The LOSO approach provides an unbiased method for computing subject-level contrasts by using
-cross-validation. The `dkge_loso_contrast()` function computes these cross-validated subject
-contrasts while maintaining consistency of transport operators across all cross-validation folds,
-ensuring that spatial alignment remains stable throughout the procedure.
+The LOSO approach refits the latent basis without each held-out subject before
+computing that subject's contrast field. This limits basis-reuse optimism; it
+does not by itself guarantee unbiased population inference. The public
+`dkge_contrast(..., method = "loso")` path returns those subject-specific
+fields, after which one fixed set of transport operators can place them on a
+common reference for the inferential procedure defined below.
 
 ```{r loso}
 contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
@@ -94,6 +113,31 @@ across subjects. Additionally,
 `transported[[1]]$subj_values` preserves the individual-subject contributions after transport,
 which can be useful for detecting outliers or understanding between-subject variability.
 
+We summarize the region where the planted raw contrast is largest. DKGE
+projection and transport change the numerical scale, so agreement in direction
+is meaningful here; equality to the raw planted amplitude is not expected.
+
+```{r contrast-estimand}
+active_region <- which(planted >= stats::quantile(planted, 0.80))
+active_subject_values <- rowMeans(
+  transported[[1]]$subj_values[, active_region, drop = FALSE]
+)
+contrast_summary <- data.frame(
+  target = "mean transported contrast in planted-positive region",
+  estimate = mean(active_subject_values),
+  subject_sd = sd(active_subject_values),
+  positive_subjects = sum(active_subject_values > 0),
+  n_subjects = length(active_subject_values)
+)
+contrast_summary
+```
+
+In this seeded example, the active-region estimate is
+`r round(contrast_summary$estimate, 3)`, and
+`r contrast_summary$positive_subjects` of `r contrast_summary$n_subjects`
+subjects have the planted positive direction. This is recovery evidence for the
+simulation, not a population effect size or external validation result.
+
 ```{r transport-checks, include=FALSE}
 transport_ok <- vapply(transported[[1]]$diagnostics, function(x) {
   isTRUE(x$converged)
@@ -114,11 +158,10 @@ abline(h = 0, col = "grey60", lty = 2)
 
 ## Analytic Inference on Components
 
-For statistical testing of group-level effects, we can apply analytic inference methods that
-leverage parametric assumptions about the underlying distributions. The `dkge_component_stats()`
-function combines subject loadings across the group, optionally performs sign-flip inference
-to handle arbitrary sign ambiguity in the components, and returns comprehensive summaries
-with false discovery rate (FDR) adjustments to control for multiple comparisons.
+`dkge_component_stats()` answers a different question from the contrast above:
+it transports subject component loadings and tests their coordinate-wise group
+means. The parametric option below uses a t reference distribution, then applies
+the requested p-value adjustment across returned component-coordinate tests.
 
 ```{r analytic}
 comp_stats <- dkge_component_stats(
@@ -133,18 +176,17 @@ comp_stats <- dkge_component_stats(
 head(comp_stats$summary)
 ```
 
-The resulting `summary` tibble provides a comprehensive overview of the statistical results,
-including component identifiers, cluster indices, test statistics, and both raw and FDR-adjusted
-p-values. This structured output enables systematic identification of clusters that surpass
-your predetermined significance threshold while accounting for multiple comparison corrections.
+The table reports component, reference-cluster index, t statistic, raw p-value,
+FDR-adjusted p-value, and the declared significance flag. These are
+component-loading tests under the mapper and parametric assumptions above; they
+are not tests of the effect-1 minus effect-2 contrast.
 
 ## Bootstrap Inference
 
-When the underlying effect distributions deviate substantially from Gaussian assumptions,
-or when sample sizes are small, bootstrap-based inference provides a more robust alternative
-to parametric methods. Both multiplier and resampling bootstrap approaches are available,
-and the analytic fit computed in the previous section can be efficiently re-used to seed
-the bootstrap resampling procedure, avoiding redundant computations.
+The following nonparametric subject bootstrap resamples the already transported
+contrast vectors and recomputes their mean. It estimates sampling variation
+conditional on the fitted basis, chosen medoid, and fixed transport operators;
+it does not propagate uncertainty from those earlier steps.
 
 ```{r bootstrap, message=FALSE}
 subject_medoid <- lapply(seq_len(nrow(transported[[1]]$subj_values)), function(idx) {
@@ -160,24 +202,39 @@ boot <- dkge_bootstrap_projected(
 head(boot$medoid$mean)
 ```
 
-The `dkge_bootstrap_projected()` function returns comprehensive bootstrap statistics,
-including confidence intervals and standard errors, specifically computed for contrasts
-in the medoid space. For analyses that do not require spatial transport, you can alternatively
-use `dkge_bootstrap_qspace()` to work directly in the component basis, which bypasses
-the transport step and may be computationally more efficient for certain applications.
+For the declared active-region summary, the bootstrap distribution is:
+
+```{r bootstrap-estimand}
+active_boot <- rowMeans(boot$medoid$boot[, active_region, drop = FALSE])
+bootstrap_summary <- data.frame(
+  bootstrap_mean = mean(active_boot),
+  lower_95 = unname(stats::quantile(active_boot, 0.025)),
+  upper_95 = unname(stats::quantile(active_boot, 0.975))
+)
+bootstrap_summary
+```
+
+The resulting conditional 95% percentile interval is
+[`r round(bootstrap_summary$lower_95, 3)`,
+`r round(bootstrap_summary$upper_95, 3)`]. Because the earlier basis and
+transport operators are held fixed, this interval should not be described as
+unconditional uncertainty for the full DKGE pipeline.
+
+`dkge_bootstrap_projected()` also returns coordinate-wise means, standard
+deviations, z ratios, intervals, and (optionally) the draws used above. When the
+estimand lives in q-space instead, `dkge_bootstrap_qspace()` performs multiplier
+resampling there and can reuse a declared transport cache.
 
 ## Practical Recommendations
 
-When choosing between analytic and bootstrap inference methods, several considerations
-can guide your decision. Analytic inference provides computational efficiency and works
-reliably when you have moderate subject counts and when residual distributions appear
-approximately symmetric. However, bootstrap methods offer greater robustness to
-distributional assumptions, though they require more computational time. To mitigate
-the computational burden of bootstrap inference, the package leverages warm-started
-Sinkhorn transport algorithms and automatically caches dual variables to reduce runtime
-in subsequent iterations.
+Choose the inferential target before choosing a procedure. The component table
+tests transported component loadings; the projected bootstrap above summarizes
+an explicit contrast after transport. Parametric inference relies on its
+reference-distribution assumptions. Subject resampling avoids that particular
+reference distribution but still requires representative, independent subjects
+and enough observations for the empirical distribution to be informative.
 
-Regardless of the inference method chosen, it is essential to inspect the `loso$values`
-output to identify potential outlier subjects before reporting group-level results. This
-quality control step helps ensure that your conclusions are not unduly influenced by
-atypical individual responses and maintains the integrity of your statistical inferences.
+Before reporting results, state the contrast, analysis space, aggregation rule,
+resampling unit, mapper, medoid, and multiplicity correction. Inspect
+subject-level values as a diagnostic, but do not remove unusual subjects without
+a prespecified rule and sensitivity analysis.

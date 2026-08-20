@@ -23,7 +23,7 @@ We will:
 
 1. build an anchor descriptor from subject-specific features and item kernels,
 2. fit DKGE through the shared `dkge_input` interface, and
-3. evaluate cross-fitted contrasts that operate in the anchor basis.
+3. evaluate LOSO contrasts conditional on that fixed anchor representation.
 
 ```{r libraries}
 library(dkge)
@@ -79,6 +79,11 @@ anchor_input <- dkge_input_anchor(
 )
 ```
 
+This call chooses anchors from the pooled subjects; no fold-specific anchor
+construction is requested. The anchor representation is therefore fixed before
+the LOSO analysis below. That is a useful conditional analysis, but it is not
+end-to-end cross-validation of feature preprocessing.
+
 ## Fit DKGE through the shared interface
 
 `dkge_fit_from_input()` converts the descriptor into aligned anchor kernels and calls the standard fitter. The resulting object is a regular `dkge` fit containing the anchor provenance.
@@ -89,9 +94,11 @@ fit_anchor
 fit_anchor$provenance$anchors$coverage
 ```
 
-## Cross-fitted contrasts in the anchor basis
+## LOSO basis refitting on a fixed anchor representation
 
-Contrasts are vectors over the anchor index. For illustration we consider the first latent axis and compute LOSO contrasts.
+Contrasts are vectors over the anchor index. For illustration we select the
+first anchor coordinate and refit the DKGE basis without each held-out subject.
+The anchors themselves remain the pooled anchors created above.
 
 ```{r contrasts-anchor}
 contrast_vec <- rep(0, fit_anchor$provenance$anchors$L)
@@ -142,6 +149,11 @@ cls <- dkge_classify(fit_anchor,
 cls$summary
 ```
 
+Here `folds = 2` cross-validates the classifier conditional on the fitted anchor
+representation and DKGE fit. It does not make anchor selection or basis fitting
+fold-specific, so treat this chunk as an API example rather than an estimate of
+end-to-end generalization performance.
+
 ## Diagnostics and provenance
 
 Anchor coverage, leverage, and bandwidth settings are stored under `fit$provenance$anchors`. These diagnostics are useful for checking whether the median heuristic and chosen number of anchors provide adequate coverage across subjects.
@@ -152,9 +164,23 @@ dkge_anchor_diagnostics(fit_anchor)
 
 ## Summary
 
-The feature-anchored path allows DKGE to align subjects with disjoint item sets without imputing missing cells. By sampling a fold-safe set of anchors, whitening the anchor basis, and delegating back to the core DKGE routines, the approach keeps the computational core untouched while offering a modular front-end suitable for modern embedding-based experiments.
+The feature-anchored path aligns subjects with disjoint item sets without
+imputing missing cells. It selects a shared anchor representation, orthonormalizes
+that representation, and delegates the aligned kernels to the core DKGE fitter.
+For confirmatory prediction, define anchors independently or wrap anchor
+construction and model fitting in an outer resampling loop; the convenience
+workflow shown here fixes anchors using all subjects.
 
 ### Special cases: shared and mixed item sets
 
-- **All subjects share the same items.** The anchor pipeline reduces to a re-basing of the common item kernel because every subject projects onto identical feature rows. You can keep the anchor path for consistency (the whitening step simply orthonormalises the shared basis) or, if preferred, fall back to `dkge_fit_from_kernels()` with the shared item kernel—both produce comparable PSD inputs for the core fitter.
-- **Subgroups with identical items.** When subsets of participants see the same stimulus sequence, they automatically receive identical anchor projections because `dkge_build_anchor_kernels()` selects anchors once per fold from the pooled training subjects. Coverage and leverage diagnostics in `fit$provenance$anchors` reveal these overlaps; large leverage spikes indicate anchors dominated by a subgroup and may motivate a smaller `L` or tighter bandwidth.
+- **All subjects share the same items.** The anchor pipeline re-expresses the
+  common item kernel because every subject projects identical feature rows into
+  the same anchor coordinates. You can keep the anchor path for consistency or
+  fit the shared item kernel with `dkge_fit_from_kernels()`; these are different
+  representations and should be compared empirically if the choice matters.
+- **Subgroups with identical items.** Subjects with identical feature rows receive
+  projections into the same pooled anchor basis. Coverage and leverage diagnostics
+  in `fit$provenance$anchors` help reveal uneven representation; large leverage
+  spikes indicate anchors dominated by a subset and may motivate a smaller `L` or
+  tighter bandwidth. These diagnostics do not substitute for nested preprocessing
+  when the target is out-of-sample performance.

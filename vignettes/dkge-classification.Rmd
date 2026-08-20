@@ -23,15 +23,17 @@ library(dkge)
 set.seed(12)
 ```
 
-The DKGE classification helpers allow you to reuse the cross-fitted group basis to decode
-subject-level contrasts with statistical rigor. This vignette demonstrates a complete
-workflow: data preparation → model fit → target specification → cross-validated decoding
-→ statistical inference.
+The DKGE classification helpers decode experimental conditions from
+subject-level effect patterns. This vignette follows one complete path: define
+the effect space, fit DKGE, specify the classes, and estimate held-out-subject
+performance.
 
-The approach is fully cross-validated: by default `dkge_classify()` uses
-leave-one-subject-out (LOSO) cross-fitting, re-estimating the group basis without the
-held-out subject at each fold. This ensures that the reported accuracies are unbiased
-estimates of generalisation performance.
+There are two distinct cross-validation contracts. The default `mode = "auto"`
+uses subject-level folds but selects the faster `"cell"` path for
+within-subject targets; its classifier is cross-validated, while the global
+DKGE basis has seen every subject. Use `mode = "cell_cross"` when the basis
+itself must also be re-estimated without each held-out subject. The primary
+example below uses that stricter end-to-end path.
 
 ## Setup
 
@@ -83,7 +85,7 @@ metadata stored in the kernel. Each term becomes a binary (or multi-class) decod
 problem over the group embedding.
 
 ```{r targets}
-targets <- dkge_targets(fit, ~ cond + time)
+targets <- dkge_targets(fit, ~ cond)
 length(targets)                      # one target per formula term
 targets[[1]]$name                    # "cond"
 nrow(targets[[1]]$weight_matrix)     # 2 classes (A vs B)
@@ -99,7 +101,8 @@ cls <- dkge_classify(
   fit,
   targets = targets,
   method  = "lda",     # "lda" (default) or "logit"
-  n_perm  = 199,       # permutation test for significance
+  mode    = "cell_cross",
+  n_perm  = 99,        # coarse permutation resolution for this example
   seed    = 99
 )
 print(cls)
@@ -110,9 +113,23 @@ one target:
 
 ```{r results}
 res <- cls$results[["cond"]]
-res$mode       # decoding mode: "cell" for within-subject targets
+res$mode       # "cell_cross": the basis is refitted inside each fold
 res$metrics    # cross-validated accuracy and log-loss
 ```
+
+The estimand is subject-level LOSO accuracy for classifying the condition
+patterns, with both the DKGE basis and classifier refit without the held-out
+subject. In this seeded simulation the planted condition signal yields:
+
+```{r interpret-result}
+condition_accuracy <- unname(res$metrics[["accuracy"]])
+condition_log_loss <- unname(res$metrics[["logloss"]])
+c(accuracy = condition_accuracy, logloss = condition_log_loss)
+```
+
+An accuracy of 1 means every held-out condition row was classified correctly in
+this deliberately strong toy example. It is not an estimate of performance on
+an external dataset.
 
 Convert to a tidy data frame for plotting or downstream analysis:
 
@@ -129,6 +146,10 @@ permutation distribution:
 ```{r pvalues}
 res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
 ```
+
+With 99 permutations and the plus-one correction, the smallest attainable
+p-value is (1/(99+1)=0.01). A value at that boundary means none of the sampled
+permutations was as extreme; it does not provide finer resolution than 0.01.
 
 ### Subject-level predictions
 
@@ -158,14 +179,14 @@ The `mode` argument controls how the group basis is applied at test time:
 | Mode | Basis used | Use case |
 |------|-----------|----------|
 | `"cell"` | Global `fit$U` | Fast; mild basis-step leakage — `fit$U` saw all subjects |
-| `"cell_cross"` | Fold-specific LOSO `U_fold` | Fully cross-validated, more conservative |
+| `"cell_cross"` | Fold-specific LOSO `U_fold` | Basis and classifier refit per subject fold |
 | `"delta"` | Global `fit$U` + subject labels | Subject-level binary test; requires `y` argument |
 
 `"auto"` (default) selects `"cell"` for within-subject targets and `"delta"` for
 between-subject targets.
 
 ```{r cell-cross, eval=FALSE}
-# Fully cross-validated basis — recommended for publication-quality results
+# Refit the basis without each held-out subject.
 cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
 ```
 
@@ -205,7 +226,8 @@ A plain matrix is accepted directly as `targets` — DKGE wraps it automatically
 ```{r multi-classify}
 cls_multi <- dkge_classify(fit_multi,
                            targets = W_runs,   # plain matrix dispatch
-                           n_perm  = 99,
+                           mode = "cell_cross",
+                           n_perm  = 49,
                            seed    = 101)
 
 res_multi <- cls_multi$results[[1]]
@@ -213,8 +235,11 @@ res_multi$metrics
 as.data.frame(cls_multi)
 ```
 
-The cross-validation remains unbiased: run averaging happens inside the weight matrix,
-so each LOSO fold observes exactly one pattern per condition.
+Run averaging happens inside the weight matrix, so each fold observes one
+pattern per condition. Because this call also uses `mode = "cell_cross"`, both
+the basis and classifier exclude the held-out subject. This guards against the
+specific basis-reuse leakage described above; it does not by itself establish
+transportability to a new scanner, acquisition protocol, or population.
 
 ## Hyperdesign inputs and fold bridges
 
