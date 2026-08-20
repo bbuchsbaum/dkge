@@ -15,6 +15,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
+library(dkge)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -49,10 +50,43 @@ The package follows standard R conventions (roxygen2, testthat, pkgdown) and lin
 1. **Coercion**: Accept raw lists or `dkge_data` bundles, validate dimensions, and attach kernel metadata.
 2. **Row standardisation**: Pool subject designs, compute the shared Cholesky factor `R`, and build `Btil` (`R^T B_s`).
 3. **Kernel preparation**: Symmetrise the kernel, derive square roots/inverses, and resolve voxel/anchor weights.
-4. **Weighting**: Compute optional subject MFA weights (`svd` per subject) and voxel weights, accumulating the compressed covariance `Chat`. Missingness policies (`none`, `mask`, `rescale`, `shrink`) restore **observed** pair mass under partial coverage, not full cohort mass.
+4. **Weighting**: Compute optional subject MFA weights (a frozen power iteration per subject) and voxel weights, accumulating the compressed covariance `Chat`. Under partial coverage, `none` and `mask` preserve **observed** pair mass; `rescale` returns an observed-pair mean, and `shrink` blends that mean toward its diagonal rather than restoring cohort mass.
 5. **CPCA branches**: Optionally split the covariance into design/residual parts, re-merge based on `cpca_part`, and inject ridge terms.
 6. **Eigen solve**: Run a dense `eigen()` on `Chat`, drop near-zero components, and project back to the K-metric basis.
 7. **Block assembly**: Build the concatenated subject matrix, populate the multivarious `multiblock_biprojector`, and package diagnostics (weights, contributions, CPCA payloads, cached Chat pieces).
+
+```{r missingness-contract-checks, include=FALSE}
+set.seed(104)
+S_check <- 4L
+q_check <- 2L
+B_check <- replicate(
+  S_check, matrix(rnorm(q_check * 3L), q_check, 3L), simplify = FALSE
+)
+X_check <- replicate(S_check, diag(q_check), simplify = FALSE)
+fit_none_check <- dkge_fit(
+  B_check, X_check, K = diag(q_check), rank = 1L,
+  w_method = "none", missingness = "none"
+)
+fit_rescale_check <- dkge_fit(
+  B_check, X_check, K = diag(q_check), rank = 1L,
+  w_method = "none", missingness = "rescale"
+)
+fit_shrink_check <- dkge_fit(
+  B_check, X_check, K = diag(q_check), rank = 1L,
+  w_method = "none", missingness = "shrink",
+  miss_args = list(min_pairs = 1L, gamma = 1)
+)
+stopifnot(isTRUE(all.equal(
+  fit_none_check$effect_moment,
+  S_check * fit_rescale_check$effect_moment,
+  tolerance = 1e-12
+)))
+stopifnot(isTRUE(all.equal(
+  fit_shrink_check$effect_moment,
+  fit_rescale_check$effect_moment,
+  tolerance = 1e-12
+)))
+```
 
 This structure makes it difficult to reuse intermediate artefacts (e.g. cached `Chat`, per-subject contributions) or to experiment with variant solvers, streaming fits, or GPU back-ends.
 

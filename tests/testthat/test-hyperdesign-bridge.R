@@ -16,6 +16,14 @@ test_that("as_dkge_kernel preserves existing matrix behaviour", {
   expect_null(fit_default$kernel_info)
 })
 
+test_that("as_dkge_kernel rejects malformed metadata with a stable condition", {
+  expect_error(
+    as_dkge_kernel(list(K = diag(2), info = "identity")),
+    "metadata `info` must be a list or NULL",
+    class = "dkge_kernel_info_error"
+  )
+})
+
 test_that("as_dkge_folds accepts subject-fold data.frame", {
   fixtures <- make_small_fit()
   fit <- fixtures$fit

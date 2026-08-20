@@ -88,6 +88,17 @@ Project home and documentation: <https://github.com/bbuchsbaum/dkge>. Issues and
 ## Development
 - Pull requests are encouraged; please accompany user-facing changes with tests and documentation.
 - For large feature work, open an issue to discuss design choices before implementation.
+- `Authors@R` is the canonical author/maintainer record; legacy `Author` and
+  `Maintainer` fields are intentionally omitted.
+- Core metadata has no mutable `Remotes` field. The two non-CRAN imports are
+  resolvable from the bbuchsbaum R-universe, while release workflows install
+  the exact Git SHAs recorded in `tools/release/noncran-lock.csv`.
+- The optional `neuralign` integration is declared under `Enhances` and tested
+  in a separate pinned workflow; it is not part of core installation or check
+  resolution.
+- The independent Sinkhorn oracle is a deterministic dense R implementation in
+  the test suite, so the numerical gate does not disappear when an experimental
+  transport package is unavailable.
 
 ## License
 MIT License. See `LICENSE` for details.

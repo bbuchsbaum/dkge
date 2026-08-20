@@ -48,6 +48,15 @@ where r is the rank. The approximation is accurate when:
 
 When these conditions are violated (detected via condition number or
 eigenvalue gaps), the function can fall back to full eigen-decomposition.
+
+Fallback diagnostics use a closed reason vocabulary with this precedence:
+`solver_not_pooled`, `pair_normalized_pooling`,
+`covariance_aware_moment`, `nonuniform_voxel_weights`,
+`missing_full_decomposition`, `dimension_mismatch`, `eigengap`, and
+`perturbation_magnitude`. Structural reasons are checked before numerical
+perturbation thresholds, so a large perturbation cannot mask the more basic
+fact that the leave-one-out covariance is not a linear subtraction from the
+fitted pooled moment. A successful approximation reports `analytic`.
 }
 \examples{
 \donttest{

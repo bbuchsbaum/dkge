@@ -7,15 +7,21 @@
 #' Residual-space rotation fixes the nuisance-design column space and rotates
 #' its orthogonal complement before comparing the reduced and full reduced-rank
 #' residual sums of squares. Freedman-Lane residual permutation remains
-#' available as a legacy approximate method.
+#' available as a legacy approximate method. The beta API requires an explicit
+#' method because the frozen audit both found material size inflation for the
+#' legacy method and failed its predeclared promotion rule for rotation.
+#' Rotation is exact only under its documented matrix-normal, homoscedastic,
+#' unweighted, single-block scope; other error laws require cautious
+#' interpretation.
 #'
 #' @param object A `dkge_between_rrr` object.
 #' @param terms Character vector of terms or model-matrix columns to test. When
 #'   `NULL`, all non-intercept formula terms except those listed in
 #'   `object$design$nuisance` are tested.
-#' @param method Resampling method. `"rotation"` uses Haar rotations in the
+#' @param method Required resampling method. `"rotation"` uses Haar rotations in the
 #'   orthogonal complement of the reduced design; `"freedman_lane"` permutes
-#'   reduced-model residual rows.
+#'   reduced-model residual rows. There is deliberately no default in the beta
+#'   API because neither method is universally certified.
 #' @param B Number of rotations or permutations.
 #' @param blocks Optional exchangeability blocks of length `n_subjects`.
 #' @param seed Optional random seed.
@@ -74,8 +80,11 @@
 #' strong-interaction power was 0.430 versus 0.580 for Freedman-Lane. That raw
 #' gap is mostly Freedman-Lane size inflation (matched-condition sizes 0.050
 #' versus 0.086; size-matched Freedman-Lane power about 0.49). The predeclared
-#' gates are not relaxed, so rotation remains opt-in. Its frozen plan, 8,100
-#' results, and decision report are shipped as
+#' gates are not relaxed: the missed nuisance-interaction ceiling and the power
+#' trade-off prevent default promotion. The beta API therefore requires an
+#' explicit choice instead of silently selecting either the demonstrably
+#' size-inflated legacy method or a rotation method that missed its frozen
+#' promotion rule. Its frozen plan, 8,100 results, and decision report are shipped as
 #' `data-raw/dkge-between-rotation-*` and
 #' `inst/extdata/dkge-between-rotation-*`.
 #'
@@ -99,7 +108,7 @@
 #' @export
 dkge_between_permute <- function(object,
                                  terms = NULL,
-                                 method = c("freedman_lane", "rotation"),
+                                 method = NULL,
                                  B = 999L,
                                  blocks = NULL,
                                  seed = NULL,
@@ -109,7 +118,13 @@ dkge_between_permute <- function(object,
                                  feature_adjust = c("none", "fdr", "maxT"),
                                  parallel = FALSE) {
   stopifnot(inherits(object, "dkge_between_rrr"))
-  method <- match.arg(method)
+  if (is.null(method)) {
+    .dkge_abort(
+      "`method` must be chosen explicitly as \"rotation\" or \"freedman_lane\"; neither method is a universal beta default.",
+      "dkge_inference_compatibility_error"
+    )
+  }
+  method <- match.arg(method, c("rotation", "freedman_lane"))
   statistic <- match.arg(statistic)
   scope <- match.arg(scope)
   feature_adjust <- match.arg(feature_adjust)
@@ -805,6 +820,12 @@ dkge_between_permute <- function(object,
   out
 }
 
+#' Print between-subject permutation results
+#'
+#' @param x A `dkge_between_permutation` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_between_permutation
 #' @export
 print.dkge_between_permutation <- function(x, ...) {
   cat("<dkge_between_permutation>", "\n", sep = "")

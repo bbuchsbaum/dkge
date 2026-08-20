@@ -1,0 +1,27 @@
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+name: sanitizers
+
+permissions: read-all
+
+jobs:
+  asan-ubsan:
+    runs-on: ubuntu-latest
+    container: rocker/r-devel-san:latest
+    env:
+      ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      _R_CHECK_FORCE_SUGGESTS_: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned dependencies under sanitizer R
+        run: |
+          RDscript -e 'install.packages("pak", repos = "https://cloud.r-project.org")'
+          RDscript -e 'pak::pkg_install(c("testthat", "pkgload", "bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92", "bbuchsbaum/fmrireg@20c9f07a225f21c4eea1732ea31418ccedd1c056"), dependencies = TRUE)'
+      - name: Exercise compiled Sinkhorn code under ASAN and UBSAN
+        run: |
+          RDscript -e 'testthat::test_local(".", filter = "^(transport-sinkhorn|sinkhorn-convergence|beta-edge-contracts)$", stop_on_failure = TRUE, reporter = "summary")'

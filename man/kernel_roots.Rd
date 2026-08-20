@@ -3,20 +3,40 @@
 \name{kernel_roots}
 \alias{kernel_roots}
 \alias{dkge_kernel_roots}
-\title{Robust kernel roots}
+\title{Range-space roots for a positive-semidefinite kernel}
 \usage{
-kernel_roots(K, jitter = 1e-10)
+kernel_roots(
+  K,
+  jitter = NULL,
+  absolute_tolerance = .Machine$double.xmin,
+  relative_tolerance = 1e-08
+)
 
-dkge_kernel_roots(K, jitter = 1e-10)
+dkge_kernel_roots(
+  K,
+  jitter = NULL,
+  absolute_tolerance = .Machine$double.xmin,
+  relative_tolerance = 1e-08
+)
 }
 \arguments{
 \item{K}{Positive semi-definite kernel matrix.}
 
-\item{jitter}{Small diagonal jitter added before inversion.}
+\item{jitter}{Deprecated absolute truncation threshold. When supplied it is
+used as `absolute_tolerance`; eigenvalues below it are discarded, not
+raised to it.}
+
+\item{absolute_tolerance}{Non-negative absolute spectral tolerance.}
+
+\item{relative_tolerance}{Non-negative tolerance relative to the largest
+kernel eigenvalue.}
 }
 \value{
-List with `Khalf`, `Kihalf`, eigenvalues, eigenvectors, and basic diagnostics.
+List with `Khalf`, `Kihalf`, eigenvalues, eigenvectors, numerical
+  rank/nullity, retained range, and the applied tolerances.
 }
 \description{
-Robust kernel roots
+Computes the true symmetric square root and the Moore-Penrose inverse square
+root. Eigenvalues at or below the applied absolute-plus-relative tolerance
+remain exactly zero; null directions are never jittered into the metric.
 }

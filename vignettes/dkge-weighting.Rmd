@@ -26,11 +26,11 @@ knitr::opts_chunk$set(
   fig.height = 4,
   out.width = "90%"
 )
-options(
+withr::local_options(list(
   tibble.print_min = 4,
   tibble.print_max = 4,
   digits = 3
-)
+))
 set.seed(2024)
 theme_set(theme_dkge())
 ```
@@ -58,7 +58,7 @@ The following sections systematically walk through each weighting layer using a 
 
 To illustrate the behavior of different weighting strategies, we generate a synthetic dataset with three subjects that exhibit varying cluster counts, sizes, and reliability characteristics. This heterogeneity makes the effects of different weighting approaches readily apparent during inspection.
 
-```{r example-data, message=FALSE}
+```{r example-data, message=FALSE, warning=FALSE}
 library(dkge)
 library(purrr)
 set.seed(42)
@@ -76,7 +76,11 @@ designs <- map(seq_len(S), function(s) {
 
 centroids <- map(P, ~ matrix(runif(.x * 3, min = -20, max = 20), .x, 3))
 cluster_sizes <- map(P, ~ sample(10:40, .x, replace = TRUE))
-reliability_scores <- map(P, ~ runif(.x, min = 0.4, max = 1))
+reliability_scores <- list(
+  rep(0.95, P[1]),
+  rep(0.20, P[2]),  # subject 2 is the deliberately low-reliability block
+  rep(0.80, P[3])
+)
 ```
 
 In this simulation, the `cluster_sizes` vectors serve as proxies for surface-area weights that would reflect the actual spatial extent of brain parcels, while the `reliability_scores` could represent various quality control measures such as motion artifacts or bootstrap stability assessments commonly used in neuroimaging analyses.
@@ -104,7 +108,8 @@ fit_size <- dkge(data_equal,
                  K = k_identity,
                  Omega_list = omega_size,
                  rank = 2,
-                 w_method = "none")
+                 w_method = "mfa_sigma1",
+                 w_tau = 0.25)
 fit_size$weights
 ```
 
@@ -126,11 +131,44 @@ fit_reliability <- dkge(data_equal,
                         K = k_identity,
                         Omega_list = omega_reliability,
                         rank = 2,
-                        w_method = "none")
-fit_reliability$weights
+                        w_method = "mfa_sigma1",
+                        w_tau = 0.25)
+
+weight_comparison <- rbind(
+  size = fit_size$weights,
+  size_x_reliability = fit_reliability$weights
+)
+round(weight_comparison, 3)
+
+weighted_contribution_norm <- function(fit) {
+  fit$weights * vapply(
+    fit$contribs,
+    function(x) sqrt(sum(x * x)),
+    numeric(1)
+  )
+}
+leverage_comparison <- rbind(
+  size = weighted_contribution_norm(fit_size),
+  size_x_reliability = weighted_contribution_norm(fit_reliability)
+)
+round(leverage_comparison, 1)
 ```
 
-By comparing `fit_reliability$weights` with `fit_size$weights`, we can observe that subjects containing systematically noisier clusters receive reduced leverage in the analysis, even before any additional subject-level scaling is applied.
+The two visible rows are deliberately different. Subject 2 has the lowest
+reliability scores. Its scalar MFA weight increases because inverse-leading-
+singular-value scaling partly compensates for a lower-energy block; the scalar
+weight alone is therefore not a measure of leverage. The second table reports
+the direct contribution scale entering `Chat` (subject weight times the
+Frobenius norm of that subject's unweighted contribution). On this controlled
+example, adding reliability reduces subject 2's contribution relative to the
+size-only fit.
+
+```{r reliability-weighting-checks, include=FALSE}
+stopifnot(!isTRUE(all.equal(fit_reliability$weights, fit_size$weights)))
+stopifnot(fit_reliability$weights[2] > fit_size$weights[2])
+stopifnot(leverage_comparison["size_x_reliability", 2] <
+            leverage_comparison["size", 2])
+```
 
 In real-world applications, reliability vectors can be derived from several methodologically sound sources. First, you can use per-cluster GLM uncertainty measures, such as inverse residual variance or `1 / se^2` values obtained from first-level statistical fits. Second, split-half or test-retest variance estimates provide another approach by down-weighting parcels that show poor temporal stability. Third, motion and quality control summaries can identify and flag clusters that were acquired under conditions of excessive artifact contamination. Fourth, bootstrap or jackknife stability scores can be converted into positive weight values that reflect resampling-based reliability. Finally, you can create combinations of the above approaches, often multiplying them by parcel sizes and rescaling the results so that the subject-level mean weight equals one.
 
@@ -180,7 +218,7 @@ fit_energy <- dkge(data_equal,
 
 rbind(mfa = fit_mfa$weights,
       energy = fit_energy$weights,
-      none = fit_size$weights)
+      size_mfa = fit_size$weights)
 ```
 
 ```{r subject-weighting-checks, include=FALSE}
@@ -199,7 +237,7 @@ fit_mfa$centroids <- centroids  # attach for transport helpers; pass explicitly 
 
 comp_equal <- dkge_component_stats(
   fit_mfa,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, max_iter = 2000),
   centroids = centroids,
   inference = list(type = "parametric"),
   medoid = 1L
@@ -207,7 +245,7 @@ comp_equal <- dkge_component_stats(
 
 comp_weighted <- dkge_component_stats(
   fit_mfa,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, max_iter = 2000),
   centroids = centroids,
   sizes = cluster_sizes,
   inference = list(type = "parametric"),

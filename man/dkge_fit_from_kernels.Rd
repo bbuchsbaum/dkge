@@ -9,7 +9,9 @@ dkge_fit_from_kernels(
   effect_ids,
   subject_ids = NULL,
   design_kernel = NULL,
-  sqrt_tol = 1e-10,
+  sqrt_tol = NULL,
+  sqrt_absolute_tolerance = .Machine$double.xmin,
+  sqrt_relative_tolerance = 1e-08,
   ...
 )
 }
@@ -27,13 +29,21 @@ names of `K_list` or sequential identifiers.}
 to the \eqn{q \times q} identity matrix, which matches the whitened anchor
 setup.}
 
-\item{sqrt_tol}{Eigenvalue tolerance used when extracting square roots.}
+\item{sqrt_tol}{Deprecated absolute eigenvalue truncation threshold. When
+supplied it overrides `sqrt_absolute_tolerance`.}
+
+\item{sqrt_absolute_tolerance}{Non-negative absolute eigenvalue tolerance.}
+
+\item{sqrt_relative_tolerance}{Non-negative tolerance relative to each
+subject kernel's largest eigenvalue.}
 
 \item{...}{Additional arguments forwarded to [dkge_fit()].}
 }
 \value{
 A `dkge` object identical to one obtained from [dkge_fit()], with
-  provenance annotated to record the kernel-driven construction.
+  provenance annotated to record the kernel-driven construction. Effect
+  matrices use `effect_ids` as canonical dimnames, subject-indexed lists use
+  `subject_ids`, and component axes are labelled `LV1`, `LV2`, and so on.
 }
 \description{
 Converts a list of subject-level effect kernels \eqn{K_s \in \mathbb{R}^{q \times q}} into

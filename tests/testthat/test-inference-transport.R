@@ -22,8 +22,12 @@ test_that("dkge_infer applies mapper-based transports", {
   transport_cfg <- list(
     centroids = data$centroids,
     medoid = 1L,
-    mapper = dkge_mapper_spec("ridge", lambda = 1e-2),
-    betas = data$betas
+    mapper = dkge_mapper_spec(
+      "sinkhorn", epsilon = 0.2, lambda_emb = 0, lambda_spa = 1,
+      warm_start = FALSE
+    ),
+    betas = data$betas,
+    provenance = dkge_transport_provenance("geometry_only")
   )
 
   res <- suppressWarnings(dkge_infer(fit, c(1, -1, 0), method = "loso",
@@ -33,4 +37,12 @@ test_that("dkge_infer applies mapper-based transports", {
   expect_s3_class(res, "dkge_inference")
   expect_true(is.list(res$transport))
   expect_equal(ncol(res$transport[[1]]$subj_values), nrow(data$centroids[[1]]))
+  expect_identical(
+    res$exactness,
+    "randomization_exact_sign_invariant_operator"
+  )
+  expect_identical(
+    res$metadata$transport_provenance$class,
+    "geometry_only"
+  )
 })

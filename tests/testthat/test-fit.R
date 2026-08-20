@@ -384,6 +384,119 @@ test_that("kernel_info is permuted with the kernel to match data effects", {
   expect_equal(ratio, rep(ratio[[1]], length(ratio)), tolerance = 1e-10)
 })
 
+test_that("kernel metadata spaces remain distinct when cell and effect counts coincide", {
+  # A full-rank custom contrast makes Qcell == q. Length and even the default
+  # labels are therefore insufficient to decide which metadata indexes K.
+  kern <- design_kernel(
+    factors = list(A = list(L = 2L)),
+    terms = list("A"),
+    contrasts = list(A = diag(2)),
+    basis = "effect",
+    normalize = "none"
+  )
+  effect_order <- rev(rownames(kern$K))
+  cell_labels <- kern$info$cell_labels
+  cells <- kern$info$cells
+  map <- kern$info$map
+
+  expect_identical(kern$info$coordinate_space$kernel, "effect")
+  expect_identical(kern$info$effect_labels, rownames(kern$K))
+
+  aligned <- suppressMessages(
+    dkge:::.dkge_align_kernel_effects(kern$K, effect_order, kern$info)
+  )
+  expect_identical(aligned$kernel_info$cell_labels, cell_labels)
+  expect_identical(aligned$kernel_info$cells, cells)
+  expect_identical(aligned$kernel_info$effect_labels, effect_order)
+  expect_identical(rownames(aligned$kernel_info$map), cell_labels)
+  expect_identical(colnames(aligned$kernel_info$map), effect_order)
+  expect_equal(
+    unname(aligned$kernel_info$map),
+    unname(map[, match(effect_order, colnames(map)), drop = FALSE])
+  )
+
+  set.seed(941)
+  betas <- replicate(4L, {
+    B <- matrix(stats::rnorm(2L * 6L), 2L, 6L)
+    rownames(B) <- effect_order
+    B
+  }, simplify = FALSE)
+  designs <- replicate(4L, {
+    X <- diag(2L)
+    dimnames(X) <- list(effect_order, effect_order)
+    X
+  }, simplify = FALSE)
+  fitted <- suppressMessages(
+    dkge(betas, designs, K = kern, rank = 1L, w_method = "none")
+  )
+  expect_identical(fitted$effects, effect_order)
+  expect_identical(fitted$kernel_info$effect_labels, effect_order)
+  expect_identical(fitted$kernel_info$cell_labels, cell_labels)
+  expect_identical(colnames(fitted$kernel_info$map), effect_order)
+
+  fit <- list(
+    K = aligned$K,
+    effects = effect_order,
+    kernel_info = aligned$kernel_info
+  )
+  expect_silent(dkge:::.dkge_check_kernel_info(fit))
+
+  bad_effect <- fit
+  bad_effect$kernel_info$effect_labels <- rev(effect_order)
+  expect_error(dkge:::.dkge_check_kernel_info(bad_effect), "effect_labels")
+
+  bad_cells <- fit
+  rownames(bad_cells$kernel_info$map) <- rev(cell_labels)
+  expect_error(dkge:::.dkge_check_kernel_info(bad_cells), "map row names")
+})
+
+test_that("kernel metadata permutation uses declared axes and name oracles", {
+  cell_kern <- design_kernel(
+    factors = list(`my factor` = list(L = 3L)),
+    basis = "cell",
+    normalize = "none"
+  )
+  old_labels <- rownames(cell_kern$K)
+  new_labels <- old_labels[c(3L, 1L, 2L)]
+  cell_kern$info$axis_score <- stats::setNames(c(10, 20, 30), old_labels)
+  cell_kern$info$coordinate_space$axis_score <- "cell"
+  aligned_cell <- suppressMessages(
+    dkge:::.dkge_align_kernel_effects(
+      cell_kern$K, new_labels, cell_kern$info
+    )
+  )
+  expect_identical(aligned_cell$kernel_info$cell_labels, new_labels)
+  expect_identical(
+    aligned_cell$kernel_info$axis_score,
+    stats::setNames(c(30, 10, 20), new_labels)
+  )
+
+  effect_kern <- design_kernel(
+    factors = list(A = list(L = 3L)),
+    basis = "effect",
+    normalize = "none"
+  )
+  original_cells <- effect_kern$info$cells
+  original_cell_labels <- effect_kern$info$cell_labels
+  new_effects <- rev(rownames(effect_kern$K))
+  aligned_effect <- suppressMessages(
+    dkge:::.dkge_align_kernel_effects(
+      effect_kern$K, new_effects, effect_kern$info
+    )
+  )
+  expect_identical(aligned_effect$kernel_info$cells, original_cells)
+  expect_identical(aligned_effect$kernel_info$cell_labels, original_cell_labels)
+  expect_identical(aligned_effect$kernel_info$effect_labels, new_effects)
+
+  one_cell <- design_kernel(
+    factors = list(singleton = list(L = 1L)),
+    basis = "cell",
+    normalize = "none"
+  )
+  expect_identical(one_cell$info$coordinate_space$kernel, "cell")
+  expect_identical(one_cell$info$cell_labels, rownames(one_cell$K))
+})
+
 test_that("min_pairs is compared on the unweighted subject scale", {
   Chat <- matrix(c(4, 2, 2, 8), 2, 2)
   # Half a unit of mass per subject: two subjects share both pairs.
@@ -1023,4 +1136,3 @@ test_that("split-half error names the offending subject", {
     "alice"
   )
 })
-

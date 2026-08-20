@@ -243,6 +243,12 @@ dkge_regress <- function(fit,
   out
 }
 
+#' Print cross-validated regression results
+#'
+#' @param x A `dkge_regress` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_regress
 #' @export
 print.dkge_regress <- function(x, ...) {
   cat("dkge_regress results\n")

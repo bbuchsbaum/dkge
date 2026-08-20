@@ -1,18 +1,36 @@
 # test-transport-sinkhorn.R
-# Cross-check Sinkhorn transport plans against T4transport reference
+# Cross-check compiled Sinkhorn plans against a dense independent R reference.
 
 library(testthat)
 
-skip_if_no_T4transport()
+dense_sinkhorn_reference <- function(C, mu, nu, epsilon,
+                                     max_iter = 20000L, tol = 1e-13) {
+  kernel <- exp(-C / epsilon)
+  u <- rep(1, length(mu))
+  v <- rep(1, length(nu))
+  for (iteration in seq_len(max_iter)) {
+    u <- mu / as.numeric(kernel %*% v)
+    v <- nu / as.numeric(crossprod(kernel, u))
+    if (iteration %% 5L == 0L) {
+      plan <- (u * kernel) * rep(v, each = nrow(kernel))
+      error <- max(abs(rowSums(plan) - mu), abs(colSums(plan) - nu))
+      if (is.finite(error) && error <= tol) break
+    }
+  }
+  plan <- (u * kernel) * rep(v, each = nrow(kernel))
+  list(plan = plan, distance = sum(plan * C), iterations = iteration)
+}
 
-compare_sinkhorn <- function(C, mu, nu, epsilon, max_iter = 5000, tol = 1e-12) {
-  ours <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = epsilon, max_iter = max_iter, tol = tol)
-  ref <- T4transport::sinkhornD(C, p = 1, wx = mu, wy = nu, lambda = epsilon,
-                                maxiter = max_iter, abstol = tol)
+compare_sinkhorn <- function(C, mu, nu, epsilon, max_iter = 5000, tol = 1e-11) {
+  ours <- dkge:::.dkge_sinkhorn_plan(
+    C, mu, nu, epsilon = epsilon, max_iter = max_iter, tol = tol,
+    warm_start = FALSE
+  )
+  ref <- dense_sinkhorn_reference(C, mu, nu, epsilon = epsilon)
   list(ours = ours, ref = ref)
 }
 
-test_that("Sinkhorn plan matches T4transport for simple Gaussian blobs", {
+test_that("Sinkhorn plan matches a dense R oracle for simple Gaussian blobs", {
   set.seed(123)
   X <- matrix(rnorm(3 * 2), 3, 2)
   Y <- matrix(rnorm(4 * 2) + 0.1, 4, 2)
@@ -29,7 +47,7 @@ test_that("Sinkhorn plan matches T4transport for simple Gaussian blobs", {
   expect_equal(unname(colSums(cmp$ours)), nu, tolerance = 1e-6)
 })
 
-test_that("Sinkhorn plan matches T4transport with non-uniform weights", {
+test_that("Sinkhorn plan matches a dense R oracle with non-uniform weights", {
   set.seed(456)
   X <- matrix(runif(5 * 3), 5, 3)
   Y <- matrix(runif(6 * 3) + 0.3, 6, 3)
@@ -53,7 +71,7 @@ test_that("spatial penalty biases Sinkhorn plan toward nearby targets", {
   target_xyz <- matrix(c(0, 0, 4, 0), ncol = 2, byrow = TRUE)
 
   spec <- dkge_mapper_spec("sinkhorn", lambda_emb = 0, lambda_spa = 1, sigma_mm = 1,
-                           epsilon = 0.1, max_iter = 500)
+                           epsilon = 0.1, max_iter = 5000)
   mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat,
                         source_xyz = source_xyz, target_xyz = target_xyz)
   plan <- mapping$operator
@@ -93,7 +111,9 @@ test_that("dkge_clear_sinkhorn_cache removes cached entries", {
   C <- matrix(c(0, 1, 1, 0.2), 2, 2)
   mu <- rep(0.5, 2)
   nu <- rep(0.5, 2)
-  invisible(dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 10))
+  invisible(dkge:::.dkge_sinkhorn_plan(
+    C, mu, nu, epsilon = 0.1, max_iter = 5000, tol = 1e-4
+  ))
 
   expect_gt(length(setdiff(ls(env, all.names = TRUE), ".order")), 0)
 

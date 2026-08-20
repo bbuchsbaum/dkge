@@ -54,8 +54,12 @@ test_that("dkge_infer applies mapper-based transport", {
   transport_cfg <- list(
     centroids = data$centroids,
     medoid = 1L,
-    mapper = dkge_mapper_spec("ridge", lambda = 1e-2),
-    betas = data$betas
+    mapper = dkge_mapper_spec(
+      "sinkhorn", epsilon = 0.2, lambda_emb = 0, lambda_spa = 1,
+      warm_start = FALSE
+    ),
+    betas = data$betas,
+    provenance = dkge_transport_provenance("geometry_only")
   )
 
   res <- suppressWarnings(dkge_infer(fit, c(1, -1, 0), transport = transport_cfg))
@@ -93,4 +97,63 @@ test_that("sign-flip max-T exposes uncorrected p-values bounded by the adjusted 
   expect_true(all(res$p_unadj >= 0 & res$p_unadj <= 1))
   # Uncorrected p is never larger than the max-T (FWER) adjusted p.
   expect_true(all(res$p_unadj <= res$p + 1e-9))
+})
+
+test_that("sign-flip adjusted and unadjusted p-values match the sampled null", {
+  set.seed(2718)
+  Y <- matrix(c(
+    2,  0,  1,
+    1, -1,  0,
+    3,  1, -1,
+    2,  0,  2,
+    4, -2,  1
+  ), nrow = 5, byrow = TRUE,
+  dimnames = list(paste0("person ", 1:5), c("signal", "null-x", "zero-ish")))
+  B <- 100L
+  result <- dkge_signflip_maxT(Y, B = B, tail = "two.sided")
+
+  observed <- colMeans(Y) /
+    (apply(Y, 2, stats::sd) / sqrt(nrow(Y)) + 1e-12)
+  null_stats <- vapply(seq_len(B), function(b) {
+    Yb <- result$flips[, b] * Y
+    abs(colMeans(Yb) /
+          (apply(Yb, 2, stats::sd) / sqrt(nrow(Yb)) + 1e-12))
+  }, numeric(ncol(Y)))
+  max_null <- apply(null_stats, 2, max)
+  expected_adjusted <- vapply(abs(observed), function(x) {
+    (1 + sum(max_null >= x)) / (B + 1)
+  }, numeric(1))
+  expected_unadjusted <- vapply(seq_along(observed), function(j) {
+    (1 + sum(null_stats[j, ] >= abs(observed[j]))) / (B + 1)
+  }, numeric(1))
+  names(expected_unadjusted) <- colnames(Y)
+  names(max_null) <- paste0("perm", seq_len(B))
+
+  expect_named(result, c("stat", "p", "p_unadj", "maxnull", "flips"))
+  expect_equal(result$stat, observed, tolerance = 1e-12)
+  expect_equal(result$p, expected_adjusted, tolerance = 1e-12)
+  expect_equal(result$p_unadj, expected_unadjusted, tolerance = 1e-12)
+  expect_equal(result$maxnull, max_null, tolerance = 1e-12)
+  expect_equal(names(result$stat), colnames(Y))
+  expect_equal(names(result$p), colnames(Y))
+  expect_equal(names(result$p_unadj), colnames(Y))
+  expect_equal(rownames(result$flips), rownames(Y))
+  expect_equal(colnames(result$flips), names(result$maxnull))
+})
+
+test_that("sign-flip schema is seeded and stable for minimum and degenerate inputs", {
+  Y <- matrix(0, 5, 1,
+              dimnames = list(paste0("s", 1:5), "constant-zero"))
+  set.seed(99)
+  first <- dkge_signflip_maxT(Y, B = 100)
+  set.seed(99)
+  second <- dkge_signflip_maxT(Y, B = 100)
+
+  expect_identical(first, second)
+  expect_named(first, c("stat", "p", "p_unadj", "maxnull", "flips"))
+  expect_equal(first$stat, c("constant-zero" = 0))
+  expect_equal(first$p, c("constant-zero" = 1))
+  expect_equal(first$p_unadj, c("constant-zero" = 1))
+  expect_true(all(first$maxnull == 0))
+  expect_equal(dim(first$flips), c(5, 100))
 })

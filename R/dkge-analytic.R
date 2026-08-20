@@ -1,6 +1,37 @@
 # dkge-analytic.R
 # Analytic (first-order) leave-one-out approximation for DKGE contrasts
 
+.dkge_analytic_reason_levels <- c(
+  "analytic",
+  "solver_not_pooled",
+  "pair_normalized_pooling",
+  "covariance_aware_moment",
+  "nonuniform_voxel_weights",
+  "missing_full_decomposition",
+  "dimension_mismatch",
+  "eigengap",
+  "perturbation_magnitude",
+  "fallback"
+)
+
+.dkge_analytic_diagnostic <- function(reason,
+                                      min_eigengap = NA_real_,
+                                      max_abs_coeff = NA_real_,
+                                      threshold_eigengap = NA_real_,
+                                      threshold_coeff = NA_real_) {
+  if (length(reason) != 1L || !reason %in% .dkge_analytic_reason_levels) {
+    stop("Internal DKGE error: unknown analytic fallback reason.",
+         call. = FALSE)
+  }
+  list(
+    reason = reason,
+    min_eigengap = as.numeric(min_eigengap),
+    max_abs_coeff = as.numeric(max_abs_coeff),
+    threshold_eigengap = as.numeric(threshold_eigengap),
+    threshold_coeff = as.numeric(threshold_coeff)
+  )
+}
+
 #' Analytic LOSO contrast using eigenvalue perturbation
 #'
 #' Approximates leave-one-subject-out contrast values using first-order
@@ -38,6 +69,15 @@
 #' When these conditions are violated (detected via condition number or
 #' eigenvalue gaps), the function can fall back to full eigen-decomposition.
 #'
+#' Fallback diagnostics use a closed reason vocabulary with this precedence:
+#' `solver_not_pooled`, `pair_normalized_pooling`,
+#' `covariance_aware_moment`, `nonuniform_voxel_weights`,
+#' `missing_full_decomposition`, `dimension_mismatch`, `eigengap`, and
+#' `perturbation_magnitude`. Structural reasons are checked before numerical
+#' perturbation thresholds, so a large perturbation cannot mask the more basic
+#' fact that the leave-one-out covariance is not a linear subtraction from the
+#' fitted pooled moment. A successful approximation reports `analytic`.
+#'
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -65,24 +105,33 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   solver_type <- fit$solver
   if (is.null(solver_type)) solver_type <- "pooled"
   if (!identical(solver_type, "pooled")) {
-    diag_info <- list(reason = "solver_not_pooled",
-                      min_eigengap = NA_real_,
-                      max_abs_coeff = NA_real_,
-                      threshold_eigengap = NA_real_,
-                      threshold_coeff = NA_real_)
+    diag_info <- .dkge_analytic_diagnostic("solver_not_pooled")
     return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
                                    reason = "solver_not_pooled",
+                                   diagnostic = diag_info))
+  }
+
+  nonlinear_pool <-
+    !identical(fit$effect_weight_spec$method %||% "none", "none") ||
+    !identical(fit$missingness %||% "none", "none")
+  if (nonlinear_pool) {
+    diag_info <- .dkge_analytic_diagnostic("pair_normalized_pooling")
+    return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
+                                   reason = "pair_normalized_pooling",
+                                   diagnostic = diag_info))
+  }
+
+  if (!identical(fit$debias %||% "none", "none")) {
+    diag_info <- .dkge_analytic_diagnostic("covariance_aware_moment")
+    return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
+                                   reason = "covariance_aware_moment",
                                    diagnostic = diag_info))
   }
 
   if (!is.null(fit$voxel_weights)) {
     uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
     if (!uniform) {
-      diag_info <- list(reason = "nonuniform_voxel_weights",
-                        min_eigengap = NA_real_,
-                        max_abs_coeff = NA_real_,
-                        threshold_eigengap = NA_real_,
-                        threshold_coeff = NA_real_)
+      diag_info <- .dkge_analytic_diagnostic("nonuniform_voxel_weights")
       return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
                                      reason = "nonuniform_voxel_weights",
                                      diagnostic = diag_info))
@@ -96,22 +145,14 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   V_full <- fit$eig_vectors_full
   lambda_full <- fit$eig_values_full
   if (is.null(V_full) || is.null(lambda_full)) {
-    diag_info <- list(reason = "missing_full_decomposition",
-                      min_eigengap = NA_real_,
-                      max_abs_coeff = NA_real_,
-                      threshold_eigengap = NA_real_,
-                      threshold_coeff = NA_real_)
+    diag_info <- .dkge_analytic_diagnostic("missing_full_decomposition")
     return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
                                    reason = "missing_full_decomposition",
                                    diagnostic = diag_info))
   }
 
   if (ncol(V_full) != q || length(lambda_full) != q) {
-    diag_info <- list(reason = "dimension_mismatch",
-                      min_eigengap = NA_real_,
-                      max_abs_coeff = NA_real_,
-                      threshold_eigengap = NA_real_,
-                      threshold_coeff = NA_real_)
+    diag_info <- .dkge_analytic_diagnostic("dimension_mismatch")
     return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
                                    reason = "dimension_mismatch",
                                    diagnostic = diag_info))
@@ -144,11 +185,17 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
       min_gap_observed <- min(min_gap_observed, min_gap_j)
     }
     if (any(abs(gaps) < gap_tol, na.rm = TRUE)) {
-      diag_info <- list(reason = "eigengap",
-                        min_eigengap = min_gap_j,
-                        max_abs_coeff = if (is.finite(max_coeff_observed)) max_coeff_observed else NA_real_,
-                        threshold_eigengap = gap_tol,
-                        threshold_coeff = perturb_tol)
+      diag_info <- .dkge_analytic_diagnostic(
+        "eigengap",
+        min_eigengap = min_gap_j,
+        max_abs_coeff = if (is.finite(max_coeff_observed)) {
+          max_coeff_observed
+        } else {
+          NA_real_
+        },
+        threshold_eigengap = gap_tol,
+        threshold_coeff = perturb_tol
+      )
       return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
                                      reason = "eigengap",
                                      diagnostic = diag_info))
@@ -163,11 +210,17 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
       max_coeff_observed <- max(max_coeff_observed, max_coeff_j, na.rm = TRUE)
     }
     if (any(abs(coeffs[-j]) > perturb_tol, na.rm = TRUE)) {
-      diag_info <- list(reason = "perturbation_magnitude",
-                        min_eigengap = if (is.finite(min_gap_observed)) min_gap_observed else NA_real_,
-                        max_abs_coeff = max_coeff_j,
-                        threshold_eigengap = gap_tol,
-                        threshold_coeff = perturb_tol)
+      diag_info <- .dkge_analytic_diagnostic(
+        "perturbation_magnitude",
+        min_eigengap = if (is.finite(min_gap_observed)) {
+          min_gap_observed
+        } else {
+          NA_real_
+        },
+        max_abs_coeff = max_coeff_j,
+        threshold_eigengap = gap_tol,
+        threshold_coeff = perturb_tol
+      )
       return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
                                      reason = "perturbation_magnitude",
                                      diagnostic = diag_info))
@@ -181,6 +234,18 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
 
   U_minus <- fit$Kihalf %*% V_ortho
   KU_minus <- fit$K %*% U_minus
+  if (r > 0L) {
+    gram_error <- max(abs(crossprod(U_minus, KU_minus) - diag(r)))
+    if (!is.finite(gram_error) || gram_error > 1e-7) {
+      .dkge_abort(
+        sprintf(
+          "Analytic LOSO basis failed the K-orthonormal postcondition (maximum Gram error %.3e).",
+          gram_error
+        ),
+        "dkge_kernel_geometry_error"
+      )
+    }
+  }
 
   c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(U_minus) %*% fit$K %*% c_tilde
@@ -189,10 +254,18 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   A_s <- t(Bts) %*% KU_minus
   v_s <- as.numeric(A_s %*% alpha)
 
-  diag_info <- list(
-    reason = "analytic",
-    min_eigengap = if (is.finite(min_gap_observed)) min_gap_observed else NA_real_,
-    max_abs_coeff = if (is.finite(max_coeff_observed)) max_coeff_observed else NA_real_,
+  diag_info <- .dkge_analytic_diagnostic(
+    "analytic",
+    min_eigengap = if (is.finite(min_gap_observed)) {
+      min_gap_observed
+    } else {
+      NA_real_
+    },
+    max_abs_coeff = if (is.finite(max_coeff_observed)) {
+      max_coeff_observed
+    } else {
+      NA_real_
+    },
     threshold_eigengap = gap_tol,
     threshold_coeff = perturb_tol
   )
@@ -222,7 +295,11 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                     diagnostic = NULL) {
   result <- dkge_loso_contrast(fit, s, contrasts, ridge)
   result$method <- "fallback"
-  diag_out <- diagnostic %||% list()
+  diag_out <- diagnostic %||% .dkge_analytic_diagnostic(reason)
+  if (!reason %in% .dkge_analytic_reason_levels) {
+    stop("Internal DKGE error: unknown analytic fallback reason.",
+         call. = FALSE)
+  }
   diag_out$reason <- reason
   result$diagnostic <- diag_out
   result

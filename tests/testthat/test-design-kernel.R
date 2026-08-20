@@ -37,6 +37,113 @@ test_that("effect grid records scopes and cell labels", {
   )
 })
 
+test_that("single-factor defaults contain one unique main-effect block", {
+  cases <- list(
+    nominal = list(A = list(L = 3, type = "nominal")),
+    ordinal = list(load = list(L = 4, type = "ordinal", l = 1.25))
+  )
+
+  for (spec in cases) {
+    grid <- dkge_effect_grid(spec)
+    direct <- design_kernel(
+      spec,
+      basis = "effect",
+      normalize = "none",
+      include_intercept = FALSE,
+      jitter = 0
+    )
+    from_grid <- design_kernel(
+      grid,
+      basis = "effect",
+      normalize = "none",
+      include_intercept = FALSE,
+      jitter = 0
+    )
+
+    factor_name <- names(spec)
+    expected_q <- spec[[1L]]$L - 1L
+    expected_effects <- if (expected_q == 1L) {
+      factor_name
+    } else {
+      paste0(factor_name, seq_len(expected_q))
+    }
+
+    expect_equal(direct$info$term_names, factor_name)
+    expect_equal(from_grid$info$term_names, factor_name)
+    expect_equal(grid$default_terms, list(factor_name))
+    expect_equal(dim(direct$K), c(expected_q, expected_q))
+    expect_equal(rownames(direct$K), expected_effects)
+    expect_identical(anyDuplicated(rownames(direct$K)), 0L)
+    expect_true(isSymmetric(direct$K, tol = 1e-12))
+    expect_gte(min(eigen(direct$K, symmetric = TRUE, only.values = TRUE)$values),
+               -1e-10)
+    expect_equal(from_grid$K, direct$K, tolerance = 1e-12)
+    expect_equal(from_grid$info$cells, grid$cells)
+    expect_equal(from_grid$info$cell_labels, grid$cell_labels)
+  }
+})
+
+test_that("single-factor ordinal defaults retain length-scale semantics", {
+  make_kernel <- function(l) {
+    design_kernel(
+      dkge_effect_grid(list(load = list(L = 4, type = "ordinal", l = l))),
+      basis = "effect",
+      normalize = "none",
+      include_intercept = FALSE,
+      jitter = 0
+    )
+  }
+
+  narrow <- make_kernel(0.5)
+  wide <- make_kernel(4)
+  expect_equal(dim(narrow$K), c(3, 3))
+  expect_equal(narrow$info$term_names, "load")
+  expect_false(isTRUE(all.equal(narrow$K, wide$K, tolerance = 1e-10)))
+})
+
+test_that("single-factor effect labels reconcile with dkge_data effects", {
+  grid <- dkge_effect_grid(list(A = c("low", "mid", "high")))
+  kern <- design_kernel(grid, basis = "effect")
+  effects <- rownames(kern$K)
+  set.seed(8191)
+  subjects <- lapply(seq_len(2), function(i) {
+    beta <- matrix(stats::rnorm(length(effects) * 6), length(effects), 6,
+                   dimnames = list(effects, NULL))
+    design <- diag(length(effects))
+    colnames(design) <- effects
+    dkge_subject(beta, design = design, id = paste0("s", i))
+  })
+  data <- dkge_data(subjects, effects = effects)
+  fit <- dkge_fit(data, K = kern, rank = 1, w_method = "none")
+
+  expect_equal(data$effects, effects)
+  expect_equal(fit$effects, effects)
+  expect_equal(rownames(fit$K), effects)
+  expect_equal(fit$kernel_info$term_names, "A")
+  expect_equal(fit$kernel_info$cell_labels, grid$cell_labels)
+})
+
+test_that("multi-factor defaults retain main effects plus full interaction", {
+  spec <- list(A = list(L = 2), B = list(L = 3))
+  kern <- design_kernel(
+    dkge_effect_grid(spec),
+    basis = "effect",
+    normalize = "none",
+    include_intercept = FALSE,
+    jitter = 0
+  )
+
+  expect_equal(kern$info$term_names, c("A", "B", "A:B"))
+  expect_equal(dkge_effect_grid(spec)$default_terms,
+               list("A", "B", c("A", "B")))
+  expect_equal(dim(kern$K), c(5, 5))
+  expect_equal(rownames(kern$K), c("A", "B1", "B2", "A:B1", "A:B2"))
+  expect_identical(anyDuplicated(rownames(kern$K)), 0L)
+  expect_true(isSymmetric(kern$K, tol = 1e-12))
+  expect_gte(min(eigen(kern$K, symmetric = TRUE, only.values = TRUE)$values),
+             -1e-10)
+})
+
 test_that("design_kernel carries scope metadata and cell dimnames", {
   grid <- dkge_effect_grid(
     factors = list(
@@ -139,8 +246,9 @@ test_that("kernel roots and alignment behave", {
 test_that("kernel_roots reports clamped eigenvalues", {
   K <- diag(c(1, 1e-12, 0))
   roots <- kernel_roots(K, jitter = NULL)
-  expect_equal(roots$n_clamped, 1L)
-  expect_equal(roots$rank, 3L)
+  expect_equal(roots$n_clamped, 2L)
+  expect_equal(roots$rank, 1L)
+  expect_identical(roots$retained, c(TRUE, FALSE, FALSE))
   expect_true(all(roots$evals >= 0))
 })
 
@@ -205,13 +313,15 @@ test_that("kernel_roots handles diagonal matrices", {
   expect_equal(reconstructed, K, tolerance = 1e-10)
 })
 
-test_that("kernel_roots handles near-zero eigenvalues with jitter", {
+test_that("kernel_roots truncates near-zero eigenvalues without jittering", {
   K <- diag(c(1, 1e-12, 1e-15))
   roots <- kernel_roots(K, jitter = 1e-10)
 
-  # All eigenvalues should be clamped to at least jitter
-  expect_true(all(roots$evals >= 1e-10))
+  expect_equal(roots$evals, c(1, 1e-12, 1e-15), tolerance = 0)
   expect_equal(roots$n_clamped, 2L)
+  expect_equal(roots$rank, 1L)
+  expect_equal(unname(roots$Khalf), diag(c(1, 0, 0)), tolerance = 1e-12)
+  expect_equal(unname(roots$Kihalf), diag(c(1, 0, 0)), tolerance = 1e-12)
 })
 
 test_that("kernel_roots warns for asymmetric input", {
@@ -433,10 +543,10 @@ test_that("duplicated level labels are rejected in both constructors", {
   grid <- dkge_effect_grid(list(A = c("a1", "a2"), B = c("b1", "b2")))
   expect_false(anyDuplicated(grid$cell_labels) > 0)
 
-  # The historical single-factor default (terms = list("A", "A")) still repeats
-  # *effect* names; that is deliberate and unchanged.
+  # A single-factor default contains one unique main-effect block.
   K_eff <- design_kernel(list(A = list(L = 5)), basis = "effect")$K
-  expect_equal(colnames(K_eff), rep(paste0("A", 1:4), 2))
+  expect_equal(colnames(K_eff), paste0("A", 1:4))
+  expect_identical(anyDuplicated(colnames(K_eff)), 0L)
 })
 
 test_that("continuous specs coming from an effect grid keep their numeric values", {

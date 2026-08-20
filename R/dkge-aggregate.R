@@ -629,10 +629,7 @@ dkge_aggregate_fit <- function(target,
 
   requested_rank <- rank
   rank <- rank %||% min(q, ncol(Yc))
-  rank <- as.integer(rank)
-  if (length(rank) != 1L || is.na(rank) || rank < 1L) {
-    stop("`rank` must be a positive integer.", call. = FALSE)
-  }
+  rank <- .dkge_validate_positive_integer(rank, "rank")
   cap <- min(q, ncol(Yc))
   if (!is.null(requested_rank) && rank > cap) {
     message(sprintf("`rank` (%d) exceeds min(nrow, ncol) = %d; capping to %d.",
@@ -645,11 +642,11 @@ dkge_aggregate_fit <- function(target,
   Chat <- (Chat + t(Chat)) / 2
   eg <- eigen(Chat, symmetric = TRUE)
   vals <- pmax(eg$values, 0)
-  chat_tol <- 1e-10 * max(1, max(vals))
-  rank <- min(rank, max(1L, sum(vals > chat_tol)))
+  moment_contract <- .dkge_spectral_contract(vals)
+  rank <- min(rank, roots$rank, moment_contract$rank)
   keep <- seq_len(rank)
   U <- roots$Kihalf %*% eg$vectors[, keep, drop = FALSE]
-  colnames(U) <- paste0("LV", keep)
+  colnames(U) <- if (rank > 0L) paste0("LV", keep) else character(0)
   rownames(U) <- rownames(Yc)
   saliences <- K %*% U
   dimnames(saliences) <- dimnames(U)
@@ -673,6 +670,16 @@ dkge_aggregate_fit <- function(target,
     Y = Yc,
     center = center,
     rank = rank,
+    kernel_rank = roots$rank,
+    kernel_nullity = roots$nullity,
+    moment_rank = moment_contract$rank,
+    effective_rank = rank,
+    spectral_diagnostics = list(
+      kernel_tolerance = roots$tolerance,
+      moment_tolerance = moment_contract$tolerance,
+      absolute_tolerance = roots$absolute_tolerance,
+      relative_tolerance = roots$relative_tolerance
+    ),
     kernel_info = kernel_info,
     estimand = "aggregate_cell_mean",
     call = match.call()
@@ -690,23 +697,8 @@ dkge_aggregate_fit <- function(target,
 #' @keywords internal
 #' @noRd
 .dkge_aggregate_kernel_roots <- function(K, tol = NULL) {
-  Ksym <- (K + t(K)) / 2
-  ee <- eigen(Ksym, symmetric = TRUE)
-  vals <- pmax(ee$values, 0)
-  scale <- max(1, max(vals))
-  tol <- tol %||% (1e-10 * scale)
-  pos <- vals > tol
-  sqrt_vals <- sqrt(vals)
-  inv_sqrt <- numeric(length(vals))
-  inv_sqrt[pos] <- 1 / sqrt_vals[pos]
-  V <- ee$vectors
-  n <- length(vals)
-  list(
-    Khalf = V %*% diag(sqrt_vals, n) %*% t(V),
-    Kihalf = V %*% diag(inv_sqrt, n) %*% t(V),
-    evals = vals,
-    rank = sum(pos)
-  )
+  absolute_tolerance <- tol %||% .Machine$double.xmin
+  .dkge_psd_roots(K, absolute_tolerance = absolute_tolerance)
 }
 
 .dkge_as_aggregate_target <- function(target) {
@@ -1780,6 +1772,9 @@ dkge_aggregate_bootstrap <- function(target,
 
 #' @export
 #' @rdname dkge_aggregate_target
+#' @param x A `dkge_aggregate_target` object to print.
+#' @param ... Unused; present for S3 method compatibility.
+#' @method print dkge_aggregate_target
 print.dkge_aggregate_target <- function(x, ...) {
   cat("<dkge_aggregate_target>\n")
   cat("  rows:     ", nrow(x$Y), "\n", sep = "")
@@ -1790,6 +1785,9 @@ print.dkge_aggregate_target <- function(x, ...) {
 
 #' @export
 #' @rdname dkge_aggregate_fit
+#' @param x A `dkge_aggregate_fit` object to print.
+#' @param ... Unused; present for S3 method compatibility.
+#' @method print dkge_aggregate_fit
 print.dkge_aggregate_fit <- function(x, ...) {
   cat("<dkge_aggregate_fit>\n")
   cat("  estimand: ", x$estimand, "\n", sep = "")
@@ -1801,6 +1799,8 @@ print.dkge_aggregate_fit <- function(x, ...) {
 
 #' @export
 #' @rdname dkge_aggregate_permute
+#' @param x A `dkge_aggregate_permutation` object to print.
+#' @method print dkge_aggregate_permutation
 print.dkge_aggregate_permutation <- function(x, ...) {
   cat("<dkge_aggregate_permutation>\n")
   cat("  statistic: ", signif(x$observed, 4), "\n", sep = "")
@@ -1812,6 +1812,8 @@ print.dkge_aggregate_permutation <- function(x, ...) {
 
 #' @export
 #' @rdname dkge_aggregate_bootstrap
+#' @param x A `dkge_aggregate_bootstrap` object to print.
+#' @method print dkge_aggregate_bootstrap
 print.dkge_aggregate_bootstrap <- function(x, ...) {
   cat("<dkge_aggregate_bootstrap>\n")
   cat("  statistic: ", signif(x$observed, 4), "\n", sep = "")

@@ -32,7 +32,11 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::.
+          extra-packages: |
+            any::pkgdown
+            github::bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92
+            github::bbuchsbaum/fmrireg@20c9f07a225f21c4eea1732ea31418ccedd1c056
+            local::.
           needs: website
 
       - name: Build site

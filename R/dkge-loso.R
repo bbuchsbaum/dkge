@@ -31,9 +31,23 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   Chat_minus <- ctx$Chat
   weight_eval <- ctx$weights
 
-  eig_minus <- eigen(Chat_minus, symmetric = TRUE)
   r <- ncol(fit$U)
-  Uminus <- fit$Kihalf %*% eig_minus$vectors[, seq_len(r), drop = FALSE]
+  basis <- .dkge_select_k_basis(
+    Chat_minus,
+    K = fit$K,
+    roots = .dkge_psd_roots(fit$K),
+    requested_rank = r,
+    label = sprintf("LOSO training basis for subject %s",
+                    fit$subject_ids[[s]] %||% s)
+  )
+  if (basis$rank == 0L) {
+    .dkge_abort(
+      sprintf("LOSO training data for subject %s have numerical rank zero.",
+              fit$subject_ids[[s]] %||% s),
+      "dkge_zero_rank_error"
+    )
+  }
+  Uminus <- basis$U
 
   c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(Uminus) %*% fit$K %*% c_tilde
@@ -44,5 +58,8 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   A_s <- t(Bw) %*% fit$K %*% Uminus
   v_s <- as.numeric(A_s %*% alpha)
 
-  list(v = v_s, alpha = alpha, basis = Uminus, evals = eig_minus$values)
+  list(v = v_s, alpha = alpha, basis = Uminus, evals = basis$values,
+       training_rank = basis$effective_rank,
+       effective_rank = basis$rank,
+       moment_tolerance = basis$moment_tolerance)
 }

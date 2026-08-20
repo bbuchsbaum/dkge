@@ -188,13 +188,19 @@ calibration_table <- data.frame(
   rotation_gate = ifelse(rotation_global$gate_pass & rotation_partial$gate_pass,
                          "pass", "fail")
 )
-power_table <- subset(rotation_calibration,
-                      arm == "strong_interaction_power",
-                      c("method", "rejection_005", "wilson_lower", "wilson_upper"))
+power_rows <- subset(rotation_calibration,
+                     arm == "strong_interaction_power")
+power_table <- power_rows[, c("method", "rejection_005",
+                              "wilson_lower", "wilson_upper")]
 rownames(power_table) <- NULL
 stopifnot(nrow(calibration_table) == 3L)
 stopifnot(all(rotation_global$gate_pass))
 stopifnot(identical(rotation_partial$gate_pass, c(TRUE, TRUE, FALSE)))
+stopifnot(all(rotation_global$B == 399L))
+stopifnot(all(rotation_partial$B == 399L))
+stopifnot(all(legacy_primary$n == 20L))
+stopifnot(all(legacy_primary$permutations == 399L))
+stopifnot(all(power_rows$B == 199L))
 stopifnot(power_table$rejection_005[power_table$method == "rotation"] == 0.43)
 ```
 
@@ -334,3 +340,6 @@ is individually significant.
 Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
 latent target, and use `type = "transported_maps"` when spatial interpretation
 in a common map space matters. See `vignette("dkge-contrasts-inference")` for within-subject contrast inference.
+For cohorts with partial or unbalanced effect grids, first see
+`vignette("dkge-partial-effect-spaces")` for the coverage, precision-weighting,
+and estimability contracts that precede this between-subject layer.

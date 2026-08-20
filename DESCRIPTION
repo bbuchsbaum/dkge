@@ -2,8 +2,6 @@ Package: dkge
 Type: Package
 Title: Design-Kernel Group Embedding for Cluster-Level fMRI
 Version: 0.0.0.9000
-Author: Brad Buchsbaum <brad.buchsbaum@gmail.com>
-Maintainer: Brad Buchsbaum <brad.buchsbaum@gmail.com>
 Authors@R: c(
     person(given = "Brad", family = "Buchsbaum", email = "brad.buchsbaum@gmail.com", role = c("aut", "cre"))
   )
@@ -31,28 +29,24 @@ Imports:
     glmnet
 Suggests:
     fmriAR,
+    future,
     microbenchmark,
-    neuralign,
     pkgdown,
     remotes,
     testthat,
-    T4transport,
     knitr,
     rmarkdown,
     patchwork,
     ggrepel,
     tidyr,
-    purrr
+    purrr,
+    withr
+Enhances:
+    neuralign
 LinkingTo:
     Rcpp,
     RcppArmadillo
-Remotes:
-    bbuchsbaum/neuralign,
-    bbuchsbaum/neuroim2,
-    bbuchsbaum/fmridesign,
-    bbuchsbaum/fmriAR,
-    bbuchsbaum/fmrireg,
-    bbuchsbaum/adjoin
+Additional_repositories: https://bbuchsbaum.r-universe.dev
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3

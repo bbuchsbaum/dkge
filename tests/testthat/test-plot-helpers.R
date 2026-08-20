@@ -557,6 +557,33 @@ test_that("design basis rematches permuted cell metadata by name", {
                tolerance = 1e-10, ignore_attr = TRUE)
 })
 
+test_that("equal-dimension effect metadata is not consumed as a cell design", {
+  kern <- design_kernel(
+    factors = list(A = list(L = 2L)),
+    terms = list("A"),
+    contrasts = list(A = diag(2)),
+    basis = "effect",
+    normalize = "none"
+  )
+  effects <- rownames(kern$K)
+  set.seed(733)
+  betas <- replicate(4L, {
+    B <- matrix(stats::rnorm(2L * 6L), 2L, 6L)
+    rownames(B) <- effects
+    B
+  }, simplify = FALSE)
+  designs <- replicate(4L, {
+    X <- diag(2L)
+    dimnames(X) <- list(effects, effects)
+    X
+  }, simplify = FALSE)
+  fit <- dkge(betas, designs, K = kern, rank = 1L, w_method = "none")
+
+  C <- dkge_design_basis(fit, normalize = "none")
+  expect_identical(attr(C, "source"), "identity")
+  expect_equal(unname(C), diag(2L), ignore_attr = TRUE)
+})
+
 test_that("component contrast scores use the name-matched task column", {
   fx <- make_permuted_cell_fit(seed = 7)
   fit <- .restore_kernel_order_info(fx$fit, fx)
@@ -614,15 +641,14 @@ test_that("design basis quotes non-syntactic factor names and drops 1-level fact
                ignore_attr = TRUE)
 })
 
-test_that("unmatched cell_labels fall back to the identity basis with a message", {
+test_that("unmatched cell_labels fail closed for a declared cell basis", {
   fx <- make_permuted_cell_fit(seed = 3)
   fit <- fx$fit
   fit$kernel_info$cell_labels <- paste0("other", seq_along(fit$effects))
-  expect_message(
-    C <- dkge_design_basis(fit, normalize = "none"),
-    "cell_labels"
+  expect_error(
+    dkge_design_basis(fit, normalize = "none"),
+    "cell_labels.*cannot be aligned"
   )
-  expect_equal(attr(C, "source"), "identity")
 })
 
 test_that("user term/source attributes survive design-basis validation", {
@@ -705,4 +731,3 @@ test_that("subject-contrib panels share subject order and block separators follo
   # Effect-basis A (1) + B (2) + A:B (2), ordered by min(idx): 1.5 and 3.5.
   expect_equal(sort(hlines), c(1.5, 3.5))
 })
-

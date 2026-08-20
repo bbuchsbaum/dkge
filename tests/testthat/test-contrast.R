@@ -530,16 +530,39 @@ test_that("structural estimability rematches permuted cells by name", {
   )
 })
 
-test_that("unmatched cell_labels leave structural scope NULL with a message", {
+test_that("unmatched cell_labels fail closed for structural scope", {
   fx <- make_permuted_cell_fit(seed = 3)
   fit <- fx$fit
   fit$kernel_info$cell_labels <- paste0("other", seq_along(fit$effects))
   cvec <- rep(c(1, -1), length.out = length(fit$effects))
-  expect_message(
-    scope <- dkge:::.dkge_contrast_structural_scope(cvec, fit),
-    "cell_labels"
+  expect_error(
+    dkge:::.dkge_contrast_structural_scope(cvec, fit),
+    "cell_labels.*cannot be aligned"
   )
-  expect_null(scope)
+})
+
+test_that("effect-basis cell metadata is rejected by structural estimability", {
+  kern <- design_kernel(
+    factors = list(A = list(L = 2L)),
+    terms = list("A"),
+    contrasts = list(A = diag(2)),
+    basis = "effect",
+    normalize = "none"
+  )
+  effects <- rownames(kern$K)
+  set.seed(817)
+  betas <- replicate(4L, {
+    B <- matrix(stats::rnorm(2L * 6L), 2L, 6L)
+    rownames(B) <- effects
+    B
+  }, simplify = FALSE)
+  designs <- replicate(4L, {
+    X <- diag(2L)
+    dimnames(X) <- list(effects, effects)
+    X
+  }, simplify = FALSE)
+  fit <- dkge(betas, designs, K = kern, rank = 1L, w_method = "none")
+  expect_null(dkge:::.dkge_contrast_structural_scope(c(1, -1), fit))
 })
 
 test_that("contrast estimability has clean row names and validates dkge_scope", {
@@ -561,4 +584,3 @@ test_that("contrast estimability has clean row names and validates dkge_scope", 
     "dkge_scope"
   )
 })
-

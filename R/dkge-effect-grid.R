@@ -82,8 +82,10 @@
 #' @param block_factors Optional factor names that should define independent
 #'   blocks when passed to [design_kernel()].
 #' @param sep Separator used when constructing cell labels.
-#' @return A `dkge_effect_grid` object with factor specs, scopes, cells, and
-#'   labels.
+#' @return A `dkge_effect_grid` object with factor specs, scopes, cells, labels,
+#'   and the default kernel terms implied by the factor order. A one-factor
+#'   grid has one default main-effect term because its full interaction is the
+#'   same term.
 #' @export
 #' @examples
 #' grid <- dkge_effect_grid(
@@ -206,6 +208,7 @@ dkge_effect_grid <- function(factors,
   out <- list(
     factors = specs,
     factor_names = factor_names,
+    default_terms = .dkge_default_kernel_terms(factor_names),
     scope = scopes,
     block_factors = block_factors,
     cells = grid_labels$cells,
@@ -214,6 +217,22 @@ dkge_effect_grid <- function(factors,
   )
   class(out) <- "dkge_effect_grid"
   out
+}
+
+#' Derive unique default kernel terms from an ordered factor set
+#'
+#' Main effects and the full interaction are distinct only when at least two
+#' factors are present. Keeping this derivation next to dkge_effect_grid() makes
+#' the grid and design_kernel() constructors share one ordering contract.
+#'
+#' @noRd
+.dkge_default_kernel_terms <- function(factor_names) {
+  main_effects <- as.list(as.character(factor_names))
+  if (length(factor_names) > 1L) {
+    c(main_effects, list(as.character(factor_names)))
+  } else {
+    main_effects
+  }
 }
 
 #' Expand factor levels into cell labels

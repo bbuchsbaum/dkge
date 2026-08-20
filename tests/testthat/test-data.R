@@ -227,11 +227,39 @@ test_that("dkge high-level stores inputs when requested", {
   fx <- make_dkge_fixture()
   kernel <- diag(nrow(fx$betas[[1]]))
   fit1 <- dkge(fx$betas, designs = fx$designs, K = kernel, keep_inputs = TRUE, rank = 2)
-  fit2 <- dkge(fx$betas, designs = fx$designs, K = list(K = kernel, info = "identity"),
+  fit2 <- dkge(fx$betas, designs = fx$designs,
+               K = list(K = kernel, info = list(type = "identity")),
                keep_inputs = FALSE, rank = 2)
   expect_true(!is.null(fit1$input))
   expect_null(fit2$input)
-  expect_equal(fit2$kernel_info, "identity")
+  expect_equal(fit2$kernel_info, list(type = "identity"))
+})
+
+test_that("dkge rejects malformed kernel metadata before field access", {
+  fx <- make_dkge_fixture()
+  kernel <- diag(nrow(fx$betas[[1]]))
+
+  expect_error(
+    dkge(
+      fx$betas,
+      designs = fx$designs,
+      K = list(K = kernel, info = "identity"),
+      rank = 2
+    ),
+    "metadata `info` must be a list or NULL; got class character",
+    class = "dkge_kernel_info_error"
+  )
+
+  expect_error(
+    dkge_fit(
+      fx$betas,
+      designs = fx$designs,
+      K = list(K = kernel, info = list(info = "nested")),
+      rank = 2
+    ),
+    "`info\\$info` must be a list or NULL",
+    class = "dkge_kernel_info_error"
+  )
 })
 
 test_that("dkge accepts dkge_data and omega overrides", {
@@ -504,8 +532,11 @@ test_that("effect labels are adopted from whichever side carries them", {
   colnames(X_bad) <- c("a", "b", "zz")
   expect_error(dkge_subject(B, X_bad), "must match design column names")
 
-  expect_error(dkge_subject(B, matrix(rnorm(40), 10, 4)),
-               "3 effect rows but the design has 4 columns")
+  expect_error(
+    dkge_subject(B, matrix(rnorm(40), 10, 4)),
+    "effect-row count \\(3\\) must match design column count \\(4\\)",
+    class = "dkge_dimension_error"
+  )
 })
 
 test_that("dkge_sim_toy output round-trips through dkge()", {

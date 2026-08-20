@@ -4,13 +4,60 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
 
-name: R-CMD-check.yaml
+name: R-CMD-check
 
 permissions: read-all
 
 jobs:
+  build-source:
+    runs-on: ubuntu-latest
+    name: source tarball and generated files
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::rcmdcheck
+            any::roxygen2
+            github::bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92
+            github::bbuchsbaum/fmrireg@20c9f07a225f21c4eea1732ea31418ccedd1c056
+          needs: check
+      - name: Verify generated documentation and native registration
+        run: |
+          Rcpp::compileAttributes(".")
+          roxygen2::roxygenise(".", load_code = roxygen2::load_source)
+        shell: Rscript {0}
+      - name: Require a clean generated diff
+        run: git diff --exit-code -- NAMESPACE R/RcppExports.R src/RcppExports.cpp man
+      - name: Build exact source candidate and evidence
+        run: |
+          R CMD build --no-manual .
+          tarball=$(find . -maxdepth 1 -name 'dkge_*.tar.gz' -print -quit)
+          test -n "$tarball"
+          sha256sum "$tarball" > source-tarball.sha256
+          git rev-parse HEAD > source-commit.txt
+          Rscript -e 'writeLines(capture.output(sessionInfo()), "build-session-info.txt")'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dkge-source-candidate
+          path: |
+            dkge_*.tar.gz
+            source-tarball.sha256
+            source-commit.txt
+            build-session-info.txt
+            tools/release/noncran-lock.csv
+          if-no-files-found: error
+          retention-days: 30
+
   R-CMD-check:
+    needs: build-source
     runs-on: ${{ matrix.config.os }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
@@ -32,6 +79,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: dkge-source-candidate
+          path: candidate
+
+      - name: Verify exact candidate identity
+        run: |
+          cd candidate
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum --check source-tarball.sha256
+          else
+            shasum -a 256 --check source-tarball.sha256
+          fi
+          test "$(cat source-commit.txt)" = "$GITHUB_SHA"
+        shell: bash
+
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
@@ -42,10 +105,41 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            github::bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92
+            github::bbuchsbaum/fmrireg@20c9f07a225f21c4eea1732ea31418ccedd1c056
           needs: check
 
-      - uses: r-lib/actions/check-r-package@v2
+      - name: Check the exact source candidate
+        run: |
+          tarball <- list.files(
+            "candidate", pattern = "^dkge_.*[.]tar[.]gz$", full.names = TRUE
+          )
+          stopifnot(length(tarball) == 1L)
+          result <- rcmdcheck::rcmdcheck(
+            tarball,
+            args = "--no-manual",
+            check_dir = "check",
+            error_on = "never"
+          )
+          saveRDS(result, "rcmdcheck-result.rds")
+          print(result)
+          if (length(result$errors) || length(result$warnings) ||
+              length(result$notes)) {
+            stop("Candidate check produced errors, warnings, or notes.")
+          }
+        shell: Rscript {0}
+
+      - name: Archive platform check evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          upload-snapshots: true
-          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+          name: rcmdcheck-${{ matrix.config.os }}-${{ matrix.config.r }}
+          path: |
+            check
+            rcmdcheck-result.rds
+            candidate/source-tarball.sha256
+            candidate/source-commit.txt
+          if-no-files-found: warn
+          retention-days: 30

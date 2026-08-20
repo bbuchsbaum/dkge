@@ -206,9 +206,9 @@ test_that("two-term serial and parallel nulls match and term 2 is order-independ
     )
   }
 
-  old_plan <- future::plan()
-  on.exit(future::plan(old_plan), add = TRUE)
-  future::plan(future::sequential)
+  old_plan <- suppressWarnings(future::plan())
+  on.exit(suppressWarnings(future::plan(old_plan)), add = TRUE)
+  suppressWarnings(future::plan(future::sequential))
 
   for (method in c("rotation", "freedman_lane")) {
     serial <- run(method, terms, parallel = FALSE)
@@ -230,10 +230,10 @@ test_that("two-term serial and parallel nulls match and term 2 is order-independ
     skip("fewer than 2 cores for future::multisession")
   }
   workers <- tryCatch({
-    future::plan(future::multisession, workers = 2)
-    future::value(future::future({
+    suppressWarnings(future::plan(future::multisession, workers = 2))
+    suppressWarnings(future::value(future::future({
       requireNamespace("dkge", quietly = TRUE)
-    }))
+    })))
   }, error = function(e) FALSE)
   if (!isTRUE(workers)) {
     skip("future::multisession workers cannot load dkge")

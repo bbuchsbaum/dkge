@@ -3,24 +3,111 @@ set.seed(1001)
 test_that("dkge_fit_from_kernels reproduces pooled kernel", {
   q <- 4
   S <- 3
+  effect_ids <- paste0("e", seq_len(q))
+  subject_ids <- paste0("subject", seq_len(S))
   K_list <- replicate(S, {
     X <- matrix(rnorm(q * 6), q)
     K <- tcrossprod(X)
     K <- K + 1e-4 * diag(q)
     K / max(1, sum(diag(K)) / q)
   }, simplify = FALSE)
+  expected_kernels <- lapply(K_list, function(K) {
+    dimnames(K) <- list(effect_ids, effect_ids)
+    K
+  })
+  names(expected_kernels) <- subject_ids
 
-  fit <- dkge_fit_from_kernels(K_list, effect_ids = paste0("e", seq_len(q)))
+  fit <- dkge_fit_from_kernels(K_list, effect_ids = effect_ids)
 
   expect_s3_class(fit, "dkge")
   expect_equal(nrow(fit$U), q)
   expect_equal(length(fit$subject_ids), S)
-  weighted_sum <- Reduce(`+`, Map(function(K, w) w * K, K_list, fit$weights))
+  expect_equal(names(fit$contribs), subject_ids)
+  weighted_sum <- Reduce(`+`, Map(function(K, w) w * K,
+                                  expected_kernels, fit$weights))
   expect_equal(fit$Chat, weighted_sum, tolerance = 1e-6)
   for (s in seq_len(S)) {
-    expect_equal(fit$contribs[[s]], K_list[[s]], tolerance = 1e-8)
+    expect_equal(fit$contribs[[s]], expected_kernels[[s]], tolerance = 1e-8)
   }
+  expect_equal(dimnames(fit$Chat), list(effect_ids, effect_ids))
+  expect_equal(rownames(fit$U), effect_ids)
+  expect_equal(colnames(fit$U), paste0("LV", seq_len(ncol(fit$U))))
   expect_equal(fit$provenance$kernel_fit$sqrt_scale, sqrt(S))
+})
+
+test_that("kernel fits preserve labelled values across reordered non-syntactic effects", {
+  effect_ids <- c("odd name", "x-y", "if")
+  subject_ids <- c("sub A", "sub-B")
+  K1 <- matrix(c(4, 1, 0,
+                 1, 3, 1,
+                 0, 1, 2), 3, 3,
+               dimnames = list(effect_ids, effect_ids))
+  K2 <- matrix(c(3, 0.5, 0.25,
+                 0.5, 2.5, 0.75,
+                 0.25, 0.75, 2), 3, 3,
+               dimnames = list(effect_ids, effect_ids))
+  perm <- c(3L, 1L, 2L)
+  supplied <- list(K1[perm, perm, drop = FALSE], K2)
+
+  fit <- dkge_fit_from_kernels(
+    supplied,
+    effect_ids = effect_ids,
+    subject_ids = subject_ids,
+    rank = 2,
+    w_method = "none"
+  )
+
+  expect_equal(fit$contribs[["sub A"]], K1, tolerance = 1e-10)
+  expect_equal(fit$contribs[["sub-B"]], K2, tolerance = 1e-10)
+  expect_equal(names(fit$contribs), subject_ids)
+  expect_equal(dimnames(fit$Chat), list(effect_ids, effect_ids))
+  expect_equal(dimnames(fit$K), list(effect_ids, effect_ids))
+  expect_equal(rownames(fit$U), effect_ids)
+  expect_equal(colnames(fit$U), c("LV1", "LV2"))
+  expect_equal(dimnames(fit$KU), list(effect_ids, c("LV1", "LV2")))
+  expect_equal(fit$provenance$kernel_fit$effect_ids, effect_ids)
+  expect_equal(fit$provenance$kernel_fit$subjects, subject_ids)
+
+  projected <- dkge_project_btil(fit, fit$Btil[["sub A"]])
+  expect_equal(colnames(projected), c("LV1", "LV2"))
+
+  contrast <- stats::setNames(c(1, -1, 0), effect_ids)
+  contrast_result <- suppressWarnings(
+    dkge_contrast(fit, contrast, method = "analytic")
+  )
+  expect_equal(names(contrast_result$contrasts[[1L]]), effect_ids)
+  expect_equal(contrast_result$metadata$provenance$kernel_fit$effect_ids,
+               effect_ids)
+
+  restored <- unserialize(serialize(fit, NULL))
+  expect_equal(restored$contribs, fit$contribs)
+  expect_equal(dimnames(restored$U), dimnames(fit$U))
+  expect_equal(restored$provenance$kernel_fit,
+               fit$provenance$kernel_fit)
+
+  before <- lapply(fit[c("Chat", "contribs", "U", "KU")], dimnames)
+  expect_silent(capture.output(print(fit)))
+  expect_equal(lapply(fit[c("Chat", "contribs", "U", "KU")], dimnames),
+               before)
+})
+
+test_that("kernel fits reject ambiguous effect and subject labels", {
+  K <- diag(2)
+  dimnames(K) <- list(c("a", "other"), c("a", "other"))
+  expect_error(
+    dkge_fit_from_kernels(list(K), effect_ids = c("a", "b")),
+    "dimnames must be unique permutations"
+  )
+  expect_error(
+    dkge_fit_from_kernels(list(diag(2)), effect_ids = c("a", "a")),
+    "unique, non-empty effect labels"
+  )
+  expect_error(
+    dkge_fit_from_kernels(list(diag(2), diag(2)),
+                          effect_ids = c("a", "b"),
+                          subject_ids = c("same", "same")),
+    "unique, non-empty subject labels"
+  )
 })
 
 test_that("dkpp_select_anchors returns valid indices", {

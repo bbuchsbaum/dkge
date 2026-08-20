@@ -17,7 +17,9 @@
 #'   }
 #' @param terms List of character vectors describing which factors appear in each
 #'   kernel term (e.g. list("A","B", c("A","B"))). Defaults to all main
-#'   effects plus the full interaction.
+#'   effects plus the full interaction when there is more than one factor. For
+#'   a one-factor design, the main effect and full interaction coincide and are
+#'   included once.
 #' @param rho Named numeric weights per term (names like "A", "A:B"). Defaults
 #'   to 1 for each term if omitted. Must be non-negative.
 #' @param include_intercept Logical; if TRUE adds a small identity ridge
@@ -41,7 +43,8 @@
 #'   (default 1e-8).
 #' @return A list with elements `K` (kernel in requested basis), `K_cell` (always
 #'   returned), and `info` containing metadata such as factor/term names, mapping
-#'   matrix, and block indices.
+#'   matrix, block indices, explicit cell/effect coordinate spaces, and the
+#'   labels on each coordinate axis.
 #' @examples
 #' # Simple 2x3 factorial design
 #' kern <- design_kernel(
@@ -189,10 +192,11 @@ design_kernel <- function(factors,
 
   terms_supplied <- !is.null(terms)
   if (!terms_supplied) {
-    # Main effects plus the full interaction. With a single factor the two
-    # coincide; the historical default keeps both, which only rescales the
-    # kernel.
-    terms <- c(as.list(fact_names), list(fact_names))
+    terms <- if (!is.null(effect_grid$default_terms)) {
+      effect_grid$default_terms
+    } else {
+      .dkge_default_kernel_terms(fact_names)
+    }
   }
   if (!is.list(terms)) terms <- as.list(terms)
   terms <- lapply(seq_along(terms), function(k) {
@@ -290,12 +294,24 @@ design_kernel <- function(factors,
                block_factors = block_factors,
                cells = grid_labels$cells,
                cell_labels = grid_labels$labels,
+               effect_labels = NULL,
+               kernel_labels = NULL,
                basis = basis,
+               coordinate_space = list(
+                 kernel = basis,
+                 kernel_labels = basis,
+                 cell_labels = "cell",
+                 cells = "cell",
+                 map_rows = "cell",
+                 map_columns = "effect",
+                 blocks = basis
+               ),
                map = NULL,
                blocks = NULL,
                dims = list(Qcell = Qcell))
 
   if (basis == "cell") {
+    info$kernel_labels <- grid_labels$labels
     info$blocks <- list(cells = seq_len(Qcell))
     return(list(K = K_cell, K_cell = K_cell, info = info))
   }
@@ -337,17 +353,21 @@ design_kernel <- function(factors,
   T <- do.call(cbind, T_list)
   rownames(T) <- grid_labels$labels
 
+  effect_names <- unlist(Map(function(block, n) {
+    if (n == 1L) block else paste0(block, seq_len(n))
+  }, block_structure, out_cols), use.names = FALSE)
+  colnames(T) <- effect_names
+
   block_idx <- split(seq_len(sum(out_cols)),
                      rep(block_structure, times = out_cols))
 
   info$map    <- T
   info$blocks <- block_idx
   info$dims$q <- ncol(T)
+  info$effect_labels <- effect_names
+  info$kernel_labels <- effect_names
 
   K <- crossprod(T, K_cell %*% T)
-  effect_names <- unlist(Map(function(block, n) {
-    if (n == 1L) block else paste0(block, seq_len(n))
-  }, block_structure, out_cols), use.names = FALSE)
   dimnames(K) <- list(effect_names, effect_names)
   list(K = K, K_cell = K_cell, info = info)
 }
@@ -372,57 +392,43 @@ helmert_contrasts <- function(Ls) {
   })
 }
 
-#' Robust kernel roots
+#' Range-space roots for a positive-semidefinite kernel
+#'
+#' Computes the true symmetric square root and the Moore-Penrose inverse square
+#' root. Eigenvalues at or below the applied absolute-plus-relative tolerance
+#' remain exactly zero; null directions are never jittered into the metric.
+#'
 #' @param K Positive semi-definite kernel matrix.
-#' @param jitter Small diagonal jitter added before inversion.
-#' @return List with `Khalf`, `Kihalf`, eigenvalues, eigenvectors, and basic diagnostics.
+#' @param jitter Deprecated absolute truncation threshold. When supplied it is
+#'   used as `absolute_tolerance`; eigenvalues below it are discarded, not
+#'   raised to it.
+#' @param absolute_tolerance Non-negative absolute spectral tolerance.
+#' @param relative_tolerance Non-negative tolerance relative to the largest
+#'   kernel eigenvalue.
+#' @return List with `Khalf`, `Kihalf`, eigenvalues, eigenvectors, numerical
+#'   rank/nullity, retained range, and the applied tolerances.
 #' @export
-kernel_roots <- function(K, jitter = 1e-10) {
+kernel_roots <- function(K,
+                         jitter = NULL,
+                         absolute_tolerance = .Machine$double.xmin,
+                         relative_tolerance = 1e-8) {
   if (!isTRUE(isSymmetric(K, tol = 1e-8))) {
     warning("Kernel matrix not symmetric; applying symmetrization via (K + t(K))/2.")
   }
-  Ks <- (K + t(K)) / 2
-  ee <- eigen(Ks, symmetric = TRUE)
-  vals <- ee$values
-  V <- ee$vectors
-
-  if (is.null(jitter)) {
-    pinned <- vals <= 0
-    tiny <- 1e-10
-    vals[pinned] <- tiny
-  } else {
-    if (!is.numeric(jitter) || length(jitter) != 1 || jitter < 0) {
-      stop("`jitter` must be NULL or a non-negative numeric scalar")
-    }
-    pinned <- vals < jitter
-    vals <- pmax(vals, jitter)
+  if (!is.null(jitter)) {
+    absolute_tolerance <- .dkge_validate_nonnegative_scalar(jitter, "jitter")
   }
-
-  n_clamped <- sum(pinned)
-  n_total <- length(vals)
-  if (n_clamped > 0 && n_clamped / max(n_total, 1) > 0.1) {
-    warning(sprintf("%.0f%% of eigenvalues were clamped during kernel root computation.",
-                    100 * n_clamped / n_total))
-  }
-
-  sqrt_vals <- sqrt(vals)
-  inv_sqrt_vals <- rep(0, length(vals))
-  pos_idx <- vals > 0
-  inv_sqrt_vals[pos_idx] <- 1 / sqrt_vals[pos_idx]
-
-  Khalf  <- V %*% diag(sqrt_vals, length(sqrt_vals)) %*% t(V)
-  Kihalf <- V %*% diag(inv_sqrt_vals, length(inv_sqrt_vals)) %*% t(V)
-  dimnames(Khalf) <- dimnames(Ks)
-  dimnames(Kihalf) <- dimnames(Ks)
-
-  rank_est <- sum(vals > .Machine$double.eps)
-
-  list(Khalf = Khalf,
-       Kihalf = Kihalf,
-       evals = vals,
-       evecs = V,
-       rank = rank_est,
-       n_clamped = n_clamped)
+  absolute_tolerance <- .dkge_validate_nonnegative_scalar(
+    absolute_tolerance, "absolute_tolerance"
+  )
+  relative_tolerance <- .dkge_validate_nonnegative_scalar(
+    relative_tolerance, "relative_tolerance"
+  )
+  .dkge_psd_roots(
+    (K + t(K)) / 2,
+    absolute_tolerance = absolute_tolerance,
+    relative_tolerance = relative_tolerance
+  )
 }
 
 #' Kernel alignment score

@@ -7,18 +7,18 @@
 dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL, subject = NULL)
 }
 \arguments{
-\item{fit}{A \code{dkge} object.}
+\item{fit}{A `dkge` object.}
 
 \item{B_s}{qxP matrix of subject betas.}
 
 \item{Omega_s}{Optional weights (vector length P or PxP matrix) matching the
-columns of \code{B_s}.}
+columns of `B_s`.}
 
 \item{w_s}{Optional subject-level weight (defaults to 1 when omitted).}
 
 \item{subject}{Optional training-subject index or id. Required when the fit
 carries non-trivial voxel weights, so the matching
-\code{fit$voxel_weights_subject} / \code{fit$voxel_weights} profile can be applied.}
+`fit$voxel_weights_subject` / `fit$voxel_weights` profile can be applied.}
 }
 \value{
 qxP matrix in the DKGE training space.

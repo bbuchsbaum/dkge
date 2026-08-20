@@ -1,4 +1,8 @@
 .claude/
+.mote/
+.omc/
+artifacts/
+testdata/
 .Rhistory
 .RData
 .Ruserdata

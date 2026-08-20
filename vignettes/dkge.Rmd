@@ -68,6 +68,7 @@ The returned object is a `multiblock_biprojector` with q-space loadings in
 | [Weighting Strategies](dkge-weighting.html) | Spatial (`Omega_list`), subject, and transport weights |
 | [Adaptive Voxel Weighting](dkge-adaptive-weighting.html) | Fold-safe `dkge_weights()` API |
 | [Components](dkge-components.html) | Inspecting group-level components and loadings |
+| [Partial Effect Spaces](dkge-partial-effect-spaces.html) | Unbalanced cell coverage, effect precision, and trialwise debiasing |
 | [Plotting](dkge-plotting.html) | `theme_dkge()`, scree plots, contribution maps |
 | [Dense Rendering](dkge-dense-rendering.html) | Mapping cluster values to voxel space |
 | [Anchors](dkge-anchors.html) | `dkge_anchor_fit()` and anchor-based prediction |

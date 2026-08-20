@@ -19,6 +19,7 @@ dkge_transport_spec(
   lambda_size = 0,
   value_type = c("intensive", "extensive"),
   warm_start = TRUE,
+  provenance = NULL,
   ...
 )
 }
@@ -52,6 +53,10 @@ are available.}
 constant fields; `"extensive"` preserves the sum of source totals.}
 
 \item{warm_start}{Reuse converged Sinkhorn duals for identical problems.}
+
+\item{provenance}{Optional [dkge_transport_provenance()] declaration. When
+omitted, loading-derived transport is marked descriptive and
+[dkge_infer()] will reject it rather than assume inferential validity.}
 
 \item{...}{Additional fields stored on the spec (e.g., precomputed loadings
 or betas).}

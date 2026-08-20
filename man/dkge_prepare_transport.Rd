@@ -12,6 +12,7 @@ dkge_prepare_transport(
   sizes = NULL,
   mapper = "sinkhorn",
   medoid = 1L,
+  provenance = NULL,
   ...
 )
 }
@@ -33,6 +34,10 @@ they are recomputed from `fit$Btil` or the supplied `betas`.}
 [dkge_mapper_spec()].}
 
 \item{medoid}{Index (1-based) of the reference subject.}
+
+\item{provenance}{Optional declaration from [dkge_transport_provenance()].
+When omitted, the cache is honestly marked as sign-sensitive transport
+learned from inferential-sample loadings and is descriptive by default.}
 
 \item{...}{Additional mapper arguments such as `epsilon` or `lambda_spa`.}
 }

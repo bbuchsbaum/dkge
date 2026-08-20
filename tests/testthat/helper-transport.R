@@ -24,9 +24,3 @@ make_simple_transforms <- function(P_vec, target_dim = 2L) {
     mat
   })
 }
-
-skip_if_no_T4transport <- function() {
-  if (!requireNamespace("T4transport", quietly = TRUE)) {
-    skip("T4transport package not available")
-  }
-}

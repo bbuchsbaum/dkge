@@ -1,6 +1,143 @@
 # dkge-transport.R
 # Transport DKGE maps to a common reference parcellation via pluggable mappers.
 
+.dkge_transport_provenance_classes <- c(
+  "independent_training",
+  "prespecified_frozen",
+  "geometry_only",
+  "sign_invariant",
+  "fully_recomputed",
+  "conditional_approximate"
+)
+
+#' Declare the provenance of an inferential transport operator
+#'
+#' Transport learned from sign-sensitive subject loadings can change under a
+#' sign flip. This constructor records why an operator may be held fixed, or
+#' whether it is rebuilt for every randomization. The declaration is checked
+#' by [dkge_infer()]; it does not turn an unsafe operator into a valid one.
+#'
+#' @param class One of `"independent_training"`, `"prespecified_frozen"`,
+#'   `"geometry_only"`, `"sign_invariant"`, `"fully_recomputed"`, or
+#'   `"conditional_approximate"`.
+#' @param source_sha Optional immutable source or training-artifact SHA.
+#' @param details Optional named list with supporting provenance details.
+#' @return A versioned `dkge_transport_provenance` record.
+#' @export
+dkge_transport_provenance <- function(class, source_sha = NULL, details = list()) {
+  if (missing(class) || !is.character(class) || length(class) != 1L) {
+    .dkge_abort(
+      "`class` must name exactly one transport provenance class.",
+      "dkge_transport_inference_error"
+    )
+  }
+  class <- gsub("-", "_", class, fixed = TRUE)
+  if (!class %in% .dkge_transport_provenance_classes) {
+    .dkge_abort(
+      sprintf(
+        "Unknown transport provenance class '%s'; expected one of: %s.",
+        class, paste(.dkge_transport_provenance_classes, collapse = ", ")
+      ),
+      "dkge_transport_inference_error"
+    )
+  }
+  if (!is.null(source_sha) &&
+      (!is.character(source_sha) || length(source_sha) != 1L ||
+       is.na(source_sha) || !nzchar(source_sha))) {
+    .dkge_abort(
+      "`source_sha` must be one non-empty character value or NULL.",
+      "dkge_transport_inference_error"
+    )
+  }
+  if (!is.list(details)) {
+    .dkge_abort("`details` must be a list.",
+                "dkge_transport_inference_error")
+  }
+  exactness <- switch(
+    class,
+    independent_training = "conditional_exact_independent_operator",
+    prespecified_frozen = "conditional_exact_prespecified_operator",
+    geometry_only = "randomization_exact_sign_invariant_operator",
+    sign_invariant = "randomization_exact_sign_invariant_operator",
+    fully_recomputed = "randomization_exact_recomputed_operator",
+    conditional_approximate = "conditional_or_approximate_only"
+  )
+  structure(
+    c(list(
+      schema_version = "1.0.0",
+      class = class,
+      exactness = exactness,
+      source_sha = source_sha,
+      default_inference_allowed = class != "conditional_approximate"
+    ), details),
+    class = c("dkge_transport_provenance", "list")
+  )
+}
+
+.dkge_data_derived_loading_provenance <- function() {
+  structure(
+    list(
+      schema_version = "1.0.0",
+      class = "data_derived_loading",
+      exactness = "invalid_if_held_fixed_under_signflip",
+      training = "inferential_sample",
+      sign_invariant = FALSE,
+      recomputed_within_randomization = FALSE,
+      default_inference_allowed = FALSE
+    ),
+    class = c("dkge_transport_provenance", "list")
+  )
+}
+
+#' Validate transport provenance for randomization inference
+#' @keywords internal
+#' @noRd
+.dkge_validate_transport_inference_provenance <- function(
+    provenance, randomization_recompute = NULL) {
+  abort <- function(message) {
+    .dkge_abort(message, "dkge_transport_inference_error")
+  }
+  if (is.character(provenance) && length(provenance) == 1L) {
+    provenance <- dkge_transport_provenance(provenance)
+  }
+  if (!is.list(provenance) || !is.character(provenance$class) ||
+      length(provenance$class) != 1L) {
+    abort(
+      "Transported inference requires a versioned provenance record from `dkge_transport_provenance()`."
+    )
+  }
+  provenance_class <- gsub("-", "_", provenance$class, fixed = TRUE)
+  if (identical(provenance_class, "data_derived_loading")) {
+    abort(
+      "A sign-sensitive transport operator learned from inferential sample loadings must be recomputed inside every randomization; use descriptive transport or declare and implement fully_recomputed provenance."
+    )
+  }
+  if (!provenance_class %in% .dkge_transport_provenance_classes) {
+    abort(sprintf("Unknown transport provenance class '%s'.", provenance_class))
+  }
+  if (identical(provenance_class, "conditional_approximate")) {
+    abort(
+      "Transport marked conditional/approximate is available descriptively but is not allowed by default inferential transport."
+    )
+  }
+  if (identical(provenance_class, "fully_recomputed") &&
+      !is.function(randomization_recompute)) {
+    abort(
+      "Fully recomputed transport requires `transport$randomization_recompute`, called inside every randomization."
+    )
+  }
+  normalized <- dkge_transport_provenance(
+    provenance_class,
+    source_sha = provenance$source_sha %||% NULL,
+    details = provenance[setdiff(
+      names(provenance),
+      c("schema_version", "class", "exactness", "source_sha",
+        "default_inference_allowed")
+    )]
+  )
+  invisible(normalized)
+}
+
 .dkge_pairwise_sqdist <- function(A, B) {
   A <- as.matrix(A)
   B <- as.matrix(B)
@@ -84,18 +221,50 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
   mu <- as.numeric(mu)
   nu <- as.numeric(nu)
   if (any(!is.finite(mu)) || any(!is.finite(nu)) ||
-      any(mu <= 0) || any(nu <= 0)) {
-    stop("`mu` and `nu` must contain finite, strictly positive masses.", call. = FALSE)
+      any(mu < 0) || any(nu < 0)) {
+    stop("`mu` and `nu` must contain finite, non-negative masses.", call. = FALSE)
   }
-  if (length(epsilon) != 1L || !is.finite(epsilon) || epsilon <= 0 ||
-      length(max_iter) != 1L || !is.finite(max_iter) || max_iter < 1 ||
-      length(tol) != 1L || !is.finite(tol) || tol <= 0) {
-    stop("`epsilon`, `max_iter`, and `tol` must be finite and positive.", call. = FALSE)
+  total_mu <- sum(mu)
+  total_nu <- sum(nu)
+  if (total_mu <= 0 || total_nu <= 0) {
+    stop("`mu` and `nu` must each have positive total mass.", call. = FALSE)
   }
-  max_iter <- as.integer(max_iter)
+  mass_tol <- 1e-8 * max(1, total_mu, total_nu)
+  if (abs(total_mu - total_nu) > mass_tol) {
+    stop("`mu` and `nu` must sum to the same total mass.", call. = FALSE)
+  }
+  epsilon <- .dkge_validate_positive_scalar(epsilon, "epsilon")
+  max_iter <- .dkge_validate_positive_integer(max_iter, "max_iter")
+  tol <- .dkge_validate_positive_scalar(tol, "tol")
   warm_start <- isTRUE(warm_start)
-  if (abs(sum(mu) - sum(nu)) > 1e-6) {
-    stop("mu and nu must sum to the same total mass")
+
+  positive_rows <- which(mu > 0)
+  positive_cols <- which(nu > 0)
+  if (length(positive_rows) < length(mu) ||
+      length(positive_cols) < length(nu)) {
+    supported <- .dkge_sinkhorn_plan(
+      C[positive_rows, positive_cols, drop = FALSE],
+      mu = mu[positive_rows], nu = nu[positive_cols],
+      epsilon = epsilon, max_iter = max_iter, tol = tol,
+      warm_start = warm_start, return_diagnostics = TRUE
+    )
+    plan <- matrix(0, nrow(C), ncol(C))
+    plan[positive_rows, positive_cols] <- supported$plan
+    supported$plan <- plan
+    supported$diagnostics$positive_row_support <- positive_rows
+    supported$diagnostics$positive_column_support <- positive_cols
+    if (!is.null(supported$log_u)) {
+      log_u <- rep(NA_real_, length(mu))
+      log_u[positive_rows] <- supported$log_u
+      supported$log_u <- log_u
+    }
+    if (!is.null(supported$log_v)) {
+      log_v <- rep(NA_real_, length(nu))
+      log_v[positive_cols] <- supported$log_v
+      supported$log_v <- log_v
+    }
+    if (return_diagnostics) return(supported)
+    return(plan)
   }
 
   sinkhorn_fun <- get0("sinkhorn_plan_cpp", mode = "function")
@@ -417,6 +586,9 @@ dkge_clear_sinkhorn_cache <- function() {
 #' @param mapper Mapper specification or shorthand passed to
 #'   [dkge_mapper_spec()].
 #' @param medoid Index (1-based) of the reference subject.
+#' @param provenance Optional declaration from [dkge_transport_provenance()].
+#'   When omitted, the cache is honestly marked as sign-sensitive transport
+#'   learned from inferential-sample loadings and is descriptive by default.
 #' @param ... Additional mapper arguments such as `epsilon` or `lambda_spa`.
 #'
 #' @return A list containing cached application `operators`, joint transport
@@ -431,6 +603,7 @@ dkge_prepare_transport <- function(fit,
                                    sizes = NULL,
                                    mapper = "sinkhorn",
                                    medoid = 1L,
+                                   provenance = NULL,
                                    ...) {
   stopifnot(inherits(fit, "dkge"))
 
@@ -471,6 +644,8 @@ dkge_prepare_transport <- function(fit,
                                  medoid = medoid,
                                  operators = NULL)
 
+  provenance <- provenance %||% .dkge_data_derived_loading_provenance()
+
   list(
     operators = mapper_run$operators,
     plans = mapper_run$plans,
@@ -481,7 +656,8 @@ dkge_prepare_transport <- function(fit,
     feature_ref = mapper_run$feature_ref,
     size_ref = mapper_run$size_ref,
     centroids = centroids,
-    medoid = medoid
+    medoid = medoid,
+    provenance = provenance
   )
 }
 
@@ -585,6 +761,8 @@ dkge_transport_to_medoid_sinkhorn_cpp <- function(v_list, A_list, centroids, siz
 #'   legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.
 #' @param transport_cache Optional cache from [dkge_prepare_transport()]. When
 #'   supplied, cached operators are reused for all components.
+#' @param provenance Optional transport provenance declaration. Descriptive
+#'   loading-derived transport is recorded when omitted.
 #' @param ... Additional parameters passed when building the default mapper
 #'   specification (e.g. `epsilon`, `lambda_emb`).
 #' @return List with `group` (medoid cluster vectors per component),
@@ -598,6 +776,7 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
                                                mapper = NULL,
                                                method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
                                                transport_cache = NULL,
+                                               provenance = NULL,
                                                ...) {
   stopifnot(inherits(fit, "dkge"))
   if (is.null(loadings)) {
@@ -629,6 +808,8 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
   subj_vals <- vector("list", rank)
   group_vals <- vector("list", rank)
   cache_local <- transport_cache
+  provenance <- provenance %||% transport_cache$provenance %||%
+    .dkge_data_derived_loading_provenance()
   for (j in seq_len(rank)) {
     v_list <- lapply(loadings, function(A) A[, j])
     tr <- .dkge_transport_to_medoid(mapper_spec, v_list, loadings, centroids,
@@ -647,11 +828,13 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
         feature_ref = tr$feature_ref,
         size_ref = tr$size_ref,
         centroids = tr$centroids,
-        medoid = tr$medoid
+        medoid = tr$medoid,
+        provenance = provenance
       )
     }
   }
-  list(group = group_vals, subjects = subj_vals, cache = cache_local)
+  list(group = group_vals, subjects = subj_vals, cache = cache_local,
+       provenance = provenance)
 }
 
 
@@ -669,6 +852,8 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
 #'   legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.
 #' @param transport_cache Optional cache from [dkge_prepare_transport()]. When
 #'   supplied, cached operators are reused for every contrast.
+#' @param provenance Optional transport provenance declaration. Descriptive
+#'   loading-derived transport is recorded when omitted.
 #' @param ... Additional parameters passed when building the default mapper
 #'   specification.
 #' @return Named list of transport results (one per contrast) with an attached
@@ -681,6 +866,7 @@ dkge_transport_contrasts_to_medoid <- function(fit, contrast_obj, medoid, centro
                                                mapper = NULL,
                                                method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
                                                transport_cache = NULL,
+                                               provenance = NULL,
                                                ...) {
   stopifnot(inherits(fit, "dkge"), inherits(contrast_obj, "dkge_contrasts"))
   if (is.null(loadings)) {
@@ -713,6 +899,8 @@ dkge_transport_contrasts_to_medoid <- function(fit, contrast_obj, medoid, centro
   }
 
   cache_local <- transport_cache
+  provenance <- provenance %||% transport_cache$provenance %||%
+    .dkge_data_derived_loading_provenance()
   out <- vector("list", length(contrast_obj$values))
   for (i in seq_along(contrast_obj$values)) {
     tr <- .dkge_transport_to_medoid(mapper_spec,
@@ -734,12 +922,14 @@ dkge_transport_contrasts_to_medoid <- function(fit, contrast_obj, medoid, centro
         feature_ref = tr$feature_ref,
         size_ref = tr$size_ref,
         centroids = tr$centroids,
-        medoid = tr$medoid
+        medoid = tr$medoid,
+        provenance = provenance
       )
     }
   }
   names(out) <- names(contrast_obj$values)
   attr(out, "cache") <- cache_local
+  attr(out, "provenance") <- provenance
   out
 }
 

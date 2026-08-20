@@ -1448,11 +1448,13 @@ test_that("shared seed and B helpers behave identically in both layers", {
     expect_error(dkge_aggregate_permute(target, K = fx$K,
                                         statistic = "singular_value",
                                         B = bad, rank = 1),
-                 "`B` must be a positive integer")
+                 "`B`.*strictly positive integer",
+                 class = "dkge_validation_error")
     expect_error(dkge_aggregate_bootstrap(target, K = fx$K,
                                           statistic = "singular_value",
                                           B = bad, rank = 1),
-                 "`B` must be a positive integer")
+                 "`B`.*strictly positive integer",
+                 class = "dkge_validation_error")
   }
 
   # Both layers restore the caller's RNG stream after a seeded run.

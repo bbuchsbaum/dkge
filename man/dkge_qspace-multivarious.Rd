@@ -7,11 +7,11 @@
 \alias{transfer.dkge_qspace}
 \title{Fail-closed multivarious methods for q-space DKGE fits}
 \usage{
-project.dkge_qspace(x, new_data, ...)
+\method{project}{dkge_qspace}(x, new_data, ...)
 
-project_block.dkge_qspace(x, new_data, block, least_squares = TRUE, ...)
+\method{project_block}{dkge_qspace}(x, new_data, block, least_squares = TRUE, ...)
 
-transfer.dkge_qspace(x, new_data, from, to, opts = list(), ...)
+\method{transfer}{dkge_qspace}(x, new_data, from, to, opts = list(), ...)
 }
 \arguments{
 \item{x}{A `dkge_qspace` fit.}

@@ -19,11 +19,17 @@
 #' @param design_kernel Optional design kernel passed to [dkge_fit()]. Defaults
 #'   to the \eqn{q \times q} identity matrix, which matches the whitened anchor
 #'   setup.
-#' @param sqrt_tol Eigenvalue tolerance used when extracting square roots.
+#' @param sqrt_tol Deprecated absolute eigenvalue truncation threshold. When
+#'   supplied it overrides `sqrt_absolute_tolerance`.
+#' @param sqrt_absolute_tolerance Non-negative absolute eigenvalue tolerance.
+#' @param sqrt_relative_tolerance Non-negative tolerance relative to each
+#'   subject kernel's largest eigenvalue.
 #' @param ... Additional arguments forwarded to [dkge_fit()].
 #'
 #' @return A `dkge` object identical to one obtained from [dkge_fit()], with
-#'   provenance annotated to record the kernel-driven construction.
+#'   provenance annotated to record the kernel-driven construction. Effect
+#'   matrices use `effect_ids` as canonical dimnames, subject-indexed lists use
+#'   `subject_ids`, and component axes are labelled `LV1`, `LV2`, and so on.
 #' @export
 #'
 #' @examples
@@ -40,11 +46,18 @@ dkge_fit_from_kernels <- function(K_list,
                                   effect_ids,
                                   subject_ids = NULL,
                                   design_kernel = NULL,
-                                  sqrt_tol = 1e-10,
+                                  sqrt_tol = NULL,
+                                  sqrt_absolute_tolerance = .Machine$double.xmin,
+                                  sqrt_relative_tolerance = 1e-8,
                                   ...) {
   stopifnot(is.list(K_list), length(K_list) >= 1L)
+  effect_ids <- as.character(effect_ids)
   q <- length(effect_ids)
-  stopifnot(is.numeric(q), q >= 1L)
+  if (q < 1L || anyNA(effect_ids) || any(!nzchar(effect_ids)) ||
+      anyDuplicated(effect_ids)) {
+    stop("`effect_ids` must contain unique, non-empty effect labels.",
+         call. = FALSE)
+  }
 
   if (is.null(subject_ids)) {
     subject_ids <- names(K_list)
@@ -52,22 +65,70 @@ dkge_fit_from_kernels <- function(K_list,
       subject_ids <- paste0("subject", seq_len(length(K_list)))
     }
   } else {
-    stopifnot(length(subject_ids) == length(K_list))
+    if (length(subject_ids) != length(K_list)) {
+      stop("`subject_ids` must have one entry per subject kernel.",
+           call. = FALSE)
+    }
   }
-
-  effect_ids <- as.character(effect_ids)
-  stopifnot(length(effect_ids) == q)
+  subject_ids <- as.character(subject_ids)
+  if (anyNA(subject_ids) || any(!nzchar(subject_ids)) ||
+      anyDuplicated(subject_ids)) {
+    stop("`subject_ids` must contain unique, non-empty subject labels.",
+         call. = FALSE)
+  }
 
   symmetrize <- function(M) {
     M <- as.matrix(M)
-    stopifnot(nrow(M) == q, ncol(M) == q)
-    0.5 * (M + t(M))
+    if (!is.numeric(M) || !identical(dim(M), c(q, q)) ||
+        any(!is.finite(M))) {
+      stop("Each subject kernel must be a finite numeric q x q matrix.",
+           call. = FALSE)
+    }
+
+    rn <- rownames(M)
+    cn <- colnames(M)
+    if (is.null(rn) && is.null(cn)) {
+      dimnames(M) <- list(effect_ids, effect_ids)
+    } else {
+      # A single named axis is sufficient for a symmetric kernel: the unnamed
+      # axis necessarily shares its positional ordering. When both axes are
+      # named, reorder them independently before any numeric operation so a
+      # differently ordered but correctly labelled matrix retains its
+      # name-to-value mapping.
+      if (is.null(rn)) rn <- cn
+      if (is.null(cn)) cn <- rn
+      valid_axis <- function(x) {
+        length(x) == q && !anyNA(x) && all(nzchar(x)) &&
+          !anyDuplicated(x) && setequal(x, effect_ids)
+      }
+      if (!valid_axis(rn) || !valid_axis(cn)) {
+        stop(
+          "Subject-kernel dimnames must be unique permutations of `effect_ids`.",
+          call. = FALSE
+        )
+      }
+      M <- M[match(effect_ids, rn), match(effect_ids, cn), drop = FALSE]
+      dimnames(M) <- list(effect_ids, effect_ids)
+    }
+
+    out <- 0.5 * (M + t(M))
+    dimnames(out) <- list(effect_ids, effect_ids)
+    out
   }
 
   sqrt_psd <- function(M) {
     eg <- eigen(M, symmetric = TRUE)
     vals <- pmax(eg$values, 0)
-    keep <- vals > sqrt_tol
+    absolute_tolerance <- sqrt_absolute_tolerance
+    if (!is.null(sqrt_tol)) {
+      absolute_tolerance <- sqrt_tol
+    }
+    spectral <- .dkge_spectral_contract(
+      vals,
+      absolute_tolerance = absolute_tolerance,
+      relative_tolerance = sqrt_relative_tolerance
+    )
+    keep <- spectral$positive
     if (!any(keep)) {
       matrix(0, q, 0)
     } else {
@@ -77,6 +138,7 @@ dkge_fit_from_kernels <- function(K_list,
   }
 
   K_list <- lapply(K_list, symmetrize)
+  names(K_list) <- subject_ids
   S <- length(K_list)
   scale_factor <- sqrt(S)
 
@@ -121,6 +183,70 @@ dkge_fit_from_kernels <- function(K_list,
   stopifnot(is.matrix(design_kernel), nrow(design_kernel) == q, ncol(design_kernel) == q)
 
   fit <- dkge_fit(data_bundle, K = design_kernel, ...)
+
+  component_ids <- paste0("LV", seq_len(ncol(fit$U)))
+  full_component_ids <- paste0("LV", seq_len(ncol(fit$eig_vectors_full)))
+  label_effect_components <- function(x, components = component_ids) {
+    if (is.matrix(x) && nrow(x) == q && ncol(x) == length(components)) {
+      dimnames(x) <- list(effect_ids, components)
+    }
+    x
+  }
+  label_effect_square <- function(x) {
+    if (is.matrix(x) && identical(dim(x), c(q, q))) {
+      dimnames(x) <- list(effect_ids, effect_ids)
+    }
+    x
+  }
+  label_subject_matrices <- function(x, square = FALSE) {
+    if (!is.list(x) || length(x) != length(subject_ids)) return(x)
+    x <- lapply(x, function(M) {
+      if (!is.matrix(M)) return(M)
+      if (square) {
+        label_effect_square(M)
+      } else if (nrow(M) == q) {
+        rownames(M) <- effect_ids
+        M
+      } else {
+        M
+      }
+    })
+    names(x) <- subject_ids
+    x
+  }
+
+  for (nm in c("R", "K", "Khalf", "Kihalf", "Chat", "Chat_sym",
+               "effect_moment", "pair_counts", "pair_weight", "pair_ess")) {
+    fit[[nm]] <- label_effect_square(fit[[nm]])
+  }
+  fit$U <- label_effect_components(fit$U)
+  fit$s <- label_effect_components(fit$s)
+  fit$KU <- label_effect_components(fit$KU)
+  fit$scores_matrix <- label_effect_components(fit$scores_matrix)
+  fit$eig_vectors_full <- label_effect_components(
+    fit$eig_vectors_full, full_component_ids
+  )
+  if (is.matrix(fit$v) && ncol(fit$v) == length(component_ids)) {
+    colnames(fit$v) <- component_ids
+  }
+  if (length(fit$sdev) == length(component_ids)) names(fit$sdev) <- component_ids
+  if (length(fit$evals) == length(full_component_ids)) {
+    names(fit$evals) <- full_component_ids
+  }
+  if (length(fit$eig_values_full) == length(full_component_ids)) {
+    names(fit$eig_values_full) <- full_component_ids
+  }
+  for (nm in c("contribs", "effect_moments", "effect_moments_raw",
+               "noise_moments")) {
+    fit[[nm]] <- label_subject_matrices(fit[[nm]], square = TRUE)
+  }
+  for (nm in c("Braw", "Btil", "Omega", "subjects", "effect_precision")) {
+    fit[[nm]] <- label_subject_matrices(fit[[nm]], square = FALSE)
+  }
+  if (is.list(fit$block_indices) &&
+      length(fit$block_indices) == length(subject_ids)) {
+    names(fit$block_indices) <- subject_ids
+  }
 
   provenance <- fit$provenance %||% list()
   provenance$kernel_fit <- list(

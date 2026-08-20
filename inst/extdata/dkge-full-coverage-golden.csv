@@ -1,0 +1,13 @@
+"path","artifact","metric","value","threshold","pass"
+"default","K","max_abs",0,0,TRUE
+"default","Khalf","max_abs",0,0,TRUE
+"default","Btil","max_abs",0,0,TRUE
+"default","weights","max_abs",0,0,TRUE
+"default","Chat","relative",1.72049977602248e-16,1e-15,TRUE
+"default","loso","max_abs",5.32907051820075e-15,1e-14,TRUE
+"none","K","max_abs",0,0,TRUE
+"none","Khalf","max_abs",0,0,TRUE
+"none","Btil","max_abs",0,0,TRUE
+"none","weights","max_abs",0,0,TRUE
+"none","Chat","relative",1.94448771039341e-16,1e-15,TRUE
+"none","loso","max_abs",7.105427357601e-15,1e-14,TRUE

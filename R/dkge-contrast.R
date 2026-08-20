@@ -249,13 +249,7 @@ dkge_contrast <- function(fit, contrasts,
   if (is.null(factor_scope) || is.null(names(factor_scope))) {
     return(NULL)
   }
-  cells <- .dkge_match_kernel_cells(
-    fit, info,
-    message_on_miss = paste(
-      "kernel_info$cell_labels do not match fit$effects;",
-      "structural estimability scope is unavailable."
-    )
-  )
+  cells <- .dkge_match_kernel_cells(fit, info)
   cvec <- as.numeric(contrast)
   if (is.null(cells) || !nrow(cells) || nrow(cells) != length(cvec) || anyNA(cvec)) {
     return(NULL)
@@ -490,6 +484,8 @@ dkge_contrast <- function(fit, contrasts,
 #'
 #' @param x A dkge_contrasts object
 #' @param ... Additional arguments (unused)
+#' @return `x`, invisibly.
+#' @method print dkge_contrasts
 #' @export
 print.dkge_contrasts <- function(x, ...) {
   n_contrasts <- length(x$contrasts)
@@ -539,6 +535,7 @@ print.dkge_contrasts <- function(x, ...) {
 #' @param contrast Name or index of contrast to extract
 #' @param ... Additional arguments (not used)
 #' @return SxP matrix of contrast values
+#' @method as.matrix dkge_contrasts
 #' @export
 as.matrix.dkge_contrasts <- function(x, contrast = 1, ...) {
   if (is.character(contrast)) {

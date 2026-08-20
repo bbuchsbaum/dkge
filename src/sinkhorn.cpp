@@ -32,6 +32,25 @@ Rcpp::List sinkhorn_plan_cpp(Rcpp::NumericMatrix C,
   if (max_iter <= 0) {
     Rcpp::stop("max_iter must be positive");
   }
+  if (!std::isfinite(epsilon) || !std::isfinite(tol) || tol <= 0) {
+    Rcpp::stop("epsilon and tol must be finite and positive");
+  }
+
+  for (int i = 0; i < n; ++i) {
+    if (!std::isfinite(mu[i]) || mu[i] <= 0) {
+      Rcpp::stop("mu must contain finite, strictly positive masses");
+    }
+    for (int j = 0; j < m; ++j) {
+      if (!std::isfinite(C(i, j))) {
+        Rcpp::stop("C must contain only finite costs");
+      }
+    }
+  }
+  for (int j = 0; j < m; ++j) {
+    if (!std::isfinite(nu[j]) || nu[j] <= 0) {
+      Rcpp::stop("nu must contain finite, strictly positive masses");
+    }
+  }
 
   arma::mat logK = -arma::mat(C.begin(), n, m, false, true) / epsilon;
   arma::vec mu_vec(mu.begin(), n, false, true);
@@ -44,16 +63,20 @@ Rcpp::List sinkhorn_plan_cpp(Rcpp::NumericMatrix C,
   arma::vec log_v(m, arma::fill::zeros);
 
   if (log_u_init.isNotNull()) {
-    arma::vec init = arma::vec(Rcpp::as<Rcpp::NumericVector>(log_u_init).begin(), n, false, true);
-    if (init.n_elem == static_cast<unsigned>(n)) {
-      log_u = init;
+    Rcpp::NumericVector init_vec(log_u_init);
+    if (init_vec.size() != n) {
+      Rcpp::stop("log_u_init must have length %d", n);
     }
+    arma::vec init(init_vec.begin(), n, false, true);
+    log_u = init;
   }
   if (log_v_init.isNotNull()) {
-    arma::vec init = arma::vec(Rcpp::as<Rcpp::NumericVector>(log_v_init).begin(), m, false, true);
-    if (init.n_elem == static_cast<unsigned>(m)) {
-      log_v = init;
+    Rcpp::NumericVector init_vec(log_v_init);
+    if (init_vec.size() != m) {
+      Rcpp::stop("log_v_init must have length %d", m);
     }
+    arma::vec init(init_vec.begin(), m, false, true);
+    log_v = init;
   }
 
   arma::mat plan(n, m, arma::fill::zeros);

@@ -52,6 +52,10 @@ columns in `cell_data` except `cell_id_col`.}
 \item{row_sep}{Separator used to build aggregate row labels. No level of a
 `group_vars`/`cell_vars` variable may contain it, otherwise two distinct
 aggregate rows could be given the same row ID; violations are rejected.}
+
+\item{x}{A `dkge_aggregate_target` object to print.}
+
+\item{...}{Unused; present for S3 method compatibility.}
 }
 \value{
 Object of class `dkge_aggregate_target`.

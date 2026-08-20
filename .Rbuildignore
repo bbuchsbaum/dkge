@@ -17,10 +17,13 @@
 ^\.github$
 ^\.planning$
 ^\.omc$
+^\.mote$
+^artifacts$
+^testdata$
 ^dev$
-^\.?\.?Rcheck$
-^dkge\.Rcheck$
-^dkge_.*\.tar\.gz$
-^src/.*\.(o|so)$
+^tools$
+^[^/]+[.]Rcheck$
+^[^/]+[.]tar[.]gz$
+^src/.*[.](o|so|dll)$
 ^src/symbols\.rds$
 ^\.rcmdcheck.*\.rds$

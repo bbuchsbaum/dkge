@@ -112,6 +112,12 @@ dkge_subject_model <- function(formula,
   out
 }
 
+#' Print a subject-level model specification
+#'
+#' @param x A `dkge_subject_model` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_subject_model
 #' @export
 print.dkge_subject_model <- function(x, ...) {
   cat("<dkge_subject_model>", "\n", sep = "")

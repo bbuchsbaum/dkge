@@ -60,7 +60,7 @@ dkge_targets <- function(fit,
     stop("kernel_info$levels not available; cannot derive targets from design factors.")
   }
   factor_names <- names(factor_levels)
-  map <- info$map
+  map <- .dkge_match_kernel_map(fit, info)
 
   if (is.null(spec)) {
     spec <- stats::as.formula(paste("~", paste(factor_names, collapse = " + ")))
@@ -125,6 +125,59 @@ dkge_targets <- function(fit,
   }
 
   targets
+}
+
+#' Match a design map's named cell/effect axes to the fitted coordinates
+#'
+#' `design_kernel(basis = "effect")` maps rows in cell space to columns in
+#' effect space. Both axes are semantic, so consumers must rematch their names
+#' instead of trusting the current storage order.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_match_kernel_map <- function(fit, info = NULL) {
+  info <- info %||% fit$kernel_info %||% list()
+  map <- info$map
+  if (is.null(map) || !is.matrix(map)) {
+    stop("kernel_info$map must be a matrix.", call. = FALSE)
+  }
+  space <- .dkge_kernel_info_space(
+    info,
+    rownames(fit$K) %||% colnames(fit$K) %||% fit$effects
+  )
+  if (!identical(space, "effect")) {
+    stop("kernel_info$map requires a declared effect-basis kernel.",
+         call. = FALSE)
+  }
+
+  cell_labels <- as.character(info$cell_labels %||% character())
+  effects <- as.character(fit$effects %||% character())
+  map_rows <- rownames(map)
+  map_cols <- colnames(map)
+  if (is.null(map_rows) || is.null(map_cols)) {
+    stop("kernel_info$map must have named cell rows and effect columns.",
+         call. = FALSE)
+  }
+  if (anyDuplicated(map_rows)) {
+    stop("kernel_info$map row names must be unique.", call. = FALSE)
+  }
+  if (anyDuplicated(map_cols)) {
+    stop("kernel_info$map column names must be unique.", call. = FALSE)
+  }
+  if (anyDuplicated(cell_labels) || anyDuplicated(effects)) {
+    stop("Kernel cell and effect labels must be unique for map matching.",
+         call. = FALSE)
+  }
+  if (length(map_rows) != length(cell_labels) ||
+      !setequal(map_rows, cell_labels)) {
+    stop("kernel_info$map row names do not match cell_labels.", call. = FALSE)
+  }
+  if (length(map_cols) != length(effects) ||
+      !setequal(map_cols, effects)) {
+    stop("kernel_info$map column names do not match fit$effects.", call. = FALSE)
+  }
+
+  map[match(cell_labels, map_rows), match(effects, map_cols), drop = FALSE]
 }
 
 #' Target helper for a single factor

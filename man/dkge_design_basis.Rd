@@ -38,8 +38,9 @@ A numeric matrix with attributes `term` and `source`.
 Returns a q-by-m matrix whose columns define interpretable coordinates for
 plotting DKGE saliences. With cell-space design metadata, the default is a
 factorial basis with a grand-mean column plus main effects/interactions. With
-no recoverable design metadata, the default is the identity basis over effect
-rows.
+declared effect-space metadata or no recoverable design metadata, the default
+is the identity basis over effect rows. Declared cell metadata is matched by
+unique names; incomplete or ambiguous mappings are errors.
 }
 \details{
 Basis columns are scored against saliences through \eqn{C^\top K U}, so the

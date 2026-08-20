@@ -1,0 +1,4 @@
+package,role,repository,sha
+fmridesign,Import,bbuchsbaum/fmridesign,e627d4d1861e5cc4aea5a5668d6052e394429b92
+fmrireg,Import,bbuchsbaum/fmrireg,20c9f07a225f21c4eea1732ea31418ccedd1c056
+neuralign,Enhances,bbuchsbaum/neuralign,ae1468340497ef89a32b148946cebdf6dfa42c47

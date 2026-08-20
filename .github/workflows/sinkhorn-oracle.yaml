@@ -20,13 +20,15 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgload, any::testthat, any::T4transport, local::.
+          extra-packages: |
+            any::pkgload
+            any::testthat
+            github::bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92
+            github::bbuchsbaum/fmrireg@20c9f07a225f21c4eea1732ea31418ccedd1c056
+            local::.
 
-      - name: Run Sinkhorn oracle tests
+      - name: Run compiled-versus-dense Sinkhorn oracle tests
         run: |
-          if (!requireNamespace("T4transport", quietly = TRUE)) {
-            stop("T4transport is required for sinkhorn oracle tests.")
-          }
           pkgload::load_all(".", quiet = TRUE)
           testthat::test_local(
             ".",

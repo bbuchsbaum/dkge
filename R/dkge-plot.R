@@ -274,30 +274,55 @@ dkge_component_saliences <- function(fit,
  unique(as.character(values))
 }
 
-# Reorder `kernel_info$cells` so rows follow `fit$effects`, matching
-# `cell_labels` by name. Returns NULL when metadata is missing or the
-# label sets do not agree; `message_on_miss` is emitted only in the
-# latter case (usable metadata that cannot be aligned).
-.dkge_match_kernel_cells <- function(fit, info = NULL, message_on_miss = NULL) {
+# Reorder cell-basis `kernel_info$cells` so rows follow `fit$effects`, matching
+# `cell_labels` by name. Effect-basis cell metadata is deliberately not treated
+# as fit coordinates, even when Qcell == q. Missing factorial metadata returns
+# NULL; a declared cell mapping that is incomplete or ambiguous fails closed.
+.dkge_match_kernel_cells <- function(fit, info = NULL) {
   info <- info %||% fit$kernel_info %||% list()
   labels <- info$cell_labels
   cells <- info$cells
   effects <- fit$effects
-  if (is.null(cells) || is.null(labels) || is.null(effects)) {
+  if (is.null(effects)) {
     return(NULL)
+  }
+  kernel_labels <- rownames(fit$K) %||% colnames(fit$K) %||% effects
+  space <- .dkge_kernel_info_space(info, kernel_labels)
+  if (identical(space, "effect")) return(NULL)
+  if (is.null(cells) && is.null(labels)) return(NULL)
+  if (is.null(cells) || is.null(labels)) {
+    stop(
+      "Cell-basis kernel metadata requires both `cell_labels` and `cells`.",
+      call. = FALSE
+    )
+  }
+  if (is.null(space)) {
+    stop(
+      paste0(
+        "kernel_info cell coordinates are ambiguous; declare `basis = 'cell'` ",
+        "or `coordinate_space$kernel = 'cell'`."
+      ),
+      call. = FALSE
+    )
   }
   cells <- as.data.frame(cells, stringsAsFactors = FALSE)
-  if (!nrow(cells) ||
-      nrow(cells) != length(effects) ||
-      length(labels) != length(effects)) {
-    return(NULL)
+  labels <- as.character(labels)
+  effects <- as.character(effects)
+  if (!nrow(cells) || nrow(cells) != length(labels)) {
+    stop("kernel_info$cells must have one row per cell_labels entry.",
+         call. = FALSE)
+  }
+  if (anyDuplicated(labels) || anyDuplicated(effects)) {
+    stop("kernel_info$cell_labels and fit$effects must be unique for name matching.",
+         call. = FALSE)
   }
   idx <- match(effects, labels)
-  if (anyNA(idx)) {
-    if (!is.null(message_on_miss)) {
-      message(message_on_miss)
-    }
-    return(NULL)
+  if (length(labels) != length(effects) || anyNA(idx) ||
+      !setequal(labels, effects)) {
+    stop(
+      "kernel_info$cell_labels cannot be aligned uniquely to fit$effects.",
+      call. = FALSE
+    )
   }
   cells[idx, , drop = FALSE]
 }
@@ -327,13 +352,7 @@ dkge_component_saliences <- function(fit,
  q <- length(idx$names)
  info <- fit$kernel_info %||% list()
  factor_names <- info$factor_names
- cells <- .dkge_match_kernel_cells(
-   fit, info,
-   message_on_miss = paste(
-     "kernel_info$cell_labels do not match fit$effects;",
-     "falling back to the identity design basis."
-   )
- )
+ cells <- .dkge_match_kernel_cells(fit, info)
 
  if (is.null(cells) || is.null(factor_names) || nrow(cells) != q) {
  return(.dkge_identity_design_basis(fit, normalize = normalize))
@@ -457,8 +476,9 @@ dkge_component_saliences <- function(fit,
 #' Returns a q-by-m matrix whose columns define interpretable coordinates for
 #' plotting DKGE saliences. With cell-space design metadata, the default is a
 #' factorial basis with a grand-mean column plus main effects/interactions. With
-#' no recoverable design metadata, the default is the identity basis over effect
-#' rows.
+#' declared effect-space metadata or no recoverable design metadata, the default
+#' is the identity basis over effect rows. Declared cell metadata is matched by
+#' unique names; incomplete or ambiguous mappings are errors.
 #'
 #' @param fit Fitted `dkge` object.
 #' @param basis Optional custom q-by-m matrix. Row names, when present, are
@@ -604,7 +624,9 @@ dkge_plot_scree <- function(fit, one_se_pick = NULL) {
  p
 }
 
-#' Effect-space loadings heatmap (`K %*% U`)
+#' Effect-space loadings heatmap
+#'
+#' Displays the design-kernel-weighted component basis \eqn{K U}.
 #'
 #' @param fit Fitted `dkge` object.
 #' @param comps Components to include (defaults to first min(rank,6)).

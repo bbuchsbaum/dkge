@@ -99,7 +99,7 @@ cls <- dkge_classify(
   fit,
   targets = targets,
   method  = "lda",     # "lda" (default) or "logit"
-  n_perm  = 199,       # permutation test for significance
+  n_perm  = 0,         # descriptive cross-validated decoding
   seed    = 99
 )
 print(cls)
@@ -123,11 +123,36 @@ head(df)
 
 ### Permutation p-values
 
-When `n_perm > 0`, each target gets an empirical p-value from the sign-flip max-T
-permutation distribution:
+The descriptive fit above deliberately sets `n_perm = 0`, so its p-values are `NULL`:
 
 ```{r pvalues}
 res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
+```
+
+For an inferential fit, preselect one scalar penalty independently and provide a
+callback that reruns the complete data-dependent representation and classifier for
+every randomized label vector. The callback must return finite named metrics:
+
+```{r permutation-template, eval=FALSE}
+full_recompute <- function(labels, row_data, target, fit, fold_assignments,
+                           method, mode, lambda, metric, class_weights,
+                           standardize_within_fold) {
+  # Rebuild the DKGE fit, rank choice, folds, target representation, and
+  # classifier from `labels`, then return all metrics requested in `metric`.
+  list(metrics = c(accuracy = recomputed_accuracy))
+}
+
+cls_perm <- dkge_classify(
+  fit,
+  targets = targets,
+  method = "lda",
+  mode = "cell_cross",
+  lambda = 1e-3,       # selected independently of these outcomes
+  metric = "accuracy",
+  n_perm = 199,
+  seed = 99,
+  control = list(randomization_recompute = full_recompute)
+)
 ```
 
 ### Subject-level predictions
@@ -155,17 +180,17 @@ diag_fold1$class_counts_test   # observed class counts in test set
 
 The `mode` argument controls how the group basis is applied at test time:
 
-| Mode | Basis used | Use case |
-|------|-----------|----------|
-| `"cell"` | Global `fit$U` | Fast; mild basis-step leakage — `fit$U` saw all subjects |
-| `"cell_cross"` | Fold-specific LOSO `U_fold` | Fully cross-validated, more conservative |
-| `"delta"` | Global `fit$U` + subject labels | Subject-level binary test; requires `y` argument |
+| Mode | Basis used | Supported claim |
+|------|-----------|-----------------|
+| `"cell"` | Global `fit$U` | Transductive performance within this cohort; the basis saw held-out subjects |
+| `"cell_cross"` | Fold-specific LOSO `U_fold` | Prospective held-out-subject performance |
+| `"delta"` | Fold-specific basis + subject labels | Prospective held-out-subject binary test; requires `y` |
 
 `"auto"` (default) selects `"cell"` for within-subject targets and `"delta"` for
 between-subject targets.
 
 ```{r cell-cross, eval=FALSE}
-# Fully cross-validated basis — recommended for publication-quality results
+# Cross-fitted representation for a prospective generalisation claim
 cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
 ```
 
@@ -205,7 +230,8 @@ A plain matrix is accepted directly as `targets` — DKGE wraps it automatically
 ```{r multi-classify}
 cls_multi <- dkge_classify(fit_multi,
                            targets = W_runs,   # plain matrix dispatch
-                           n_perm  = 99,
+                           mode = "cell_cross",
+                           n_perm  = 0,
                            seed    = 101)
 
 res_multi <- cls_multi$results[[1]]
@@ -213,8 +239,9 @@ res_multi$metrics
 as.data.frame(cls_multi)
 ```
 
-The cross-validation remains unbiased: run averaging happens inside the weight matrix,
-so each LOSO fold observes exactly one pattern per condition.
+Run averaging happens inside the weight matrix, so each prospective LOSO fold observes
+exactly one pattern per condition. This example is descriptive; an inferential run must
+use the full-recomputation contract shown above.
 
 ## Hyperdesign inputs and fold bridges
 
@@ -256,8 +283,15 @@ classification and contrast analyses for methodological consistency.
 `method = "logit"` with `class_weights = "balanced"` when experimental conditions have
 unequal numbers of trials.
 
-**Permutation testing.** Increase `n_perm` for precise p-values near significance
-thresholds. Set `n_perm = 0` during exploratory analysis to skip the permutation loop.
+**Permutation testing.** The beta inferential API requires one externally preselected
+positive scalar `lambda` whenever `n_perm > 0`. Observed-data `lambda_grid` and
+`lambda_fun` selection remain available only with `n_perm = 0`; freezing their selected
+value across permutations would invalidate the randomization comparison. For `cell`
+and `cell_cross`, `control$randomization_recompute` must also rebuild the DKGE fit,
+rank choice, folds, representation, and classifier for each randomized label vector;
+the callback returns the requested named metrics. Increase `n_perm` for precise p-values
+near significance thresholds, and record how the fixed penalty was selected
+independently.
 
 **Spatial alignment.** When subjects have different voxel grids, apply transport to a
 common medoid parcellation via `dkge_transport_contrasts_to_medoid()` before

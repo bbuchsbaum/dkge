@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
   fig.height = 4,
   out.width = "90%"
 )
-options(digits = 3)
+withr::local_options(list(digits = 3))
 set.seed(2024)
 ```
 
@@ -230,8 +230,10 @@ A short checklist that maps the above to actions:
    you have prior reason to couple. Use `dkge_cv_rank_loso()` to choose rank
    and kernel parameters jointly (see `vignette("dkge-design-kernels")`).
 4. **Compare identity vs structured \(K\) refits before reporting.** Diff
-   singular values; compute `crossprod(U_I, U_K)`; note whether structure is
-   data-asserted or prior-asserted.
+   singular values; compute
+   `dkge_principal_angles_K(U_I, U_K, K_struct)`; note whether structure is
+   data-asserted or prior-asserted. A raw `crossprod(U_I, U_K)` is not a
+   valid rotation comparison because the bases use the K metric.
 5. **Name the inference level.** Component, contrast, or feature. Use the
    matching tool from the table above; do not transfer a permutation
    p-value from one level to another.
@@ -248,3 +250,5 @@ A finding that survives all five steps is one you can defend.
 - `vignette("dkge-components")` — component interpretation and rotation
 - `vignette("dkge-vs-pls")` — detailed comparison with classical PLSC
 - `vignette("dkge-between-subjects")` — subject-level RRR and permutation tests
+- `vignette("dkge-partial-effect-spaces")` — partial cell coverage,
+  effect-precision weighting, and trialwise debiasing

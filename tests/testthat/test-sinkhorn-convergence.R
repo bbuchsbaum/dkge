@@ -361,11 +361,11 @@ test_that("Mismatched mass totals produces error", {
 
   expect_error(
     dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1),
-    "mu and nu must sum to the same total mass"
+    "mu.*nu.*same total mass"
   )
 })
 
-test_that("Zero or negative weights produce error", {
+test_that("Zero weights use positive support and negative weights error", {
   n <- 3
   m <- 3
   C <- matrix(1:9, n, m)
@@ -374,7 +374,10 @@ test_that("Zero or negative weights produce error", {
   mu_zero <- c(0.5, 0, 0.5)
   nu <- c(1 / 3, 1 / 3, 1 / 3)
 
-  expect_error(dkge:::.dkge_sinkhorn_plan(C, mu_zero, nu, epsilon = 0.1))
+  plan <- dkge:::.dkge_sinkhorn_plan(C, mu_zero, nu, epsilon = 0.1)
+  expect_equal(rowSums(plan), mu_zero, tolerance = 1e-4)
+  expect_equal(colSums(plan), nu, tolerance = 1e-4)
+  expect_equal(plan[2, ], rep(0, ncol(C)), tolerance = 0)
 
   # Negative weight
   mu_neg <- c(0.6, -0.1, 0.5)
