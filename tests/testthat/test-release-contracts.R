@@ -72,6 +72,16 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml, "ASAN_OPTIONS")
   expect_match(sanitizer_yaml, "UBSAN_OPTIONS")
   expect_match(sanitizer_yaml, "USE_BUNDLED_LIBUV")
+  expect_match(sanitizer_yaml, "cmake libuv1-dev")
+
+  makevars_win <- file.path(root, "src", "Makevars.win")
+  expect_true(file.exists(makevars_win))
+  if (file.exists(makevars_win)) {
+    link_flags <- paste(readLines(makevars_win, warn = FALSE), collapse = "\n")
+    expect_match(link_flags, "LAPACK_LIBS", fixed = TRUE)
+    expect_match(link_flags, "BLAS_LIBS", fixed = TRUE)
+    expect_match(link_flags, "FLIBS", fixed = TRUE)
+  }
 
   oracle_yaml <- paste(readLines(file.path(workflows, "sinkhorn-oracle.yaml"),
                                  warn = FALSE), collapse = "\n")
