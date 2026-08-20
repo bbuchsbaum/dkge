@@ -1,0 +1,4 @@
+"arm","replicates","rejections_005","rejection_005","wilson_lower","wilson_upper","mean_p","median_p","gate_lower","gate_upper","rate_gate_pass","wilson_contains_005","gate_pass"
+"transport_maxT",200,5,0.025,0.0107247196517613,0.057178340406642,0.529525,0.53,0.015,0.085,TRUE,TRUE,TRUE
+"classification_cell_cross",200,9,0.045,0.023852543001493,0.0832967040018196,0.5111,0.54,0.015,0.085,TRUE,TRUE,TRUE
+"bonferroni_family",200,5,0.025,0.0107247196517613,0.057178340406642,0.605,0.6,0,0.075,TRUE,TRUE,TRUE
