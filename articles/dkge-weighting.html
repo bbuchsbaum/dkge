@@ -34,7 +34,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -90,28 +90,21 @@
 
     
     
-<p>Design-Kernel Group Embedding (DKGE) provides several sophisticated
-weighting mechanisms that allow you to emphasize reliable clusters,
-incorporate spatial smoothness constraints, or balance contributions
-from subjects in heterogeneous cohorts. This vignette systematically
-catalogues the available weighting options and demonstrates how they
-interact throughout the various stages of fitting, projection, and
-transport operations.</p>
+<p>DKGE has separate weighting controls for locations within a subject,
+whole subjects, and spatial transport. Each changes a different
+estimand. This vignette shows where the controls enter the computation
+and what must be reported when they are used.</p>
 <div class="section level3">
 <h3 id="adaptive-voxel-weighting-preview">Adaptive voxel weighting (preview)<a class="anchor" aria-label="anchor" href="#adaptive-voxel-weighting-preview"></a>
 </h3>
-<p>In addition to the subjects × clusters weighting controls showcased
-throughout this vignette, DKGE can also rescale individual voxels
-adaptively before fold bases are constructed. This adaptive weighting
-approach enhances informative brain regions by intelligently combining
-sign-invariant priors (such as reliability maps) with training-only
-statistics including design-kernel energy or precision measures. This
-provides a fold-safe method to sharpen statistical contrasts without
-discarding potentially valuable data. The companion <a href="dkge-adaptive-weighting.html">Adaptive Voxel Weighting
-vignette</a> provides detailed coverage of the
-<code><a href="../reference/dkge_weights.html">dkge_weights()</a></code> specification, null-safety validation
-checks, and post-hoc weight updates using
-<code><a href="../reference/dkge_update_weights.html">dkge_update_weights()</a></code>.</p>
+<p>DKGE can also rescale locations adaptively before fold bases are
+constructed. <code><a href="../reference/dkge_weights.html">dkge_weights()</a></code> combines a prespecified prior,
+such as an external reliability map, with training-fold statistics such
+as design-kernel energy or precision. Training-fold scope closes one
+leakage path but does not establish calibration or improved sensitivity.
+The <a href="dkge-adaptive-weighting.html">Adaptive Voxel Weighting
+vignette</a> shows the specification, structural checks, and post-hoc
+updates with <code><a href="../reference/dkge_update_weights.html">dkge_update_weights()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="weighting-landscape">Weighting Landscape<a class="anchor" aria-label="anchor" href="#weighting-landscape"></a>
@@ -343,13 +336,13 @@ activation patterns.</p>
 <span>                   w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span><span class="va">fit_smooth</span><span class="op">$</span><span class="va">weights</span></span>
 <span><span class="co">#&gt; [1] 1 1 1</span></span></code></pre></div>
-<p>These matrix-based weights function conceptually like whitening
-transforms in that they first apply spatial smoothing to the beta
-coefficients within cluster neighborhoods, and then propagate this
-blended energy information into the shared covariance structure. This
-approach proves particularly useful when working with coarse
-parcellations where you want to down-weight artificial sharp transitions
-between adjacent cluster boundaries.</p>
+<p>These matrices define a spatial metric: DKGE right-multiplies each
+beta block by the symmetric square root of <code>Omega</code>. That is
+weighting or smoothing, not whitening (which would use an inverse square
+root). A Gaussian affinity couples nearby parcels in the fitted energy
+calculation. Whether that coupling is scientifically helpful is an
+assumption to check against an uncoupled fit, not an automatic
+correction for sharp boundaries.</p>
 </div>
 <div class="section level2">
 <h2 id="subject-level-scaling">Subject-Level Scaling<a class="anchor" aria-label="anchor" href="#subject-level-scaling"></a>

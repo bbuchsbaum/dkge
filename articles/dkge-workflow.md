@@ -1,184 +1,239 @@
-# DKGE Workflow
+# DKGE Workflow: From Subject Betas to a Shared Map
 
-DKGE compresses per-subject GLM beta matrices into a shared latent space
-that respects the experimental design. This vignette walks through the
-core pipeline: data prep → fit → component inspection → inference →
-bootstrap.
+Suppose each subject has a GLM beta matrix in a common effect space but
+a different spatial parcellation. Your practical goal is to learn a
+shared effect-space representation, evaluate a planned contrast on
+held-out subjects, and place those subject-specific contrast fields on
+one reference parcellation.
 
-> **Before you fit.** If you are new to DKGE, read
-> [`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
-> first. It covers what DKGE actually decomposes (it eigendecomposes
-> $`K^{1/2} C K^{1/2}`$, so the kernel is a metric, not a basis), why
-> identity-$`K`$ is the unconstrained baseline that structured kernels
-> should be compared against, and the three levels at which DKGE
-> supports inference (component, contrast, feature). The choices made
-> below — `K = diag(q)`, `method = "loso"`,
-> [`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md)
-> — map directly onto those concepts.
+This page follows that one path. It uses synthetic data so the code is
+self-contained; replace the beta matrices, design matrices, and
+centroids with your own. If `q by P_s` and “design kernel” are not yet
+familiar, begin with
+[`vignette("dkge")`](https://bbuchsbaum.github.io/dkge/articles/dkge.md).
 
-## Data preparation
+## What are the inputs?
 
-Three subjects, three design effects, four spatial clusters each:
+We use a 2 by 3 factorial design with a planted condition and load
+signal. Six subjects have different numbers of clusters, which is the
+reason transport is needed later.
 
 ``` r
 
-S <- 3; q <- 3; P <- 4; T <- 30
-
-betas   <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
-designs <- replicate(S, {
-  X <- matrix(rnorm(T * q), T, q)
-  qr.Q(qr(X))   # orthonormalise for a clean compressed covariance
-}, simplify = FALSE)
-centroids <- replicate(S, matrix(runif(P * 3, -15, 15), P, 3), simplify = FALSE)
-
-subjects    <- lapply(seq_len(S), function(s)
-  dkge_subject(betas[[s]], design = designs[[s]], id = paste0("sub", s)))
-data_bundle <- dkge_data(subjects)
+toy <- dkge_sim_toy(
+  factors = list(condition = list(L = 2), load = list(L = 3)),
+  active_terms = c("condition", "load"),
+  S = 6, P = c(16, 18, 15, 17, 16, 19), snr = 4, seed = 2024
+)
+vapply(toy$B_list, dim, integer(2))
+#>      [,1] [,2] [,3] [,4] [,5] [,6]
+#> [1,]    5    5    5    5    5    5
+#> [2,]   16   18   15   17   16   19
 ```
 
-[`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
-pairs each beta matrix with its design matrix.
+The output confirms a common number of effect rows and subject-specific
+cluster counts. In real data, beta-row names must match design-column
+names.
 [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md)
-harmonises effect ordering and subject IDs across the list.
-
-## Fitting
+validates that contract and preserves subject IDs.
 
 ``` r
 
-fit <- dkge(data_bundle, K = diag(data_bundle$q), rank = 2)
-fit$centroids <- centroids  # convenience: attach for transport helpers; pass explicitly in production
-
-round(fit$sdev, 3)   # component singular values
-#> [1] 7.576 6.439
-fit$weights          # per-subject MFA block weights
-#> [1] 1.329986 0.648805 1.021209
+data_bundle <- dkge_data(
+  toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids
+)
+c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+#> subjects  effects 
+#>        6        5
 ```
 
-The identity kernel `diag(q)` applies no design smoothing — use
+**Next operation:** fit a low-rank group basis. If your subjects lack
+effects or have very unequal cell precision, stop here and read
+[`vignette("dkge-partial-effect-spaces")`](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md)
+first.
+
+## What is the baseline fit?
+
+Start with an identity kernel. It retains the GLM/design scaling but
+adds no kernel-imposed similarity between effects.
+
+``` r
+
+K_identity <- diag(data_bundle$q)
+fit_identity <- dkge(data_bundle, K = K_identity, rank = 2, w_method = "none")
+dkge_plot_scree(fit_identity)
+```
+
+![](dkge-workflow_files/figure-html/fit-identity-1.png)
+
+This fit returns a two-column group basis `fit_identity$U`. The scree
+plot describes variation represented by those components; it does not
+establish their reliability or scientific importance.
+
+**Output:** an unconstrained effect-space baseline.
+
+**Next operation:** fit the scientifically motivated kernel and compare
+it with this baseline.
+
+## What changes when the design kernel is used?
+
+The simulator supplies the structured kernel used to plant the signal. A
+real analysis would construct this object explicitly with
 [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md)
-for structured factorial designs.
-
-## Component structure
-
-Cluster-wise loadings on the first component for each subject:
+and prespecify the included terms. Both fits disable subject block
+weighting so the comparison isolates the kernel change.
 
 ``` r
 
-loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
-lapply(loadings, function(A) round(A[, 1, drop = FALSE], 3))
-#> [[1]]
-#>             [,1]
-#> cluster_1 -1.473
-#> cluster_2 -0.483
-#> cluster_3 -1.128
-#> cluster_4  3.494
-#> 
-#> [[2]]
-#>             [,1]
-#> cluster_1 -3.427
-#> cluster_2  1.721
-#> cluster_3  4.820
-#> cluster_4 -1.828
-#> 
-#> [[3]]
-#>            [,1]
-#> cluster_1 1.728
-#> cluster_2 2.217
-#> cluster_3 1.179
-#> cluster_4 0.048
-```
+fit_structured <- dkge(data_bundle, K = toy$K, rank = 2, w_method = "none")
 
-Project new subjects onto the fixed basis with
-[`dkge_project_block()`](https://bbuchsbaum.github.io/dkge/reference/dkge_project_block.md)
-or
-[`dkge_project_clusters()`](https://bbuchsbaum.github.io/dkge/reference/dkge_project_clusters.md).
-
-## Component-level inference
-
-[`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md)
-transports loadings to a shared medoid parcellation and returns test
-statistics with FDR adjustment:
-
-``` r
-
-comp <- dkge_component_stats(
-  fit,
-  mapper     = dkge_mapper_spec("sinkhorn", epsilon = 0.05,
-                                lambda_spa = 0.5, max_iter = 2000,
-                                tol = 1e-4),
-  centroids  = centroids,
-  inference  = list(type = "parametric"),
-  medoid     = 1L
+comparison <- data.frame(
+  component = 1:2,
+  identity = dkge_variance_explained(fit_identity)$prop_var,
+  structured = dkge_variance_explained(fit_structured)$prop_var
 )
-head(comp$summary)
-#>   component cluster       stat          p     p_adj significant
-#> 1         1       1 -1.8820080 0.20055240 0.4812961       FALSE
-#> 2         1       2  1.1741750 0.36120890 0.5276625       FALSE
-#> 3         1       3 -0.4819917 0.67740195 0.7741737       FALSE
-#> 4         1       4  3.9565846 0.05834463 0.2333785       FALSE
-#> 5         2       1 -0.2562537 0.82170462 0.8217046       FALSE
-#> 6         2       2  1.0724787 0.39574689 0.5276625       FALSE
+round(comparison, 3)
+#>   component identity structured
+#> 1         1    0.599       0.58
+#> 2         2    0.401       0.42
 ```
 
-`comp$summary` has one row per (component, medoid cluster) pair.
-`comp$transport[[k]]` is the subject × medoid-cluster matrix for
-component `k` after alignment; `comp$statistics` holds the raw component
-vectors.
-
-## Mapping to voxel space
+Compare the retained subspaces as well as the scree values. Because the
+bases use a kernel metric, a raw
+[`crossprod()`](https://rdrr.io/pkg/Matrix/man/matmult-methods.html) is
+not a valid rotation comparison.
 
 ``` r
 
-voxels          <- replicate(S, matrix(runif(10 * 3, -20, 20), 10, 3), simplify = FALSE)
-component_values <- lapply(loadings, function(A) A[, 1])
-
-voxel_maps <- dkge_transport_to_voxels(fit,
-  values = component_values, voxels = voxels, mapper = "ridge")
-round(voxel_maps$value, 3)
+angles <- dkge_principal_angles_K(
+  fit_identity$U, fit_structured$U, fit_structured$K
+)
+round(angles * 180 / pi, 1)
+#> [1] 0 0
 ```
 
-`voxel_maps$value` is the coordinate-wise group-median consensus map;
-`voxel_maps$subj_values` preserves per-subject interpolations.
+Here component 1 accounts for 59.9% of the retained variation under the
+identity kernel and 58% under the structured kernel. Both principal
+angles round to 0 and 0 degrees: the kernel changes how variation is
+allocated within this seeded two-dimensional subspace, but not the
+subspace itself at displayed precision. This is a sensitivity
+comparison, not a test of which kernel is true.
 
-## Bootstrap inference
+**Output:** a structured fit plus an explicit record of how it differs
+from the identity baseline.
 
-Cache the transport operators once; reuse them across all bootstrap
-draws:
+**Next operation:** inspect effect saliences, then specify the contrast
+you actually want to estimate.
+
+## Which effect directions define the components?
 
 ``` r
 
-cache <- dkge_prepare_transport(
-  fit,
+dkge_plot_effect_loadings(fit_structured, comps = 1:2)
+```
+
+![](dkge-workflow_files/figure-html/show-effect-loadings-1.png)
+
+The heatmap displays $`K U`$: effect-space saliences, not voxel
+coefficients. Look for coherent relative patterns within a component. Do
+not compare a component’s arbitrary sign across independent fits without
+alignment.
+
+## How do you obtain held-out contrast fields?
+
+Build the contrast in fitted effect order. Here the simulator identifies
+the coordinate for the planted condition term.
+
+``` r
+
+condition_contrast <- numeric(data_bundle$q)
+condition_contrast[toy$active_cols$condition] <- 1
+
+condition_loso <- dkge_contrast(
+  fit_structured,
+  list(condition = condition_contrast),
+  method = "loso"
+)
+condition_loso
+#> DKGE Contrasts
+#> --------------
+#> Method: loso
+#> Contrasts: 1
+#> Subjects: 6
+#> Contrast names: condition
+```
+
+The output is a named list of six subject-specific cluster vectors. LOSO
+cross-fitting keeps each subject out of the basis used to score that
+subject. It does not make a randomized causal contrast out of an
+observational design, nor does it supply group uncertainty by itself.
+
+**Output:** one cross-fitted contrast field per subject, still indexed
+by that subject’s clusters.
+
+**Next operation:** transport those fields before stacking or performing
+feature-level group inference.
+
+## How do subject fields reach one parcellation?
+
+Transport needs real spatial features, normally cluster centroids in a
+common coordinate system. The synthetic coordinates below exist only to
+demonstrate the interface; their resulting map has no anatomical
+interpretation.
+
+``` r
+
+centroids <- lapply(seq_along(toy$B_list), function(s) {
+  p <- ncol(toy$B_list[[s]])
+  cbind(x = seq_len(p), y = rep(s / 100, p), z = rep(0, p))
+})
+```
+
+Use the ridge mapper for a dependency-light example and select subject 1
+as the reference parcellation:
+
+``` r
+
+transported <- dkge_transport_contrasts_to_medoid(
+  fit_structured,
+  condition_loso,
+  medoid = 1,
   centroids = centroids,
-  mapper = dkge_mapper_spec("sinkhorn", max_iter = 2000, tol = 1e-4),
-  medoid = 1
+  method = "ridge"
 )
-values_medoid <- lapply(seq_len(nrow(comp$transport[[1]])),
-                        function(i) comp$transport[[1]][i, ])
-
-# Resample already-transported subject vectors
-boot_proj <- dkge_bootstrap_projected(values_medoid, B = 200, seed = 99)
-
-# Include subspace re-estimation uncertainty
-boot_q <- dkge_bootstrap_qspace(fit, contrasts = c(1, -1, 0), B = 200,
-                                transport_cache = cache, medoid = 1, seed = 99)
-
-boot_proj$medoid$sd[1]
-#> [1] 0.4805996
-boot_q$summary[[1]]$sd[1]
-#> [1] 0.6202189
+dim(transported$condition$subj_values)
+#> [1]  6 16
 ```
 
-[`dkge_bootstrap_analytic()`](https://bbuchsbaum.github.io/dkge/reference/dkge_bootstrap_analytic.md)
-offers a cheaper alternative via first-order perturbation theory when
-thousands of draws are needed.
+The returned matrix has subjects in rows and reference clusters in
+columns; `transported$condition$value` is its across-subject median on
+the medoid parcellation. The attached `attr(transported, "cache")` can
+be reused for other contrasts or resampling.
 
-## Where next?
+Transport quality depends on the features, masses, mapper, and reference
+choice. Inspect mapper diagnostics and repeat defensible sensitivity
+analyses; a successful matrix multiplication is not evidence that
+parcels are biologically homologous.
 
-| Task | Function |
-|----|----|
-| Hypothesis contrasts | [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md), [`dkge_pipeline()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pipeline.md) |
-| Out-of-sample scoring | [`dkge_project_blocks()`](https://bbuchsbaum.github.io/dkge/reference/dkge_project_blocks.md) |
-| Structured design kernels | [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md) |
-| Classification / decoding | [`dkge_classify()`](https://bbuchsbaum.github.io/dkge/reference/dkge_classify.md) — see [`vignette("dkge-classification")`](https://bbuchsbaum.github.io/dkge/articles/dkge-classification.md) |
-| Inference details | [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md) |
+## What should you save and report?
+
+For a reproducible analysis, retain:
+
+- effect names and the design matrices used to produce each beta matrix;
+- the identity and structured kernels, their construction parameters,
+  and the chosen rank;
+- the identity-versus-structured comparison;
+- cross-fitting folds or LOSO specification;
+- cluster coordinates, masses, mapper settings, medoid choice, and
+  transport diagnostics; and
+- the inference unit and multiplicity procedure for every reported
+  claim.
+
+Continue with
+[`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
+for the fitted moment and inference levels,
+[`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
+for uncertainty, and
+[`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
+for the distinct roles of spatial, effect, subject, and transport
+weights.

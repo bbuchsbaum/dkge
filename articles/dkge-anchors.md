@@ -13,7 +13,8 @@ We will:
 1.  build an anchor descriptor from subject-specific features and item
     kernels,
 2.  fit DKGE through the shared `dkge_input` interface, and
-3.  evaluate cross-fitted contrasts that operate in the anchor basis.
+3.  evaluate LOSO contrasts conditional on that fixed anchor
+    representation.
 
 ``` r
 
@@ -77,6 +78,12 @@ anchor_input <- dkge_input_anchor(
 )
 ```
 
+This call chooses anchors from the pooled subjects; no fold-specific
+anchor construction is requested. The anchor representation is therefore
+fixed before the LOSO analysis below. That is a useful conditional
+analysis, but it is not end-to-end cross-validation of feature
+preprocessing.
+
 ## Fit DKGE through the shared interface
 
 [`dkge_fit_from_input()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_input.md)
@@ -101,10 +108,12 @@ fit_anchor$provenance$anchors$coverage
 #> 3      s3 2.382655 2.674812 2.714045
 ```
 
-## Cross-fitted contrasts in the anchor basis
+## LOSO basis refitting on a fixed anchor representation
 
-Contrasts are vectors over the anchor index. For illustration we
-consider the first latent axis and compute LOSO contrasts.
+Contrasts are vectors over the anchor index. For illustration we select
+the first anchor coordinate and refit the DKGE basis without each
+held-out subject. The anchors themselves remain the pooled anchors
+created above.
 
 ``` r
 
@@ -118,20 +127,20 @@ res_contrast$values$anchor1
 #> $s1
 #>  [1]  0.8578792172  0.1872228773 -0.0575353725  0.0210228694  0.0040815713
 #>  [6]  0.0026493434  0.0084611867  0.0060824492 -0.0036419263 -0.0071511478
-#> [11]  0.0020458780 -0.0051067140  0.0017552751  0.0019931698 -0.0007561988
+#> [11]  0.0020458780  0.0051067140  0.0017552751  0.0019931698 -0.0007561988
 #> [16]  0.0008524834
 #> 
 #> $s2
 #>  [1]  0.6501518261  0.0408124609  0.0263281662 -0.0020778356  0.0214882891
 #>  [6] -0.0063855690  0.0001019468  0.0048395348 -0.0024434787 -0.0009357923
-#> [11]  0.0032645685 -0.0008471532  0.0003527032 -0.0011270490 -0.0016957389
+#> [11] -0.0032645685  0.0008471532  0.0003527032 -0.0011270490  0.0016957389
 #> [16]  0.0031749291
 #> 
 #> $s3
 #>  [1]  0.7341606369  0.0011397863  0.1100017265 -0.0159284837  0.0019253123
-#>  [6]  0.0105681143 -0.0110783417  0.0204310852 -0.0192341142  0.0088613586
+#>  [6]  0.0105681143 -0.0110783417  0.0204310852 -0.0192341142 -0.0088613586
 #> [11]  0.0107199583  0.0040217500 -0.0039543365  0.0025623464  0.0002294024
-#> [16]  0.0010917674
+#> [16] -0.0010917674
 ```
 
 ## Using the pipeline helper
@@ -199,6 +208,12 @@ cls$summary
 #> NULL
 ```
 
+Here `folds = 2` cross-validates the classifier conditional on the
+fitted anchor representation and DKGE fit. It does not make anchor
+selection or basis fitting fold-specific, so treat this chunk as an API
+example rather than an estimate of end-to-end generalization
+performance.
+
 ## Diagnostics and provenance
 
 Anchor coverage, leverage, and bandwidth settings are stored under
@@ -251,28 +266,27 @@ dkge_anchor_diagnostics(fit_anchor)
 
 ## Summary
 
-The feature-anchored path allows DKGE to align subjects with disjoint
-item sets without imputing missing cells. By sampling a fold-safe set of
-anchors, whitening the anchor basis, and delegating back to the core
-DKGE routines, the approach keeps the computational core untouched while
-offering a modular front-end suitable for modern embedding-based
-experiments.
+The feature-anchored path aligns subjects with disjoint item sets
+without imputing missing cells. It selects a shared anchor
+representation, orthonormalizes that representation, and delegates the
+aligned kernels to the core DKGE fitter. For confirmatory prediction,
+define anchors independently or wrap anchor construction and model
+fitting in an outer resampling loop; the convenience workflow shown here
+fixes anchors using all subjects.
 
 ### Special cases: shared and mixed item sets
 
-- **All subjects share the same items.** The anchor pipeline reduces to
-  a re-basing of the common item kernel because every subject projects
-  onto identical feature rows. You can keep the anchor path for
-  consistency (the whitening step simply orthonormalises the shared
-  basis) or, if preferred, fall back to
-  [`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md)
-  with the shared item kernel—both produce comparable PSD inputs for the
-  core fitter.
-- **Subgroups with identical items.** When subsets of participants see
-  the same stimulus sequence, they automatically receive identical
-  anchor projections because
-  [`dkge_build_anchor_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_build_anchor_kernels.md)
-  selects anchors once per fold from the pooled training subjects.
-  Coverage and leverage diagnostics in `fit$provenance$anchors` reveal
-  these overlaps; large leverage spikes indicate anchors dominated by a
-  subgroup and may motivate a smaller `L` or tighter bandwidth.
+- **All subjects share the same items.** The anchor pipeline
+  re-expresses the common item kernel because every subject projects
+  identical feature rows into the same anchor coordinates. You can keep
+  the anchor path for consistency or fit the shared item kernel with
+  [`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md);
+  these are different representations and should be compared empirically
+  if the choice matters.
+- **Subgroups with identical items.** Subjects with identical feature
+  rows receive projections into the same pooled anchor basis. Coverage
+  and leverage diagnostics in `fit$provenance$anchors` help reveal
+  uneven representation; large leverage spikes indicate anchors
+  dominated by a subset and may motivate a smaller `L` or tighter
+  bandwidth. These diagnostics do not substitute for nested
+  preprocessing when the target is out-of-sample performance.

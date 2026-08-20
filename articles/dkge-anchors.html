@@ -34,7 +34,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -105,8 +105,8 @@ derived directly from the feature space.</p>
 kernels,</li>
 <li>fit DKGE through the shared <code>dkge_input</code> interface,
 and</li>
-<li>evaluate cross-fitted contrasts that operate in the anchor
-basis.</li>
+<li>evaluate LOSO contrasts conditional on that fixed anchor
+representation.</li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
@@ -163,6 +163,11 @@ after congruence.</p>
 <span>  anchors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">16</span>, method <span class="op">=</span> <span class="st">"dkpp"</span>, seed <span class="op">=</span> <span class="fl">99L</span><span class="op">)</span>,</span>
 <span>  dkge_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>This call chooses anchors from the pooled subjects; no fold-specific
+anchor construction is requested. The anchor representation is therefore
+fixed before the LOSO analysis below. That is a useful conditional
+analysis, but it is not end-to-end cross-validation of feature
+preprocessing.</p>
 </div>
 <div class="section level2">
 <h2 id="fit-dkge-through-the-shared-interface">Fit DKGE through the shared interface<a class="anchor" aria-label="anchor" href="#fit-dkge-through-the-shared-interface"></a>
@@ -187,10 +192,12 @@ provenance.</p>
 <span><span class="co">#&gt; 3      s3 2.382655 2.674812 2.714045</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="cross-fitted-contrasts-in-the-anchor-basis">Cross-fitted contrasts in the anchor basis<a class="anchor" aria-label="anchor" href="#cross-fitted-contrasts-in-the-anchor-basis"></a>
+<h2 id="loso-basis-refitting-on-a-fixed-anchor-representation">LOSO basis refitting on a fixed anchor representation<a class="anchor" aria-label="anchor" href="#loso-basis-refitting-on-a-fixed-anchor-representation"></a>
 </h2>
 <p>Contrasts are vectors over the anchor index. For illustration we
-consider the first latent axis and compute LOSO contrasts.</p>
+select the first anchor coordinate and refit the DKGE basis without each
+held-out subject. The anchors themselves remain the pooled anchors
+created above.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">contrast_vec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">fit_anchor</span><span class="op">$</span><span class="va">provenance</span><span class="op">$</span><span class="va">anchors</span><span class="op">$</span><span class="va">L</span><span class="op">)</span></span>
 <span><span class="va">contrast_vec</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
@@ -202,20 +209,20 @@ consider the first latent axis and compute LOSO contrasts.</p>
 <span><span class="co">#&gt; $s1</span></span>
 <span><span class="co">#&gt;  [1]  0.8578792172  0.1872228773 -0.0575353725  0.0210228694  0.0040815713</span></span>
 <span><span class="co">#&gt;  [6]  0.0026493434  0.0084611867  0.0060824492 -0.0036419263 -0.0071511478</span></span>
-<span><span class="co">#&gt; [11]  0.0020458780 -0.0051067140  0.0017552751  0.0019931698 -0.0007561988</span></span>
+<span><span class="co">#&gt; [11]  0.0020458780  0.0051067140  0.0017552751  0.0019931698 -0.0007561988</span></span>
 <span><span class="co">#&gt; [16]  0.0008524834</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $s2</span></span>
 <span><span class="co">#&gt;  [1]  0.6501518261  0.0408124609  0.0263281662 -0.0020778356  0.0214882891</span></span>
 <span><span class="co">#&gt;  [6] -0.0063855690  0.0001019468  0.0048395348 -0.0024434787 -0.0009357923</span></span>
-<span><span class="co">#&gt; [11]  0.0032645685 -0.0008471532  0.0003527032 -0.0011270490 -0.0016957389</span></span>
+<span><span class="co">#&gt; [11] -0.0032645685  0.0008471532  0.0003527032 -0.0011270490  0.0016957389</span></span>
 <span><span class="co">#&gt; [16]  0.0031749291</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $s3</span></span>
 <span><span class="co">#&gt;  [1]  0.7341606369  0.0011397863  0.1100017265 -0.0159284837  0.0019253123</span></span>
-<span><span class="co">#&gt;  [6]  0.0105681143 -0.0110783417  0.0204310852 -0.0192341142  0.0088613586</span></span>
+<span><span class="co">#&gt;  [6]  0.0105681143 -0.0110783417  0.0204310852 -0.0192341142 -0.0088613586</span></span>
 <span><span class="co">#&gt; [11]  0.0107199583  0.0040217500 -0.0039543365  0.0025623464  0.0002294024</span></span>
-<span><span class="co">#&gt; [16]  0.0010917674</span></span></code></pre></div>
+<span><span class="co">#&gt; [16] -0.0010917674</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="using-the-pipeline-helper">Using the pipeline helper<a class="anchor" aria-label="anchor" href="#using-the-pipeline-helper"></a>
@@ -274,6 +281,11 @@ prototypes or directions into the required matrices.</p>
 <span>                     folds <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">cls</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt; NULL</span></span></code></pre></div>
+<p>Here <code>folds = 2</code> cross-validates the classifier
+conditional on the fitted anchor representation and DKGE fit. It does
+not make anchor selection or basis fitting fold-specific, so treat this
+chunk as an API example rather than an estimate of end-to-end
+generalization performance.</p>
 </div>
 <div class="section level2">
 <h2 id="diagnostics-and-provenance">Diagnostics and provenance<a class="anchor" aria-label="anchor" href="#diagnostics-and-provenance"></a>
@@ -326,33 +338,34 @@ provide adequate coverage across subjects.</p>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
 </h2>
-<p>The feature-anchored path allows DKGE to align subjects with disjoint
-item sets without imputing missing cells. By sampling a fold-safe set of
-anchors, whitening the anchor basis, and delegating back to the core
-DKGE routines, the approach keeps the computational core untouched while
-offering a modular front-end suitable for modern embedding-based
-experiments.</p>
+<p>The feature-anchored path aligns subjects with disjoint item sets
+without imputing missing cells. It selects a shared anchor
+representation, orthonormalizes that representation, and delegates the
+aligned kernels to the core DKGE fitter. For confirmatory prediction,
+define anchors independently or wrap anchor construction and model
+fitting in an outer resampling loop; the convenience workflow shown here
+fixes anchors using all subjects.</p>
 <div class="section level3">
 <h3 id="special-cases-shared-and-mixed-item-sets">Special cases: shared and mixed item sets<a class="anchor" aria-label="anchor" href="#special-cases-shared-and-mixed-item-sets"></a>
 </h3>
 <ul>
 <li>
 <strong>All subjects share the same items.</strong> The anchor
-pipeline reduces to a re-basing of the common item kernel because every
-subject projects onto identical feature rows. You can keep the anchor
-path for consistency (the whitening step simply orthonormalises the
-shared basis) or, if preferred, fall back to
-<code><a href="../reference/dkge_fit_from_kernels.html">dkge_fit_from_kernels()</a></code> with the shared item kernel—both
-produce comparable PSD inputs for the core fitter.</li>
+pipeline re-expresses the common item kernel because every subject
+projects identical feature rows into the same anchor coordinates. You
+can keep the anchor path for consistency or fit the shared item kernel
+with <code><a href="../reference/dkge_fit_from_kernels.html">dkge_fit_from_kernels()</a></code>; these are different
+representations and should be compared empirically if the choice
+matters.</li>
 <li>
-<strong>Subgroups with identical items.</strong> When subsets of
-participants see the same stimulus sequence, they automatically receive
-identical anchor projections because
-<code><a href="../reference/dkge_build_anchor_kernels.html">dkge_build_anchor_kernels()</a></code> selects anchors once per fold
-from the pooled training subjects. Coverage and leverage diagnostics in
-<code>fit$provenance$anchors</code> reveal these overlaps; large
-leverage spikes indicate anchors dominated by a subgroup and may
-motivate a smaller <code>L</code> or tighter bandwidth.</li>
+<strong>Subgroups with identical items.</strong> Subjects with
+identical feature rows receive projections into the same pooled anchor
+basis. Coverage and leverage diagnostics in
+<code>fit$provenance$anchors</code> help reveal uneven representation;
+large leverage spikes indicate anchors dominated by a subset and may
+motivate a smaller <code>L</code> or tighter bandwidth. These
+diagnostics do not substitute for nested preprocessing when the target
+is out-of-sample performance.</li>
 </ul>
 </div>
 </div>

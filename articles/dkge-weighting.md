@@ -1,29 +1,21 @@
 # Weighting Strategies in DKGE
 
-Design-Kernel Group Embedding (DKGE) provides several sophisticated
-weighting mechanisms that allow you to emphasize reliable clusters,
-incorporate spatial smoothness constraints, or balance contributions
-from subjects in heterogeneous cohorts. This vignette systematically
-catalogues the available weighting options and demonstrates how they
-interact throughout the various stages of fitting, projection, and
-transport operations.
+DKGE has separate weighting controls for locations within a subject,
+whole subjects, and spatial transport. Each changes a different
+estimand. This vignette shows where the controls enter the computation
+and what must be reported when they are used.
 
 ### Adaptive voxel weighting (preview)
 
-In addition to the subjects × clusters weighting controls showcased
-throughout this vignette, DKGE can also rescale individual voxels
-adaptively before fold bases are constructed. This adaptive weighting
-approach enhances informative brain regions by intelligently combining
-sign-invariant priors (such as reliability maps) with training-only
-statistics including design-kernel energy or precision measures. This
-provides a fold-safe method to sharpen statistical contrasts without
-discarding potentially valuable data. The companion [Adaptive Voxel
-Weighting
-vignette](https://bbuchsbaum.github.io/dkge/articles/dkge-adaptive-weighting.md)
-provides detailed coverage of the
+DKGE can also rescale locations adaptively before fold bases are
+constructed.
 [`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
-specification, null-safety validation checks, and post-hoc weight
-updates using
+combines a prespecified prior, such as an external reliability map, with
+training-fold statistics such as design-kernel energy or precision.
+Training-fold scope closes one leakage path but does not establish
+calibration or improved sensitivity. The [Adaptive Voxel Weighting
+vignette](https://bbuchsbaum.github.io/dkge/articles/dkge-adaptive-weighting.md)
+shows the specification, structural checks, and post-hoc updates with
 [`dkge_update_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_update_weights.md).
 
 ## Weighting Landscape
@@ -272,13 +264,13 @@ fit_smooth$weights
 #> [1] 1 1 1
 ```
 
-These matrix-based weights function conceptually like whitening
-transforms in that they first apply spatial smoothing to the beta
-coefficients within cluster neighborhoods, and then propagate this
-blended energy information into the shared covariance structure. This
-approach proves particularly useful when working with coarse
-parcellations where you want to down-weight artificial sharp transitions
-between adjacent cluster boundaries.
+These matrices define a spatial metric: DKGE right-multiplies each beta
+block by the symmetric square root of `Omega`. That is weighting or
+smoothing, not whitening (which would use an inverse square root). A
+Gaussian affinity couples nearby parcels in the fitted energy
+calculation. Whether that coupling is scientifically helpful is an
+assumption to check against an uncoupled fit, not an automatic
+correction for sharp boundaries.
 
 ## Subject-Level Scaling
 

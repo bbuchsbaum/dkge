@@ -34,7 +34,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -90,12 +90,13 @@
 
     
     
-<p>This document provides a comparative analysis of Design-Kernel Group
-Embedding (DKGE) and the well-established partial least squares (PLS)
-framework for neuroimaging analysis. To establish a foundation for
-comparison, we first examine the classical PLS approach as described in
-McIntosh &amp; Lobaugh (2004), following their established terminology
-and conceptual framework.</p>
+<p>This page is a conceptual orientation, not an accuracy or power
+benchmark. “PLS” names several related methods, and implementation
+choices matter. The summary follows the neuroimaging accounts of <a href="https://doi.org/10.1016/j.neuroimage.2004.07.020" class="external-link">McIntosh and
+Lobaugh (2004)</a> and <a href="https://doi.org/10.1016/j.neuroimage.2010.07.034" class="external-link">Krishnan et
+al. (2011)</a>. It compares their classical task/behavior PLS
+formulations with DKGE’s current subject-beta workflow so you can decide
+which estimand and input contract match your study.</p>
 <hr>
 <div class="section level2">
 <h2 id="what-classical-pls-does">What classical PLS does<a class="anchor" aria-label="anchor" href="#what-classical-pls-does"></a>
@@ -141,15 +142,13 @@ to experimental or behavioral variables.</p>
 <div class="section level2">
 <h2 id="how-dkge-relates">How DKGE relates<a class="anchor" aria-label="anchor" href="#how-dkge-relates"></a>
 </h2>
-<p>DKGE builds upon the fundamental concept of using a compact latent
-space to explain patterns in neuroimaging data, but extends this
-approach in ways specifically tailored for modern multi-subject
-neuroimaging analysis. While PLS operates on raw brain data to find
-latent variables, DKGE works with subject-wise GLM outputs and
-incorporates design-aware alignment and spatial transport mechanisms.
-The comprehensive comparison table below summarizes both the conceptual
-commonalities between these approaches and the key methodological
-advances that DKGE introduces.</p>
+<p>Both methods construct compact latent representations, but they begin
+from different objects. Classical task or behavior PLS constructs a
+cross-block matrix linking a design/behavior block to brain
+measurements. DKGE pools subject-level GLM effect moments and applies an
+explicit effect-space kernel. The table records implemented differences;
+it does not establish that one method is generally more accurate,
+stable, or powerful.</p>
 <style>
 table.dkge-vs-pls {
   table-layout: fixed;
@@ -204,8 +203,8 @@ orthonormal components
 Design information
 </th>
 <td>
-Implicit via orthonormal contrasts; no way to encode graded similarity
-between effects.
+Specified through the exogenous/design block; the exact coding and
+available structure depend on the PLS variant.
 </td>
 <td>
 Explicit design kernel
@@ -233,8 +232,9 @@ factor; optional spatial/reliability weights
 Cross-validation
 </th>
 <td>
-Permutation for LV significance, bootstrap for salience stability (no
-LOSO cross-fitting).
+Classical neuroimaging workflows commonly use permutation for LV
+significance and bootstrap for salience stability; predictive
+cross-validation can be added but is not the same estimand.
 </td>
 <td>
 LOSO / K-fold cross-fitting (<code>dkge_contrast</code>), analytic
@@ -260,8 +260,8 @@ voxel decoders for consistent spatial maps across parcellations.
 Reliability weighting
 </th>
 <td>
-All observations weighted equally; stability assessed post hoc via
-bootstrap ratios.
+Baseline formulations often use uniform observation weights; weighted,
+sparse, and regularized PLS variants also exist.
 </td>
 <td>
 Subject- and cluster-level reliabilities enter directly (e.g. sizes,
@@ -316,44 +316,27 @@ properly understand how experimental conditions or behavioral variables
 relate to the underlying neural patterns.</p>
 </div>
 <div class="section level2">
-<h2 id="why-dkge-can-replace-or-complement-pls-in-modern-pipelines">Why DKGE can replace or complement PLS in modern pipelines<a class="anchor" aria-label="anchor" href="#why-dkge-can-replace-or-complement-pls-in-modern-pipelines"></a>
+<h2 id="which-method-matches-the-question">Which method matches the question?<a class="anchor" aria-label="anchor" href="#which-method-matches-the-question"></a>
 </h2>
-<p>DKGE offers several methodological advantages that make it
-particularly well-suited for contemporary neuroimaging analysis
-pipelines, addressing limitations that can arise with classical PLS
-approaches:</p>
-<ol style="list-style-type: decimal">
-<li><p><strong>Enhanced design control</strong> — The design kernel
-framework provides a principled mechanism for encoding factorial
-relations, smoothness constraints, or hierarchical structure among
-experimental conditions, capabilities that are difficult to achieve
-within the classical PLS framework.</p></li>
-<li><p><strong>Bias-aware statistical contrasts</strong> — Cross-fitting
-procedures systematically avoid the optimistic bias that can occur when
-estimating condition or behavior effects on the same data used for model
-fitting, while built-in inference tools provide rigorous statistical
-testing without requiring separate implementations.</p></li>
-<li><p><strong>Sophisticated spatial alignment</strong> — Transport
-operators enable mapping of component or contrast values onto consistent
-anchor or voxel grids, facilitating meaningful group-level
-interpretation even when working with heterogeneous parcellation schemes
-across subjects.</p></li>
-<li><p><strong>Principled reliability weighting</strong> — Subject-level
-and cluster-level reliability weights ensure that noisy measurements
-contribute proportionally less to the final estimates, improving overall
-stability compared to the uniform weighting typically employed in PLS
-analyses.</p></li>
-<li><p><strong>Seamless workflow integration</strong> — DKGE integrates
-directly into downstream analysis pipelines including rendering,
-bootstrapping, and component analysis without requiring reconstruction
-of transport operators or design alignment logic at each stage.</p></li>
-</ol>
-<p>In summary, DKGE can be conceptualized as a design-aware,
-transport-enabled extension of fundamental PLS concepts. It preserves
-the interpretability and whole-pattern emphasis that make latent
-variable approaches valuable while providing the inference capabilities,
-reliability weighting, and spatial alignment mechanisms that modern
-multi-subject neuroimaging studies require.</p>
+<p>Choose a PLS formulation when the target quantity is cross-block
+covariance between a brain block and an experimental or behavioral block
+and the chosen PLS implementation supplies the resampling procedure you
+need. Choose DKGE when the inputs are already subject-level GLM beta
+matrices, the scientific model requires an explicit effect-space metric,
+or subject-specific parcellations must be transported before
+feature-level summaries.</p>
+<p>These are workflow distinctions, not demonstrated performance
+advantages. DKGE’s cross-fitting addresses basis reuse only when the
+selected mode actually refits the basis; reliability weights help only
+when their construction is defensible; and spatial transport is useful
+only when its features and mapper support plausible correspondence.
+Conversely, the table does not cover the many sparse, regularized,
+predictive, or multilevel PLS variants.</p>
+<p>For an empirical comparison, prespecify one estimand, fit both
+methods to the same analysis units, use identical outer resampling
+splits, and compare a held-out metric with uncertainty. Do not infer
+superiority from the fact that one package exposes a helper that the
+other workflow leaves to the analyst.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

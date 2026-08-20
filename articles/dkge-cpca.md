@@ -148,9 +148,9 @@ first two effects in our design as the “design-aligned” subspace through
 
 Setting `cpca_part = "both"` instructs DKGE to return both the
 design-aligned basis (focused on our primary effects) and the residual
-basis (containing the secondary effects). This dual analysis allows us
-to examine both effect types while maintaining their mathematical
-independence.
+basis (containing the secondary effects). The two returned bases are
+orthogonal under the chosen $`K`$ metric; this geometric property does
+not imply statistical independence.
 
 ``` r
 
@@ -169,17 +169,14 @@ round(fit_cpca$cpca$evals_resid[1:3], 3)
 #> [1] 213 182 157
 ```
 
-Notice how CPCA filtering has cleanly separated the variance components.
-The design eigenvalues now reflect only the primary experimental effects
-we specified, while the residual eigenvalues capture the secondary
-effects including interactions and control conditions. This separation
-allows for focused analysis of each effect type.
+The two eigenvalue sequences summarize the covariance retained by the
+chosen design and residual projectors. They provide a focused
+decomposition under this model, not evidence that the underlying
+biological processes are independent.
 
-The mathematical beauty of this approach lies in the preservation of
-$`K`$-orthogonality between the design and residual bases. This
-orthogonality ensures that the two sets of components are mathematically
-independent in the design kernel metric, preventing any contamination
-between primary and secondary effect patterns:
+The following check verifies $`K`$-orthogonality between the design and
+residual bases. It is a numerical statement about the fitted
+coordinates, not a test of independence or absence of shared signal:
 
 ``` r
 
@@ -210,12 +207,11 @@ round(fit_kernel$cpca$evals_resid[1:3], 3)
 #> [1] 309.0  97.9  47.6
 ```
 
-Compared with the identity kernel, the smoother kernel draws more
-variance into the design-aligned slice and slightly spreads the
-corresponding loadings across adjacent effects. The projector honours
-the correlation structure encoded by `K_smooth`, so your choice of
-kernel directly shapes which latent directions are considered
-design-driven. When effects do not align with coordinate axes, pass a
+The printed eigenvalues show how much fitted covariance each projector
+retains under `K_smooth`. They do not display the loadings themselves.
+The projector honours the correlation structure encoded by `K_smooth`,
+so the kernel choice shapes which latent directions count as
+design-aligned. When effects do not align with coordinate axes, pass a
 custom `cpca_T` that expresses the intended K-weighted span explicitly.
 
 Behind the scenes, DKGE accomplishes this separation through
@@ -341,18 +337,18 @@ separate main effects from their interactions, allowing for cleaner
 interpretation of basic experimental manipulations versus their combined
 effects.
 
-**Multi-domain cognitive studies** can use CPCA to isolate
-domain-specific effects (such as working memory versus attention) while
-maintaining mathematical independence between cognitive systems.
+**Multi-domain cognitive studies** can use CPCA to organize effects such
+as working memory and attention into prespecified $`K`$-orthogonal
+subspaces. Any claim that the cognitive systems are independent requires
+separate evidence.
 
-**Hypothesis-driven analyses** gain power when CPCA focuses the
-statistical analysis on planned contrasts while factoring out
-exploratory or control conditions that might dilute the signal of
-interest.
+**Hypothesis-driven analyses** can focus estimation on a prespecified
+effect span. Whether that improves power is design- and data-dependent
+and should be evaluated with simulation or held-out data.
 
-**Comparative studies** across datasets become more interpretable when
-CPCA ensures that the same types of effects are analyzed consistently,
-improving the reliability of cross-study comparisons.
+**Comparative studies** can apply the same declared effect spans across
+datasets, which makes the fitted targets easier to compare. Reliability
+must still be measured rather than inferred from the decomposition.
 
 The mathematical foundation of CPCA filtering ensures that this
 decomposition preserves interpretability while maintaining compatibility

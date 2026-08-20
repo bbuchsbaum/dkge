@@ -1,240 +1,213 @@
-# DKGE Concepts: Kernels, Inference, and What the Method Actually Does
+# DKGE Concepts: What Is Estimated and What Can Be Claimed?
 
-Read this before your first fit. It explains what DKGE is actually
-decomposing, what choosing a kernel does to that decomposition, and at
-which level — component, contrast, or feature — you can claim
-statistical evidence. Workflow mechanics live in
-[`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md);
-kernel construction details in
-[`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md);
-the PLS-by-PLS comparison in
-[`vignette("dkge-vs-pls")`](https://bbuchsbaum.github.io/dkge/articles/dkge-vs-pls.md).
-This vignette is the orientation that ties them together.
+After fitting DKGE, you may see a stable-looking component, a strong
+planned contrast, or a localized cluster map. Those are different
+results. Before interpreting any of them, you need to know which
+quantity DKGE decomposed, how the design kernel changed its geometry,
+and which level of evidence your next procedure can support.
 
-## What DKGE actually decomposes
+This page supplies that mental model. For runnable setup and spatial
+transport, start with
+[`vignette("dkge")`](https://bbuchsbaum.github.io/dkge/articles/dkge.md)
+and
+[`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md).
 
-A naive group decomposition would eigendecompose the raw subject
-covariance $`C = \sum_s B_s B_s^\top`$. DKGE never does that. It
-eigendecomposes the kernel-whitened covariance
+## What enters the decomposition?
+
+For subject $`s`$, let $`B_s`$ be the `q` by `P_s` beta matrix. In the
+simplest unweighted case, its raw effect-space moment is
 
 ``` math
-\widehat C \;=\; K^{1/2} \, C \, K^{1/2}
+M_s = B_s B_s^\top.
 ```
 
-and maps the resulting eigenvectors back through $`K^{-1/2}`$ to obtain
-the group basis $`U`$. Two consequences follow that are worth
-internalising before choosing a kernel:
+Spatial weights replace this with $`B_s \Omega_s B_s^\top`$. DKGE first
+builds these small `q` by `q` moments, then pools them across subjects.
+This is why the core fit scales with the number of design effects rather
+than with a feature-by-feature covariance matrix.
 
-1.  **$`K`$ is a metric, not a basis.** DKGE does not project effects
-    onto pre-chosen kernel directions; it changes the inner product
-    under which the covariance is diagonalised. Components are free to
-    be any direction in q-space — the kernel only re-weights how “large”
-    each direction looks during the eigensolve.
-2.  **The data $`C`$ still does the work.** If the empirical covariance
-    has a dominant direction, that direction will surface regardless of
-    $`K`$ (subject to scaling). The kernel amplifies directions it
-    considers smooth / structurally plausible and attenuates rough or
-    “unrelated” ones. It does not manufacture structure that the data
-    does not already support.
+The pooled raw moment $`M`$ is transformed as
 
-In aggregate-target mode
-([`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md))
-the same machinery applies to $`Y Y^\top`$ where $`Y`$ is a cells ×
-features matrix — useful when you want a PLSC-style decomposition that
-still admits a design kernel. The subject-level fit
-[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
-differs only in that $`C`$ is the pooled, design-row-standardised
-subject covariance, not raw cell means.
+``` math
+\widehat C = K^{1/2} R^\top M R K^{1/2},
+```
 
-### Identity-K is the unconstrained baseline
+where $`R`$ is the pooled design ruler and $`K`$ is the design kernel.
+DKGE eigendecomposes $`\widehat C`$, then maps its retained eigenvectors
+back through $`K^{-1/2}`$ to obtain the group basis $`U`$. The columns
+of $`U`$ are K-orthonormal: $`U^\top K U = I`$.
 
-`K = diag(q)` collapses the whitening to the identity, leaving you with
-an eigendecomposition of $`C`$ itself (after the standard q-space
-compression). There is no kernel-imposed similarity, smoothness, or
-hierarchy among effects. For an aggregate fit this is essentially the
-left-singular-vector structure of the uncentered second moment
-$`Y Y^\top`$ (the default `dkge_aggregate_fit(..., center = "none")`) —
-ordinary cell-mean PCA, the “let the data speak” mode. Use
-`center = "grand"` or `"column"` when you want a centered SVD instead.
-
-For a full subject-level fit, identity-$`K`$ is *not* equivalent to
-ignoring design entirely: rows are still GLM effects, and DKGE still
-row-standardises through the pooled design Cholesky factor $`R`$. What
-identity-$`K`$ means is “do not couple effects beyond their GLM/design
-scaling”.
-
-### Structured K is prior-regularised
-
-Anything else — `design_kernel(factors, terms, ...)`, ordinal kernels,
-block factors, term-weighted compositions — biases the decomposition
-toward directions that lie in high-prior-variance subspaces and away
-from directions the kernel calls rough. This is a feature, not a bug; it
-is how design information gets into the latent geometry. But it does
-mean components from a structured fit cannot be reported as if they had
-“emerged” from a neutral decomposition.
-
-**Discipline:** when reporting structured-$`K`$ components, present an
-identity-$`K`$ refit alongside as the unconstrained baseline. If the
-same components dominate both, the structure is in the data. If the
-kernel substantially changes the loadings or eigenspectrum, the
-structure is partly prior.
-
-## Identity vs structured K — a small worked example
-
-A 2 × 2 aggregate cell-mean matrix with four cells and forty features.
-We pass the matrix straight to
-[`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md)
-— the dedicated
-[`dkge_aggregate_target()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_target.md)
-constructor is only needed when you want subject- or weight-aware
-bootstrap/permutation later (see
-[`?dkge_aggregate_target`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_target.md)).
+You can inspect each stage on a fitted object:
 
 ``` r
 
-P <- 40
-Y <- matrix(rnorm(4 * P), 4, P)
-rownames(Y) <- c("A1:B1", "A1:B2", "A2:B1", "A2:B2")
-```
-
-Fit twice — identity-$`K`$ baseline and a factor-structured kernel:
-
-``` r
-
-fit_I <- dkge_aggregate_fit(Y, K = diag(4), rank = 3)
-
-K_struct <- design_kernel(
-  factors = list(A = list(L = 2, type = "nominal"),
-                 B = list(L = 2, type = "nominal")),
-  terms   = list("A", "B", c("A", "B")),
-  rho     = c(A = 1, B = 1, "A:B" = 0.3),
-  basis   = "cell",
-  normalize = "unit_trace"
+toy <- dkge_sim_toy(
+  factors = list(condition = list(L = 2), load = list(L = 3)),
+  active_terms = c("condition", "load"),
+  S = 5, P = 20, snr = 5, seed = 2024
 )
-fit_K <- dkge_aggregate_fit(Y, K = K_struct, rank = 3)
+fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+
+c(
+  effects = nrow(fit$effect_moment),
+  transformed_rows = nrow(fit$Chat),
+  retained_components = ncol(fit$U)
+)
+#>             effects    transformed_rows retained_components 
+#>                   5                   5                   2
+```
+
+**Input:** subject effect moments.
+
+**Output:** a low-rank basis in the kernel metric.
+
+**Next operation:** inspect $`K U`$ with
+[`dkge_component_saliences()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_saliences.md),
+or project a prespecified contrast with
+[`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
+
+## What does the kernel change?
+
+The kernel is a metric, not a fixed set of component directions. It
+changes which effect-space directions count as large or smooth during
+the eigensolve; the empirical moment still determines the fitted
+components.
+
+An identity kernel is the essential baseline. It applies no
+kernel-imposed coupling among effects, although the full subject-level
+fit still uses GLM effect rows and, by default, the pooled design ruler
+$`R`$. A structured kernel regularizes the fit toward directions favored
+by its factor, ordinal, or block structure.
+
+Fit both versions on the same data:
+
+``` r
+
+fit_identity <- dkge(
+  toy$B_list, toy$X_list, K = diag(nrow(toy$K)), rank = 2,
+  w_method = "none"
+)
+fit_structured <- dkge(
+  toy$B_list, toy$X_list, K = toy$K, rank = 2,
+  w_method = "none"
+)
 
 data.frame(
-  component   = 1:3,
-  identity_K  = round(fit_I$singular_values, 3),
-  structured_K = round(fit_K$singular_values, 3)
+  component = 1:2,
+  identity = dkge_variance_explained(fit_identity)$prop_var,
+  structured = dkge_variance_explained(fit_structured)$prop_var
 )
-#>     component identity_K structured_K
-#> LV1         1       7.46         4.64
-#> LV2         2       6.96         3.61
-#> LV3         3       6.64         2.63
+#>   component identity structured
+#> 1         1    0.615      0.568
+#> 2         2    0.385      0.432
 ```
 
-Two questions to ask of this table:
+Compare retained subspaces in the structured metric:
 
-- **Did the eigenspectrum change shape?** A flat-to-steep shift means
-  the kernel is concentrating energy in directions it favours.
-- **Did the leading loadings change?** Compare the two bases in the
-  kernel metric with
-  `dkge_principal_angles_K(fit_I$U, fit_K$U, fit_K$K)`. Columns of `U`
-  are K-orthonormal, so `crossprod(fit_I$U, fit_K$U)` is not a rotation
-  matrix and cannot be near-identity. Small principal angles mean the
-  data already aligned with the kernel; large angles mean the kernel is
-  doing the talking.
+``` r
 
-Either result is acceptable; the obligation is to *know which* and to
-say so.
+angles <- dkge_principal_angles_K(
+  fit_identity$U, fit_structured$U, fit_structured$K
+)
+round(angles * 180 / pi, 1)
+#> [1] 0 0
+```
 
-## How DKGE conducts inference
+Small angles mean the two fits retained similar subspaces under that
+metric; large angles mean the structured kernel materially changed them.
+A raw `crossprod(fit_identity$U, fit_structured$U)` is not a valid
+substitute because the bases are not Euclidean-orthonormal in the same
+geometry.
 
-There are three distinct levels at which you can make a claim. They use
-different machinery and answer different questions. Conflating them is
-the single most common reporting error.
+Both fits disable subject block weighting, isolating the kernel change
+in this comparison. Neither outcome proves the structured kernel is
+correct. Report the kernel as a modeling choice and the identity
+comparison as a sensitivity analysis.
 
-| Level | Question | Tool | Unit |
+## What happens before the kernel when effects are incomplete?
+
+Coverage, effect precision, and finite-trial debiasing alter the raw
+pooled moment $`M`$ before the $`R`$ and $`K`$ transforms. They are not
+cosmetic weights on already fitted components.
+
+This ordering matters:
+
+1.  mark which effect rows each subject actually observed;
+2.  construct subject moments, optionally subtracting analytic noise or
+    using a split-half cross-moment;
+3.  pool observed pairs with the selected effect-precision and
+    missingness policy; and
+4.  apply $`R`$, $`K`$, and the eigensolve.
+
+An absent cell is therefore not an observed zero.
+[`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md)
+zero-fills internal aligned matrices only after recording observation
+masks, and the fit uses those masks when pooling. Policies such as
+`missingness = "rescale"` or `"shrink"` change the estimand; they must
+be chosen and reported, not used as silent repairs.
+
+See
+[`vignette("dkge-partial-effect-spaces")`](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md)
+for the runnable workflow and
+[`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
+for the distinction among effect, subject, spatial, and transport
+weights.
+
+## Which claim does each analysis support?
+
+DKGE results live at several levels. Match the tool and inference unit
+to the claim rather than treating “significant DKGE” as a single
+outcome.
+
+| Level | Question | Typical tool | What the result does not establish |
 |----|----|----|----|
-| **Component** | “Is this latent direction reliable?” | singular values; [`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md) / [`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md); identity vs structured $`K`$ refit; [`dkge_plot_subspace_stability()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_subspace_stability.md) | latent dimension |
-| **Contrast** | “Is this q-space contrast non-zero?” | [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md) (LOSO / K-fold), [`dkge_bootstrap_qspace()`](https://bbuchsbaum.github.io/dkge/reference/dkge_bootstrap_qspace.md), analytic SEs | linear combination of effects |
-| **Feature** | “Is this cluster / voxel salient under this contrast or component?” | [`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md), [`dkge_transport_contrasts_to_medoid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_medoid.md), FDR adjustment | spatial unit (cluster, anchor, voxel) |
+| Component diagnostics | How much fitted variation is retained, and how sensitive is the subspace to refitting choices? | eigenspectrum, identity comparison, [`dkge_plot_subspace_stability()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_subspace_stability.md) | inferential reliability or that a particular contrast is non-zero |
+| Aggregate component inference | Is a prespecified aggregate component statistic unusual under its resampling null? | [`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md), [`dkge_aggregate_bootstrap()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_bootstrap.md) | validity for the subject-wise q-space fit or an untested contrast |
+| Contrast | Does a prespecified effect-space contrast produce a reproducible field? | `dkge_contrast(method = "loso")`, bootstrap or analytic contrast inference | spatial localization without transport and multiplicity control |
+| Feature | Where is a component or contrast expressed after alignment? | [`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md), [`dkge_transport_contrasts_to_medoid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_medoid.md) | that the latent direction was selected without bias |
+| Between-subject term | Is a subject-level covariate associated with a named multivariate target? | [`dkge_between_rrr()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_rrr.md), [`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md) | a test of the DKGE component itself, or a causal effect without identification assumptions |
 
-The structure is hierarchical: component-level inference asks whether a
-direction exists; contrast-level inference asks whether a chosen
-direction has non-zero magnitude; feature-level inference asks where,
-spatially, that magnitude is concentrated. Every published finding
-should name its level.
+For population claims, the subject is the resampling unit. Clusters,
+anchors, voxels, and factorial cells within a subject are not
+independent subjects. Cross-fitting protects held-out scoring from basis
+reuse, but it is not a replacement for uncertainty estimation or
+multiple-testing correction.
 
-A few practical notes:
+A prespecified contrast does not need to pass through a
+component-significance gate first. Component diagnostics, q-space
+contrast inference, transported feature inference, aggregate
+decomposition, and between-subject term tests answer different
+questions; use the branch that matches the estimand.
 
-- **Subject is the unit of inference for between-subject claims.**
-  Permutation and bootstrap routines resample subjects, never cells,
-  anchors, or voxels. This applies to both
-  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
-  and aggregate-target workflows.
-- **Cross-fitting (LOSO / K-fold) is the bias-aware default for
-  contrasts.** In-fold contrasts inherit the optimism of the same data
-  used to fit $`U`$; `method = "loso"` removes that.
-- **Identity vs structured $`K`$ refits double as a sanity check for
-  component-level claims.** This is the natural DKGE analogue of the
-  multifer-style “is this LV real?” diagnostic: a component that
-  survives ablating the kernel structure is one the data is asserting,
-  not one the prior is asserting.
+Likewise, a contrast can describe a controlled model comparison in
+observational data without identifying a causal effect. Causal language
+requires design and identification assumptions outside DKGE itself.
 
-## Where DKGE sits among related methods
+## What should you decide before fitting?
 
-DKGE is not a new family of decomposition. It is a metric-aware version
-of methods you already know, plus a transport and inference layer on
-top.
+Use this sequence:
 
-| Method | Decomposes | Design role | Output |
-|----|----|----|----|
-| **PCA on cell means** | $`Y Y^\top`$ | none | data-driven axes of cell variation |
-| **PLSC** (McIntosh & Lobaugh) | cross-block $`C^\top M`$ via SVD | orthonormal contrast block | covariance-maximising LVs between design and brain |
-| **`dkge_aggregate_fit(K = I)`** | $`Y Y^\top`$ | none beyond cell labels | identical in spirit to cell-mean PCA |
-| **`dkge_aggregate_fit(K = K_struct)`** | $`K^{1/2} Y Y^\top K^{1/2}`$ | metric / preconditioner | LVs in the kernel-induced inner product |
-| **`dkge_fit(K = I)`** | pooled $`\sum_s \widetilde B_s \widetilde B_s^\top`$ | GLM row-standardisation only | unconstrained subject-level group basis |
-| **`dkge_fit(K = K_struct)`** | $`K^{1/2}`$ (pooled cov) $`K^{1/2}`$ | metric / preconditioner | design-aware subject-level group basis |
-
-Two broader relatives, for orientation:
-
-- **RDA / CCA** project the response onto a subspace spanned by a design
-  block. DKGE never restricts the response space; it changes the metric
-  used on it. An RDA fit with rank $`r`$ and identity-metric is closer
-  to a *strict-K* analogue where $`K`$ is rank-deficient and supported
-  on the design subspace.
-- **Ridge-regularised linear discriminants** (e.g. ridge LDA) likewise
-  modify the metric of the underlying scatter problem. DKGE’s
-  structured-$`K`$ refit is a closer cousin to ridge LDA than to either
-  PCA or PLSC: both pre- and post-multiply the empirical second-moment
-  matrix by a fixed PSD weight before solving.
-
-If you find yourself wanting to say “this LV is design-driven”, the
-right comparison is identity-$`K`$ DKGE, not PCA on the raw betas —
-those two only coincide for aggregate fits.
-
-## Before you fit
-
-A short checklist that maps the above to actions:
-
-1.  **Decide which estimand you want.** Aggregate cell means
-    ([`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md))
-    or subject-level group structure
-    ([`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md) /
-    [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)).
-    The inference unit is subjects in both cases.
-2.  **Always run identity-$`K`$ at least once.** It is the unconstrained
-    baseline. Save the eigenspectrum, the leading loadings, and one or
-    two contrast LOSO results.
-3.  **Add structure deliberately.** Build a
+1.  **Name the estimand.** Decide whether you want subject-level group
+    structure from
+    [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md) /
+    [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+    or an aggregate cell-mean decomposition from
+    [`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md).
+2.  **Audit the input contract.** Verify effect names, observed-cell
+    masks, cluster weights, and the subject-level unit of analysis.
+3.  **Fit the identity baseline.** Save its eigenspectrum and leading
+    saliences.
+4.  **Add only justified kernel structure.** List every requested term
+    in
     [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md)
-    only for terms you have prior reason to couple. Use
-    [`dkge_cv_rank_loso()`](https://bbuchsbaum.github.io/dkge/reference/dkge_cv_rank_loso.md)
-    to choose rank and kernel parameters jointly (see
-    [`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md)).
-4.  **Compare identity vs structured $`K`$ refits before reporting.**
-    Diff singular values; compute
-    `dkge_principal_angles_K(U_I, U_K, K_struct)`; note whether
-    structure is data-asserted or prior-asserted. A raw
-    `crossprod(U_I, U_K)` is not a valid rotation comparison because the
-    bases use the K metric.
-5.  **Name the inference level.** Component, contrast, or feature. Use
-    the matching tool from the table above; do not transfer a
-    permutation p-value from one level to another.
-
-A finding that survives all five steps is one you can defend.
+    and document its scaling.
+5.  **Compare fits in the K metric.** Use
+    [`dkge_principal_angles_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_principal_angles_K.md)
+    and compare interpreted saliences, not raw Euclidean cross-products.
+6.  **Prespecify the claim level.** Component, contrast, feature, or
+    between-subject; then use inference designed for that level.
+7.  **Transport only with defensible features.** Record coordinates,
+    masses, mapper diagnostics, and reference choice.
 
 ## See also
 

@@ -6,18 +6,18 @@ library(dkge)
 set.seed(12)
 ```
 
-The DKGE classification helpers allow you to reuse the cross-fitted
-group basis to decode subject-level contrasts with statistical rigor.
-This vignette demonstrates a complete workflow: data preparation → model
-fit → target specification → cross-validated decoding → statistical
-inference.
+The DKGE classification helpers decode experimental conditions from
+subject-level effect patterns. This vignette follows one complete path:
+define the effect space, fit DKGE, specify the classes, and estimate
+held-out-subject performance.
 
-The approach is fully cross-validated: by default
-[`dkge_classify()`](https://bbuchsbaum.github.io/dkge/reference/dkge_classify.md)
-uses leave-one-subject-out (LOSO) cross-fitting, re-estimating the group
-basis without the held-out subject at each fold. This ensures that the
-reported accuracies are unbiased estimates of generalisation
-performance.
+There are two distinct cross-validation contracts. The default
+`mode = "auto"` uses subject-level folds but selects the faster `"cell"`
+path for within-subject targets; its classifier is cross-validated,
+while the global DKGE basis has seen every subject. Use
+`mode = "cell_cross"` when the basis itself must also be re-estimated
+without each held-out subject. The primary example below uses that
+stricter end-to-end path.
 
 ## Setup
 
@@ -92,9 +92,9 @@ multi-class) decoding problem over the group embedding.
 
 ``` r
 
-targets <- dkge_targets(fit, ~ cond + time)
+targets <- dkge_targets(fit, ~ cond)
 length(targets)                      # one target per formula term
-#> [1] 2
+#> [1] 1
 targets[[1]]$name                    # "cond"
 #> [1] "cond"
 nrow(targets[[1]]$weight_matrix)     # 2 classes (A vs B)
@@ -112,18 +112,18 @@ cls <- dkge_classify(
   fit,
   targets = targets,
   method  = "lda",     # "lda" (default) or "logit"
+  mode    = "cell_cross",
   n_perm  = 0,         # descriptive cross-validated decoding
   seed    = 99
 )
 print(cls)
 #> DKGE Classification
 #> --------------------
-#> Targets: 2
+#> Targets: 1
 #> Classifier: lda
 #> Metrics: accuracy, logloss
 #> Permutations: 0
 #>   cond: accuracy=1.000, logloss=0.000
-#>   time: accuracy=0.500, logloss=0.678
 ```
 
 The result is a `dkge_classification` object. Each entry of `$results`
@@ -132,12 +132,30 @@ corresponds to one target:
 ``` r
 
 res <- cls$results[["cond"]]
-res$mode       # decoding mode: "cell" for within-subject targets
-#> [1] "cell"
+res$mode       # "cell_cross": the basis is refitted inside each fold
+#> [1] "cell_cross"
 res$metrics    # cross-validated accuracy and log-loss
 #>     accuracy      logloss 
 #> 1.000000e+00 9.999779e-13
 ```
+
+The estimand is subject-level LOSO accuracy for classifying the
+condition patterns, with both the DKGE basis and classifier refit
+without the held-out subject. In this seeded simulation the planted
+condition signal yields:
+
+``` r
+
+condition_accuracy <- unname(res$metrics[["accuracy"]])
+condition_log_loss <- unname(res$metrics[["logloss"]])
+c(accuracy = condition_accuracy, logloss = condition_log_loss)
+#>     accuracy      logloss 
+#> 1.000000e+00 9.999779e-13
+```
+
+An accuracy of 1 means every held-out condition row was classified
+correctly in this deliberately strong toy example. It is not an estimate
+of performance on an external dataset.
 
 Convert to a tidy data frame for plotting or downstream analysis:
 
@@ -148,8 +166,6 @@ head(df)
 #>   target   metric        value p_value n_perm
 #> 1   cond accuracy 1.000000e+00      NA      0
 #> 2   cond  logloss 9.999779e-13      NA      0
-#> 3   time accuracy 5.000000e-01      NA      0
-#> 4   time  logloss 6.781927e-01      NA      0
 ```
 
 ### Permutation p-values
@@ -190,6 +206,11 @@ cls_perm <- dkge_classify(
   control = list(randomization_recompute = full_recompute)
 )
 ```
+
+With 199 permutations and the plus-one correction, the smallest
+attainable p-value is $`1/(199+1)=0.005`$. A value at that boundary
+means none of the sampled permutations was as extreme; it does not
+provide finer resolution.
 
 ### Subject-level predictions
 
@@ -305,7 +326,9 @@ as.data.frame(cls_multi)
 Run averaging happens inside the weight matrix, so each prospective LOSO
 fold observes exactly one pattern per condition. This example is
 descriptive; an inferential run must use the full-recomputation contract
-shown above.
+shown above. Cross-fitting guards against basis-reuse leakage; it does
+not by itself establish transportability to a new scanner, acquisition
+protocol, or population.
 
 ## Hyperdesign inputs and fold bridges
 

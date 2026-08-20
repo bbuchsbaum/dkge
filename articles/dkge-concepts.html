@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>DKGE Concepts: Kernels, Inference, and What the Method Actually Does • dkge</title>
+<title>DKGE Concepts: What Is Estimated and What Can Be Claimed? • dkge</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="DKGE Concepts: Kernels, Inference, and What the Method Actually Does">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="DKGE Concepts: What Is Estimated and What Can Be Claimed?">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -34,7 +34,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -81,7 +81,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>DKGE Concepts: Kernels, Inference, and What the Method Actually Does</h1>
+      <h1>DKGE Concepts: What Is Estimated and What Can Be Claimed?</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-concepts.Rmd" class="external-link"><code>vignettes/dkge-concepts.Rmd</code></a></small>
@@ -90,368 +90,277 @@
 
     
     
-<p>Read this before your first fit. It explains what DKGE is actually
-decomposing, what choosing a kernel does to that decomposition, and at
-which level — component, contrast, or feature — you can claim
-statistical evidence. Workflow mechanics live in
-<code><a href="../articles/dkge-workflow.html">vignette("dkge-workflow")</a></code>; kernel construction details in
-<code><a href="../articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code>; the PLS-by-PLS comparison
-in <code><a href="../articles/dkge-vs-pls.html">vignette("dkge-vs-pls")</a></code>. This vignette is the
-orientation that ties them together.</p>
+<p>After fitting DKGE, you may see a stable-looking component, a strong
+planned contrast, or a localized cluster map. Those are different
+results. Before interpreting any of them, you need to know which
+quantity DKGE decomposed, how the design kernel changed its geometry,
+and which level of evidence your next procedure can support.</p>
+<p>This page supplies that mental model. For runnable setup and spatial
+transport, start with <code><a href="../articles/dkge.html">vignette("dkge")</a></code> and
+<code><a href="../articles/dkge-workflow.html">vignette("dkge-workflow")</a></code>.</p>
 <div class="section level2">
-<h2 id="what-dkge-actually-decomposes">What DKGE actually decomposes<a class="anchor" aria-label="anchor" href="#what-dkge-actually-decomposes"></a>
+<h2 id="what-enters-the-decomposition">What enters the decomposition?<a class="anchor" aria-label="anchor" href="#what-enters-the-decomposition"></a>
 </h2>
-<p>A naive group decomposition would eigendecompose the raw subject
-covariance
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo>=</mo><msub><mo>∑</mo><mi>s</mi></msub><msub><mi>B</mi><mi>s</mi></msub><msubsup><mi>B</mi><mi>s</mi><mi>⊤</mi></msubsup></mrow><annotation encoding="application/x-tex">C = \sum_s B_s B_s^\top</annotation></semantics></math>.
-DKGE never does that. It eigendecomposes the kernel-whitened
-covariance</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>C</mi><mo accent="true">̂</mo></mover><mspace width="0.278em"></mspace><mo>=</mo><mspace width="0.278em"></mspace><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><mspace width="0.167em"></mspace><mi>C</mi><mspace width="0.167em"></mspace><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup></mrow><annotation encoding="application/x-tex">
-\widehat C \;=\; K^{1/2} \, C \, K^{1/2}
+<p>For subject
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
+let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>B</mi><mi>s</mi></msub><annotation encoding="application/x-tex">B_s</annotation></semantics></math>
+be the <code>q</code> by <code>P_s</code> beta matrix. In the simplest
+unweighted case, its raw effect-space moment is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>M</mi><mi>s</mi></msub><mo>=</mo><msub><mi>B</mi><mi>s</mi></msub><msubsup><mi>B</mi><mi>s</mi><mi>⊤</mi></msubsup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+M_s = B_s B_s^\top.
 </annotation></semantics></math></p>
-<p>and maps the resulting eigenvectors back through
+<p>Spatial weights replace this with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>B</mi><mi>s</mi></msub><msub><mi mathvariant="normal">Ω</mi><mi>s</mi></msub><msubsup><mi>B</mi><mi>s</mi><mi>⊤</mi></msubsup></mrow><annotation encoding="application/x-tex">B_s \Omega_s B_s^\top</annotation></semantics></math>.
+DKGE first builds these small <code>q</code> by <code>q</code> moments,
+then pools them across subjects. This is why the core fit scales with
+the number of design effects rather than with a feature-by-feature
+covariance matrix.</p>
+<p>The pooled raw moment
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>M</mi><annotation encoding="application/x-tex">M</annotation></semantics></math>
+is transformed as</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>C</mi><mo accent="true">̂</mo></mover><mo>=</mo><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><msup><mi>R</mi><mi>⊤</mi></msup><mi>M</mi><mi>R</mi><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><mo>,</mo></mrow><annotation encoding="application/x-tex">
+\widehat C = K^{1/2} R^\top M R K^{1/2},
+</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math>
+is the pooled design ruler and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
+is the design kernel. DKGE eigendecomposes
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>C</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\widehat C</annotation></semantics></math>,
+then maps its retained eigenvectors back through
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>K</mi><mrow><mi>−</mi><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><annotation encoding="application/x-tex">K^{-1/2}</annotation></semantics></math>
 to obtain the group basis
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>U</mi><annotation encoding="application/x-tex">U</annotation></semantics></math>.
-Two consequences follow that are worth internalising before choosing a
-kernel:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-is a metric, not a basis.</strong> DKGE does not project effects onto
-pre-chosen kernel directions; it changes the inner product under which
-the covariance is diagonalised. Components are free to be any direction
-in q-space — the kernel only re-weights how “large” each direction looks
-during the eigensolve.</li>
-<li>
-<strong>The data
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>
-still does the work.</strong> If the empirical covariance has a dominant
-direction, that direction will surface regardless of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-(subject to scaling). The kernel amplifies directions it considers
-smooth / structurally plausible and attenuates rough or “unrelated”
-ones. It does not manufacture structure that the data does not already
-support.</li>
-</ol>
-<p>In aggregate-target mode (<code><a href="../reference/dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code>) the same
-machinery applies to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><msup><mi>Y</mi><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">Y Y^\top</annotation></semantics></math>
-where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math>
-is a cells × features matrix — useful when you want a PLSC-style
-decomposition that still admits a design kernel. The subject-level fit
-<code><a href="../reference/dkge_fit.html">dkge_fit()</a></code> differs only in that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>
-is the pooled, design-row-standardised subject covariance, not raw cell
-means.</p>
-<div class="section level3">
-<h3 id="identity-k-is-the-unconstrained-baseline">Identity-K is the unconstrained baseline<a class="anchor" aria-label="anchor" href="#identity-k-is-the-unconstrained-baseline"></a>
-</h3>
-<p><code>K = diag(q)</code> collapses the whitening to the identity,
-leaving you with an eigendecomposition of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>
-itself (after the standard q-space compression). There is no
-kernel-imposed similarity, smoothness, or hierarchy among effects. For
-an aggregate fit this is essentially the left-singular-vector structure
-of the uncentered second moment
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><msup><mi>Y</mi><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">Y Y^\top</annotation></semantics></math>
-(the default <code>dkge_aggregate_fit(..., center = "none")</code>) —
-ordinary cell-mean PCA, the “let the data speak” mode. Use
-<code>center = "grand"</code> or <code>"column"</code> when you want a
-centered SVD instead.</p>
-<p>For a full subject-level fit,
-identity-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-is <em>not</em> equivalent to ignoring design entirely: rows are still
-GLM effects, and DKGE still row-standardises through the pooled design
-Cholesky factor
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math>.
-What
-identity-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-means is “do not couple effects beyond their GLM/design scaling”.</p>
-</div>
-<div class="section level3">
-<h3 id="structured-k-is-prior-regularised">Structured K is prior-regularised<a class="anchor" aria-label="anchor" href="#structured-k-is-prior-regularised"></a>
-</h3>
-<p>Anything else — <code>design_kernel(factors, terms, ...)</code>,
-ordinal kernels, block factors, term-weighted compositions — biases the
-decomposition toward directions that lie in high-prior-variance
-subspaces and away from directions the kernel calls rough. This is a
-feature, not a bug; it is how design information gets into the latent
-geometry. But it does mean components from a structured fit cannot be
-reported as if they had “emerged” from a neutral decomposition.</p>
-<p><strong>Discipline:</strong> when reporting
-structured-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-components, present an
-identity-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-refit alongside as the unconstrained baseline. If the same components
-dominate both, the structure is in the data. If the kernel substantially
-changes the loadings or eigenspectrum, the structure is partly
-prior.</p>
-</div>
+The columns of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>U</mi><annotation encoding="application/x-tex">U</annotation></semantics></math>
+are K-orthonormal:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>U</mi><mi>⊤</mi></msup><mi>K</mi><mi>U</mi><mo>=</mo><mi>I</mi></mrow><annotation encoding="application/x-tex">U^\top K U = I</annotation></semantics></math>.</p>
+<p>You can inspect each stage on a fitted object:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_sim_toy.html">dkge_sim_toy</a></span><span class="op">(</span></span>
+<span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, load <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  active_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"load"</span><span class="op">)</span>,</span>
+<span>  S <span class="op">=</span> <span class="fl">5</span>, P <span class="op">=</span> <span class="fl">20</span>, snr <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">2024</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  effects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">effect_moment</span><span class="op">)</span>,</span>
+<span>  transformed_rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Chat</span><span class="op">)</span>,</span>
+<span>  retained_components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">U</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;             effects    transformed_rows retained_components </span></span>
+<span><span class="co">#&gt;                   5                   5                   2</span></span></code></pre></div>
+<p><strong>Input:</strong> subject effect moments.</p>
+<p><strong>Output:</strong> a low-rank basis in the kernel metric.</p>
+<p><strong>Next operation:</strong> inspect
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">K U</annotation></semantics></math>
+with <code><a href="../reference/dkge_component_saliences.html">dkge_component_saliences()</a></code>, or project a prespecified
+contrast with <code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code>.</p>
 </div>
 <div class="section level2">
-<h2 id="identity-vs-structured-k-a-small-worked-example">Identity vs structured K — a small worked example<a class="anchor" aria-label="anchor" href="#identity-vs-structured-k-a-small-worked-example"></a>
+<h2 id="what-does-the-kernel-change">What does the kernel change?<a class="anchor" aria-label="anchor" href="#what-does-the-kernel-change"></a>
 </h2>
-<p>A 2 × 2 aggregate cell-mean matrix with four cells and forty
-features. We pass the matrix straight to
-<code><a href="../reference/dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code> — the dedicated
-<code><a href="../reference/dkge_aggregate_target.html">dkge_aggregate_target()</a></code> constructor is only needed when you
-want subject- or weight-aware bootstrap/permutation later (see
-<code><a href="../reference/dkge_aggregate_target.html">?dkge_aggregate_target</a></code>).</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">P</span> <span class="op">&lt;-</span> <span class="fl">40</span></span>
-<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">4</span> <span class="op">*</span> <span class="va">P</span><span class="op">)</span>, <span class="fl">4</span>, <span class="va">P</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Y</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A1:B1"</span>, <span class="st">"A1:B2"</span>, <span class="st">"A2:B1"</span>, <span class="st">"A2:B2"</span><span class="op">)</span></span></code></pre></div>
-<p>Fit twice —
-identity-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-baseline and a factor-structured kernel:</p>
+<p>The kernel is a metric, not a fixed set of component directions. It
+changes which effect-space directions count as large or smooth during
+the eigensolve; the empirical moment still determines the fitted
+components.</p>
+<p>An identity kernel is the essential baseline. It applies no
+kernel-imposed coupling among effects, although the full subject-level
+fit still uses GLM effect rows and, by default, the pooled design ruler
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math>.
+A structured kernel regularizes the fit toward directions favored by its
+factor, ordinal, or block structure.</p>
+<p>Fit both versions on the same data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_I</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_aggregate_fit.html">dkge_aggregate_fit</a></span><span class="op">(</span><span class="va">Y</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>, rank <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">K_struct</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/design_kernel.html">design_kernel</a></span><span class="op">(</span></span>
-<span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span>, type <span class="op">=</span> <span class="st">"nominal"</span><span class="op">)</span>,</span>
-<span>                 B <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span>, type <span class="op">=</span> <span class="st">"nominal"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  terms   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  rho     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">1</span>, B <span class="op">=</span> <span class="fl">1</span>, <span class="st">"A:B"</span> <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>,</span>
-<span>  basis   <span class="op">=</span> <span class="st">"cell"</span>,</span>
-<span>  normalize <span class="op">=</span> <span class="st">"unit_trace"</span></span>
+<code class="sourceCode R"><span><span class="va">fit_identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span></span>
+<span>  <span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">K</span><span class="op">)</span><span class="op">)</span>, rank <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  w_method <span class="op">=</span> <span class="st">"none"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">fit_K</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_aggregate_fit.html">dkge_aggregate_fit</a></span><span class="op">(</span><span class="va">Y</span>, K <span class="op">=</span> <span class="va">K_struct</span>, rank <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">fit_structured</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span></span>
+<span>  <span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  w_method <span class="op">=</span> <span class="st">"none"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  component   <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
-<span>  identity_K  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_I</span><span class="op">$</span><span class="va">singular_values</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>  structured_K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_K</span><span class="op">$</span><span class="va">singular_values</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span>  component <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,</span>
+<span>  identity <span class="op">=</span> <span class="fu"><a href="../reference/dkge_variance_explained.html">dkge_variance_explained</a></span><span class="op">(</span><span class="va">fit_identity</span><span class="op">)</span><span class="op">$</span><span class="va">prop_var</span>,</span>
+<span>  structured <span class="op">=</span> <span class="fu"><a href="../reference/dkge_variance_explained.html">dkge_variance_explained</a></span><span class="op">(</span><span class="va">fit_structured</span><span class="op">)</span><span class="op">$</span><span class="va">prop_var</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;     component identity_K structured_K</span></span>
-<span><span class="co">#&gt; LV1         1       7.46         4.64</span></span>
-<span><span class="co">#&gt; LV2         2       6.96         3.61</span></span>
-<span><span class="co">#&gt; LV3         3       6.64         2.63</span></span></code></pre></div>
-<p>Two questions to ask of this table:</p>
-<ul>
-<li>
-<strong>Did the eigenspectrum change shape?</strong> A flat-to-steep
-shift means the kernel is concentrating energy in directions it
-favours.</li>
-<li>
-<strong>Did the leading loadings change?</strong> Compare the two
-bases in the kernel metric with
-<code>dkge_principal_angles_K(fit_I$U, fit_K$U, fit_K$K)</code>. Columns
-of <code>U</code> are K-orthonormal, so
-<code>crossprod(fit_I$U, fit_K$U)</code> is not a rotation matrix and
-cannot be near-identity. Small principal angles mean the data already
-aligned with the kernel; large angles mean the kernel is doing the
-talking.</li>
-</ul>
-<p>Either result is acceptable; the obligation is to <em>know which</em>
-and to say so.</p>
+<span><span class="co">#&gt;   component identity structured</span></span>
+<span><span class="co">#&gt; 1         1    0.615      0.568</span></span>
+<span><span class="co">#&gt; 2         2    0.385      0.432</span></span></code></pre></div>
+<p>Compare retained subspaces in the structured metric:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">angles</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_principal_angles_K.html">dkge_principal_angles_K</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit_identity</span><span class="op">$</span><span class="va">U</span>, <span class="va">fit_structured</span><span class="op">$</span><span class="va">U</span>, <span class="va">fit_structured</span><span class="op">$</span><span class="va">K</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">angles</span> <span class="op">*</span> <span class="fl">180</span> <span class="op">/</span> <span class="va">pi</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0 0</span></span></code></pre></div>
+<p>Small angles mean the two fits retained similar subspaces under that
+metric; large angles mean the structured kernel materially changed them.
+A raw <code>crossprod(fit_identity$U, fit_structured$U)</code> is not a
+valid substitute because the bases are not Euclidean-orthonormal in the
+same geometry.</p>
+<p>Both fits disable subject block weighting, isolating the kernel
+change in this comparison. Neither outcome proves the structured kernel
+is correct. Report the kernel as a modeling choice and the identity
+comparison as a sensitivity analysis.</p>
 </div>
 <div class="section level2">
-<h2 id="how-dkge-conducts-inference">How DKGE conducts inference<a class="anchor" aria-label="anchor" href="#how-dkge-conducts-inference"></a>
+<h2 id="what-happens-before-the-kernel-when-effects-are-incomplete">What happens before the kernel when effects are incomplete?<a class="anchor" aria-label="anchor" href="#what-happens-before-the-kernel-when-effects-are-incomplete"></a>
 </h2>
-<p>There are three distinct levels at which you can make a claim. They
-use different machinery and answer different questions. Conflating them
-is the single most common reporting error.</p>
+<p>Coverage, effect precision, and finite-trial debiasing alter the raw
+pooled moment
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>M</mi><annotation encoding="application/x-tex">M</annotation></semantics></math>
+before the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
+transforms. They are not cosmetic weights on already fitted
+components.</p>
+<p>This ordering matters:</p>
+<ol style="list-style-type: decimal">
+<li>mark which effect rows each subject actually observed;</li>
+<li>construct subject moments, optionally subtracting analytic noise or
+using a split-half cross-moment;</li>
+<li>pool observed pairs with the selected effect-precision and
+missingness policy; and</li>
+<li>apply
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>R</mi><annotation encoding="application/x-tex">R</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>,
+and the eigensolve.</li>
+</ol>
+<p>An absent cell is therefore not an observed zero.
+<code><a href="../reference/dkge_data.html">dkge_data()</a></code> zero-fills internal aligned matrices only after
+recording observation masks, and the fit uses those masks when pooling.
+Policies such as <code>missingness = "rescale"</code> or
+<code>"shrink"</code> change the estimand; they must be chosen and
+reported, not used as silent repairs.</p>
+<p>See <code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> for the
+runnable workflow and <code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> for the
+distinction among effect, subject, spatial, and transport weights.</p>
+</div>
+<div class="section level2">
+<h2 id="which-claim-does-each-analysis-support">Which claim does each analysis support?<a class="anchor" aria-label="anchor" href="#which-claim-does-each-analysis-support"></a>
+</h2>
+<p>DKGE results live at several levels. Match the tool and inference
+unit to the claim rather than treating “significant DKGE” as a single
+outcome.</p>
 <table class="table">
 <colgroup>
-<col width="24%">
-<col width="34%">
-<col width="20%">
-<col width="20%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
 </colgroup>
 <thead><tr class="header">
 <th>Level</th>
 <th>Question</th>
-<th>Tool</th>
-<th>Unit</th>
+<th>Typical tool</th>
+<th>What the result does not establish</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><strong>Component</strong></td>
-<td>“Is this latent direction reliable?”</td>
-<td>singular values; <code><a href="../reference/dkge_aggregate_permute.html">dkge_aggregate_permute()</a></code> /
-<code><a href="../reference/dkge_between_permute.html">dkge_between_permute()</a></code>; identity vs structured
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-refit; <code><a href="../reference/dkge_plot_subspace_stability.html">dkge_plot_subspace_stability()</a></code>
+<td>Component diagnostics</td>
+<td>How much fitted variation is retained, and how sensitive is the
+subspace to refitting choices?</td>
+<td>eigenspectrum, identity comparison,
+<code><a href="../reference/dkge_plot_subspace_stability.html">dkge_plot_subspace_stability()</a></code>
 </td>
-<td>latent dimension</td>
+<td>inferential reliability or that a particular contrast is
+non-zero</td>
 </tr>
 <tr class="even">
-<td><strong>Contrast</strong></td>
-<td>“Is this q-space contrast non-zero?”</td>
+<td>Aggregate component inference</td>
+<td>Is a prespecified aggregate component statistic unusual under its
+resampling null?</td>
 <td>
-<code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code> (LOSO / K-fold),
-<code><a href="../reference/dkge_bootstrap_qspace.html">dkge_bootstrap_qspace()</a></code>, analytic SEs</td>
-<td>linear combination of effects</td>
+<code><a href="../reference/dkge_aggregate_permute.html">dkge_aggregate_permute()</a></code>,
+<code><a href="../reference/dkge_aggregate_bootstrap.html">dkge_aggregate_bootstrap()</a></code>
+</td>
+<td>validity for the subject-wise q-space fit or an untested
+contrast</td>
 </tr>
 <tr class="odd">
-<td><strong>Feature</strong></td>
-<td>“Is this cluster / voxel salient under this contrast or
-component?”</td>
+<td>Contrast</td>
+<td>Does a prespecified effect-space contrast produce a reproducible
+field?</td>
+<td>
+<code>dkge_contrast(method = "loso")</code>, bootstrap or analytic
+contrast inference</td>
+<td>spatial localization without transport and multiplicity control</td>
+</tr>
+<tr class="even">
+<td>Feature</td>
+<td>Where is a component or contrast expressed after alignment?</td>
 <td>
 <code><a href="../reference/dkge_component_stats.html">dkge_component_stats()</a></code>,
-<code><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code>, FDR adjustment</td>
-<td>spatial unit (cluster, anchor, voxel)</td>
+<code><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code>
+</td>
+<td>that the latent direction was selected without bias</td>
+</tr>
+<tr class="odd">
+<td>Between-subject term</td>
+<td>Is a subject-level covariate associated with a named multivariate
+target?</td>
+<td>
+<code><a href="../reference/dkge_between_rrr.html">dkge_between_rrr()</a></code>,
+<code><a href="../reference/dkge_between_permute.html">dkge_between_permute()</a></code>
+</td>
+<td>a test of the DKGE component itself, or a causal effect without
+identification assumptions</td>
 </tr>
 </tbody>
 </table>
-<p>The structure is hierarchical: component-level inference asks whether
-a direction exists; contrast-level inference asks whether a chosen
-direction has non-zero magnitude; feature-level inference asks where,
-spatially, that magnitude is concentrated. Every published finding
-should name its level.</p>
-<p>A few practical notes:</p>
-<ul>
-<li>
-<strong>Subject is the unit of inference for between-subject
-claims.</strong> Permutation and bootstrap routines resample subjects,
-never cells, anchors, or voxels. This applies to both
-<code><a href="../reference/dkge_fit.html">dkge_fit()</a></code> and aggregate-target workflows.</li>
-<li>
-<strong>Cross-fitting (LOSO / K-fold) is the bias-aware default for
-contrasts.</strong> In-fold contrasts inherit the optimism of the same
-data used to fit
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>U</mi><annotation encoding="application/x-tex">U</annotation></semantics></math>;
-<code>method = "loso"</code> removes that.</li>
-<li>
-<strong>Identity vs structured
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-refits double as a sanity check for component-level claims.</strong>
-This is the natural DKGE analogue of the multifer-style “is this LV
-real?” diagnostic: a component that survives ablating the kernel
-structure is one the data is asserting, not one the prior is
-asserting.</li>
-</ul>
+<p>For population claims, the subject is the resampling unit. Clusters,
+anchors, voxels, and factorial cells within a subject are not
+independent subjects. Cross-fitting protects held-out scoring from basis
+reuse, but it is not a replacement for uncertainty estimation or
+multiple-testing correction.</p>
+<p>A prespecified contrast does not need to pass through a
+component-significance gate first. Component diagnostics, q-space
+contrast inference, transported feature inference, aggregate
+decomposition, and between-subject term tests answer different
+questions; use the branch that matches the estimand.</p>
+<p>Likewise, a contrast can describe a controlled model comparison in
+observational data without identifying a causal effect. Causal language
+requires design and identification assumptions outside DKGE itself.</p>
 </div>
 <div class="section level2">
-<h2 id="where-dkge-sits-among-related-methods">Where DKGE sits among related methods<a class="anchor" aria-label="anchor" href="#where-dkge-sits-among-related-methods"></a>
+<h2 id="what-should-you-decide-before-fitting">What should you decide before fitting?<a class="anchor" aria-label="anchor" href="#what-should-you-decide-before-fitting"></a>
 </h2>
-<p>DKGE is not a new family of decomposition. It is a metric-aware
-version of methods you already know, plus a transport and inference
-layer on top.</p>
-<table class="table">
-<colgroup>
-<col width="20%">
-<col width="27%">
-<col width="32%">
-<col width="20%">
-</colgroup>
-<thead><tr class="header">
-<th>Method</th>
-<th>Decomposes</th>
-<th>Design role</th>
-<th>Output</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>PCA on cell means</strong></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><msup><mi>Y</mi><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">Y Y^\top</annotation></semantics></math></td>
-<td>none</td>
-<td>data-driven axes of cell variation</td>
-</tr>
-<tr class="even">
-<td>
-<strong>PLSC</strong> (McIntosh &amp; Lobaugh)</td>
-<td>cross-block
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>C</mi><mi>⊤</mi></msup><mi>M</mi></mrow><annotation encoding="application/x-tex">C^\top M</annotation></semantics></math>
-via SVD</td>
-<td>orthonormal contrast block</td>
-<td>covariance-maximising LVs between design and brain</td>
-</tr>
-<tr class="odd">
-<td><strong><code>dkge_aggregate_fit(K = I)</code></strong></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><msup><mi>Y</mi><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">Y Y^\top</annotation></semantics></math></td>
-<td>none beyond cell labels</td>
-<td>identical in spirit to cell-mean PCA</td>
-</tr>
-<tr class="even">
-<td><strong><code>dkge_aggregate_fit(K = K_struct)</code></strong></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><mi>Y</mi><msup><mi>Y</mi><mi>⊤</mi></msup><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup></mrow><annotation encoding="application/x-tex">K^{1/2} Y Y^\top K^{1/2}</annotation></semantics></math></td>
-<td>metric / preconditioner</td>
-<td>LVs in the kernel-induced inner product</td>
-</tr>
-<tr class="odd">
-<td><strong><code>dkge_fit(K = I)</code></strong></td>
-<td>pooled
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>∑</mo><mi>s</mi></msub><msub><mover><mi>B</mi><mo accent="true">̃</mo></mover><mi>s</mi></msub><msubsup><mover><mi>B</mi><mo accent="true">̃</mo></mover><mi>s</mi><mi>⊤</mi></msubsup></mrow><annotation encoding="application/x-tex">\sum_s \widetilde B_s \widetilde B_s^\top</annotation></semantics></math>
-</td>
-<td>GLM row-standardisation only</td>
-<td>unconstrained subject-level group basis</td>
-</tr>
-<tr class="even">
-<td><strong><code>dkge_fit(K = K_struct)</code></strong></td>
-<td>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><annotation encoding="application/x-tex">K^{1/2}</annotation></semantics></math>
-(pooled cov)
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><annotation encoding="application/x-tex">K^{1/2}</annotation></semantics></math>
-</td>
-<td>metric / preconditioner</td>
-<td>design-aware subject-level group basis</td>
-</tr>
-</tbody>
-</table>
-<p>Two broader relatives, for orientation:</p>
-<ul>
-<li>
-<strong>RDA / CCA</strong> project the response onto a subspace
-spanned by a design block. DKGE never restricts the response space; it
-changes the metric used on it. An RDA fit with rank
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>
-and identity-metric is closer to a <em>strict-K</em> analogue where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-is rank-deficient and supported on the design subspace.</li>
-<li>
-<strong>Ridge-regularised linear discriminants</strong> (e.g. ridge
-LDA) likewise modify the metric of the underlying scatter problem.
-DKGE’s
-structured-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-refit is a closer cousin to ridge LDA than to either PCA or PLSC: both
-pre- and post-multiply the empirical second-moment matrix by a fixed PSD
-weight before solving.</li>
-</ul>
-<p>If you find yourself wanting to say “this LV is design-driven”, the
-right comparison is
-identity-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-DKGE, not PCA on the raw betas — those two only coincide for aggregate
-fits.</p>
-</div>
-<div class="section level2">
-<h2 id="before-you-fit">Before you fit<a class="anchor" aria-label="anchor" href="#before-you-fit"></a>
-</h2>
-<p>A short checklist that maps the above to actions:</p>
+<p>Use this sequence:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Decide which estimand you want.</strong> Aggregate cell
-means (<code><a href="../reference/dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code>) or subject-level group
-structure (<code><a href="../reference/dkge.html">dkge()</a></code> / <code><a href="../reference/dkge_fit.html">dkge_fit()</a></code>). The inference
-unit is subjects in both cases.</li>
+<strong>Name the estimand.</strong> Decide whether you want
+subject-level group structure from <code><a href="../reference/dkge.html">dkge()</a></code> /
+<code><a href="../reference/dkge_fit.html">dkge_fit()</a></code> or an aggregate cell-mean decomposition from
+<code><a href="../reference/dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code>.</li>
 <li>
-<strong>Always run
-identity-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-at least once.</strong> It is the unconstrained baseline. Save the
-eigenspectrum, the leading loadings, and one or two contrast LOSO
-results.</li>
+<strong>Audit the input contract.</strong> Verify effect names,
+observed-cell masks, cluster weights, and the subject-level unit of
+analysis.</li>
 <li>
-<strong>Add structure deliberately.</strong> Build a
-<code><a href="../reference/design_kernel.html">design_kernel()</a></code> only for terms you have prior reason to
-couple. Use <code><a href="../reference/dkge_cv_rank_loso.html">dkge_cv_rank_loso()</a></code> to choose rank and kernel
-parameters jointly (see
-<code><a href="../articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code>).</li>
+<strong>Fit the identity baseline.</strong> Save its eigenspectrum
+and leading saliences.</li>
 <li>
-<strong>Compare identity vs structured
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
-refits before reporting.</strong> Diff singular values; compute
-<code>dkge_principal_angles_K(U_I, U_K, K_struct)</code>; note whether
-structure is data-asserted or prior-asserted. A raw
-<code>crossprod(U_I, U_K)</code> is not a valid rotation comparison
-because the bases use the K metric.</li>
+<strong>Add only justified kernel structure.</strong> List every
+requested term in <code><a href="../reference/design_kernel.html">design_kernel()</a></code> and document its
+scaling.</li>
 <li>
-<strong>Name the inference level.</strong> Component, contrast, or
-feature. Use the matching tool from the table above; do not transfer a
-permutation p-value from one level to another.</li>
+<strong>Compare fits in the K metric.</strong> Use
+<code><a href="../reference/dkge_principal_angles_K.html">dkge_principal_angles_K()</a></code> and compare interpreted
+saliences, not raw Euclidean cross-products.</li>
+<li>
+<strong>Prespecify the claim level.</strong> Component, contrast,
+feature, or between-subject; then use inference designed for that
+level.</li>
+<li>
+<strong>Transport only with defensible features.</strong> Record
+coordinates, masses, mapper diagnostics, and reference choice.</li>
 </ol>
-<p>A finding that survives all five steps is one you can defend.</p>
 </div>
 <div class="section level2">
 <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>

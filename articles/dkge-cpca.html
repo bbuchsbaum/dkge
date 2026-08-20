@@ -34,7 +34,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -230,9 +230,11 @@ identifying the first two effects in our design as the “design-aligned”
 subspace through <code>cpca_blocks = 1:2</code>.</p>
 <p>Setting <code>cpca_part = "both"</code> instructs DKGE to return both
 the design-aligned basis (focused on our primary effects) and the
-residual basis (containing the secondary effects). This dual analysis
-allows us to examine both effect types while maintaining their
-mathematical independence.</p>
+residual basis (containing the secondary effects). The two returned
+bases are orthogonal under the chosen
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
+metric; this geometric property does not imply statistical
+independence.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_cpca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">bundle</span>,</span>
 <span>                 K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span>,</span>
@@ -247,18 +249,15 @@ mathematical independence.</p>
 <span><span class="co">#&gt; [1] 2503 2095    0</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_cpca</span><span class="op">$</span><span class="va">cpca</span><span class="op">$</span><span class="va">evals_resid</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 213 182 157</span></span></code></pre></div>
-<p>Notice how CPCA filtering has cleanly separated the variance
-components. The design eigenvalues now reflect only the primary
-experimental effects we specified, while the residual eigenvalues
-capture the secondary effects including interactions and control
-conditions. This separation allows for focused analysis of each effect
-type.</p>
-<p>The mathematical beauty of this approach lies in the preservation of
+<p>The two eigenvalue sequences summarize the covariance retained by the
+chosen design and residual projectors. They provide a focused
+decomposition under this model, not evidence that the underlying
+biological processes are independent.</p>
+<p>The following check verifies
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>-orthogonality
-between the design and residual bases. This orthogonality ensures that
-the two sets of components are mathematically independent in the design
-kernel metric, preventing any contamination between primary and
-secondary effect patterns:</p>
+between the design and residual bases. It is a numerical statement about
+the fitted coordinates, not a test of independence or absence of shared
+signal:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Ud</span> <span class="op">&lt;-</span> <span class="va">fit_cpca</span><span class="op">$</span><span class="va">cpca</span><span class="op">$</span><span class="va">U_design</span></span>
 <span><span class="va">Ur</span> <span class="op">&lt;-</span> <span class="va">fit_cpca</span><span class="op">$</span><span class="va">cpca</span><span class="op">$</span><span class="va">U_resid</span></span>
@@ -283,14 +282,13 @@ effects.</p>
 <span><span class="co">#&gt; [1] 3273  819    0</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_kernel</span><span class="op">$</span><span class="va">cpca</span><span class="op">$</span><span class="va">evals_resid</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 309.0  97.9  47.6</span></span></code></pre></div>
-<p>Compared with the identity kernel, the smoother kernel draws more
-variance into the design-aligned slice and slightly spreads the
-corresponding loadings across adjacent effects. The projector honours
-the correlation structure encoded by <code>K_smooth</code>, so your
-choice of kernel directly shapes which latent directions are considered
-design-driven. When effects do not align with coordinate axes, pass a
-custom <code>cpca_T</code> that expresses the intended K-weighted span
-explicitly.</p>
+<p>The printed eigenvalues show how much fitted covariance each
+projector retains under <code>K_smooth</code>. They do not display the
+loadings themselves. The projector honours the correlation structure
+encoded by <code>K_smooth</code>, so the kernel choice shapes which
+latent directions count as design-aligned. When effects do not align
+with coordinate axes, pass a custom <code>cpca_T</code> that expresses
+the intended K-weighted span explicitly.</p>
 <p>Behind the scenes, DKGE accomplishes this separation through
 mathematical projectors that operate in the design kernel metric. The
 function <code><a href="../reference/dkge_cpca_split_chat.html">dkge_cpca_split_chat()</a></code> applies these projectors to
@@ -400,17 +398,18 @@ when you need to separate main effects from their interactions, allowing
 for cleaner interpretation of basic experimental manipulations versus
 their combined effects.</p>
 <p><strong>Multi-domain cognitive studies</strong> can use CPCA to
-isolate domain-specific effects (such as working memory versus
-attention) while maintaining mathematical independence between cognitive
-systems.</p>
-<p><strong>Hypothesis-driven analyses</strong> gain power when CPCA
-focuses the statistical analysis on planned contrasts while factoring
-out exploratory or control conditions that might dilute the signal of
-interest.</p>
-<p><strong>Comparative studies</strong> across datasets become more
-interpretable when CPCA ensures that the same types of effects are
-analyzed consistently, improving the reliability of cross-study
-comparisons.</p>
+organize effects such as working memory and attention into prespecified
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>-orthogonal
+subspaces. Any claim that the cognitive systems are independent requires
+separate evidence.</p>
+<p><strong>Hypothesis-driven analyses</strong> can focus estimation on a
+prespecified effect span. Whether that improves power is design- and
+data-dependent and should be evaluated with simulation or held-out
+data.</p>
+<p><strong>Comparative studies</strong> can apply the same declared
+effect spans across datasets, which makes the fitted targets easier to
+compare. Reliability must still be measured rather than inferred from
+the decomposition.</p>
 <p>The mathematical foundation of CPCA filtering ensures that this
 decomposition preserves interpretability while maintaining compatibility
 with all other DKGE tools. Whether you proceed with contrast testing,

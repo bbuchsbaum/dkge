@@ -61,9 +61,9 @@ knitr::kable(performance, digits = 5)
 | stage | mapper   | seconds_per_call |
 |:------|:---------|-----------------:|
 | fit   | kNN      |          0.00100 |
-| fit   | Sinkhorn |          0.00300 |
-| apply | kNN      |          0.00007 |
-| apply | Sinkhorn |          0.00017 |
+| fit   | Sinkhorn |          0.00400 |
+| apply | kNN      |          0.00011 |
+| apply | Sinkhorn |          0.00026 |
 
 The table separates the solve from application. kNN fitting constructs
 local neighbourhoods; Sinkhorn fitting constructs a dense cost matrix

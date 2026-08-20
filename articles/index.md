@@ -4,8 +4,8 @@
 
 - [Getting Started with
   DKGE](https://bbuchsbaum.github.io/dkge/articles/dkge.md):
-- [DKGE
-  Workflow](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md):
+- [DKGE Workflow: From Subject Betas to a Shared
+  Map](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md):
 
 ### Core analysis
 
@@ -21,8 +21,8 @@
   Modeling](https://bbuchsbaum.github.io/dkge/articles/dkge-between-subjects.md):
 - [Unbalanced and Partial Effect
   Spaces](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md):
-- [DKGE Concepts: Kernels, Inference, and What the Method Actually
-  Does](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md):
+- [DKGE Concepts: What Is Estimated and What Can Be
+  Claimed?](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md):
 
 ### Weighting
 

@@ -34,7 +34,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -91,172 +91,161 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span></code></pre></div>
-<p>Design-Kernel Group Embedding (DKGE) is an R package for
-multi-subject fMRI analysis. It works in the compressed
-<strong>q-space</strong> of design effects (typically 10–100 dimensions)
-rather than voxel-space, enabling memory-efficient group fits,
-leave-one-subject-out contrasts, and optimal-transport alignment to a
-common parcellation — all without ever forming large subject-by-voxel
-matrices.</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span></code></pre></div>
+<p>You have one GLM beta matrix per subject. Its rows are the same named
+design effects, but its columns may be different subject-specific
+clusters. You want to find effect-space directions that recur across
+subjects, inspect what those directions express, and evaluate a planned
+contrast without constructing a voxel-by-voxel group covariance
+matrix.</p>
+<p>DKGE takes those beta matrices, their design matrices, and a design
+kernel. It returns a low-dimensional group basis in effect space plus
+subject-level cluster values that can be cross-fitted and, when
+coordinates are available, transported to a common parcellation.</p>
 <div class="section level2">
-<h2 id="minimal-example">Minimal example<a class="anchor" aria-label="anchor" href="#minimal-example"></a>
+<h2 id="can-you-fit-a-complete-example">Can you fit a complete example?<a class="anchor" aria-label="anchor" href="#can-you-fit-a-complete-example"></a>
 </h2>
-<p>Five subjects, three effects, twenty voxels each:</p>
+<p>The package includes a simulator with known factorial structure. Here
+the planted signal involves two main effects in a 2 by 3 design. Each
+subject has a 5 by 20 beta matrix: five effect rows and twenty
+clusters.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">S</span> <span class="op">&lt;-</span> <span class="fl">5</span>; <span class="va">q</span> <span class="op">&lt;-</span> <span class="fl">3</span>; <span class="va">P</span> <span class="op">&lt;-</span> <span class="fl">20</span></span>
-<span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">S</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">beta</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">q</span> <span class="op">*</span> <span class="va">P</span><span class="op">)</span>, <span class="va">q</span>, <span class="va">P</span><span class="op">)</span></span>
-<span>  <span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"eff"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/dkge_subject.html">dkge_subject</a></span><span class="op">(</span><span class="va">beta</span>, design <span class="op">=</span> <span class="va">design</span>, id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sub"</span>, <span class="va">s</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_sim_toy.html">dkge_sim_toy</a></span><span class="op">(</span></span>
+<span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, load <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  active_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"load"</span><span class="op">)</span>,</span>
+<span>  S <span class="op">=</span> <span class="fl">5</span>, P <span class="op">=</span> <span class="fl">20</span>, snr <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">42</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1]  5 20</span></span></code></pre></div>
+<p>The three objects needed for a first fit are <code>toy$B_list</code>
+(subject beta matrices), <code>toy$X_list</code> (matching design
+rulers), and <code>toy$K</code> (the effect-space kernel). Fit two
+components:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/dkge_plot_scree.html">dkge_plot_scree</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<p><img src="dkge_files/figure-html/fit-example-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p>The bars show each retained component’s share of the fitted q-space
+variation; the line is cumulative. This is a descriptive summary of the
+fitted latent space, not a significance test.</p>
+</div>
+<div class="section level2">
+<h2 id="what-does-a-component-express">What does a component express?<a class="anchor" aria-label="anchor" href="#what-does-a-component-express"></a>
+</h2>
+<p>Inspect the design-weighted saliences,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">K U</annotation></semantics></math>,
+before mapping anything back to space. Rows are effects and columns are
+components.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/dkge_component_saliences.html">dkge_component_saliences</a></span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, long <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                  LV1   LV2</span></span>
+<span><span class="co">#&gt; condition       0.81 -0.06</span></span>
+<span><span class="co">#&gt; load1           0.04  0.58</span></span>
+<span><span class="co">#&gt; load2           0.01  0.01</span></span>
+<span><span class="co">#&gt; condition:load1 0.00  0.00</span></span>
+<span><span class="co">#&gt; condition:load2 0.00  0.00</span></span></code></pre></div>
+<p>Large positive and negative entries identify the effect directions
+associated with each component. Component signs are arbitrary, so
+interpret relative patterns rather than treating the sign itself as
+scientifically meaningful.</p>
+<p><strong>Next operation:</strong> use
+<code>dkge_plot_effect_loadings(fit)</code> for a heatmap, or move to a
+prespecified effect contrast.</p>
+</div>
+<div class="section level2">
+<h2 id="how-do-you-evaluate-a-contrast-without-reusing-each-subjects-data">How do you evaluate a contrast without reusing each subject’s
+data?<a class="anchor" aria-label="anchor" href="#how-do-you-evaluate-a-contrast-without-reusing-each-subjects-data"></a>
+</h2>
+<p>Construct a contrast in the same effect order as the fit. The
+simulator records which effect coordinate carries the planted
+<code>condition</code> term.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">condition_contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">K</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">condition_contrast</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">active_cols</span><span class="op">$</span><span class="va">condition</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">subjects</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span>, rank <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">fit</span><span class="op">$</span><span class="va">evals</span></span>
-<span><span class="co">#&gt; [1] 527.8827 490.5156 392.4671</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">subject_ids</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 5</span></span></code></pre></div>
-<p>The returned object is a <code>multiblock_biprojector</code> with
-q-space loadings in <code>fit$U</code>, compressed projections in
-<code>fit$Btil</code>, and diagnostics in <code>fit$weights</code> and
-<code>fit$evals</code>.</p>
+<span><span class="va">condition_loso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_contrast.html">dkge_contrast</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="va">condition_contrast</span><span class="op">)</span>, method <span class="op">=</span> <span class="st">"loso"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">condition_loso</span></span>
+<span><span class="co">#&gt; DKGE Contrasts</span></span>
+<span><span class="co">#&gt; --------------</span></span>
+<span><span class="co">#&gt; Method: loso</span></span>
+<span><span class="co">#&gt; Contrasts: 1</span></span>
+<span><span class="co">#&gt; Subjects: 5</span></span>
+<span><span class="co">#&gt; Contrast names: condition</span></span></code></pre></div>
+<p><code>method = "loso"</code> refits the latent basis without each
+held-out subject before computing that subject’s cluster values. The
+result contains one vector per subject under
+<code>condition_loso$values$condition</code>; those vectors still live
+on the subjects’ own cluster systems.</p>
+<p>Cross-fitting limits basis-reuse optimism; it does not by itself
+provide a population p-value, spatial multiplicity correction, or causal
+interpretation. Those require an inference procedure matched to the
+claim and an experimental design that supports the interpretation.</p>
+<p><strong>Next operation:</strong> if clusters differ across subjects,
+transport the contrast with
+<code><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code>. If they already share
+a common index, <code>as.matrix(condition_loso)</code> stacks them
+directly.</p>
 </div>
 <div class="section level2">
-<h2 id="reading-order">Reading order<a class="anchor" aria-label="anchor" href="#reading-order"></a>
+<h2 id="what-must-your-real-data-look-like">What must your real data look like?<a class="anchor" aria-label="anchor" href="#what-must-your-real-data-look-like"></a>
 </h2>
-<table class="table">
-<colgroup>
-<col width="52%">
-<col width="47%">
-</colgroup>
-<thead><tr class="header">
-<th>Vignette</th>
-<th>Purpose</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>You are here</strong></td>
-<td>Overview and entry point</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-concepts.html">Concepts</a></td>
-<td>What DKGE actually decomposes, what K does, and the three levels of
-inference — read before your first fit</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-workflow.html">Workflow</a></td>
-<td>Complete fit → contrast → transport → visualise pipeline</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-design-kernels.html">Design Kernels</a></td>
-<td>Encoding factor structure with <code><a href="../reference/design_kernel.html">design_kernel()</a></code>
-</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-contrasts-inference.html">Contrasts &amp;
-Inference</a></td>
-<td>LOSO contrasts, analytic and bootstrap inference</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-classification.html">Classification</a></td>
-<td>Cross-validated decoding with <code><a href="../reference/dkge_classify.html">dkge_classify()</a></code>
-</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-weighting.html">Weighting Strategies</a></td>
-<td>Spatial (<code>Omega_list</code>), subject, and transport
-weights</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-adaptive-weighting.html">Adaptive Voxel
-Weighting</a></td>
-<td>Fold-safe <code><a href="../reference/dkge_weights.html">dkge_weights()</a></code> API</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-components.html">Components</a></td>
-<td>Inspecting group-level components and loadings</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-partial-effect-spaces.html">Partial Effect
-Spaces</a></td>
-<td>Unbalanced cell coverage, effect precision, and trialwise
-debiasing</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-plotting.html">Plotting</a></td>
-<td>
-<code><a href="../reference/theme_dkge.html">theme_dkge()</a></code>, scree plots, contribution maps</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-dense-rendering.html">Dense Rendering</a></td>
-<td>Mapping cluster values to voxel space</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-anchors.html">Anchors</a></td>
-<td>
-<code><a href="../reference/dkge_anchor_fit.html">dkge_anchor_fit()</a></code> and anchor-based prediction</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-cpca.html">CPCA</a></td>
-<td>Contrastive PCA inside the DKGE framework</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-vs-pls.html">DKGE vs PLS</a></td>
-<td>Comparison with partial least squares approaches</td>
-</tr>
-<tr class="even">
-<td><a href="dkge-performance.html">Performance</a></td>
-<td>Mapper selection, warm starts, custom backends</td>
-</tr>
-<tr class="odd">
-<td><a href="dkge-architecture.html">Architecture</a></td>
-<td>Design document: planned modular refactor (not current API)</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="key-concepts-at-a-glance">Key concepts at a glance<a class="anchor" aria-label="anchor" href="#key-concepts-at-a-glance"></a>
-</h2>
-<p><strong><code>dkge_subject(beta, design)</code></strong> — wraps a
-single subject’s <code>q × P</code> beta matrix and <code>T × q</code>
-design matrix. Supply optional <code>omega</code> (cluster weights) and
-<code>id</code>.</p>
-<p><strong><code>dkge_data(betas, designs)</code></strong> — bundles a
-list of subjects, aligns partially-overlapping effect sets, and records
-provenance.</p>
-<p><strong><code>dkge(betas, designs, K, rank)</code></strong> — main
-entry point. The first argument may be a list of
-<code>dkge_subject</code> objects or a <code>dkge_data</code> bundle
-(then <code>designs</code> is omitted). <code>K</code> is the
-<code>q × q</code> design kernel; pass
-<code>design_kernel(factors, basis = "effect")</code> for structured
-factor designs.</p>
-<p><strong><code>dkge_contrast(fit, contrast_vec, method = "loso")</code></strong>
-— leave-one-subject-out contrasts in q-space; pair with
-<code><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code> to map to a common
-parcellation.</p>
-<p><strong><code>dkge_classify(fit, targets, method = "lda")</code></strong>
-— fully cross-validated decoding with optional permutation tests. Supply
-targets via <code>dkge_targets(fit, ~ factor1 + factor2)</code> or a
-plain contrast weight matrix.</p>
-</div>
-<div class="section level2">
-<h2 id="getting-help">Getting help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
-</h2>
+<p>For subject
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
+supply:</p>
 <ul>
-<li>
-<code><a href="../reference/dkge.html">?dkge</a></code> — main fitting function</li>
-<li>
-<code><a href="../reference/dkge_contrast.html">?dkge_contrast</a></code> — LOSO and k-fold contrasts</li>
-<li>
-<code><a href="../reference/dkge_classify.html">?dkge_classify</a></code> — classification and decoding</li>
-<li>
-<code><a href="../reference/design_kernel.html">?design_kernel</a></code> — structured factor kernels</li>
-<li>Issues: <a href="https://github.com/bbuchsbaum/dkge/issues" class="external-link uri">https://github.com/bbuchsbaum/dkge/issues</a>
-</li>
+<li>a numeric <code>q</code> by <code>P_s</code> beta matrix, where rows
+are named effects and columns are clusters, parcels, or voxels;</li>
+<li>a numeric <code>T_s</code> by <code>q</code> design matrix whose
+column names match the beta-row names; and</li>
+<li>optionally, cluster weights, coordinates, effect counts, or
+trial-level sufficient statistics needed by later stages.</li>
 </ul>
+<p>Wrap subjects with <code><a href="../reference/dkge_subject.html">dkge_subject()</a></code> when you want
+validation and provenance, then combine them with
+<code><a href="../reference/dkge_data.html">dkge_data()</a></code>. Subjects may have different <code>P_s</code>.
+If some effects are unobserved, declare that explicitly; DKGE records
+coverage and does not treat an absent effect as an observed zero.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Map</a></span><span class="op">(</span></span>
+<span>  <span class="kw">function</span><span class="op">(</span><span class="va">beta</span>, <span class="va">design</span>, <span class="va">id</span><span class="op">)</span> <span class="fu"><a href="../reference/dkge_subject.html">dkge_subject</a></span><span class="op">(</span><span class="va">beta</span>, design <span class="op">=</span> <span class="va">design</span>, id <span class="op">=</span> <span class="va">id</span><span class="op">)</span>,</span>
+<span>  <span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">data_bundle</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_data.html">dkge_data</a></span><span class="op">(</span><span class="va">subjects</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>subjects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">data_bundle</span><span class="op">$</span><span class="va">subject_ids</span><span class="op">)</span>, effects <span class="op">=</span> <span class="va">data_bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="co">#&gt; subjects  effects </span></span>
+<span><span class="co">#&gt;        5        5</span></span></code></pre></div>
+<p>For unequal trial counts or missing design cells, continue with
+<code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> before fitting.</p>
+</div>
+<div class="section level2">
+<h2 id="which-page-should-you-read-next">Which page should you read next?<a class="anchor" aria-label="anchor" href="#which-page-should-you-read-next"></a>
+</h2>
+<p>The default path is:</p>
+<ol style="list-style-type: decimal">
+<li>
+<code><a href="../articles/dkge-workflow.html">vignette("dkge-workflow")</a></code> — take the same objects
+through fit, comparison, cross-fitted contrast, and spatial
+transport.</li>
+<li>
+<code><a href="../articles/dkge-concepts.html">vignette("dkge-concepts")</a></code> — understand the kernel
+metric, the fitted moment, and the distinct levels of inference.</li>
+<li>
+<code><a href="../articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code> — construct a kernel
+for your own design.</li>
+<li>
+<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> — choose
+uncertainty and testing machinery for a prespecified contrast.</li>
+</ol>
+<p>Common branches are
+<code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> for incomplete or
+unequally estimated effects, <code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> for
+weighting estimands, and <code><a href="../articles/dkge-plotting.html">vignette("dkge-plotting")</a></code> for
+presentation.</p>
+<p>For function-level help, start with <code><a href="../reference/dkge.html">?dkge</a></code>,
+<code><a href="../reference/dkge_subject.html">?dkge_subject</a></code>, <code><a href="../reference/design_kernel.html">?design_kernel</a></code>, and
+<code><a href="../reference/dkge_contrast.html">?dkge_contrast</a></code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
