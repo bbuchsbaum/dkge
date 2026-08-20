@@ -15,94 +15,165 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-```
-
-```{r library, message=FALSE}
-library(dkge)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4,
+  out.width = "90%"
+)
 set.seed(42)
 ```
 
-Design-Kernel Group Embedding (DKGE) is an R package for multi-subject fMRI
-analysis. It works in the compressed **q-space** of design effects (typically
-10–100 dimensions) rather than voxel-space, enabling memory-efficient group
-fits, leave-one-subject-out contrasts, and optimal-transport alignment to a
-common parcellation — all without ever forming large subject-by-voxel matrices.
-
-## Minimal example
-
-Five subjects, three effects, twenty voxels each:
-
-```{r quick-start}
-S <- 5; q <- 3; P <- 20
-subjects <- lapply(seq_len(S), function(s) {
-  beta   <- matrix(rnorm(q * P), q, P)
-  design <- diag(q); colnames(design) <- paste0("eff", seq_len(q))
-  dkge_subject(beta, design = design, id = paste0("sub", s))
-})
-
-fit <- dkge(subjects, K = diag(q), rank = 2)
-fit$evals
-length(fit$subject_ids)
+```{r load-dkge}
+library(dkge)
 ```
 
-```{r quick-start-checks, include=FALSE}
-stopifnot(is.numeric(fit$evals), length(fit$evals) >= 1L)
-stopifnot(length(fit$subject_ids) == S)
+You have one GLM beta matrix per subject. Its rows are the same named design
+effects, but its columns may be different subject-specific clusters. You want
+to find effect-space directions that recur across subjects, inspect what those
+directions express, and evaluate a planned contrast without constructing a
+voxel-by-voxel group covariance matrix.
+
+DKGE takes those beta matrices, their design matrices, and a design kernel. It
+returns a low-dimensional group basis in effect space plus subject-level
+cluster values that can be cross-fitted and, when coordinates are available,
+transported to a common parcellation.
+
+## Can you fit a complete example?
+
+The package includes a simulator with known factorial structure. Here the
+planted signal involves two main effects in a 2 by 3 design. Each subject has a
+5 by 20 beta matrix: five effect rows and twenty clusters.
+
+```{r simulate-example}
+toy <- dkge_sim_toy(
+  factors = list(condition = list(L = 2), load = list(L = 3)),
+  active_terms = c("condition", "load"),
+  S = 5, P = 20, snr = 5, seed = 42
+)
+dim(toy$B_list[[1]])
 ```
 
-The returned object is a `multiblock_biprojector` with q-space loadings in
-`fit$U`, compressed projections in `fit$Btil`, and diagnostics in
-`fit$weights` and `fit$evals`.
+The three objects needed for a first fit are `toy$B_list` (subject beta
+matrices), `toy$X_list` (matching design rulers), and `toy$K` (the effect-space
+kernel). Fit two components:
 
-## Reading order
+```{r fit-example}
+fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+dkge_plot_scree(fit)
+```
 
-| Vignette | Purpose |
-|----------|---------|
-| **You are here** | Overview and entry point |
-| [Concepts](dkge-concepts.html) | What DKGE actually decomposes, what K does, and the three levels of inference — read before your first fit |
-| [Workflow](dkge-workflow.html) | Complete fit → contrast → transport → visualise pipeline |
-| [Design Kernels](dkge-design-kernels.html) | Encoding factor structure with `design_kernel()` |
-| [Contrasts & Inference](dkge-contrasts-inference.html) | LOSO contrasts, analytic and bootstrap inference |
-| [Classification](dkge-classification.html) | Cross-validated decoding with `dkge_classify()` |
-| [Weighting Strategies](dkge-weighting.html) | Spatial (`Omega_list`), subject, and transport weights |
-| [Adaptive Voxel Weighting](dkge-adaptive-weighting.html) | Fold-safe `dkge_weights()` API |
-| [Components](dkge-components.html) | Inspecting group-level components and loadings |
-| [Partial Effect Spaces](dkge-partial-effect-spaces.html) | Unbalanced cell coverage, effect precision, and trialwise debiasing |
-| [Plotting](dkge-plotting.html) | `theme_dkge()`, scree plots, contribution maps |
-| [Dense Rendering](dkge-dense-rendering.html) | Mapping cluster values to voxel space |
-| [Anchors](dkge-anchors.html) | `dkge_anchor_fit()` and anchor-based prediction |
-| [CPCA](dkge-cpca.html) | Contrastive PCA inside the DKGE framework |
-| [DKGE vs PLS](dkge-vs-pls.html) | Comparison with partial least squares approaches |
-| [Performance](dkge-performance.html) | Mapper selection, warm starts, custom backends |
-| [Architecture](dkge-architecture.html) | Design document: planned modular refactor (not current API) |
+The bars show each retained component's share of the fitted q-space variation;
+the line is cumulative. This is a descriptive summary of the fitted latent
+space, not a significance test.
 
-## Key concepts at a glance
+```{r fit-example-checks, include=FALSE}
+variance_table <- dkge_variance_explained(fit)
+stopifnot(nrow(fit$U) == nrow(toy$K), ncol(fit$U) == 2L)
+stopifnot(all(is.finite(variance_table$prop_var)))
+stopifnot(all(variance_table$prop_var >= 0))
+stopifnot(sum(variance_table$prop_var) > 0)
+```
 
-**`dkge_subject(beta, design)`** — wraps a single subject's `q × P` beta
-matrix and `T × q` design matrix. Supply optional `omega` (cluster weights)
-and `id`.
+## What does a component express?
 
-**`dkge_data(betas, designs)`** — bundles a list of subjects, aligns
-partially-overlapping effect sets, and records provenance.
+Inspect the design-weighted saliences, \(K U\), before mapping anything back to
+space. Rows are effects and columns are components.
 
-**`dkge(betas, designs, K, rank)`** — main entry point. The first argument may
-be a list of `dkge_subject` objects or a `dkge_data` bundle (then `designs` is
-omitted). `K` is the `q × q` design kernel; pass
-`design_kernel(factors, basis = "effect")` for structured factor designs.
+```{r inspect-saliences}
+round(dkge_component_saliences(fit, comps = 1:2, long = FALSE), 2)
+```
 
-**`dkge_contrast(fit, contrast_vec, method = "loso")`** — leave-one-subject-out
-contrasts in q-space; pair with `dkge_transport_contrasts_to_medoid()` to map
-to a common parcellation.
+Large positive and negative entries identify the effect directions associated
+with each component. Component signs are arbitrary, so interpret relative
+patterns rather than treating the sign itself as scientifically meaningful.
 
-**`dkge_classify(fit, targets, method = "lda")`** — fully cross-validated
-decoding with optional permutation tests. Supply targets via
-`dkge_targets(fit, ~ factor1 + factor2)` or a plain contrast weight matrix.
+**Next operation:** use `dkge_plot_effect_loadings(fit)` for a heatmap, or move
+to a prespecified effect contrast.
 
-## Getting help
+## How do you evaluate a contrast without reusing each subject's data?
 
-- `?dkge` — main fitting function
-- `?dkge_contrast` — LOSO and k-fold contrasts
-- `?dkge_classify` — classification and decoding
-- `?design_kernel` — structured factor kernels
-- Issues: <https://github.com/bbuchsbaum/dkge/issues>
+Construct a contrast in the same effect order as the fit. The simulator records
+which effect coordinate carries the planted `condition` term.
+
+```{r loso-contrast}
+condition_contrast <- numeric(nrow(toy$K))
+condition_contrast[toy$active_cols$condition] <- 1
+
+condition_loso <- dkge_contrast(
+  fit, list(condition = condition_contrast), method = "loso"
+)
+condition_loso
+```
+
+`method = "loso"` refits the latent basis without each held-out subject before
+computing that subject's cluster values. The result contains one vector per
+subject under `condition_loso$values$condition`; those vectors still live on
+the subjects' own cluster systems.
+
+```{r loso-contrast-checks, include=FALSE}
+condition_values <- condition_loso$values$condition
+stopifnot(length(condition_values) == length(toy$B_list))
+stopifnot(all(vapply(condition_values, function(x) all(is.finite(x)), logical(1))))
+stopifnot(any(vapply(condition_values, function(x) stats::sd(x) > 0, logical(1))))
+```
+
+Cross-fitting limits basis-reuse optimism; it does not by itself provide a
+population p-value, spatial multiplicity correction, or causal interpretation.
+Those require an inference procedure matched to the claim and an experimental
+design that supports the interpretation.
+
+**Next operation:** if clusters differ across subjects, transport the contrast
+with `dkge_transport_contrasts_to_medoid()`. If they already share a common
+index, `as.matrix(condition_loso)` stacks them directly.
+
+## What must your real data look like?
+
+For subject \(s\), supply:
+
+- a numeric `q` by `P_s` beta matrix, where rows are named effects and columns
+  are clusters, parcels, or voxels;
+- a numeric `T_s` by `q` design matrix whose column names match the beta-row
+  names; and
+- optionally, cluster weights, coordinates, effect counts, or trial-level
+  sufficient statistics needed by later stages.
+
+Wrap subjects with `dkge_subject()` when you want validation and provenance,
+then combine them with `dkge_data()`. Subjects may have different `P_s`. If
+some effects are unobserved, declare that explicitly; DKGE records coverage and
+does not treat an absent effect as an observed zero.
+
+```{r bundle-example}
+subjects <- Map(
+  function(beta, design, id) dkge_subject(beta, design = design, id = id),
+  toy$B_list, toy$X_list, toy$subject_ids
+)
+data_bundle <- dkge_data(subjects)
+c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+```
+
+For unequal trial counts or missing design cells, continue with
+`vignette("dkge-partial-effect-spaces")` before fitting.
+
+## Which page should you read next?
+
+The default path is:
+
+1. `vignette("dkge-workflow")` — take the same objects through fit, comparison,
+   cross-fitted contrast, and spatial transport.
+2. `vignette("dkge-concepts")` — understand the kernel metric, the fitted
+   moment, and the distinct levels of inference.
+3. `vignette("dkge-design-kernels")` — construct a kernel for your own design.
+4. `vignette("dkge-contrasts-inference")` — choose uncertainty and testing
+   machinery for a prespecified contrast.
+
+Common branches are `vignette("dkge-partial-effect-spaces")` for incomplete or
+unequally estimated effects, `vignette("dkge-weighting")` for weighting
+estimands, and `vignette("dkge-plotting")` for presentation.
+
+For function-level help, start with `?dkge`, `?dkge_subject`,
+`?design_kernel`, and `?dkge_contrast`.

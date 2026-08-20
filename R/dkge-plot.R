@@ -675,7 +675,7 @@ dkge_plot_effect_loadings <- function(fit, comps = NULL, zscore = FALSE) {
  p <- ggplot2::ggplot(df, ggplot2::aes(x = component, y = effect, fill = loading)) +
  ggplot2::geom_tile() +
  .dkge_scale_fill_diverging() +
- ggplot2::labs(title = "Design-space loadings (K %*% U)",
+ ggplot2::labs(title = "Design-space loadings (K U)",
  x = "Component", y = "Effect / contrast") +
  theme_dkge()
 
@@ -724,7 +724,7 @@ dkge_plot_component_saliences <- function(fit,
  ggplot2::geom_point(size = 1.8) +
  ggplot2::scale_colour_brewer(palette = "Dark2") +
  ggplot2::labs(title = "Raw component saliences",
- subtitle = if (scale == "raw") "K %*% U" else paste("Display scale:", scale),
+ subtitle = if (scale == "raw") "K U" else paste("Display scale:", scale),
  x = "Effect / design cell", y = "Salience") +
  theme_dkge() +
  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)))
@@ -734,7 +734,7 @@ dkge_plot_component_saliences <- function(fit,
  ggplot2::geom_tile() +
  .dkge_scale_fill_diverging() +
  ggplot2::labs(title = "Raw component saliences",
- subtitle = if (scale == "raw") "K %*% U" else paste("Display scale:", scale),
+ subtitle = if (scale == "raw") "K U" else paste("Display scale:", scale),
  x = "Component", y = "Effect / design cell") +
  theme_dkge()
 }
