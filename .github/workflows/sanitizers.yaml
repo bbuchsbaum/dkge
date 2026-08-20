@@ -24,7 +24,9 @@ jobs:
       - name: Install sanitizer system dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake libuv1-dev libtbb-dev
+          apt-get install -y --no-install-recommends \
+            cmake make libuv1-dev libtbb-dev libcurl4-openssl-dev libssl-dev \
+            pandoc libicu-dev libhdf5-dev
       - name: Install pinned dependencies under sanitizer R
         run: |
           RDscript -e 'install.packages("pak", repos = "https://cloud.r-project.org")'

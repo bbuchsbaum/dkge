@@ -72,8 +72,10 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml, "ASAN_OPTIONS")
   expect_match(sanitizer_yaml, "UBSAN_OPTIONS")
   expect_match(sanitizer_yaml, "USE_BUNDLED_LIBUV")
-  expect_match(sanitizer_yaml, "cmake libuv1-dev")
+  expect_match(sanitizer_yaml, "cmake make libuv1-dev")
   expect_match(sanitizer_yaml, "libtbb-dev")
+  expect_match(sanitizer_yaml, "libcurl4-openssl-dev libssl-dev")
+  expect_match(sanitizer_yaml, "pandoc libicu-dev libhdf5-dev")
   expect_match(sanitizer_yaml, "TBB_INC")
   expect_match(sanitizer_yaml, "TBB_LIB")
 
