@@ -54,6 +54,8 @@ NULL
 # Numerical robustness utilities ------------------------------------------
 # -------------------------------------------------------------------------
 
+.dkge_kernel_validation_cache <- new.env(parent = emptyenv())
+
 #' Validate design kernel matrix
 #'
 #' Enforces finite numeric entries, symmetry (up to tolerance), and positive
@@ -88,6 +90,20 @@ NULL
     warning("Kernel `K` is not exactly symmetric; using (K + t(K)) / 2.", call. = FALSE)
   }
 
+  # Exact symmetric kernels recur throughout fold alignment and consensus.
+  # Hash every entry before reuse, so mutation cannot inherit a stale PSD
+  # verdict; only the cubic eigendecomposition is skipped. Slightly asymmetric
+  # inputs are not cached so their corrective warning remains visible.
+  cache_key <- NULL
+  if (asym == 0) {
+    cache_key <- digest::digest(list(K = Ksym, tol = tol),
+                                algo = "xxhash64", serialize = TRUE)
+    cached <- .dkge_kernel_validation_cache[[cache_key]]
+    if (!is.null(cached)) {
+      return(cached)
+    }
+  }
+
   eig_vals <- eigen(Ksym, symmetric = TRUE, only.values = TRUE)$values
   eig_scale <- max(1, max(abs(eig_vals)))
   neg_tol <- tol * eig_scale
@@ -100,6 +116,15 @@ NULL
   }
   if (min_eig < -neg_tol / 10) {
     warning("Kernel `K` has small negative eigenvalues; they will be clamped in kernel roots.", call. = FALSE)
+  }
+
+  if (!is.null(cache_key)) {
+    assign(cache_key, Ksym, envir = .dkge_kernel_validation_cache)
+    keys <- ls(.dkge_kernel_validation_cache, all.names = TRUE)
+    if (length(keys) > 32L) {
+      rm(list = keys[seq_len(length(keys) - 32L)],
+         envir = .dkge_kernel_validation_cache)
+    }
   }
 
   Ksym

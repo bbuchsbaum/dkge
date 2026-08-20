@@ -7,16 +7,19 @@
 dkge_procrustes_K(Uref, U, K, allow_reflection = TRUE)
 }
 \arguments{
-\item{Uref}{reference basis (qxr)}
+\item{Uref}{K-orthonormal reference basis (qxr)}
 
-\item{U}{basis to align (qxr)}
+\item{U}{K-orthonormal basis to align (qxr)}
 
-\item{K}{qxq design kernel}
+\item{K}{qxq finite, symmetric, positive-semidefinite design kernel}
 
 \item{allow_reflection}{logical; if FALSE, forces det(R)=+1}
 }
 \value{
-list(U_aligned, R, d=sum(singular values), cosines, det)
+A list with the aligned basis `U_aligned`, orthogonal rotation `R`,
+  achieved objective `d`, unconstrained objective `unconstrained_d`,
+  principal `cosines`, and rotation `determinant`. When reflection is
+  forbidden, `d` can be smaller than `unconstrained_d`.
 }
 \description{
 Aligns basis `U` to reference `Uref` by solving

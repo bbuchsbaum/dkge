@@ -105,7 +105,8 @@ dkge_inference_service <- function(spec = NULL, ...) {
   mapper_args <- spec[intersect(names(spec),
                                 c("epsilon", "max_iter", "tol",
                                   "lambda_emb", "lambda_spa",
-                                  "sigma_mm", "lambda_size"))]
+                                  "sigma_mm", "lambda_size",
+                                  "value_type", "warm_start"))]
   args <- list(
     fit = fit,
     contrast_obj = contrast_results,

@@ -98,7 +98,9 @@ and returns test statistics with FDR adjustment:
 ```{r component-stats}
 comp <- dkge_component_stats(
   fit,
-  mapper     = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
+  mapper     = dkge_mapper_spec("sinkhorn", epsilon = 0.05,
+                                lambda_spa = 0.5, max_iter = 2000,
+                                tol = 1e-4),
   centroids  = centroids,
   inference  = list(type = "parametric"),
   medoid     = 1L
@@ -127,7 +129,8 @@ voxel_maps <- dkge_transport_to_voxels(fit,
 round(voxel_maps$value, 3)
 ```
 
-`voxel_maps$value` is the group-average consensus map; `voxel_maps$subj_values`
+`voxel_maps$value` is the coordinate-wise group-median consensus map;
+`voxel_maps$subj_values`
 preserves per-subject interpolations.
 
 ## Bootstrap inference
@@ -135,7 +138,12 @@ preserves per-subject interpolations.
 Cache the transport operators once; reuse them across all bootstrap draws:
 
 ```{r bootstrap-demo, message=FALSE}
-cache <- dkge_prepare_transport(fit, centroids = centroids, medoid = 1)
+cache <- dkge_prepare_transport(
+  fit,
+  centroids = centroids,
+  mapper = dkge_mapper_spec("sinkhorn", max_iter = 2000, tol = 1e-4),
+  medoid = 1
+)
 values_medoid <- lapply(seq_len(nrow(comp$transport[[1]])),
                         function(i) comp$transport[[1]][i, ])
 

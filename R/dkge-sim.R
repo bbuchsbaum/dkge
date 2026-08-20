@@ -87,7 +87,6 @@ dkge_sim_toy <- function(factors,
   q <- nrow(K)
 
   term_names <- info$term_names
-  block_index <- setNames(seq_along(term_names), term_names)
   if (is.null(r_per_term)) {
     r_per_term <- setNames(rep(1L, length(active_terms)), active_terms)
   }
@@ -98,9 +97,18 @@ dkge_sim_toy <- function(factors,
     if (!tname %in% term_names) {
       stop("Active term ", tname, " not found in kernel terms.")
     }
-    bidx <- block_index[[tname]]
-    available <- info$blocks[[bidx]]
-    pick <- sample(available, size = r_per_term[[tname]], replace = FALSE)
+    # Select positions *within the named block*. Base sample() treats a
+    # length-one numeric value such as 3 as shorthand for 1:3, which could pick
+    # a column outside the requested term or duplicate another active term.
+    available <- info$blocks[[tname]]
+    requested <- as.integer(r_per_term[[tname]])
+    if (length(requested) != 1L || is.na(requested) || requested < 1L ||
+        requested > length(available)) {
+      stop("`r_per_term` for ", tname,
+           " must be between 1 and the number of columns in that term block.")
+    }
+    pick <- available[sample.int(length(available), size = requested,
+                                 replace = FALSE)]
     active_cols[[tname]] <- pick
     cols <- c(cols, pick)
   }

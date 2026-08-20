@@ -71,9 +71,29 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
   assign(".order", order, envir = .dkge_sinkhorn_cache)
 }
 
-.dkge_sinkhorn_plan <- function(C, mu, nu, epsilon = 0.05, max_iter = 200, tol = 1e-6) {
-  stopifnot(is.matrix(C), length(mu) == nrow(C), length(nu) == ncol(C))
-  stopifnot(all(mu > 0), all(nu > 0))
+.dkge_sinkhorn_plan <- function(C, mu, nu, epsilon = 0.05,
+                                max_iter = 5000L, tol = 1e-4,
+                                warm_start = TRUE,
+                                return_diagnostics = FALSE) {
+  if (!is.matrix(C) || !is.numeric(C) || any(!is.finite(C))) {
+    stop("`C` must be a finite numeric cost matrix.", call. = FALSE)
+  }
+  if (length(mu) != nrow(C) || length(nu) != ncol(C)) {
+    stop("`mu` and `nu` must match the rows and columns of `C`.", call. = FALSE)
+  }
+  mu <- as.numeric(mu)
+  nu <- as.numeric(nu)
+  if (any(!is.finite(mu)) || any(!is.finite(nu)) ||
+      any(mu <= 0) || any(nu <= 0)) {
+    stop("`mu` and `nu` must contain finite, strictly positive masses.", call. = FALSE)
+  }
+  if (length(epsilon) != 1L || !is.finite(epsilon) || epsilon <= 0 ||
+      length(max_iter) != 1L || !is.finite(max_iter) || max_iter < 1 ||
+      length(tol) != 1L || !is.finite(tol) || tol <= 0) {
+    stop("`epsilon`, `max_iter`, and `tol` must be finite and positive.", call. = FALSE)
+  }
+  max_iter <- as.integer(max_iter)
+  warm_start <- isTRUE(warm_start)
   if (abs(sum(mu) - sum(nu)) > 1e-6) {
     stop("mu and nu must sum to the same total mass")
   }
@@ -84,14 +104,35 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
          call. = FALSE)
   }
 
-  safe_sd <- function(x) if (length(x) > 1) stats::sd(x) else 0
-  cost_vals <- as.numeric(C)
-  cache_fingerprint <- c(mean(cost_vals), safe_sd(cost_vals),
-                         mean(mu), safe_sd(mu),
-                         mean(nu), safe_sd(nu))
-  cache_fingerprint <- paste(sprintf("%.6f", signif(cache_fingerprint, 6)), collapse = ",")
-  key <- paste(nrow(C), ncol(C), signif(epsilon, 8), cache_fingerprint, sep = "|")
-  state <- .dkge_sinkhorn_cache_fetch(key)
+  # Duals are specific to every entry and its position, not merely to summary
+  # moments of the cost and masses. A full serialized digest prevents different
+  # problems with the same mean/SD from sharing a warm start.
+  key <- digest::digest(list(C = C, mu = mu, nu = nu, epsilon = epsilon),
+                        algo = "xxhash64", serialize = TRUE)
+  state <- if (warm_start) .dkge_sinkhorn_cache_fetch(key) else NULL
+  cache_hit <- !is.null(state)
+
+  # An already-converged cached plan is the deterministic answer for an equal
+  # or looser requested tolerance. Return it exactly instead of perturbing it
+  # with another scaling cycle.
+  if (cache_hit && !is.null(state$plan) &&
+      is.finite(state$marginal_error) && state$marginal_error <= tol) {
+    diagnostics <- list(
+      converged = TRUE,
+      iterations = 0L,
+      marginal_error = state$marginal_error,
+      row_marginal_error = state$row_marginal_error,
+      column_marginal_error = state$column_marginal_error,
+      cache_hit = TRUE,
+      warm_started = TRUE,
+      tolerance = tol
+    )
+    if (return_diagnostics) {
+      return(list(plan = state$plan, diagnostics = diagnostics,
+                  log_u = state$log_u, log_v = state$log_v))
+    }
+    return(state$plan)
+  }
   log_u_init <- if (!is.null(state)) state$log_u else NULL
   log_v_init <- if (!is.null(state)) state$log_v else NULL
 
@@ -100,24 +141,66 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
                       log_v_init = log_v_init,
                       keep_duals = TRUE)
   plan <- res$plan
-  # The solver returns the last plan whether or not it converged; surface a
-  # warning when the marginals are still off so callers are not silently handed
-  # an under-converged transport plan.
-  if (!is.null(res$iterations) && res$iterations >= max_iter) {
-    marg_err <- max(max(abs(rowSums(plan) - mu)), max(abs(colSums(plan) - nu)))
-    if (is.finite(marg_err) && marg_err > tol) {
-      warning(sprintf(
-        "Sinkhorn did not converge in %d iterations (marginal error %.2e > tol %.2e); increase max_iter or epsilon.",
-        max_iter, marg_err, tol
-      ), call. = FALSE)
-    }
+  row_err <- max(abs(rowSums(plan) - mu))
+  col_err <- max(abs(colSums(plan) - nu))
+  marg_err <- max(row_err, col_err)
+  converged <- is.finite(marg_err) && marg_err <= tol
+  iterations <- as.integer(res$iterations %||% max_iter)
+  diagnostics <- list(
+    converged = converged,
+    iterations = iterations,
+    marginal_error = marg_err,
+    row_marginal_error = row_err,
+    column_marginal_error = col_err,
+    cache_hit = cache_hit,
+    warm_started = cache_hit,
+    tolerance = tol
+  )
+  if (!converged) {
+    warning(sprintf(
+      "Sinkhorn did not converge in %d iterations (marginal error %.2e > tol %.2e); increase max_iter or epsilon.",
+      iterations, marg_err, tol
+    ), call. = FALSE)
   }
-  if (!is.null(res$log_u) && !is.null(res$log_v)) {
+  # Failed iterates are deliberately not cached: a later solve must not inherit
+  # a state that never satisfied the advertised numerical contract.
+  if (warm_start && converged && !is.null(res$log_u) && !is.null(res$log_v)) {
     .dkge_sinkhorn_cache_store(key, list(log_u = res$log_u,
                                          log_v = res$log_v,
-                                         iterations = res$iterations))
+                                         plan = plan,
+                                         marginal_error = marg_err,
+                                         row_marginal_error = row_err,
+                                         column_marginal_error = col_err,
+                                         iterations = iterations))
+  }
+  if (return_diagnostics) {
+    return(list(plan = plan, diagnostics = diagnostics,
+                log_u = res$log_u, log_v = res$log_v))
   }
   plan
+}
+
+# Convert a joint coupling into the linear operator appropriate for the value
+# being transported. Intensive fields are target-conditional expectations;
+# extensive values distribute each source total across targets.
+.dkge_transport_operator <- function(plan, mu, nu,
+                                     value_type = c("intensive", "extensive")) {
+  value_type <- match.arg(value_type)
+  if (!is.matrix(plan) || length(mu) != nrow(plan) || length(nu) != ncol(plan)) {
+    stop("`plan`, `mu`, and `nu` have incompatible dimensions.", call. = FALSE)
+  }
+  if (value_type == "intensive") {
+    target_mass <- colSums(plan)
+    if (any(!is.finite(target_mass)) || any(target_mass <= 0)) {
+      stop("The transport plan has an empty or invalid target marginal.", call. = FALSE)
+    }
+    return(sweep(plan, 2L, target_mass, "/"))
+  }
+  source_mass <- rowSums(plan)
+  if (any(!is.finite(source_mass)) || any(source_mass <= 0)) {
+    stop("The transport plan has an empty or invalid source marginal.", call. = FALSE)
+  }
+  sweep(plan, 1L, source_mass, "/")
 }
 
 #' Clear cached dual variables for Sinkhorn warm-starts
@@ -164,7 +247,9 @@ dkge_clear_sinkhorn_cache <- function() {
                              centroids_list, centroid_ref,
                              sizes_list, size_ref,
                              medoid,
-                             operators = NULL) {
+                             operators = NULL,
+                             plans = NULL,
+                             solver_diagnostics = NULL) {
   S <- length(feature_list)
   Q <- nrow(feature_ref)
   compute_values <- !is.null(value_list)
@@ -174,6 +259,9 @@ dkge_clear_sinkhorn_cache <- function() {
 
   mapped <- if (compute_values) matrix(NA_real_, S, Q) else NULL
   operators_out <- vector("list", S)
+  plans_out <- vector("list", S)
+  diagnostics_out <- vector("list", S)
+  value_type <- mapper_spec$params$value_type %||% "intensive"
 
   for (s in seq_len(S)) {
     use_cached <- !is.null(operators) && length(operators) >= s &&
@@ -181,8 +269,21 @@ dkge_clear_sinkhorn_cache <- function() {
 
     if (use_cached) {
       operator <- operators[[s]]
+      plan <- if (!is.null(plans) && length(plans) >= s) plans[[s]] else NULL
+      diagnostics <- if (!is.null(solver_diagnostics) &&
+                         length(solver_diagnostics) >= s) {
+        solver_diagnostics[[s]]
+      } else {
+        list(reused_operator = TRUE)
+      }
+      diagnostics$reused_operator <- TRUE
     } else if (s == medoid) {
       operator <- diag(1, Q)
+      medoid_mass <- .dkge_normalize_weights(size_ref, Q)
+      plan <- diag(medoid_mass, Q)
+      diagnostics <- list(converged = TRUE, iterations = 0L,
+                          marginal_error = 0, cache_hit = FALSE,
+                          identity = TRUE)
     } else {
       map_fit <- fit_mapper(mapper_spec,
                             source_feat = feature_list[[s]],
@@ -192,9 +293,13 @@ dkge_clear_sinkhorn_cache <- function() {
                             source_xyz = centroids_list[[s]],
                             target_xyz = centroid_ref)
       operator <- map_fit$operator
+      plan <- map_fit$plan %||% NULL
+      diagnostics <- map_fit$fit_info$diagnostics %||% NULL
     }
 
     operators_out[[s]] <- operator
+    plans_out[[s]] <- plan
+    diagnostics_out[[s]] <- diagnostics
 
     if (compute_values) {
       vals <- value_list[[s]]
@@ -208,9 +313,12 @@ dkge_clear_sinkhorn_cache <- function() {
   list(
     value = if (compute_values) apply(mapped, 2, stats::median, na.rm = TRUE) else NULL,
     subj_values = mapped,
-    plans = operators_out,
+    plans = plans_out,
+    operators = operators_out,
+    diagnostics = diagnostics_out,
     mapper = list(strategy = mapper_spec$strategy,
-                  params = mapper_spec$params),
+                  params = mapper_spec$params,
+                  value_type = value_type),
     feature_ref = feature_ref,
     size_ref = size_ref
   )
@@ -222,6 +330,11 @@ dkge_clear_sinkhorn_cache <- function() {
   }
 
   if (is.character(mapper)) {
+    if (identical(mapper, "sinkhorn_cpp")) {
+      warning("`sinkhorn_cpp` is deprecated; `sinkhorn` already uses the compiled backend.",
+              call. = FALSE)
+      mapper <- "sinkhorn"
+    }
     mapper <- dkge_mapper_spec(mapper)
   }
 
@@ -233,8 +346,13 @@ dkge_clear_sinkhorn_cache <- function() {
   }
 
   strategy <- method %||% "sinkhorn"
+  if (identical(strategy, "sinkhorn_cpp")) {
+    warning("`sinkhorn_cpp` is deprecated; `sinkhorn` already uses the compiled backend.",
+            call. = FALSE)
+    strategy <- "sinkhorn"
+  }
   allowed <- c("epsilon", "max_iter", "tol", "lambda_emb", "lambda_spa",
-               "sigma_mm", "lambda_size")
+               "sigma_mm", "lambda_size", "value_type", "warm_start")
   params <- dots[intersect(names(dots), allowed)]
   if (length(params)) {
     do.call(dkge_mapper_spec, c(list(type = strategy), params))
@@ -257,15 +375,23 @@ dkge_clear_sinkhorn_cache <- function() {
     feature_list <- transport_cache$feature_list
     size_list <- transport_cache$size_list
     operators <- transport_cache$operators
+    plans <- transport_cache$plans
+    solver_diagnostics <- transport_cache$diagnostics
     feature_ref <- transport_cache$feature_ref
     size_ref <- transport_cache$size_ref
+  }
+  if (is.null(transport_cache)) {
+    plans <- NULL
+    solver_diagnostics <- NULL
   }
 
   centroid_ref <- centroids[[medoid]]
   res <- .dkge_run_mapper(mapper_spec, value_list, feature_list, feature_ref,
                           centroids, centroid_ref, size_list, size_ref,
                           medoid,
-                          operators = operators)
+                          operators = operators,
+                          plans = plans,
+                          solver_diagnostics = solver_diagnostics)
 
   res$feature_list <- feature_list
   res$size_list <- size_list
@@ -293,9 +419,9 @@ dkge_clear_sinkhorn_cache <- function() {
 #' @param medoid Index (1-based) of the reference subject.
 #' @param ... Additional mapper arguments such as `epsilon` or `lambda_spa`.
 #'
-#' @return A list containing cached transport objects: `operators`,
-#'   `mapper_spec`, `feature_list`, `size_list`, `feature_ref`, `size_ref`,
-#'   `centroids`, and `medoid`.
+#' @return A list containing cached application `operators`, joint transport
+#'   `plans`, solver `diagnostics`, `mapper_spec`, `feature_list`, `size_list`,
+#'   `feature_ref`, `size_ref`, `centroids`, and `medoid`.
 #' @keywords internal
 #' @export
 dkge_prepare_transport <- function(fit,
@@ -346,7 +472,9 @@ dkge_prepare_transport <- function(fit,
                                  operators = NULL)
 
   list(
-    operators = mapper_run$plans,
+    operators = mapper_run$operators,
+    plans = mapper_run$plans,
+    diagnostics = mapper_run$diagnostics,
     mapper_spec = mapper_spec,
     feature_list = feature_list,
     size_list = size_list,
@@ -371,17 +499,26 @@ dkge_prepare_transport <- function(fit,
 #' @param lambda_emb,lambda_spa Cost weights for embedding and spatial terms.
 #' @param sigma_mm Spatial rescaling (millimetres).
 #' @param epsilon,max_iter,tol Sinkhorn parameters.
+#' @param value_type Value semantics. `"intensive"` transports field values as
+#'   target-conditional averages and preserves constants; `"extensive"`
+#'   distributes source totals and preserves their sum.
+#' @param warm_start Logical; reuse converged dual variables for an identical
+#'   cost-and-mass problem.
 #' @param transport_cache Optional cache returned by [dkge_prepare_transport()].
 #'   When supplied, cached operators are reused and the mapper configuration
 #'   stored in the cache takes precedence.
 #' @return List containing summary statistics, transported subject maps, and
-#'   the per-subject transport operators.
+#'   per-subject joint `plans`, application `operators`, and solver
+#'   `diagnostics`.
 #' @export
 dkge_transport_to_medoid_sinkhorn <- function(v_list, A_list, centroids, sizes = NULL,
                                               medoid,
                                               lambda_emb = 1, lambda_spa = 0.5, sigma_mm = 15,
-                                              epsilon = 0.05, max_iter = 200, tol = 1e-6,
+                                              epsilon = 0.05, max_iter = 5000L, tol = 1e-4,
+                                              value_type = c("intensive", "extensive"),
+                                              warm_start = TRUE,
                                               transport_cache = NULL) {
+  value_type <- match.arg(value_type)
   if (!is.null(transport_cache)) {
     mapper_spec <- transport_cache$mapper_spec
   } else {
@@ -391,7 +528,9 @@ dkge_transport_to_medoid_sinkhorn <- function(v_list, A_list, centroids, sizes =
                                     sigma_mm = sigma_mm,
                                     epsilon = epsilon,
                                     max_iter = max_iter,
-                                    tol = tol)
+                                    tol = tol,
+                                    value_type = value_type,
+                                    warm_start = warm_start)
   }
   .dkge_transport_to_medoid(mapper_spec, v_list, A_list, centroids, sizes, medoid,
                             transport_cache = transport_cache)
@@ -399,13 +538,20 @@ dkge_transport_to_medoid_sinkhorn <- function(v_list, A_list, centroids, sizes =
 
 #' @rdname dkge_transport_to_medoid_sinkhorn
 #' @param return_plans Logical; if TRUE, include transport plans in the output.
+#' @description
+#' `dkge_transport_to_medoid_sinkhorn_cpp()` is a deprecated compatibility
+#' alias. The main function already uses the compiled Sinkhorn backend.
 #' @export
 dkge_transport_to_medoid_sinkhorn_cpp <- function(v_list, A_list, centroids, sizes = NULL,
                                                   medoid,
                                                   lambda_emb = 1, lambda_spa = 0.5, sigma_mm = 15,
-                                                  epsilon = 0.05, max_iter = 300, tol = 1e-6,
+                                                  epsilon = 0.05, max_iter = 5000L, tol = 1e-4,
+                                                  value_type = c("intensive", "extensive"),
+                                                  warm_start = TRUE,
                                                   return_plans = FALSE,
                                                   transport_cache = NULL) {
+  .Deprecated("dkge_transport_to_medoid_sinkhorn")
+  value_type <- match.arg(value_type)
   res <- dkge_transport_to_medoid_sinkhorn(v_list, A_list, centroids, sizes = sizes,
                                            medoid = medoid,
                                            lambda_emb = lambda_emb,
@@ -414,6 +560,8 @@ dkge_transport_to_medoid_sinkhorn_cpp <- function(v_list, A_list, centroids, siz
                                            epsilon = epsilon,
                                            max_iter = max_iter,
                                            tol = tol,
+                                           value_type = value_type,
+                                           warm_start = warm_start,
                                            transport_cache = transport_cache)
   if (!return_plans) {
     res$plans <- NULL
@@ -433,8 +581,8 @@ dkge_transport_to_medoid_sinkhorn_cpp <- function(v_list, A_list, centroids, siz
 #' @param sizes Optional list of cluster masses (defaults to uniform weights).
 #' @param mapper Optional mapper specification created by [dkge_mapper_spec()].
 #'   When `NULL`, defaults to Sinkhorn with the supplied parameters.
-#' @param method Backwards-compatible alias; currently only "sinkhorn" is
-#'   supported.
+#' @param method Mapper strategy (`"sinkhorn"`, `"ridge"`, or `"ols"`). The
+#'   legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.
 #' @param transport_cache Optional cache from [dkge_prepare_transport()]. When
 #'   supplied, cached operators are reused for all components.
 #' @param ... Additional parameters passed when building the default mapper
@@ -448,7 +596,7 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
                                                betas = NULL,
                                                sizes = NULL,
                                                mapper = NULL,
-                                               method = c("sinkhorn", "sinkhorn_cpp"),
+                                               method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
                                                transport_cache = NULL,
                                                ...) {
   stopifnot(inherits(fit, "dkge"))
@@ -490,7 +638,9 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
     group_vals[[j]] <- tr$value
     if (is.null(cache_local)) {
       cache_local <- list(
-        operators = tr$plans,
+        operators = tr$operators,
+        plans = tr$plans,
+        diagnostics = tr$diagnostics,
         mapper_spec = mapper_spec,
         feature_list = tr$feature_list,
         size_list = tr$size_list,
@@ -515,8 +665,8 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
 #' @param betas Optional list of subject betas used to recompute loadings.
 #' @param sizes Optional list of cluster masses.
 #' @param mapper Optional mapper specification created by [dkge_mapper_spec()].
-#' @param method Backwards-compatible alias; currently only "sinkhorn" is
-#'   supported.
+#' @param method Mapper strategy (`"sinkhorn"`, `"ridge"`, or `"ols"`). The
+#'   legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.
 #' @param transport_cache Optional cache from [dkge_prepare_transport()]. When
 #'   supplied, cached operators are reused for every contrast.
 #' @param ... Additional parameters passed when building the default mapper
@@ -529,7 +679,7 @@ dkge_transport_contrasts_to_medoid <- function(fit, contrast_obj, medoid, centro
                                                betas = NULL,
                                                sizes = NULL,
                                                mapper = NULL,
-                                               method = c("sinkhorn", "sinkhorn_cpp"),
+                                               method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
                                                transport_cache = NULL,
                                                ...) {
   stopifnot(inherits(fit, "dkge"), inherits(contrast_obj, "dkge_contrasts"))
@@ -575,7 +725,9 @@ dkge_transport_contrasts_to_medoid <- function(fit, contrast_obj, medoid, centro
     out[[i]] <- tr
     if (is.null(cache_local)) {
       cache_local <- list(
-        operators = tr$plans,
+        operators = tr$operators,
+        plans = tr$plans,
+        diagnostics = tr$diagnostics,
         mapper_spec = mapper_spec,
         feature_list = tr$feature_list,
         size_list = tr$size_list,

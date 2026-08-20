@@ -90,12 +90,13 @@ test_that("Medoid subject receives identity transport plan (medoid=1)", {
     v_list, A_list, centroids,
     medoid = 1,
     epsilon = 0.05,
-    max_iter = 300,
-    tol = 1e-6
+    max_iter = 5000,
+    tol = 1e-4
   )
 
-  # Medoid plan should be identity matrix
-  expect_equal(res$plans[[1]], diag(1, Q))
+  # The medoid joint plan carries its mass; its application operator is identity.
+  expect_equal(res$plans[[1]], diag(1 / Q, Q))
+  expect_equal(res$operators[[1]], diag(1, Q))
 })
 
 test_that("Medoid subject receives identity transport plan (medoid=middle)", {
@@ -112,12 +113,12 @@ test_that("Medoid subject receives identity transport plan (medoid=middle)", {
     v_list, A_list, centroids,
     medoid = medoid_idx,
     epsilon = 0.05,
-    max_iter = 300,
-    tol = 1e-6
+    max_iter = 5000,
+    tol = 1e-4
   )
 
-  # Medoid plan should be identity
-  expect_equal(res$plans[[medoid_idx]], diag(1, Q))
+  expect_equal(res$plans[[medoid_idx]], diag(1 / Q, Q))
+  expect_equal(res$operators[[medoid_idx]], diag(1, Q))
 })
 
 test_that("Medoid subject receives identity transport plan (medoid=last)", {
@@ -134,11 +135,12 @@ test_that("Medoid subject receives identity transport plan (medoid=last)", {
     v_list, A_list, centroids,
     medoid = medoid_idx,
     epsilon = 0.05,
-    max_iter = 300,
-    tol = 1e-6
+    max_iter = 5000,
+    tol = 1e-4
   )
 
-  expect_equal(res$plans[[medoid_idx]], diag(1, Q))
+  expect_equal(res$plans[[medoid_idx]], diag(1 / Q, Q))
+  expect_equal(res$operators[[medoid_idx]], diag(1, Q))
 })
 
 # =============================================================================
@@ -233,13 +235,16 @@ test_that("dkge_transport_to_medoid_sinkhorn and _cpp produce identical results"
     tol = 1e-8
   )
 
-  res_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
-    v_list, A_list, centroids,
-    medoid = 1,
-    epsilon = 0.1,
-    max_iter = 300,
-    tol = 1e-8,
-    return_plans = TRUE
+  expect_warning(
+    res_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
+      v_list, A_list, centroids,
+      medoid = 1,
+      epsilon = 0.1,
+      max_iter = 300,
+      tol = 1e-8,
+      return_plans = TRUE
+    ),
+    "deprecated"
   )
 
   # Results should match within 1e-7 tolerance (minor floating point differences allowed)
@@ -273,14 +278,17 @@ test_that("R and C++ produce identical results with non-uniform weights", {
     tol = 1e-8
   )
 
-  res_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
-    v_list, A_list, centroids,
-    sizes = sizes,
-    medoid = 2,
-    epsilon = 0.05,
-    max_iter = 500,
-    tol = 1e-8,
-    return_plans = TRUE
+  expect_warning(
+    res_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
+      v_list, A_list, centroids,
+      sizes = sizes,
+      medoid = 2,
+      epsilon = 0.05,
+      max_iter = 500,
+      tol = 1e-8,
+      return_plans = TRUE
+    ),
+    "deprecated"
   )
 
   expect_equal(res_cpp$value, res_r$value, tolerance = 1e-8)
@@ -320,11 +328,16 @@ test_that("Non-convergence with very small max_iter returns best-effort result",
   n <- 6
   m <- 6
   C <- matrix(runif(n * m, 0, 10), n, m)
-  mu <- rep(1 / n, n)
-  nu <- rep(1 / m, m)
+  mu <- seq_len(n); mu <- mu / sum(mu)
+  nu <- rev(seq_len(m)); nu <- nu / sum(nu)
 
   # Very few iterations - won't fully converge
-  plan <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.01, max_iter = 5, tol = 1e-9)
+  expect_warning(
+    plan <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.05,
+                                      max_iter = 1, tol = 1e-12,
+                                      warm_start = FALSE),
+    "did not converge"
+  )
 
   # Should still return a valid plan (no error)
   expect_true(is.matrix(plan))
@@ -384,7 +397,12 @@ test_that("Non-convergence returns valid best-effort result without error", {
   nu <- rep(1 / m, m)
 
   # Use very few iterations with tight tolerance - guaranteed non-convergence
-  plan <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.001, max_iter = 3, tol = 1e-12)
+  expect_warning(
+    plan <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.001,
+                                      max_iter = 3, tol = 1e-12,
+                                      warm_start = FALSE),
+    "did not converge"
+  )
 
   # The function should NOT error - it returns best-effort result
   expect_true(is.matrix(plan))
@@ -397,8 +415,7 @@ test_that("Non-convergence returns valid best-effort result without error", {
   # (may have looser tolerance)
   expect_equal(sum(plan), 1, tolerance = 0.5)
 
-  # Document behavior: current implementation returns last plan WITHOUT warning
-  # This is accepted behavior per RESEARCH.md findings
+  # The warning above is the public signal that this is only a best effort.
 })
 
 test_that("Tighter tolerance achieves closer marginal match", {
@@ -415,7 +432,8 @@ test_that("Tighter tolerance achieves closer marginal match", {
   err_loose_col <- max(abs(colSums(plan_loose) - nu))
 
   # Run with tighter tolerance (1e-8)
-  plan_tight <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 500, tol = 1e-8)
+  plan_tight <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1,
+                                          max_iter = 2000, tol = 1e-8)
   err_tight_row <- max(abs(rowSums(plan_tight) - mu))
   err_tight_col <- max(abs(colSums(plan_tight) - nu))
 
@@ -428,7 +446,7 @@ test_that("Tighter tolerance achieves closer marginal match", {
   expect_lt(err_tight_col, 1e-6)
 })
 
-test_that("Looser tolerance converges with fewer iterations", {
+test_that("a small iteration budget is explicitly diagnosed", {
   set.seed(42)
   n <- 4
   m <- 4
@@ -437,10 +455,15 @@ test_that("Looser tolerance converges with fewer iterations", {
   nu <- rep(1 / m, m)
 
   # With loose tolerance (1e-3) and moderate iterations
-  plan_loose <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 50, tol = 1e-3)
+  expect_warning(
+    plan_loose <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1,
+                                            max_iter = 50, tol = 1e-3,
+                                            warm_start = FALSE),
+    "did not converge"
+  )
   err_loose <- max(abs(rowSums(plan_loose) - mu), abs(colSums(plan_loose) - nu))
 
-  # Loose tolerance should converge within 50 iterations (error < tolerance)
+  # Even when it misses the declared tolerance, the best effort is bounded.
   expect_lt(err_loose, 1e-2)
 
   # Should be valid doubly-stochastic plan (to tolerance)
@@ -539,7 +562,7 @@ test_that("Cache isolation between tests via dkge_clear_sinkhorn_cache", {
   C <- matrix(runif(4), 2, 2)
   mu <- c(0.5, 0.5)
   nu <- c(0.5, 0.5)
-  dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 50)
+  dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 5000)
 
   # Clear cache
   dkge_clear_sinkhorn_cache()

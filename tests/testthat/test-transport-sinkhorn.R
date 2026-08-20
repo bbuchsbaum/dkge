@@ -66,10 +66,18 @@ test_that("CPP Sinkhorn wrapper honours return_plans flag", {
   A_list <- replicate(2, matrix(runif(3 * 2), 3, 2), simplify = FALSE)
   centroids <- replicate(2, matrix(runif(3 * 3), 3, 3), simplify = FALSE)
 
-  with_plans <- dkge_transport_to_medoid_sinkhorn_cpp(v_list, A_list, centroids,
-                                                      medoid = 1, return_plans = TRUE)
-  without_plans <- dkge_transport_to_medoid_sinkhorn_cpp(v_list, A_list, centroids,
-                                                         medoid = 1, return_plans = FALSE)
+  expect_warning(
+    with_plans <- dkge_transport_to_medoid_sinkhorn_cpp(
+      v_list, A_list, centroids, medoid = 1, return_plans = TRUE
+    ),
+    "deprecated"
+  )
+  expect_warning(
+    without_plans <- dkge_transport_to_medoid_sinkhorn_cpp(
+      v_list, A_list, centroids, medoid = 1, return_plans = FALSE
+    ),
+    "deprecated"
+  )
 
   expect_false(is.null(with_plans$plans))
   expect_null(without_plans$plans)

@@ -13,7 +13,7 @@ dkge_transport_contrasts_to_medoid(
   betas = NULL,
   sizes = NULL,
   mapper = NULL,
-  method = c("sinkhorn", "sinkhorn_cpp"),
+  method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
   transport_cache = NULL,
   ...
 )
@@ -35,8 +35,8 @@ dkge_transport_contrasts_to_medoid(
 
 \item{mapper}{Optional mapper specification created by [dkge_mapper_spec()].}
 
-\item{method}{Backwards-compatible alias; currently only "sinkhorn" is
-supported.}
+\item{method}{Mapper strategy (`"sinkhorn"`, `"ridge"`, or `"ols"`). The
+legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.}
 
 \item{transport_cache}{Optional cache from [dkge_prepare_transport()]. When
 supplied, cached operators are reused for every contrast.}

@@ -227,6 +227,7 @@ dkge_make_target <- function(fit = NULL,
                                            mapper,
                                            crossfit,
                                            ...) {
+  transport_method <- NULL
   if (!is.null(values) && is.matrix(values)) {
     Y <- as.matrix(values)
     return(list(Y = Y, feature_ids = colnames(Y), subject_ids = rownames(Y),
@@ -247,6 +248,7 @@ dkge_make_target <- function(fit = NULL,
     sizes <- sizes %||% transport$sizes
     medoid <- medoid %||% transport$medoid
     mapper <- mapper %||% transport$mapper
+    transport_method <- transport$method %||% "sinkhorn"
     dots <- c(list(...),
               list(epsilon = transport$epsilon,
                    max_iter = transport$max_iter,
@@ -254,7 +256,9 @@ dkge_make_target <- function(fit = NULL,
                    lambda_emb = transport$lambda_emb,
                    lambda_spa = transport$lambda_spa,
                    sigma_mm = transport$sigma_mm,
-                   lambda_size = transport$lambda_size))
+                   lambda_size = transport$lambda_size,
+                   value_type = transport$value_type,
+                   warm_start = transport$warm_start))
   } else {
     dots <- list(...)
   }
@@ -269,7 +273,7 @@ dkge_make_target <- function(fit = NULL,
       return(list(Y = Y, feature_ids = colnames(Y), subject_ids = rownames(Y),
                   geometry = NULL, provenance = list(source = "values")))
     }
-    mapper_spec <- .dkge_resolve_mapper_spec(mapper, method = NULL, dots = dots)
+    mapper_spec <- .dkge_resolve_mapper_spec(mapper, method = transport_method, dots = dots)
     if (is.null(sizes)) sizes <- lapply(loadings, function(A) rep(1, nrow(A)))
     tr <- .dkge_transport_to_medoid(mapper_spec, values, loadings, centroids,
                                     sizes = sizes, medoid = medoid)
@@ -306,7 +310,8 @@ dkge_make_target <- function(fit = NULL,
                        centroids = centroids,
                        loadings = loadings,
                        sizes = sizes,
-                       mapper = mapper),
+                       mapper = mapper,
+                       method = transport_method %||% "sinkhorn"),
                   dots))
   mats <- lapply(names(tr), function(nm) {
     M <- tr[[nm]]$subj_values

@@ -81,7 +81,8 @@ The resulting renderer object contains several key components that facilitate th
 
 - `anchors`: The shared anchor coordinates that are automatically derived from the input `vox_xyz` grid and serve as the common reference space.
 - `graph`: An optional k-nearest neighbor graph and associated Laplacian matrix that enables spatial smoothing across anchors.
-- `mapper_fits`: Subject-specific mapper objects that contain cached Sinkhorn dual variables for efficient repeated computations.
+- `mapper_fits`: Subject-specific fitted plans and target-conditional application
+  operators. Reusing the renderer reuses these solved mappings.
 - `mapper_stats`: Comprehensive transport diagnostics including costs, entropies, and support sizes that help assess the quality of the mapping.
 
 ## Rendering Subject Values
@@ -126,4 +127,7 @@ Several important parameters and features can be adjusted to optimize the render
 
 - The `lambda` parameter in `dkge_render_subject_values()` controls the trade-off between fidelity to the original data and spatial smoothness. Users should monitor the `plan_entropy_mean` diagnostic to assess whether the current settings lead to excessive or insufficient smoothing.
 - Incorporating additional latent features through the `subject_feats` and `anchor_feats` arguments in `dkge_build_renderer()` allows the transport costs to reflect both spatial proximity and functional similarity, potentially improving the biological relevance of the mappings.
-- The renderer automatically caches Sinkhorn dual variables, which means that repeated rendering calls (such as those required for bootstrap replicates) can efficiently reuse warm starts, significantly reducing computational overhead.
+- Reuse a renderer for repeated maps: its fitted plans avoid solving the same
+  subject-to-anchor mappings again. Separately, DKGE keeps a process-local cache
+  of converged Sinkhorn duals for byte-identical fit problems; inspect
+  `mapper_fits[[s]]$stats$diagnostics$cache_hit` when diagnosing a repeated fit.

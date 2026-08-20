@@ -51,13 +51,14 @@ test_that("sinkhorn transport produces deterministic operators", {
   )
   expected_plan_subject3 <- diag(1 / 3, 3)
 
-  expect_equal(res$plans[[1]], diag(1, 3))
+  expect_equal(res$plans[[1]], diag(1 / 3, 3))
   expect_equal(res$plans[[2]], expected_plan_subject2, tolerance = 1e-6)
   expect_equal(res$plans[[3]], expected_plan_subject3, tolerance = 1e-6)
+  expect_equal(res$operators[[1]], diag(1, 3))
 
-  expect_equal(res$subj_values[2, ], c(200, 300, 100), tolerance = 1e-6)
-  expect_equal(res$subj_values[3, ], c(30, 10, 20), tolerance = 1e-6)
-  expect_equal(res$value, c(30, 20, 30))
+  expect_equal(res$subj_values[2, ], c(600, 900, 300), tolerance = 1e-6)
+  expect_equal(res$subj_values[3, ], c(90, 30, 60), tolerance = 1e-6)
+  expect_equal(res$value, c(90, 30, 60))
 })
 
 test_that("cpp sinkhorn wrapper matches deterministic R transport", {
@@ -71,15 +72,18 @@ test_that("cpp sinkhorn wrapper matches deterministic R transport", {
     max_iter = 2000,
     tol = 1e-9
   )
-  res_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
-    dat$v_list,
-    dat$A_list,
-    dat$centroids,
-    medoid = 2,
-    epsilon = 1e-4,
-    max_iter = 2000,
-    tol = 1e-9,
-    return_plans = TRUE
+  expect_warning(
+    res_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
+      dat$v_list,
+      dat$A_list,
+      dat$centroids,
+      medoid = 2,
+      epsilon = 1e-4,
+      max_iter = 2000,
+      tol = 1e-9,
+      return_plans = TRUE
+    ),
+    "deprecated"
   )
 
   expect_equal(res_cpp$value, res_r$value, tolerance = 1e-6)

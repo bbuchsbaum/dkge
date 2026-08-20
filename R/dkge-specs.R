@@ -20,6 +20,9 @@
 #' @param sigma_mm Spatial scale (in millimetres) used when spatial coordinates
 #'   are available.
 #' @param lambda_size Weight on size regularisation between clusters.
+#' @param value_type Semantics of transported values: `"intensive"` preserves
+#'   constant fields; `"extensive"` preserves the sum of source totals.
+#' @param warm_start Reuse converged Sinkhorn duals for identical problems.
 #' @param ... Additional fields stored on the spec (e.g., precomputed loadings
 #'   or betas).
 #' @return Object with class `dkge_transport_spec`.
@@ -29,17 +32,25 @@
 dkge_transport_spec <- function(centroids,
                                 sizes = NULL,
                                 medoid = 1L,
-                                method = c("sinkhorn", "sinkhorn_cpp", "knn"),
+                                method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
                                 mapper = NULL,
                                 epsilon = 0.05,
-                                max_iter = 200L,
-                                tol = 1e-6,
+                                max_iter = 5000L,
+                                tol = 1e-4,
                                 lambda_emb = 1,
                                 lambda_spa = 0.5,
                                 sigma_mm = 15,
                                 lambda_size = 0,
+                                value_type = c("intensive", "extensive"),
+                                warm_start = TRUE,
                                 ...) {
   method <- match.arg(method)
+  if (identical(method, "sinkhorn_cpp")) {
+    warning("`sinkhorn_cpp` is deprecated; `sinkhorn` already uses the compiled backend.",
+            call. = FALSE)
+    method <- "sinkhorn"
+  }
+  value_type <- match.arg(value_type)
   stopifnot(is.list(centroids), length(centroids) >= 1L)
   if (!is.null(sizes)) {
     stopifnot(is.list(sizes), length(sizes) == length(centroids))
@@ -63,7 +74,9 @@ dkge_transport_spec <- function(centroids,
     lambda_emb = lambda_emb,
     lambda_spa = lambda_spa,
     sigma_mm = sigma_mm,
-    lambda_size = lambda_size
+    lambda_size = lambda_size,
+    value_type = value_type,
+    warm_start = isTRUE(warm_start)
   )
   extra <- list(...)
   if (length(extra)) spec <- c(spec, extra)

@@ -165,7 +165,7 @@
   alignment <- NULL
 
   if (align && n_folds > 0) {
-    align_obj <- dkge_align_bases_K(fold_bases, fit$K, allow_reflection = FALSE)
+    align_obj <- dkge_align_bases_K(fold_bases, fit$K, allow_reflection = TRUE)
     aligned_bases <- align_obj$U_aligned
     rotations <- align_obj$R
     alignment <- align_obj
@@ -176,7 +176,7 @@
     }
     consensus <- dkge_consensus_basis_K(fold_bases, fit$K,
                                         weights = fold_weights,
-                                        allow_reflection = FALSE)
+                                         allow_reflection = TRUE)
   }
 
   folds <- vector("list", n_folds)

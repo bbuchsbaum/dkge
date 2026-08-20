@@ -7,28 +7,6 @@
 #include <omp.h>
 #endif
 
-namespace {
-
-inline double log_sum_exp(const arma::rowvec& x) {
-  double max_val = x.max();
-  if (!std::isfinite(max_val)) {
-    return max_val;
-  }
-  arma::rowvec shifted = x - max_val;
-  return max_val + std::log(arma::sum(arma::exp(shifted)));
-}
-
-inline double log_sum_exp_col(const arma::colvec& x) {
-  double max_val = x.max();
-  if (!std::isfinite(max_val)) {
-    return max_val;
-  }
-  arma::colvec shifted = x - max_val;
-  return max_val + std::log(arma::sum(arma::exp(shifted)));
-}
-
-} // namespace
-
 // [[Rcpp::export]]
 Rcpp::List sinkhorn_plan_cpp(Rcpp::NumericMatrix C,
                              Rcpp::NumericVector mu,

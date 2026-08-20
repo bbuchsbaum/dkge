@@ -37,9 +37,9 @@ they are recomputed from `fit$Btil` or the supplied `betas`.}
 \item{...}{Additional mapper arguments such as `epsilon` or `lambda_spa`.}
 }
 \value{
-A list containing cached transport objects: `operators`,
-  `mapper_spec`, `feature_list`, `size_list`, `feature_ref`, `size_ref`,
-  `centroids`, and `medoid`.
+A list containing cached application `operators`, joint transport
+  `plans`, solver `diagnostics`, `mapper_spec`, `feature_list`, `size_list`,
+  `feature_ref`, `size_ref`, `centroids`, and `medoid`.
 }
 \description{
 Computes and caches subject-to-medoid transport matrices so downstream

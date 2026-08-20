@@ -78,7 +78,8 @@ transported <- dkge_transport_contrasts_to_medoid(
   loso,
   medoid = 1L,
   centroids = centroids,
-  mapper = dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1)
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, lambda_spa = 1,
+                            max_iter = 5000, tol = 1e-4)
 )
 
 str(loso$values, max.level = 1)
@@ -88,9 +89,19 @@ The resulting data structure contains several important components that capture 
 stages of the contrast computation process. The `loso$values` component stores the raw
 subject-level contrast vectors before any spatial transport has been applied. After transport
 to the medoid space, `transported[[1]]$value` contains the contrast values that have been
-aligned to the medoid parcellation and averaged across all subjects. Additionally,
+aligned to the medoid parcellation and combined by the coordinate-wise median
+across subjects. Additionally,
 `transported[[1]]$subj_values` preserves the individual-subject contributions after transport,
 which can be useful for detecting outliers or understanding between-subject variability.
+
+```{r transport-checks, include=FALSE}
+transport_ok <- vapply(transported[[1]]$diagnostics, function(x) {
+  isTRUE(x$converged)
+}, logical(1))
+transport_median <- apply(transported[[1]]$subj_values, 2, stats::median)
+stopifnot(all(transport_ok),
+          max(abs(transported[[1]]$value - transport_median)) < 1e-12)
+```
 
 We can visualize the LOSO medoid map to quickly inspect the spatial pattern of contrast values.
 
@@ -113,7 +124,8 @@ with false discovery rate (FDR) adjustments to control for multiple comparisons.
 comp_stats <- dkge_component_stats(
   fit,
   components = 1:2,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, lambda_spa = 0.5,
+                            max_iter = 2000, tol = 1e-4),
   centroids = centroids,
   inference = list(type = "parametric"),
   medoid = 1L

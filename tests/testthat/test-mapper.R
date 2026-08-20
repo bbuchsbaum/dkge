@@ -12,13 +12,13 @@ test_that("sinkhorn mapper produces balanced transport plan", {
   spec <- dkge_mapper_spec("sinkhorn", epsilon = 0.1, lambda_spa = 0)
   mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat)
 
-  plan <- mapping$operator
+  plan <- mapping$plan
   expect_lt(max(abs(rowSums(plan) - 0.5)), 5e-3)
   expect_lt(max(abs(colSums(plan) - 0.5)), 5e-3)
 
   values <- c(3, 7)
   mapped <- predict_mapper(mapping, values)
-  expect_equal(mapped, as.numeric(t(plan) %*% values), tolerance = 1e-8)
+  expect_equal(mapped, as.numeric(t(mapping$operator) %*% values), tolerance = 1e-8)
 })
 
 test_that("ridge mapper matches closed-form solution", {
@@ -107,13 +107,19 @@ test_that("sinkhorn mapper honours reliability weights", {
   expect_gt(max(mapped), min(mapped))
 })
 
-test_that("sinkhorn mapper apply vectorises over value matrices", {
+test_that("sinkhorn mapper applies conditional fields without double reliability", {
   plan_mat <- Matrix::Matrix(matrix(c(0.3, 0.1,
-                                      0.7, 0.9), nrow = 2), sparse = TRUE)
+                                      0.3, 0.3), nrow = 2), sparse = TRUE)
+  mu <- c(0.6, 0.4)
+  nu <- c(0.4, 0.6)
+  operator <- sweep(as.matrix(plan_mat), 2, nu, "/")
   mapper <- list(plan = plan_mat,
-                 mu = c(0.6, 0.4),
+                 operator = Matrix::Matrix(operator, sparse = TRUE),
+                 mu = mu,
+                 nu = nu,
                  P = 2L,
                  Q = 2L,
+                 reliab = c(9, 1),
                  epsilon = 0.1,
                  max_iter = 50L,
                  tol = 1e-6)
@@ -123,18 +129,17 @@ test_that("sinkhorn mapper apply vectorises over value matrices", {
                      2, -3), nrow = 2)
 
   vectorised <- apply_mapper(mapper, values, normalize_by_reliab = TRUE)
-
-  plan_t <- Matrix::t(plan_mat)
-  manual <- sapply(seq_len(ncol(values)), function(j) {
-    numer <- as.numeric(plan_t %*% (mapper$mu * values[, j]))
-    denom <- as.numeric(plan_t %*% mapper$mu)
-    denom_safe <- pmax(denom, 1e-12)
-    res <- numer / denom_safe
-    res[denom <= 1e-12] <- 0
-    res
-  })
-
+  manual <- t(operator) %*% values
   expect_equal(vectorised, manual)
+  expect_equal(apply_mapper(mapper, rep(4, 2)), rep(4, 2), tolerance = 1e-12)
+
+  post_fit_reliab <- c(1, 3)
+  reweighted <- apply_mapper(mapper, values, reliab = post_fit_reliab)
+  plan_t <- Matrix::t(plan_mat)
+  denom <- as.numeric(plan_t %*% post_fit_reliab)
+  reweight_oracle <- sweep(as.matrix(plan_t %*% (values * post_fit_reliab)),
+                           1, denom, "/")
+  expect_equal(reweighted, reweight_oracle)
 
   unnorm <- apply_mapper(mapper, values, normalize_by_reliab = FALSE)
   expect_equal(unnorm, as.matrix(plan_t %*% values))

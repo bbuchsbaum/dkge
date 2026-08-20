@@ -112,12 +112,21 @@ The `dkge_procrustes_K()` function provides a principled way to rotate component
 
 ```{r rotate}
 # target basis: identity for first two effects
-B_target <- diag(1, q)[, 1:2]
-rot <- dkge_procrustes_K(fit$U[, 1:2], B_target, fit$K)
-round(rot$R, 3)
+B_target <- dkge_k_orthonormalize(diag(1, q)[, 1:2], fit$K)
+rot <- dkge_procrustes_K(B_target, fit$U[, 1:2], fit$K)
+round(rot$U_aligned, 3)
 ```
 
-The rotation matrix `rot$R` can then be applied by multiplying it with the original loadings to obtain the aligned components that are oriented toward the target basis.
+The returned `rot$U_aligned` is the fitted basis rotated toward `B_target`.
+`rot$d` reports the objective actually achieved by `rot$R`; when reflections
+are forbidden, it can be smaller than `rot$unconstrained_d`.
+
+```{r rotate-checks, include=FALSE}
+stopifnot(
+  max(abs(crossprod(rot$U_aligned, fit$K %*% rot$U_aligned) - diag(2))) < 1e-7,
+  abs(rot$d - sum(diag(crossprod(B_target, fit$K %*% fit$U[, 1:2]) %*% rot$R))) < 1e-8
+)
+```
 
 ## Projecting New Data
 

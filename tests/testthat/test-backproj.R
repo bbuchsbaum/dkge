@@ -70,7 +70,8 @@ test_that("dkge_transport_contrasts_to_medoid returns aligned subject maps", {
   expect_equal(dim(first$subj_values), c(fixture$S, fixture$P))
   expect_equal(first$subj_values[1, ], contrast_obj$values[[1]][[1]],
                tolerance = 1e-6)
-  expect_equal(first$plans[[1]], diag(1, fixture$P), tolerance = 1e-6)
+  expect_equal(first$plans[[1]], diag(1 / fixture$P, fixture$P), tolerance = 1e-6)
+  expect_equal(first$operators[[1]], diag(1, fixture$P), tolerance = 1e-6)
 })
 
 test_that("dkge_transport_loadings_to_medoid falls back to stored loadings", {

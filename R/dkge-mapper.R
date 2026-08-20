@@ -53,9 +53,10 @@ dkge_mapper_spec <- function(type = c("sinkhorn", "ridge", "ols"),
 #' Sinkhorn OT over embeddings) for functions such as [dkge_prepare_transport()]
 #' or [dkge_transport_spec()].
 #'
-#' @param type Mapper backend identifier: `"knn"` (barycentric kNN, fully
-#'   implemented), `"sinkhorn"` (OT over point clouds), `"ridge"`, or `"gw"`
-#'   (Gromov-Wasserstein; latter three require external plugins).
+#' @param type Mapper backend identifier: `"knn"` (barycentric kNN),
+#'   `"sinkhorn"` (OT over point clouds), `"ridge"`, `"gw"`, or a custom
+#'   identifier whose `fit_mapper.dkge_mapper_<type>()` method is supplied by
+#'   an extension. The ridge and Gromov-Wasserstein backends require plugins.
 #' @param ... Backend-specific parameters stored within the mapper object
 #'   (e.g. `k`, `sigx`, `sigz` for kNN; `epsilon` for Sinkhorn).
 #' @return A `dkge_mapper` S3 descriptor consumed by [fit_mapper()] and
@@ -69,7 +70,12 @@ dkge_mapper_spec <- function(type = c("sinkhorn", "ridge", "ols"),
 #' length(y_anchor)
 #' @export
 dkge_mapper <- function(type = c("knn", "sinkhorn", "ridge", "gw"), ...) {
-  type <- match.arg(type)
+  if (missing(type)) type <- "knn"
+  if (!is.character(type) || length(type) != 1L || is.na(type) ||
+      !grepl("^[A-Za-z][A-Za-z0-9_]*$", type)) {
+    stop("`type` must be one non-empty mapper identifier using letters, digits, or underscores.",
+         call. = FALSE)
+  }
   structure(list(method = type, pars = list(...)),
             class = c(paste0("dkge_mapper_", type), "dkge_mapper"))
 }
@@ -232,8 +238,9 @@ fit_mapper.dkge_mapper_sinkhorn <- function(spec,
 
   pars <- spec$pars
   epsilon <- pars$epsilon %||% 0.05
-  max_iter <- pars$max_iter %||% 300
-  tol <- pars$tol %||% 1e-6
+  max_iter <- pars$max_iter %||% 5000L
+  tol <- pars$tol %||% 1e-4
+  warm_start <- pars$warm_start %||% TRUE
   sigx <- pars$sigx %||% 5.0
   lambda_xyz <- pars$lambda_xyz %||% 1.0
   sigz <- pars$sigz %||% 1.0
@@ -284,12 +291,16 @@ fit_mapper.dkge_mapper_sinkhorn <- function(spec,
   }
   nu <- anchor_weights / sum(anchor_weights)
 
-  plan <- .dkge_sinkhorn_plan(C,
-                              mu = mu,
-                              nu = nu,
-                              epsilon = epsilon,
-                              max_iter = max_iter,
-                              tol = tol)
+  solved <- .dkge_sinkhorn_plan(C,
+                                mu = mu,
+                                nu = nu,
+                                epsilon = epsilon,
+                                max_iter = max_iter,
+                                tol = tol,
+                                warm_start = warm_start,
+                                return_diagnostics = TRUE)
+  plan <- solved$plan
+  operator <- .dkge_transport_operator(plan, mu, nu, "intensive")
 
   plan_sparse <- Matrix::Matrix(plan, sparse = TRUE)
   transport_cost <- sum(plan * C)
@@ -297,6 +308,7 @@ fit_mapper.dkge_mapper_sinkhorn <- function(spec,
   structure(list(
     type = "sinkhorn",
     plan = plan_sparse,
+    operator = Matrix::Matrix(operator, sparse = TRUE),
     cost = C,
     mu = mu,
     nu = nu,
@@ -304,7 +316,8 @@ fit_mapper.dkge_mapper_sinkhorn <- function(spec,
     max_iter = max_iter,
     tol = tol,
     reliab = reliab,
-    stats = list(transport_cost = transport_cost),
+    stats = list(transport_cost = transport_cost,
+                 diagnostics = solved$diagnostics),
     P = P,
     Q = Q
   ), class = "dkge_mapper_fit_sinkhorn")
@@ -331,7 +344,16 @@ apply_mapper.dkge_mapper_fit_sinkhorn <- function(fitted_mapper,
       return(as.numeric(plan_t %*% vals))
     }
 
-    r <- reliab %||% fitted_mapper$reliab %||% fitted_mapper$mu
+    if (is.null(reliab)) {
+      operator <- fitted_mapper$operator %||%
+        Matrix::Matrix(.dkge_transport_operator(as.matrix(plan),
+                                                fitted_mapper$mu,
+                                                fitted_mapper$nu,
+                                                "intensive"), sparse = TRUE)
+      return(as.numeric(Matrix::t(operator) %*% vals))
+    }
+
+    r <- reliab
     r <- as.numeric(r)
     stopifnot(length(r) == fitted_mapper$P)
     if (any(r < 0)) {
@@ -351,7 +373,16 @@ apply_mapper.dkge_mapper_fit_sinkhorn <- function(fitted_mapper,
     return(as.matrix(res))
   }
 
-  r <- reliab %||% fitted_mapper$reliab %||% fitted_mapper$mu
+  if (is.null(reliab)) {
+    operator <- fitted_mapper$operator %||%
+      Matrix::Matrix(.dkge_transport_operator(as.matrix(plan),
+                                              fitted_mapper$mu,
+                                              fitted_mapper$nu,
+                                              "intensive"), sparse = TRUE)
+    return(as.matrix(Matrix::t(operator) %*% vals))
+  }
+
+  r <- reliab
   r <- as.numeric(r)
   stopifnot(length(r) == fitted_mapper$P)
   if (any(r < 0)) {
@@ -389,6 +420,14 @@ fit_mapper.dkge_mapper_gw <- function(spec, ...) {
 #' @param values Numeric vector or matrix of source-space values.
 #' @param ... Optional backend-specific arguments (e.g. reliabilities).
 #' @return Numeric vector or matrix of mapped values.
+#' @details
+#' For a fitted Sinkhorn dense mapper, the default treats `values` as an
+#' intensive field and applies the target-conditional operator, so a constant
+#' source field remains constant. Reliability supplied while fitting defines
+#' the source mass and is not multiplied into values a second time. Supplying
+#' `reliab` explicitly here requests an additional post-fit reweighting.
+#' Setting `normalize_by_reliab = FALSE` in that method returns the raw joint
+#' plan action rather than a target-conditional field.
 #' @examples
 #' spec <- dkge_mapper("knn", k = 3, sigx = 1)
 #' subj_points <- matrix(rnorm(12 * 3), 12, 3)
@@ -415,8 +454,11 @@ fit_mapper.dkge_mapper_spec_sinkhorn <- function(spec, source_feat, source_vals 
                                                  ...) {
   params <- spec$params
   epsilon <- params$epsilon %||% 0.05
-  max_iter <- params$max_iter %||% 300
-  tol <- params$tol %||% 1e-6
+  max_iter <- params$max_iter %||% 5000L
+  tol <- params$tol %||% 1e-4
+  warm_start <- params$warm_start %||% TRUE
+  value_type <- match.arg(params$value_type %||% "intensive",
+                          c("intensive", "extensive"))
   lambda_emb <- params$lambda_emb %||% 1
   lambda_spa <- params$lambda_spa %||% 0.5
   sigma_mm <- params$sigma_mm %||% 15
@@ -438,16 +480,23 @@ fit_mapper.dkge_mapper_spec_sinkhorn <- function(spec, source_feat, source_vals 
                          sizes_ref = b,
                          lambda_size = lambda_size)
 
-  plan <- .dkge_sinkhorn_plan(C, mu = a, nu = b,
-                              epsilon = epsilon,
-                              max_iter = max_iter,
-                              tol = tol)
+  solved <- .dkge_sinkhorn_plan(C, mu = a, nu = b,
+                                epsilon = epsilon,
+                                max_iter = max_iter,
+                                tol = tol,
+                                warm_start = warm_start,
+                                return_diagnostics = TRUE)
+  plan <- solved$plan
+  operator <- .dkge_transport_operator(plan, a, b, value_type)
 
-  mapping <- list(operator = plan,
+  mapping <- list(operator = operator,
+                  plan = plan,
                   strategy = "sinkhorn",
                   fit_info = list(epsilon = epsilon,
                                   max_iter = max_iter,
                                   tol = tol,
+                                  value_type = value_type,
+                                  diagnostics = solved$diagnostics,
                                   cost = C,
                                   weights = list(source = a, target = b)))
   class(mapping) <- c("dkge_mapping_sinkhorn", "dkge_mapping")

@@ -6,7 +6,7 @@ library(testthat)
 make_procrustes_toy <- function(q = 4, r = 2, seed = 101) {
   set.seed(seed)
   K <- crossprod(matrix(rnorm(q * q), q, q)) + diag(q) * 0.1
-  U_ref <- qr.Q(qr(matrix(rnorm(q * r), q, r)))
+  U_ref <- dkge_k_orthonormalize(matrix(rnorm(q * r), q, r), K)
   list(K = K, U_ref = U_ref)
 }
 
@@ -75,4 +75,61 @@ test_that("dkge_procrustes_K without reflection returns a proper rotation", {
   pr <- dkge_procrustes_K(Uref, U, toy$K, allow_reflection = FALSE)
   expect_equal(det(pr$R), 1, tolerance = 1e-8)
   expect_equal(t(pr$R) %*% pr$R, diag(3), tolerance = 1e-8)
+  C <- t(Uref) %*% toy$K %*% U
+  expect_equal(pr$d, sum(diag(C %*% pr$R)), tolerance = 1e-10)
+  expect_equal(pr$d, 1, tolerance = 1e-8)
+  expect_equal(pr$unconstrained_d, 3, tolerance = 1e-8)
+})
+
+test_that("K-orthonormalization rejects indefinite and metric-rank-deficient inputs", {
+  # A previously validated matrix cannot lend its verdict to a modified copy.
+  valid <- diag(2)
+  dkge_k_orthonormalize(diag(2), valid)
+  valid[2, 2] <- -1
+  expect_error(
+    dkge_k_orthonormalize(diag(2), valid),
+    "positive semidefinite"
+  )
+
+  K_psd <- diag(c(1, 1, 0))
+  U <- dkge_k_orthonormalize(diag(3)[, 1:2, drop = FALSE], K_psd)
+  expect_equal(crossprod(U, K_psd %*% U), diag(2), tolerance = 1e-12)
+  expect_error(dkge_k_orthonormalize(diag(3), K_psd), "K metric")
+})
+
+test_that("Procrustes fails closed for bases outside its K-orthonormal contract", {
+  K <- diag(3)
+  expect_error(dkge_procrustes_K(diag(3) * 2, diag(3), K),
+               "Uref.*K-orthonormal")
+  expect_error(dkge_procrustes_K(diag(3), diag(3)[, 1:2], K),
+               "conformable")
+})
+
+test_that("consensus is K-orthonormal and invariant to basis-list order", {
+  K <- diag(5)
+  Uref <- diag(5)[, 1:3, drop = FALSE]
+  R1 <- diag(c(-1, 1, 1))
+  theta <- pi / 3
+  R2 <- matrix(c(cos(theta), -sin(theta), 0,
+                 sin(theta),  cos(theta), 0,
+                 0,           0,          1), 3, 3, byrow = TRUE)
+  bases <- list(Uref, Uref %*% R1, Uref %*% R2)
+
+  forward <- dkge_consensus_basis_K(bases, K)
+  reverse <- dkge_consensus_basis_K(rev(bases), K)
+  expect_true(forward$converged)
+  expect_true(reverse$converged)
+  expect_equal(crossprod(forward$U, K %*% forward$U), diag(3), tolerance = 1e-10)
+  overlap <- svd(crossprod(forward$U, K %*% reverse$U), nu = 0, nv = 0)$d
+  expect_equal(overlap, rep(1, 3), tolerance = 1e-10)
+})
+
+test_that("alignment and consensus validate references, weights, and controls", {
+  K <- diag(3)
+  bases <- list(diag(3), diag(3))
+  expect_error(dkge_align_bases_K(bases, K, ref = 3), "valid index")
+  expect_error(dkge_align_bases_K(bases, K, weights = 1), "weights")
+  expect_error(dkge_consensus_basis_K(bases, K, weights = c(1, -1)), "weights")
+  expect_error(dkge_consensus_basis_K(bases, K, max_iter = 0), "max_iter")
+  expect_error(dkge_consensus_basis_K(bases, K, tol = Inf), "tol")
 })

@@ -14,6 +14,7 @@ Description: Implements Design-Kernel Group Embedding (DKGE) for design-aware
     neuroimaging toolkits such as 'neuroim2', 'fmridesign', and 'fmriAR'.
 Depends: R (>= 4.2.0)
 Imports:
+    digest,
     fmridesign,
     fmrireg,
     FNN,

@@ -339,13 +339,13 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   consensus <- NULL
   procrustes <- NULL
   if (align && length(bases) > 0) {
-    align_obj <- dkge_align_bases_K(bases, fit$K, allow_reflection = FALSE)
+    align_obj <- dkge_align_bases_K(bases, fit$K, allow_reflection = TRUE)
     aligned_bases <- align_obj$U_aligned
     rotations <- align_obj$R
     weights <- fit$weights %||% rep(1, length(bases))
     consensus <- dkge_consensus_basis_K(bases, fit$K,
                                         weights = weights,
-                                        allow_reflection = FALSE)
+                                        allow_reflection = TRUE)
     procrustes <- list(alignment = align_obj, consensus = consensus)
   }
 

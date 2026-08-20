@@ -166,7 +166,8 @@ dkge_infer <- function(fit, contrasts,
     mapper_args <- transport[intersect(names(transport),
                                        c("epsilon", "max_iter", "tol",
                                          "lambda_emb", "lambda_spa",
-                                         "sigma_mm", "lambda_size"))]
+                                         "sigma_mm", "lambda_size",
+                                         "value_type", "warm_start"))]
     args <- list(
       fit = fit,
       contrast_obj = contrast_results,
