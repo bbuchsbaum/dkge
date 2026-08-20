@@ -73,6 +73,9 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml, "UBSAN_OPTIONS")
   expect_match(sanitizer_yaml, "USE_BUNDLED_LIBUV")
   expect_match(sanitizer_yaml, "cmake libuv1-dev")
+  expect_match(sanitizer_yaml, "libtbb-dev")
+  expect_match(sanitizer_yaml, "TBB_INC")
+  expect_match(sanitizer_yaml, "TBB_LIB")
 
   makevars_win <- file.path(root, "src", "Makevars.win")
   expect_true(file.exists(makevars_win))
