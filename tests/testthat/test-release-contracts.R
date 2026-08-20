@@ -21,9 +21,21 @@ test_that("core dependency metadata is immutable and beta-resolvable", {
                                    "noncran-lock.csv")
   if (file.exists(lock_path)) {
     lock <- utils::read.csv(lock_path, stringsAsFactors = FALSE)
-    expect_setequal(lock$package, c("fmridesign", "fmrireg", "neuralign"))
+    expect_setequal(
+      lock$package,
+      c(
+        "delarr", "fmriAR", "fmridesign", "fmridataset", "fmrigds",
+        "fmrihrf", "fmrilss", "fmrireg", "neuralign"
+      )
+    )
     expect_true(all(grepl("^[0-9a-f]{40}$", lock$sha)))
-    expect_identical(lock$role, c("Import", "Import", "Enhances"))
+    expect_identical(lock$role[lock$package %in% c("fmridesign", "fmrireg")],
+                     c("Import", "Import"))
+    expect_true(all(
+      lock$role[!lock$package %in% c("fmridesign", "fmrireg", "neuralign")] ==
+        "TransitiveImport"
+    ))
+    expect_identical(lock$role[lock$package == "neuralign"], "Enhances")
   }
 })
 
@@ -49,6 +61,9 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(check_yaml, "source-tarball[.]sha256")
   expect_match(check_yaml, "e627d4d1861e5cc4aea5a5668d6052e394429b92")
   expect_match(check_yaml, "20c9f07a225f21c4eea1732ea31418ccedd1c056")
+  expect_match(check_yaml, "d366e79fce8db7c5c46e883291e73732b20c545c")
+  expect_match(check_yaml, "f015b7c7fa5008e2435d269aeb1882a9aa24eaf0")
+  expect_match(check_yaml, "dependencies: '\"hard\"'")
 
   sanitizer_yaml <- paste(readLines(file.path(workflows, "sanitizers.yaml"),
                                     warn = FALSE), collapse = "\n")
