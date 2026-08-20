@@ -26,15 +26,15 @@ treats space × time jointly for fMRI/ERP/MEG data.
 
 The **computational workflow** follows a systematic sequence of
 steps: 1. Data are arranged as a single matrix
-$M \in {\mathbb{R}}^{{(nk)} \times {(mt)}}$ with observations nested
+$`M \in \mathbb{R}^{(n k) \times (m t)}`$ with observations nested
 inside conditions. 2. Cross-block covariance is formed with an
 orthonormal design matrix, followed by singular value decomposition
-$C^{\top}M = USV^{\top}$. 3. Element/time saliences (singular images),
+$`C^\top M = U S V^\top`$. 3. Element/time saliences (singular images),
 design saliences, and singular values are extracted from the
-decomposition. 4. Brain scores $B = MU$ and design scores $D = CV$ are
-computed to characterize patterns in each domain. 5. For behavior PLS
-specifically, the design block is replaced with behavior matrices and
-correlated with $M$ before applying SVD.
+decomposition. 4. Brain scores $`B = M U`$ and design scores $`D = C V`$
+are computed to characterize patterns in each domain. 5. For behavior
+PLS specifically, the design block is replaced with behavior matrices
+and correlated with $`M`$ before applying SVD.
 
 **Statistical inference** in PLS relies on resampling approaches:
 permutation tests assess LV significance, bootstrap procedures evaluate
@@ -57,16 +57,16 @@ alignment and spatial transport mechanisms. The comprehensive comparison
 table below summarizes both the conceptual commonalities between these
 approaches and the key methodological advances that DKGE introduces.
 
-| Aspect                    | Partial Least Squares                                                                                        | DKGE                                                                                                                                  |
-|---------------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| Latent-space construction | SVD on cross-block covariance between design/behaviour and brain data; columns of $U$ and $V$ are saliences. | Eigen-decomposition of a design-kernel-weighted covariance, producing orthonormal components $U$.                                     |
-| Design information        | Implicit via orthonormal contrasts; no way to encode graded similarity between effects.                      | Explicit design kernel $K$ encodes factorial structure, smoothness, or prior correlations among effects.                              |
-| Data normalisation        | Conditions averaged or mean-centred before SVD; each voxel treated equally.                                  | Row standardisation of subject betas using the pooled design Cholesky factor; optional spatial/reliability weights $\Omega_{s}$.      |
-| Cross-validation          | Permutation for LV significance, bootstrap for salience stability (no LOSO cross-fitting).                   | LOSO / K-fold cross-fitting (`dkge_contrast`), analytic approximations, parametric or bootstrap inference with cached transports.     |
-| Transport / alignment     | Outputs latent scores; spatial interpretation relies on the original voxel grid.                             | Provides barycentric kNN and Sinkhorn transports, anchor graphs, and voxel decoders for consistent spatial maps across parcellations. |
-| Reliability weighting     | All observations weighted equally; stability assessed post hoc via bootstrap ratios.                         | Subject- and cluster-level reliabilities enter directly (e.g. sizes, inverse variances), influencing fits and transport.              |
-| Spatiotemporal support    | ST-PLS handles time by stacking features.                                                                    | DKGE works on any GLM-derived beta blocks; temporal modelling is delegated to the design matrix and optional kernels.                 |
-| Implementation focus      | Exploratory LVs; complementary to other analyses.                                                            | Integrated workflow for group GLM analysis, transport, and inference tailored to fMRI/ERP pipelines.                                  |
+| Aspect | Partial Least Squares | DKGE |
+|----|----|----|
+| Latent-space construction | SVD on cross-block covariance between design/behaviour and brain data; columns of $`U`$ and $`V`$ are saliences. | Eigen-decomposition of a design-kernel-weighted covariance, producing orthonormal components $`U`$. |
+| Design information | Implicit via orthonormal contrasts; no way to encode graded similarity between effects. | Explicit design kernel $`K`$ encodes factorial structure, smoothness, or prior correlations among effects. |
+| Data normalisation | Conditions averaged or mean-centred before SVD; each voxel treated equally. | Row standardisation of subject betas using the pooled design Cholesky factor; optional spatial/reliability weights $`\Omega_s`$. |
+| Cross-validation | Permutation for LV significance, bootstrap for salience stability (no LOSO cross-fitting). | LOSO / K-fold cross-fitting (`dkge_contrast`), analytic approximations, parametric or bootstrap inference with cached transports. |
+| Transport / alignment | Outputs latent scores; spatial interpretation relies on the original voxel grid. | Provides barycentric kNN and Sinkhorn transports, anchor graphs, and voxel decoders for consistent spatial maps across parcellations. |
+| Reliability weighting | All observations weighted equally; stability assessed post hoc via bootstrap ratios. | Subject- and cluster-level reliabilities enter directly (e.g. sizes, inverse variances), influencing fits and transport. |
+| Spatiotemporal support | ST-PLS handles time by stacking features. | DKGE works on any GLM-derived beta blocks; temporal modelling is delegated to the design matrix and optional kernels. |
+| Implementation focus | Exploratory LVs; complementary to other analyses. | Integrated workflow for group GLM analysis, transport, and inference tailored to fMRI/ERP pipelines. |
 
 ## Similarities worth noting
 

@@ -23,7 +23,12 @@ dkge_fit(
   solver = c("pooled", "jd"),
   jd_control = dkge_jd_control(),
   jd_mask = NULL,
-  jd_init = NULL
+  jd_init = NULL,
+  effect_scaling = c("pooled_design", "none"),
+  effect_weights = NULL,
+  debias = c("none", "analytic", "split_half"),
+  missingness = c("none", "rescale", "mask", "shrink"),
+  miss_args = list()
 )
 ```
 
@@ -76,7 +81,9 @@ dkge_fit(
 - keep_X:
 
   Logical; when \`TRUE\`, store the concatenated training matrix used to
-  build the multiblock projection (can be large).
+  build the multiblock projection (can be large). Only available when
+  the fit is an exact \`block_biprojector\`; q-space moments have no
+  matching subject-by-voxel factor.
 
 - cpca_blocks:
 
@@ -129,11 +136,69 @@ dkge_fit(
   Optional orthogonal initialiser for the JD solver expressed in the
   whitened \\K^{1/2}\\ metric (qxq matrix).
 
+- effect_scaling:
+
+  Effect-space scaling applied before accumulating the compressed
+  covariance. \`"pooled_design"\` (default) multiplies each subject
+  beta/effect matrix by the pooled design Cholesky factor, preserving
+  the original GLM-beta behaviour. \`"none"\` leaves rows on their input
+  scale and uses an identity contrast ruler, which is appropriate when
+  rows already have a common absolute interpretation such as AUC minus
+  chance.
+
+- effect_weights:
+
+  Optional \[dkge_effect_weights()\] specification. Count, explicit
+  precision, or DerSimonian-Laird \`"random_effects"\` weighting is
+  applied to raw q-space effect moments before the pooled ruler and
+  design kernel mix effect rows. Random-effects fits are q-space-only.
+
+- debias:
+
+  Finite-trial noise treatment. \`"none"\` preserves the observed second
+  moment. \`"analytic"\` subtracts \`noise_trace \* effect_noise_cov\`
+  for each subject before pooling; these sufficient statistics are
+  produced by \[dkge_trial_subject()\]. \`"split_half"\` uses the
+  symmetrized cross-product of two independently estimated trial halves
+  and requires \`dkge_trial_subject(split = ...)\`.
+
+- missingness:
+
+  Partial-effect coverage policy used when subjects do not all observe
+  the same effect rows. \`"none"\` keeps the raw zero-filled union
+  accumulation, \`"rescale"\` divides entries by observed pair counts,
+  \`"mask"\` zeros under-covered entries, and \`"shrink"\` blends
+  rescaled entries toward the diagonal according to coverage. These
+  policies operate on raw q-space effect moments before the pooled ruler
+  and design kernel mix rows. When \`effect_weights\` is active,
+  \`"none"\`/\`"mask"\` scale the precision-weighted per-pair mean by
+  observed subject mass \\\sum_s a_s w_s 1\[\mathrm{obs}\_s\]\\ (equal
+  to the full cohort mass only under complete coverage), \`"rescale"\`
+  returns that per-pair mean, and \`"mask"\`/\`"shrink"\` threshold on
+  the effective pair count \`\$pair_ess\` instead of the raw
+  \`\$pair_counts\`. Under unit precision, equal subject weights,
+  \*\*and full coverage\*\* these coincide with the unweighted policies;
+  under partial coverage they keep the effect-weighted mean on the
+  observed-mass scale rather than mean-imputing absent subjects.
+
+- miss_args:
+
+  List of arguments for \`missingness\`. Known fields are \`min_pairs\`
+  (used by \`"mask"\` and \`"shrink"\`) and \`gamma\` (used by
+  \`"shrink"\`). Unknown names are an error.
+
 ## Value
 
-A fitted \`dkge\` object. When the multivarious package is installed the
-return value additionally inherits from \`multiblock_biprojector\`,
-making it compatible with the multivarious multiblock interface.
+A fitted \`dkge\` object. Exact unregularized pooled moments
+additionally inherit from \`multiblock_biprojector\` and advertise
+physical block loadings \`\$v\`. Pair-normalized,
+missingness-transformed, debiased, ridged, CPCA, and JD fits inherit
+from \`dkge_qspace\` instead, set \`\$v\` and \`\$X_concat\` to
+\`NULL\`, and expose only the coherent q-space eigensystem.
+\`\$representation\` records which contract applies. The object also
+records \`\$effect_moment\`, \`\$pair_weight\`, \`\$pair_ess\`, and
+\`\$moment_diagnostics\` for auditing reliability weighting and any
+negative spectral mass introduced by debiasing.
 
 ## Examples
 

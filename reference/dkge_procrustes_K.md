@@ -13,15 +13,15 @@ dkge_procrustes_K(Uref, U, K, allow_reflection = TRUE)
 
 - Uref:
 
-  reference basis (qxr)
+  K-orthonormal reference basis (qxr)
 
 - U:
 
-  basis to align (qxr)
+  K-orthonormal basis to align (qxr)
 
 - K:
 
-  qxq design kernel
+  qxq finite, symmetric, positive-semidefinite design kernel
 
 - allow_reflection:
 
@@ -29,4 +29,7 @@ dkge_procrustes_K(Uref, U, K, allow_reflection = TRUE)
 
 ## Value
 
-list(U_aligned, R, d=sum(singular values), cosines, det)
+A list with the aligned basis \`U_aligned\`, orthogonal rotation \`R\`,
+achieved objective \`d\`, unconstrained objective \`unconstrained_d\`,
+principal \`cosines\`, and rotation \`determinant\`. When reflection is
+forbidden, \`d\` can be smaller than \`unconstrained_d\`.

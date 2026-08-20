@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Contrasts, Inference, and Bootstraps • dkge</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Contrasts, Inference, and Bootstraps">
 </head>
@@ -41,6 +41,9 @@
     <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -58,6 +61,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -80,7 +84,7 @@
       <h1>Contrasts, Inference, and Bootstraps</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-contrasts-inference.Rmd" class="external-link"><code>vignettes/dkge-contrasts-inference.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-contrasts-inference.Rmd" class="external-link"><code>vignettes/dkge-contrasts-inference.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-contrasts-inference.Rmd</code></div>
     </div>
 
@@ -131,7 +135,8 @@ spatial alignment remains stable throughout the procedure.</p>
 <span>  <span class="va">loso</span>,</span>
 <span>  medoid <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
-<span>  mapper <span class="op">=</span> <span class="fu"><a href="../reference/dkge_mapper.html">dkge_mapper</a></span><span class="op">(</span><span class="st">"sinkhorn"</span>, epsilon <span class="op">=</span> <span class="fl">0.05</span>, lambda_xyz <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>  mapper <span class="op">=</span> <span class="fu"><a href="../reference/dkge_mapper_spec.html">dkge_mapper_spec</a></span><span class="op">(</span><span class="st">"sinkhorn"</span>, epsilon <span class="op">=</span> <span class="fl">0.05</span>, lambda_spa <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                            max_iter <span class="op">=</span> <span class="fl">5000</span>, tol <span class="op">=</span> <span class="fl">1e-4</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">loso</span><span class="op">$</span><span class="va">values</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -143,7 +148,7 @@ that capture different stages of the contrast computation process. The
 vectors before any spatial transport has been applied. After transport
 to the medoid space, <code>transported[[1]]$value</code> contains the
 contrast values that have been aligned to the medoid parcellation and
-averaged across all subjects. Additionally,
+combined by the coordinate-wise median across subjects. Additionally,
 <code>transported[[1]]$subj_values</code> preserves the
 individual-subject contributions after transport, which can be useful
 for detecting outliers or understanding between-subject variability.</p>
@@ -170,21 +175,20 @@ rate (FDR) adjustments to control for multiple comparisons.</p>
 <code class="sourceCode R"><span><span class="va">comp_stats</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_component_stats.html">dkge_component_stats</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit</span>,</span>
 <span>  components <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,</span>
-<span>  mapper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>strategy <span class="op">=</span> <span class="st">"sinkhorn"</span>, epsilon <span class="op">=</span> <span class="fl">0.05</span>, lambda_spa <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
+<span>  mapper <span class="op">=</span> <span class="fu"><a href="../reference/dkge_mapper_spec.html">dkge_mapper_spec</a></span><span class="op">(</span><span class="st">"sinkhorn"</span>, epsilon <span class="op">=</span> <span class="fl">0.05</span>, lambda_spa <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>                            max_iter <span class="op">=</span> <span class="fl">2000</span>, tol <span class="op">=</span> <span class="fl">1e-4</span><span class="op">)</span>,</span>
 <span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
 <span>  inference <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"parametric"</span><span class="op">)</span>,</span>
 <span>  medoid <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in mapply(FUN = f, ..., SIMPLIFY = FALSE): longer argument not a</span></span>
-<span><span class="co">#&gt; multiple of length of shorter</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">comp_stats</span><span class="op">$</span><span class="va">summary</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   component cluster   stat     p p_adj significant</span></span>
-<span><span class="co">#&gt; 1         1       1  1.279 0.270 0.480       FALSE</span></span>
-<span><span class="co">#&gt; 2         1       2  1.175 0.305 0.480       FALSE</span></span>
-<span><span class="co">#&gt; 3         2       1 -1.372 0.242 0.480       FALSE</span></span>
-<span><span class="co">#&gt; 4         2       2 -0.941 0.400 0.480       FALSE</span></span>
-<span><span class="co">#&gt; 5         1       1 -0.269 0.801 0.801       FALSE</span></span>
-<span><span class="co">#&gt; 6         1       2 -1.112 0.328 0.480       FALSE</span></span></code></pre></div>
+<span><span class="co">#&gt;   component cluster  stat        p  p_adj significant</span></span>
+<span><span class="co">#&gt; 1         1       1 14.21 0.000142 0.0043        TRUE</span></span>
+<span><span class="co">#&gt; 2         1       2 13.54 0.000172 0.0043        TRUE</span></span>
+<span><span class="co">#&gt; 3         1       3 -4.59 0.010134 0.0311        TRUE</span></span>
+<span><span class="co">#&gt; 4         1       4 -1.85 0.137937 0.1768       FALSE</span></span>
+<span><span class="co">#&gt; 5         1       5 -3.17 0.033735 0.0602       FALSE</span></span>
+<span><span class="co">#&gt; 6         1       6  5.26 0.006274 0.0272        TRUE</span></span></code></pre></div>
 <p>The resulting <code>summary</code> tibble provides a comprehensive
 overview of the statistical results, including component identifiers,
 cluster indices, test statistics, and both raw and FDR-adjusted
@@ -214,7 +218,7 @@ computations.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">boot</span><span class="op">$</span><span class="va">medoid</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1]  0.137 -0.016 -0.012  0.110 -0.301  0.174</span></span></code></pre></div>
+<span><span class="co">#&gt; [1]  0.956  0.336  0.365  0.427 -1.135  0.592</span></span></code></pre></div>
 <p>The <code><a href="../reference/dkge_bootstrap_projected.html">dkge_bootstrap_projected()</a></code> function returns
 comprehensive bootstrap statistics, including confidence intervals and
 standard errors, specifically computed for contrasts in the medoid
@@ -254,7 +258,7 @@ inferences.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

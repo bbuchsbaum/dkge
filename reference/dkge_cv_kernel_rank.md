@@ -76,7 +76,7 @@ K_grid <- list(base = toy$K, identity = diag(q))
 sel <- dkge_cv_kernel_rank(toy$B_list, toy$X_list, K_grid, ranks = 1:2)
 sel$pick
 #> $kernel
-#> [1] "base"
+#> [1] "identity"
 #> 
 #> $rank
 #> [1] 2

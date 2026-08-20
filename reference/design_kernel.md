@@ -16,6 +16,7 @@ design_kernel(
   basis = c("cell", "effect"),
   contrasts = NULL,
   block_structure = NULL,
+  block_factors = NULL,
   normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
   jitter = 1e-08
 )
@@ -29,6 +30,7 @@ dkge_design_kernel(
   basis = c("cell", "effect"),
   contrasts = NULL,
   block_structure = NULL,
+  block_factors = NULL,
   normalize = c("unit_trace", "none", "unit_fro", "max_diag"),
   jitter = 1e-08
 )
@@ -62,7 +64,9 @@ dkge_design_kernel(
 
   List of character vectors describing which factors appear in each
   kernel term (e.g. list("A","B", c("A","B"))). Defaults to all main
-  effects plus the full interaction.
+  effects plus the full interaction when there is more than one factor.
+  For a one-factor design, the main effect and full interaction coincide
+  and are included once.
 
 - rho:
 
@@ -95,6 +99,13 @@ dkge_design_kernel(
   Optional ordering of effect blocks (names matching terms). If NULL,
   uses the order of \`terms\`.
 
+- block_factors:
+
+  Optional factor names forced to use their factor kernel in every
+  cell-space term. This gives block-diagonal replication across
+  between-subject factors such as group instead of accidental all-ones
+  coupling through terms that omit the block factor.
+
 - normalize:
 
   One of "unit_trace", "none", "unit_fro", "max_diag". Controls how the
@@ -109,7 +120,8 @@ dkge_design_kernel(
 
 A list with elements \`K\` (kernel in requested basis), \`K_cell\`
 (always returned), and \`info\` containing metadata such as factor/term
-names, mapping matrix, and block indices.
+names, mapping matrix, block indices, explicit cell/effect coordinate
+spaces, and the labels on each coordinate axis.
 
 ## Examples
 

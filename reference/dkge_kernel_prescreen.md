@@ -45,6 +45,6 @@ q <- nrow(toy$K)
 K_grid <- list(base = toy$K, identity = diag(q))
 dkge_kernel_prescreen(K_grid, pooled$C, top_k = 1)
 #>     kernel     align
-#> 2 identity 0.5095343
-#> 1     base 0.3682251
+#> 2 identity 0.7195722
+#> 1     base 0.7195722
 ```

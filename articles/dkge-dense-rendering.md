@@ -15,6 +15,7 @@ allow us to demonstrate the rendering pipeline with concrete spatial
 coordinates.
 
 ``` r
+
 library(dkge)
 S <- 4; q <- 3; P <- 20; T <- 50
 betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
@@ -37,6 +38,7 @@ anchor space. This process requires defining a target voxel grid and
 specifying the transport parameters.
 
 ``` r
+
 # use 5k anchors sampled from grey-matter-like cube
 vox_xyz <- as.matrix(expand.grid(seq(-40, 40, by = 10), seq(-40, 40, by = 10), seq(-40, 40, by = 20)))
 renderer <- dkge_build_renderer(
@@ -49,6 +51,12 @@ renderer <- dkge_build_renderer(
   anchor_n = min(500L, nrow(vox_xyz)),
   anchor_method = "sample"
 )
+#> Warning: Sinkhorn did not converge in 5000 iterations (marginal error 1.85e-03
+#> > tol 1.00e-04); increase max_iter or epsilon.
+#> Warning: Sinkhorn did not converge in 5000 iterations (marginal error 1.85e-03
+#> > tol 1.00e-04); increase max_iter or epsilon.
+#> Warning: Sinkhorn did not converge in 5000 iterations (marginal error 3.15e-04
+#> > tol 1.00e-04); increase max_iter or epsilon.
 str(renderer, max.level = 1)
 #> List of 8
 #>  $ anchors     : num [1:405, 1:3] -40 -30 -20 -10 0 10 20 30 40 -40 ...
@@ -71,8 +79,9 @@ facilitate the rendering process:
   reference space.
 - `graph`: An optional k-nearest neighbor graph and associated Laplacian
   matrix that enables spatial smoothing across anchors.
-- `mapper_fits`: Subject-specific mapper objects that contain cached
-  Sinkhorn dual variables for efficient repeated computations.
+- `mapper_fits`: Subject-specific fitted plans and target-conditional
+  application operators. Reusing the renderer reuses these solved
+  mappings.
 - `mapper_stats`: Comprehensive transport diagnostics including costs,
   entropies, and support sizes that help assess the quality of the
   mapping.
@@ -85,21 +94,22 @@ full voxel grid. This process applies optimal transport to map values
 while preserving spatial relationships.
 
 ``` r
+
 values_list <- lapply(fit$Btil, function(Bts) as.numeric(Bts[1, ]))
 rendered <- dkge_render_subject_values(renderer, values_list, lambda = 0.2, to_vox = TRUE)
 summary(rendered$details$y)
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#>  -1.519  -0.162   0.185   0.209   0.633   1.746
+#>  -1.673  -0.235   0.141   0.144   0.578   1.719
 head(rendered$details$subject_stats)
 #> [[1]]
 #> [[1]]$transport_cost
-#> [1] 19.9
+#> [1] 25.3
 #> 
 #> [[1]]$plan_entropy
-#> [1] 6.01
+#> [1] 6.03
 #> 
 #> [[1]]$effective_support
-#> [1] 415
+#> [1] 428
 #> 
 #> [[1]]$epsilon
 #> [1] 0.05
@@ -107,13 +117,13 @@ head(rendered$details$subject_stats)
 #> 
 #> [[2]]
 #> [[2]]$transport_cost
-#> [1] 17.9
+#> [1] 19.4
 #> 
 #> [[2]]$plan_entropy
-#> [1] 6.01
+#> [1] 6.03
 #> 
 #> [[2]]$effective_support
-#> [1] 417
+#> [1] 430
 #> 
 #> [[2]]$epsilon
 #> [1] 0.05
@@ -121,13 +131,13 @@ head(rendered$details$subject_stats)
 #> 
 #> [[3]]
 #> [[3]]$transport_cost
-#> [1] 20.8
+#> [1] 21.9
 #> 
 #> [[3]]$plan_entropy
-#> [1] 6.02
+#> [1] 6.03
 #> 
 #> [[3]]$effective_support
-#> [1] 427
+#> [1] 431
 #> 
 #> [[3]]$epsilon
 #> [1] 0.05
@@ -135,13 +145,13 @@ head(rendered$details$subject_stats)
 #> 
 #> [[4]]
 #> [[4]]$transport_cost
-#> [1] 19.2
+#> [1] 21.4
 #> 
 #> [[4]]$plan_entropy
-#> [1] 6.01
+#> [1] 6.04
 #> 
 #> [[4]]$effective_support
-#> [1] 421
+#> [1] 435
 #> 
 #> [[4]]$epsilon
 #> [1] 0.05
@@ -163,6 +173,7 @@ To examine the spatial structure of the rendered field, we can visualize
 how the anchor values vary along a single spatial dimension.
 
 ``` r
+
 plot(renderer$anchors[, 1], rendered$anchor, pch = 20, col = "steelblue",
      xlab = "Anchor x-coordinate", ylab = "Rendered value",
      main = "Rendered anchor field")
@@ -179,6 +190,7 @@ slices of the voxel grid. This provides insight into how the
 anchor-based smoothing affects the final voxel-level representation.
 
 ``` r
+
 sel <- vox_xyz[, 3] == 0  # slice at z = 0
 plot(vox_xyz[sel, 1], rendered$voxel[sel], pch = 16, col = "tomato",
      xlab = "x", ylab = "value", main = "Voxel slice (z=0)")
@@ -204,7 +216,8 @@ the rendering process for specific applications:
   allows the transport costs to reflect both spatial proximity and
   functional similarity, potentially improving the biological relevance
   of the mappings.
-- The renderer automatically caches Sinkhorn dual variables, which means
-  that repeated rendering calls (such as those required for bootstrap
-  replicates) can efficiently reuse warm starts, significantly reducing
-  computational overhead.
+- Reuse a renderer for repeated maps: its fitted plans avoid solving the
+  same subject-to-anchor mappings again. Separately, DKGE keeps a
+  process-local cache of converged Sinkhorn duals for byte-identical fit
+  problems; inspect `mapper_fits[[s]]$stats$diagnostics$cache_hit` when
+  diagnosing a repeated fit.

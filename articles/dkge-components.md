@@ -8,6 +8,7 @@ the fitted component space.
 ## Example Fit
 
 ``` r
+
 library(dkge)
 S <- 4; q <- 5; P <- 18; T <- 70
 betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
@@ -28,6 +29,7 @@ stable components— set `solver = "jd"` (and optionally pass
 `jd_control = dkge_jd_control(...)` to tweak the optimiser):
 
 ``` r
+
 fit_jd <- dkge(bundle,
                K = diag(q),
                rank = 3,
@@ -42,13 +44,14 @@ unchanged regardless of the solver choice.
 ## Inspect Loadings and Scores
 
 ``` r
+
 round(fit$U, 3)         # effect-space loadings
 #>        [,1]   [,2]   [,3]
-#> [1,]  0.143  0.950 -0.072
-#> [2,] -0.123  0.016  0.018
-#> [3,] -0.281  0.290 -0.132
-#> [4,] -0.120 -0.098 -0.977
-#> [5,]  0.933 -0.068 -0.152
+#> [1,]  0.143  0.950  0.072
+#> [2,] -0.123  0.016 -0.018
+#> [3,] -0.281  0.290  0.132
+#> [4,] -0.120 -0.098  0.977
+#> [5,]  0.933 -0.068  0.152
 lapply(fit$Btil, function(Bts) round(Bts[, 1:3, drop = FALSE], 2))[1]
 #> [[1]]
 #>         cluster_1 cluster_2 cluster_3
@@ -70,6 +73,7 @@ corresponding columns of `fit$U`.
 ## Projecting Subjects into Component Space
 
 ``` r
+
 subject_scores <- dkge_project_btil(fit, fit$Btil)
 str(subject_scores, max.level = 1)
 #> List of 4
@@ -90,6 +94,7 @@ summary that reveals the overall spatial patterns of component
 expression.
 
 ``` r
+
 avg_scores <- Reduce("+", subject_scores) / length(subject_scores)
 avg_df <- as.data.frame(avg_scores)
 component_cols <- paste0("Component ", seq_len(ncol(avg_df)))
@@ -132,32 +137,38 @@ from prior studies. This rotation preserves the mathematical properties
 of the solution by staying within the design-kernel metric space.
 
 ``` r
+
 # target basis: identity for first two effects
-B_target <- diag(1, q)[, 1:2]
-rot <- dkge_procrustes_K(fit$U[, 1:2], B_target, fit$K)
-round(rot$R, 3)
-#>       [,1]   [,2]
-#> [1,] 0.146 -0.989
-#> [2,] 0.989  0.146
+B_target <- dkge_k_orthonormalize(diag(1, q)[, 1:2], fit$K)
+rot <- dkge_procrustes_K(B_target, fit$U[, 1:2], fit$K)
+round(rot$U_aligned, 3)
+#>        [,1]   [,2]
+#> [1,]  0.960 -0.002
+#> [2,] -0.002  0.124
+#> [3,]  0.246  0.320
+#> [4,] -0.114  0.105
+#> [5,]  0.069 -0.933
 ```
 
-The rotation matrix `rot$R` can then be applied by multiplying it with
-the original loadings to obtain the aligned components that are oriented
-toward the target basis.
+The returned `rot$U_aligned` is the fitted basis rotated toward
+`B_target`. `rot$d` reports the objective actually achieved by `rot$R`;
+when reflections are forbidden, it can be smaller than
+`rot$unconstrained_d`.
 
 ## Projecting New Data
 
 ``` r
+
 new_beta <- matrix(rnorm(q * P), q, P)
 projected <- dkge_project_clusters(fit, new_beta)
 head(projected)
-#>          [,1]    [,2]    [,3]
-#> [1,] -0.08667  0.0225 -0.0547
-#> [2,] -0.00988 -0.0228  0.1309
-#> [3,]  0.18825  0.1201  0.0223
-#> [4,] -0.04622  0.0224 -0.0290
-#> [5,] -0.04050 -0.1327 -0.0766
-#> [6,]  0.06674 -0.0541  0.1386
+#>          [,1]     [,2]    [,3]
+#> [1,]  0.06806  0.00861 -0.0601
+#> [2,] -0.00486 -0.32218  0.1147
+#> [3,] -0.02378  0.04698  0.1026
+#> [4,]  0.01284 -0.05594  0.1091
+#> [5,] -0.08667  0.02246  0.0547
+#> [6,] -0.00988 -0.02275 -0.1309
 ```
 
 The

@@ -54,10 +54,9 @@ to define the weighting strategy:
   subjects inside each cross-validation split. The built-in options
   examine *energy* (squared amplitude in the design metric), *precision*
   (inverse variance), or their product. Energy is simply
-  $\parallel K^{1/2}B_{:\alpha} \parallel_{2}^{2}$, representing the
-  amount of signal a voxel carries in effect space; precision is defined
-  as $1/\left( \sigma^{2} + \varepsilon \right)$ and captures
-  measurement reliability.
+  $`\|K^{1/2} B_{:\alpha}\|_2^2`$, representing the amount of signal a
+  voxel carries in effect space; precision is defined as
+  $`1/(\sigma^2 + \varepsilon)`$ and captures measurement reliability.
 - **Combination rules** specify how prior knowledge and adaptive
   components are blended together (through product, sum, or override
   operations). The `mix` parameter provides fine-grained control over
@@ -77,6 +76,7 @@ We begin our exploration with the default configuration, which relies
 purely on adaptive statistics without any prior knowledge.
 
 ``` r
+
 library(dkge)
 
 wts_adapt <- dkge_weights(
@@ -103,6 +103,7 @@ demonstrate the API and observe the effects of different weighting
 strategies.
 
 ``` r
+
 make_subject <- function(id, q = 4L, v = 60L) {
   design <- diag(q)
   colnames(design) <- paste0("eff", seq_len(q))
@@ -124,6 +125,7 @@ across subjects to understand how the algorithm has adjusted the
 influence of different voxels.
 
 ``` r
+
 head(fit_adaptive$voxel_weights)
 #> cluster_1 cluster_2 cluster_3 cluster_4 cluster_5 cluster_6 
 #>     0.904     0.983     0.930     1.236     0.882     0.931
@@ -156,6 +158,7 @@ remains the same as before, but now we blend it with this external
 knowledge.
 
 ``` r
+
 reliability_prior <- runif(60)
 reliability_even <- (reliability_prior - 0.5)^2 + 1e-6
 
@@ -191,6 +194,7 @@ statistical validity (the code is disabled in the vignette to keep it
 lightweight).
 
 ``` r
+
 # source(system.file("testthat/helper-weights-null.R", package = "dkge"))
 # pvals <- dkge_test_null_uniformity(nrep = 24,
 #                                    nsub = 12,
@@ -229,6 +233,7 @@ to efficiently rebuild the fold bases in place with your new weighting
 scheme.
 
 ``` r
+
 fit_refit <- dkge_update_weights(fit_uniform, wts_mixed)
 ```
 

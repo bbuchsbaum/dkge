@@ -15,6 +15,7 @@ dkge_prepare_transport(
   sizes = NULL,
   mapper = "sinkhorn",
   medoid = 1L,
+  provenance = NULL,
   ...
 )
 ```
@@ -52,12 +53,20 @@ dkge_prepare_transport(
 
   Index (1-based) of the reference subject.
 
+- provenance:
+
+  Optional declaration from \[dkge_transport_provenance()\]. When
+  omitted, the cache is honestly marked as sign-sensitive transport
+  learned from inferential-sample loadings and is descriptive by
+  default.
+
 - ...:
 
   Additional mapper arguments such as \`epsilon\` or \`lambda_spa\`.
 
 ## Value
 
-A list containing cached transport objects: \`operators\`,
-\`mapper_spec\`, \`feature_list\`, \`size_list\`, \`feature_ref\`,
-\`size_ref\`, \`centroids\`, and \`medoid\`.
+A list containing cached application \`operators\`, joint transport
+\`plans\`, solver \`diagnostics\`, \`mapper_spec\`, \`feature_list\`,
+\`size_list\`, \`feature_ref\`, \`size_ref\`, \`centroids\`, and
+\`medoid\`.

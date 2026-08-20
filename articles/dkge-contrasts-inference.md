@@ -15,6 +15,7 @@ coordinates that will serve as the foundation for our contrast and
 inference examples.
 
 ``` r
+
 library(dkge)
 S <- 5; q <- 4; P <- 25; T <- 60
 betas <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
@@ -40,6 +41,7 @@ cross-validation folds, ensuring that spatial alignment remains stable
 throughout the procedure.
 
 ``` r
+
 contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
 loso <- dkge_contrast(fit, contrast_vec, method = "loso")
 
@@ -48,7 +50,8 @@ transported <- dkge_transport_contrasts_to_medoid(
   loso,
   medoid = 1L,
   centroids = centroids,
-  mapper = dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1)
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, lambda_spa = 1,
+                            max_iter = 5000, tol = 1e-4)
 )
 
 str(loso$values, max.level = 1)
@@ -61,15 +64,17 @@ capture different stages of the contrast computation process. The
 `loso$values` component stores the raw subject-level contrast vectors
 before any spatial transport has been applied. After transport to the
 medoid space, `transported[[1]]$value` contains the contrast values that
-have been aligned to the medoid parcellation and averaged across all
-subjects. Additionally, `transported[[1]]$subj_values` preserves the
-individual-subject contributions after transport, which can be useful
-for detecting outliers or understanding between-subject variability.
+have been aligned to the medoid parcellation and combined by the
+coordinate-wise median across subjects. Additionally,
+`transported[[1]]$subj_values` preserves the individual-subject
+contributions after transport, which can be useful for detecting
+outliers or understanding between-subject variability.
 
 We can visualize the LOSO medoid map to quickly inspect the spatial
 pattern of contrast values.
 
 ``` r
+
 loso_medoid <- transported[[1]]$value
 plot(loso_medoid, type = "h", lwd = 2, main = "LOSO contrast on medoid clusters",
      xlab = "Medoid cluster", ylab = "Contrast value")
@@ -91,24 +96,24 @@ components, and returns comprehensive summaries with false discovery
 rate (FDR) adjustments to control for multiple comparisons.
 
 ``` r
+
 comp_stats <- dkge_component_stats(
   fit,
   components = 1:2,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, lambda_spa = 0.5,
+                            max_iter = 2000, tol = 1e-4),
   centroids = centroids,
   inference = list(type = "parametric"),
   medoid = 1L
 )
-#> Warning in mapply(FUN = f, ..., SIMPLIFY = FALSE): longer argument not a
-#> multiple of length of shorter
 head(comp_stats$summary)
-#>   component cluster   stat     p p_adj significant
-#> 1         1       1  1.279 0.270 0.480       FALSE
-#> 2         1       2  1.175 0.305 0.480       FALSE
-#> 3         2       1 -1.372 0.242 0.480       FALSE
-#> 4         2       2 -0.941 0.400 0.480       FALSE
-#> 5         1       1 -0.269 0.801 0.801       FALSE
-#> 6         1       2 -1.112 0.328 0.480       FALSE
+#>   component cluster  stat        p  p_adj significant
+#> 1         1       1 14.21 0.000142 0.0043        TRUE
+#> 2         1       2 13.54 0.000172 0.0043        TRUE
+#> 3         1       3 -4.59 0.010134 0.0311        TRUE
+#> 4         1       4 -1.85 0.137937 0.1768       FALSE
+#> 5         1       5 -3.17 0.033735 0.0602       FALSE
+#> 6         1       6  5.26 0.006274 0.0272        TRUE
 ```
 
 The resulting `summary` tibble provides a comprehensive overview of the
@@ -129,6 +134,7 @@ to seed the bootstrap resampling procedure, avoiding redundant
 computations.
 
 ``` r
+
 subject_medoid <- lapply(seq_len(nrow(transported[[1]]$subj_values)), function(idx) {
   transported[[1]]$subj_values[idx, ]
 })
@@ -140,7 +146,7 @@ boot <- dkge_bootstrap_projected(
 )
 
 head(boot$medoid$mean)
-#> [1]  0.137 -0.016 -0.012  0.110 -0.301  0.174
+#> [1]  0.956  0.336  0.365  0.427 -1.135  0.592
 ```
 
 The

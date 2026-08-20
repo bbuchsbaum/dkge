@@ -31,5 +31,5 @@ fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 diag <- dkge_diagnostics(fit)
 names(diag)
 #> [1] "variance"      "weights"       "rank"          "q"            
-#> [5] "n_subjects"    "voxel_weights" "weight_spec"  
+#> [5] "n_subjects"    "spectral"      "voxel_weights" "weight_spec"  
 ```

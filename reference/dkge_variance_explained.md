@@ -36,6 +36,6 @@ fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 #> Warning: Argument 'kernel' is deprecated; use 'K' instead.
 dkge_variance_explained(fit)
 #>   component      sdev  variance  prop_var cum_prop_var
-#> 1         1 11.914935 141.96569 0.5885228    0.5885228
-#> 2         2  9.962835  99.25808 0.4114772    1.0000000
+#> 1         1 10.506306 110.38246 0.5383834    0.5383834
+#> 2         2  9.728478  94.64328 0.4616166    1.0000000
 ```

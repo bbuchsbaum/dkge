@@ -105,9 +105,9 @@ rownames(Y) <- effects
 res <- dkge_regress(fit, Y, k = 2, engine = "lm")
 print(res)
 #> dkge_regress results
-#>   RMSE (micro): 1.6879
-#>   R^2  (micro): -6.3174
-#>   R^2  (macro): -6.2059
-#>   Cosine mean : -0.2194
+#>   RMSE (micro): 1.3019
+#>   R^2  (micro): -3.1792
+#>   R^2  (macro): -3.9368
+#>   Cosine mean : 0.1151
 # }
 ```

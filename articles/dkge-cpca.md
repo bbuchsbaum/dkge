@@ -9,8 +9,8 @@ allows you to analyze these effect types separately while maintaining
 their mathematical relationships.
 
 The method operates directly in the effect space defined by the design
-kernel $K$, ensuring that the resulting bases remain $K$-orthogonal and
-preserve the interpretability of your experimental design structure.
+kernel $`K`$, ensuring that the resulting bases remain $`K`$-orthogonal
+and preserve the interpretability of your experimental design structure.
 This vignette demonstrates what CPCA filtering accomplishes, provides
 guidance on when it proves most valuable, and walks through practical
 implementation strategies.
@@ -47,22 +47,22 @@ main effects of interest receive focused statistical attention.
 
 ## How CPCA Filtering Works
 
-The compressed covariance $\widehat{C}$ that DKGE analyzes contains
+The compressed covariance $`\hat C`$ that DKGE analyzes contains
 variance from all experimental effects mixed together. CPCA filtering
 mathematically separates this total variance into distinct subcomponents
 before eigendecomposition. The process involves several key steps that
 preserve the mathematical relationships defined by your design kernel
-$K$.
+$`K`$.
 
 First, DKGE constructs a projector onto your chosen effect subspace
-using the $K$ metric through
+using the $`K`$ metric through
 [`dkge_projector_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_projector_K.md).
 This projector respects the similarity relationships between
 experimental effects that are encoded in your design kernel. Next,
 [`dkge_cpca_split_chat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_cpca_split_chat.md)
 applies this projector to split the compressed covariance into design
 and residual components. Finally, DKGE fits separate bases for the
-components you request while preserving $K$-orthogonality between the
+components you request while preserving $`K`$-orthogonality between the
 returned bases, ensuring they can be analyzed jointly.
 
 You can specify the design-aligned subspace either by naming specific
@@ -90,6 +90,7 @@ of interest typically show stronger and more consistent patterns than
 secondary effects.
 
 ``` r
+
 S <- 8
 q <- 6
 P <- 16
@@ -125,6 +126,7 @@ experimental effects and secondary conditions, making it difficult to
 isolate the specific patterns we want to study.
 
 ``` r
+
 fit_plain <- dkge(bundle, K = diag(q), rank = 3)
 round(fit_plain$evals[1:4], 3)
 #> [1] 2507 2107  209  180
@@ -151,12 +153,13 @@ to examine both effect types while maintaining their mathematical
 independence.
 
 ``` r
+
 fit_cpca <- dkge(bundle,
                  K = diag(q),
                  cpca_blocks = 1:2,
                  cpca_part = "both",
                  rank = 3)
-#> Warning: Requested rank 3 exceeds effective rank 2. Reducing to 2 components.
+#> Requested rank 3 exceeds effective rank 2. Reducing to 2 components.
 
 fit_cpca$cpca$part
 #> [1] "both"
@@ -173,12 +176,13 @@ effects including interactions and control conditions. This separation
 allows for focused analysis of each effect type.
 
 The mathematical beauty of this approach lies in the preservation of
-$K$-orthogonality between the design and residual bases. This
+$`K`$-orthogonality between the design and residual bases. This
 orthogonality ensures that the two sets of components are mathematically
 independent in the design kernel metric, preventing any contamination
 between primary and secondary effect patterns:
 
 ``` r
+
 Ud <- fit_cpca$cpca$U_design
 Ur <- fit_cpca$cpca$U_resid
 round(max(abs(t(Ud) %*% fit_cpca$K %*% Ur)), 6)
@@ -192,12 +196,14 @@ count as “design-aligned.” A smooth kernel diffuses the projector across
 neighbouring rows, so design energy leaks into adjacent effects.
 
 ``` r
+
 K_smooth <- outer(seq_len(q), seq_len(q), function(i, j) 0.7^abs(i - j))
 fit_kernel <- dkge(bundle,
                    K = K_smooth,
                    cpca_blocks = 1:2,
                    cpca_part = "both",
                    rank = 3)
+#> Requested rank 3 exceeds effective rank 2. Reducing to 2 components.
 round(fit_kernel$cpca$evals_design[1:3], 3)
 #> [1] 3273  819    0
 round(fit_kernel$cpca$evals_resid[1:3], 3)
@@ -221,6 +227,7 @@ before eigendecomposition. You can examine this split directly to
 understand how the total variance is partitioned:
 
 ``` r
+
 T_design <- diag(1, q)[, 1:2]
 split_plain <- dkge_cpca_split_chat(fit_plain$Chat, T_design, fit_plain$K)
 round(diag(split_plain$Chat_design), 3)
@@ -236,6 +243,7 @@ and residual components. Notice that when `cpca_part = "design"` or
 the analysis focuses specifically on your chosen effects:
 
 ``` r
+
 max(abs(fit_cpca$Chat - fit_cpca$cpca$Chat_design))
 #> [1] 0
 ```
@@ -254,6 +262,7 @@ heavily than others. Here we demonstrate by creating a custom basis that
 combines multiple conditions with differential weighting:
 
 ``` r
+
 T_custom <- qr.Q(qr(cbind(c(1, 1, 0, 0, 0, 0),
                           c(0, 0, 2, 1, 0, 0))))
 fit_custom <- dkge(bundle,
@@ -282,6 +291,7 @@ ridge term before eigendecomposition, improving numerical stability
 without substantially altering the results.
 
 ``` r
+
 fit_ridge <- dkge(bundle,
                   K = diag(q),
                   cpca_blocks = 1:2,
@@ -309,12 +319,13 @@ forwarding all other parameters to the main
 function, making your analysis code more concise and readable.
 
 ``` r
+
 fit_wrapper <- dkge_cpca_fit(bundle,
                              K = diag(q),
                              cpca_blocks = 1:2,
                              cpca_part = "design",
                              rank = 3)
-#> Warning: Requested rank 3 exceeds effective rank 2. Reducing to 2 components.
+#> Requested rank 3 exceeds effective rank 2. Reducing to 2 components.
 identical(round(fit_wrapper$U, 6), round(fit_cpca$U, 6))
 #> [1] TRUE
 ```
@@ -346,8 +357,8 @@ improving the reliability of cross-study comparisons.
 The mathematical foundation of CPCA filtering ensures that this
 decomposition preserves interpretability while maintaining compatibility
 with all other DKGE tools. Whether you proceed with contrast testing,
-bootstrap inference, or visualization, the $K$-orthogonal components can
-be analyzed using the full DKGE toolkit without modification.
+bootstrap inference, or visualization, the $`K`$-orthogonal components
+can be analyzed using the full DKGE toolkit without modification.
 
 By directing the eigendecomposition toward your specific research
 questions, CPCA filtering transforms a general-purpose dimension

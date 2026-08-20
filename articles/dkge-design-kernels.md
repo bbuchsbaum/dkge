@@ -10,6 +10,7 @@ fMRI analysis.
 ## Simulated Working Example
 
 ``` r
+
 library(dkge)
 S <- 4; q <- 4; P <- 30; T <- 80
 
@@ -38,6 +39,7 @@ together during the embedding process.
 ## Building Kernels with `design_kernel()`
 
 ``` r
+
 factors <- list(
   A = list(L = 2, type = "nominal"),
   B = list(L = 2, type = "nominal")
@@ -52,11 +54,11 @@ K_struct <- design_kernel(
 )
 
 round(K_struct$K, 2)
-#>      [,1] [,2] [,3] [,4]
-#> [1,] 0.25 0.10 0.10 0.00
-#> [2,] 0.10 0.25 0.00 0.10
-#> [3,] 0.10 0.00 0.25 0.10
-#> [4,] 0.00 0.10 0.10 0.25
+#>       A1:B1 A1:B2 A2:B1 A2:B2
+#> A1:B1  0.25  0.10  0.10  0.00
+#> A1:B2  0.10  0.25  0.00  0.10
+#> A2:B1  0.10  0.00  0.25  0.10
+#> A2:B2  0.00  0.10  0.10  0.25
 ```
 
 The kernel construction process involves several key concepts. Each term
@@ -82,6 +84,7 @@ parameter settings and allowing the cross-validation procedure to
 identify the optimal combination based on predictive performance.
 
 ``` r
+
 rho_vals <- seq(0.4, 1.0, by = 0.3)
 K_grid <- list()
 for (ra in rho_vals) {
@@ -121,6 +124,7 @@ achieves the highest cross-validated score, then refit the model using
 these optimal parameters.
 
 ``` r
+
 best_idx <- which.max(cv_table$mean)
 best <- cv_table[best_idx, ]
 best
@@ -145,6 +149,7 @@ singular values toward zero, which helps stabilize model fits
 particularly when working with limited subject counts or noisy data.
 
 ``` r
+
 fit_ridge <- dkge(bundle, K = K_best, rank = best$param, ridge = 0.2)
 round(fit_ridge$sdev, 3)
 #> [1] 9.84 5.38 4.96

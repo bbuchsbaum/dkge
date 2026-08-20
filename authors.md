@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/bbuchsbaum/dkge/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/DESCRIPTION)
 
 Buchsbaum B (2026). *dkge: Design-Kernel Group Embedding for
 Cluster-Level fMRI*. R package version 0.0.0.9000,

@@ -70,8 +70,10 @@ dkge_classify(
 - mode:
 
   Decoding mode: "auto" (default), "cell", "cell_cross", or "delta".
-  Cell-cross trains on held-in subjects and tests generalisation to the
-  held-out subject.
+  \`"cell"\` uses the full-cohort global basis and supports only a
+  transductive within-cohort claim. \`"cell_cross"\` rebuilds the
+  representation without held-out subjects and supports prospective
+  held-out-subject claims.
 
 - standardize_within_fold:
 
@@ -113,7 +115,14 @@ dkge_classify(
   \`lambda_grid\` (numeric vector of candidate penalties) and
   \`lambda_fun\` (function returning a lambda per target/fold with
   signature \`function(target, fold, method, default)\`). Defaults to
-  \`NULL\`, leaving the standard \`lambda\` behaviour unchanged.
+  \`NULL\`, leaving the standard \`lambda\` behaviour unchanged. These
+  data-dependent selectors are descriptive-only in the beta API. When
+  \`n_perm \> 0\`, supply one externally preselected positive scalar
+  \`lambda\`; grids and callbacks are rejected so selection cannot be
+  frozen after seeing the observed labels. Cell and cell-cross
+  permutations additionally require \`randomization_recompute\`, a
+  callback that rebuilds the complete representation and returns named
+  metrics for each randomized label vector.
 
 - blocks:
 

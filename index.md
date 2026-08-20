@@ -25,6 +25,7 @@ voxel representations.
 ## Installation
 
 ``` r
+
 # install.packages("remotes")
 remotes::install_github("bbuchsbaum/dkge")
 ```
@@ -35,6 +36,7 @@ other CRAN libraries; these install automatically.
 ## Getting started
 
 ``` r
+
 library(dkge)
 
 # simulate three subjects with four effects and five clusters
@@ -69,6 +71,7 @@ and prediction helpers while keeping backward compatibility with raw
 lists.
 
 ``` r
+
 kernel <- diag(nrow(betas[[1]]))
 transport <- dkge_transport_spec(
   centroids = centroids,
@@ -93,6 +96,7 @@ To score new subjects without manually assembling `B_list`, use
 [`dkge_predict_subjects()`](https://bbuchsbaum.github.io/dkge/reference/dkge_predict_subjects.md):
 
 ``` r
+
 pred <- dkge_predict_subjects(fit, betas = new_subjects, contrasts = my_contrasts)
 ```
 
@@ -108,6 +112,18 @@ tracker](https://github.com/bbuchsbaum/dkge/issues).
   with tests and documentation.
 - For large feature work, open an issue to discuss design choices before
   implementation.
+- `Authors@R` is the canonical author/maintainer record; legacy `Author`
+  and `Maintainer` fields are intentionally omitted.
+- Core metadata has no mutable `Remotes` field. The two direct non-CRAN
+  imports are resolvable from the bbuchsbaum R-universe, while release
+  workflows pin the complete hard non-CRAN dependency closure to the
+  exact Git SHAs recorded in `tools/release/noncran-lock.csv`.
+- The optional `neuralign` integration is declared under `Enhances` and
+  tested in a separate pinned workflow; it is not part of core
+  installation or check resolution.
+- The independent Sinkhorn oracle is a deterministic dense R
+  implementation in the test suite, so the numerical gate does not
+  disappear when an experimental transport package is unavailable.
 
 ## License
 

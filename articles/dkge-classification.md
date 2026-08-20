@@ -1,6 +1,7 @@
 # Classification with DKGE
 
 ``` r
+
 library(dkge)
 set.seed(12)
 ```
@@ -24,6 +25,7 @@ We define two experimental factors — condition (A vs B) and time (4 time
 points) — and construct a design kernel that encodes their structure:
 
 ``` r
+
 factors <- list(cond = list(L = 2), time = list(L = 4))
 kern    <- design_kernel(factors, basis = "effect")
 q       <- nrow(kern$K)   # number of effect-coded columns
@@ -36,6 +38,7 @@ detectable signal distinguishing the two conditions is embedded in the
 condition contrast:
 
 ``` r
+
 n_subjects <- 10L
 v <- 60L
 
@@ -62,6 +65,7 @@ metadata used by
 [`dkge_targets()`](https://bbuchsbaum.github.io/dkge/reference/dkge_targets.md)):
 
 ``` r
+
 fit <- dkge(subjects, K = kern, rank = 2)
 fit
 #> Multiblock Bi-Projector object:
@@ -87,6 +91,7 @@ metadata stored in the kernel. Each term becomes a binary (or
 multi-class) decoding problem over the group embedding.
 
 ``` r
+
 targets <- dkge_targets(fit, ~ cond + time)
 length(targets)                      # one target per formula term
 #> [1] 2
@@ -102,11 +107,12 @@ class-specific pattern vectors for the downstream classifier.
 ## Cross-validated decoding
 
 ``` r
+
 cls <- dkge_classify(
   fit,
   targets = targets,
   method  = "lda",     # "lda" (default) or "logit"
-  n_perm  = 199,       # permutation test for significance
+  n_perm  = 0,         # descriptive cross-validated decoding
   seed    = 99
 )
 print(cls)
@@ -115,17 +121,16 @@ print(cls)
 #> Targets: 2
 #> Classifier: lda
 #> Metrics: accuracy, logloss
-#> Permutations: 199
+#> Permutations: 0
 #>   cond: accuracy=1.000, logloss=0.000
-#>     accuracy p=0.005, logloss p=0.005
 #>   time: accuracy=0.500, logloss=0.678
-#>     accuracy p=0.010, logloss p=0.005
 ```
 
 The result is a `dkge_classification` object. Each entry of `$results`
 corresponds to one target:
 
 ``` r
+
 res <- cls$results[["cond"]]
 res$mode       # decoding mode: "cell" for within-subject targets
 #> [1] "cell"
@@ -137,24 +142,53 @@ res$metrics    # cross-validated accuracy and log-loss
 Convert to a tidy data frame for plotting or downstream analysis:
 
 ``` r
+
 df <- as.data.frame(cls)
 head(df)
 #>   target   metric        value p_value n_perm
-#> 1   cond accuracy 1.000000e+00   0.005    199
-#> 2   cond  logloss 9.999779e-13   0.005    199
-#> 3   time accuracy 5.000000e-01   0.010    199
-#> 4   time  logloss 6.781927e-01   0.005    199
+#> 1   cond accuracy 1.000000e+00      NA      0
+#> 2   cond  logloss 9.999779e-13      NA      0
+#> 3   time accuracy 5.000000e-01      NA      0
+#> 4   time  logloss 6.781927e-01      NA      0
 ```
 
 ### Permutation p-values
 
-When `n_perm > 0`, each target gets an empirical p-value from the
-sign-flip max-T permutation distribution:
+The descriptive fit above deliberately sets `n_perm = 0`, so its
+p-values are `NULL`:
 
 ``` r
+
 res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
-#> accuracy  logloss 
-#>    0.005    0.005
+#> NULL
+```
+
+For an inferential fit, preselect one scalar penalty independently and
+provide a callback that reruns the complete data-dependent
+representation and classifier for every randomized label vector. The
+callback must return finite named metrics:
+
+``` r
+
+full_recompute <- function(labels, row_data, target, fit, fold_assignments,
+                           method, mode, lambda, metric, class_weights,
+                           standardize_within_fold) {
+  # Rebuild the DKGE fit, rank choice, folds, target representation, and
+  # classifier from `labels`, then return all metrics requested in `metric`.
+  list(metrics = c(accuracy = recomputed_accuracy))
+}
+
+cls_perm <- dkge_classify(
+  fit,
+  targets = targets,
+  method = "lda",
+  mode = "cell_cross",
+  lambda = 1e-3,       # selected independently of these outcomes
+  metric = "accuracy",
+  n_perm = 199,
+  seed = 99,
+  control = list(randomization_recompute = full_recompute)
+)
 ```
 
 ### Subject-level predictions
@@ -162,6 +196,7 @@ res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
 Individual predictions and fold assignments live in `$row_data`:
 
 ``` r
+
 head(res$row_data[, c("subject_label", "class_label", "fold")])
 #>   subject_label class_label fold
 #> 1          sub1           1    1
@@ -181,6 +216,7 @@ Confusion matrices and class counts per fold are in
 `res$diagnostics$folds`:
 
 ``` r
+
 diag_fold1 <- res$diagnostics$folds[[1]]
 diag_fold1$confusion           # confusion matrix for fold 1
 #>    
@@ -197,17 +233,18 @@ diag_fold1$class_counts_test   # observed class counts in test set
 The `mode` argument controls how the group basis is applied at test
 time:
 
-| Mode           | Basis used                      | Use case                                                 |
-|----------------|---------------------------------|----------------------------------------------------------|
-| `"cell"`       | Global `fit$U`                  | Fast; mild basis-step leakage — `fit$U` saw all subjects |
-| `"cell_cross"` | Fold-specific LOSO `U_fold`     | Fully cross-validated, more conservative                 |
-| `"delta"`      | Global `fit$U` + subject labels | Subject-level binary test; requires `y` argument         |
+| Mode | Basis used | Supported claim |
+|----|----|----|
+| `"cell"` | Global `fit$U` | Transductive performance within this cohort; the basis saw held-out subjects |
+| `"cell_cross"` | Fold-specific LOSO `U_fold` | Prospective held-out-subject performance |
+| `"delta"` | Fold-specific basis + subject labels | Prospective held-out-subject binary test; requires `y` |
 
 `"auto"` (default) selects `"cell"` for within-subject targets and
 `"delta"` for between-subject targets.
 
 ``` r
-# Fully cross-validated basis — recommended for publication-quality results
+
+# Cross-fitted representation for a prospective generalisation claim
 cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
 ```
 
@@ -219,6 +256,7 @@ design matrix and supply a weight matrix that combines them into a
 single class pattern.
 
 ``` r
+
 # 4 effects: A_run1, A_run2, B_run1, B_run2
 make_subject_multi <- function(id) {
   design <- diag(4)
@@ -247,24 +285,27 @@ A plain matrix is accepted directly as `targets` — DKGE wraps it
 automatically:
 
 ``` r
+
 cls_multi <- dkge_classify(fit_multi,
                            targets = W_runs,   # plain matrix dispatch
-                           n_perm  = 99,
+                           mode = "cell_cross",
+                           n_perm  = 0,
                            seed    = 101)
 
 res_multi <- cls_multi$results[[1]]
 res_multi$metrics
 #>     accuracy      logloss 
-#> 1.000000e+00 6.953406e-06
+#> 1.000000e+00 1.172934e-12
 as.data.frame(cls_multi)
 #>    target   metric        value p_value n_perm
-#> 1 target1 accuracy 1.000000e+00    0.01     99
-#> 2 target1  logloss 6.953406e-06    0.01     99
+#> 1 target1 accuracy 1.000000e+00      NA      0
+#> 2 target1  logloss 1.172934e-12      NA      0
 ```
 
-The cross-validation remains unbiased: run averaging happens inside the
-weight matrix, so each LOSO fold observes exactly one pattern per
-condition.
+Run averaging happens inside the weight matrix, so each prospective LOSO
+fold observes exactly one pattern per condition. This example is
+descriptive; an inferential run must use the full-recomputation contract
+shown above.
 
 ## Hyperdesign inputs and fold bridges
 
@@ -276,6 +317,7 @@ and
 flows through the existing pipeline without altering the core solvers.
 
 ``` r
+
 # Pseudocode — requires multidesign package and a user-defined hyperdesign object
 library(multidesign)
 
@@ -311,9 +353,16 @@ methodological consistency.
 sufficient. Use `method = "logit"` with `class_weights = "balanced"`
 when experimental conditions have unequal numbers of trials.
 
-**Permutation testing.** Increase `n_perm` for precise p-values near
-significance thresholds. Set `n_perm = 0` during exploratory analysis to
-skip the permutation loop.
+**Permutation testing.** The beta inferential API requires one
+externally preselected positive scalar `lambda` whenever `n_perm > 0`.
+Observed-data `lambda_grid` and `lambda_fun` selection remain available
+only with `n_perm = 0`; freezing their selected value across
+permutations would invalidate the randomization comparison. For `cell`
+and `cell_cross`, `control$randomization_recompute` must also rebuild
+the DKGE fit, rank choice, folds, representation, and classifier for
+each randomized label vector; the callback returns the requested named
+metrics. Increase `n_perm` for precise p-values near significance
+thresholds, and record how the fixed penalty was selected independently.
 
 **Spatial alignment.** When subjects have different voxel grids, apply
 transport to a common medoid parcellation via

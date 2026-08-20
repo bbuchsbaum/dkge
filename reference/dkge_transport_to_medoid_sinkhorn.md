@@ -1,6 +1,8 @@
 # Transport cluster values to a medoid via entropic Sinkhorn OT
 
-Transport cluster values to a medoid via entropic Sinkhorn OT
+\`dkge_transport_to_medoid_sinkhorn_cpp()\` is a deprecated
+compatibility alias. The main function already uses the compiled
+Sinkhorn backend.
 
 ## Usage
 
@@ -15,8 +17,10 @@ dkge_transport_to_medoid_sinkhorn(
   lambda_spa = 0.5,
   sigma_mm = 15,
   epsilon = 0.05,
-  max_iter = 200,
-  tol = 1e-06,
+  max_iter = 5000L,
+  tol = 1e-04,
+  value_type = c("intensive", "extensive"),
+  warm_start = TRUE,
   transport_cache = NULL
 )
 
@@ -30,8 +34,10 @@ dkge_transport_to_medoid_sinkhorn_cpp(
   lambda_spa = 0.5,
   sigma_mm = 15,
   epsilon = 0.05,
-  max_iter = 300,
-  tol = 1e-06,
+  max_iter = 5000L,
+  tol = 1e-04,
+  value_type = c("intensive", "extensive"),
+  warm_start = TRUE,
   return_plans = FALSE,
   transport_cache = NULL
 )
@@ -71,6 +77,17 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
   Sinkhorn parameters.
 
+- value_type:
+
+  Value semantics. \`"intensive"\` transports field values as
+  target-conditional averages and preserves constants; \`"extensive"\`
+  distributes source totals and preserves their sum.
+
+- warm_start:
+
+  Logical; reuse converged dual variables for an identical cost-and-mass
+  problem.
+
 - transport_cache:
 
   Optional cache returned by \[dkge_prepare_transport()\]. When
@@ -83,5 +100,6 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 ## Value
 
-List containing summary statistics, transported subject maps, and the
-per-subject transport operators.
+List containing summary statistics, transported subject maps, and
+per-subject joint \`plans\`, application \`operators\`, and solver
+\`diagnostics\`.

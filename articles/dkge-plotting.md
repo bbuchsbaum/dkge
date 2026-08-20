@@ -27,6 +27,7 @@ function.
 ## Prerequisites
 
 ``` r
+
 library(dkge)
 library(ggplot2)
 library(patchwork)
@@ -48,6 +49,7 @@ avoids dependencies on specialised simulators while still providing
 deterministic ground truth for the plots.
 
 ``` r
+
 q <- 4L   # number of effects
 P <- 30L  # clusters (voxels) per subject
 S <- 8L   # subjects
@@ -77,9 +79,10 @@ Here we synthesise lightweight placeholders so the plots remain
 deterministic.
 
 To illustrate subspace stability we create a few perturbed versions of
-the fitted basis and re-orthonormalise them in the $K$-metric.
+the fitted basis and re-orthonormalise them in the $`K`$-metric.
 
 ``` r
+
 # In practice you can retrieve per-fold bases from
 # dkge_contrast(..., align = TRUE)$metadata$bases.
 # Here we synthesise a few perturbations for illustration.
@@ -100,6 +103,7 @@ placeholder vectors with actual Haufe or LOCO results computed from your
 fitted model.
 
 ``` r
+
 fake_haufe <- list(mean_anchor = rnorm(30))
 fake_loco  <- list(loco_anchor = rexp(30))
 ```
@@ -109,6 +113,7 @@ fake_loco  <- list(loco_anchor = rexp(30))
 ### Scree
 
 ``` r
+
 # For illustrative purposes we annotate the scree at component 3.
 # In a real analysis you would obtain this optimal rank from dkge_cv_rank_loso()
 # or dkge_cv_kernel_rank() cross-validation procedures.
@@ -121,6 +126,7 @@ dkge_plot_scree(fit, one_se_pick = one_se_pick)
 ### Effect-space loadings
 
 ``` r
+
 dkge_plot_effect_loadings(fit, comps = 1:3, zscore = TRUE)
 ```
 
@@ -141,6 +147,7 @@ on the right shows how much norm (“energy”) each subject contributes to
 the selected components after those weights have been applied.
 
 ``` r
+
 contrib <- dkge_plot_subject_contrib(fit, comps = 1:3)
 contrib$weights + contrib$energy + patchwork::plot_layout(widths = c(1, 2))
 ```
@@ -151,12 +158,13 @@ contrib$weights + contrib$energy + patchwork::plot_layout(widths = c(1, 2))
 
 This diagnostic compares each cross-validated basis (or synthetic
 perturbation here) against a consensus basis by computing principal
-angles in the $K$ metric. Smaller angles mean that a base reproduces the
-consensus component more closely, so parallel lines near zero indicate a
-stable subspace, whereas large excursions highlight folds or components
-that deviate materially.
+angles in the $`K`$ metric. Smaller angles mean that a base reproduces
+the consensus component more closely, so parallel lines near zero
+indicate a stable subspace, whereas large excursions highlight folds or
+components that deviate materially.
 
 ``` r
+
 dkge_plot_subspace_stability(bases, K = fit[['K']], labels = base_labels)
 ```
 
@@ -174,6 +182,7 @@ materially support the fit. Together they provide a bridge between
 latent structure and spatial attribution.
 
 ``` r
+
 panels <- dkge_plot_info_anchor(info_haufe = fake_haufe,
                                 info_loco = fake_loco,
                                 top = 5)
@@ -185,6 +194,7 @@ panels$haufe + panels$loco
 ## The “Five Fundamentals” dashboard
 
 ``` r
+
 dkge_plot_suite(fit,
                 one_se_pick = one_se_pick,
                 comps = 1:3,
@@ -212,6 +222,7 @@ dashboard remains structurally sound.
 ## Saving the dashboard
 
 ``` r
+
 dkge_plot_suite(fit,
                 bases = bases,
                 consensus = fit[['U']],

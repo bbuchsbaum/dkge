@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>DKGE versus Partial Least Squares • dkge</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="DKGE versus Partial Least Squares">
 </head>
@@ -41,6 +41,9 @@
     <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: Kernels, Inference, and What the Method Actually Does</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
@@ -58,6 +61,7 @@
     <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -80,7 +84,7 @@
       <h1>DKGE versus Partial Least Squares</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-vs-pls.Rmd" class="external-link"><code>vignettes/dkge-vs-pls.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-vs-pls.Rmd" class="external-link"><code>vignettes/dkge-vs-pls.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-vs-pls.Rmd</code></div>
     </div>
 
@@ -110,7 +114,7 @@ spatiotemporal PLS treats space × time jointly for fMRI/ERP/MEG
 data.</p>
 <p>The <strong>computational workflow</strong> follows a systematic
 sequence of steps: 1. Data are arranged as a single matrix
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mo>∈</mo><msup><mi>ℝ</mi><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>×</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>m</mi><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow></msup></mrow><annotation encoding="application/x-tex">M \in \mathbb{R}^{(n k) \times (m t)}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mo>∈</mo><msup><mi>ℝ</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mi>k</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">M \in \mathbb{R}^{(n k) \times (m t)}</annotation></semantics></math>
 with observations nested inside conditions. 2. Cross-block covariance is
 formed with an orthonormal design matrix, followed by singular value
 decomposition
@@ -221,7 +225,7 @@ equally.
 <td>
 Row standardisation of subject betas using the pooled design Cholesky
 factor; optional spatial/reliability weights
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Ω</mi><mi>s</mi></msub><annotation encoding="application/x-tex">\Omega_s</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi mathvariant="normal">Ω</mi><mi>s</mi></msub><annotation encoding="application/x-tex">\Omega_s</annotation></semantics></math>.
 </td>
 </tr>
 <tr>
@@ -362,7 +366,7 @@ multi-subject neuroimaging studies require.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

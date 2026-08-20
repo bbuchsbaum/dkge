@@ -24,6 +24,10 @@ dkge(
   weights = NULL,
   kernel = NULL,
   omega = NULL,
+  effect_weights = NULL,
+  debias = c("none", "analytic", "split_half"),
+  effect_scaling = c("pooled_design", "none"),
+  effects = NULL,
   ...
 )
 ```
@@ -110,6 +114,29 @@ dkge(
 
   Deprecated. Use \`Omega_list\` instead.
 
+- effect_weights:
+
+  Optional \[dkge_effect_weights()\] specification for subject-by-effect
+  count or precision weighting.
+
+- debias:
+
+  Effect-moment estimator passed to \[dkge_fit()\]: observed
+  (\`"none"\`), analytic finite-trial subtraction (\`"analytic"\`), or a
+  split-half cross-moment (\`"split_half"\`).
+
+- effect_scaling:
+
+  Effect-space scaling passed to \[dkge_fit()\]. Use \`"none"\` when
+  input rows already share an absolute scale, such as AUC-minus-chance
+  cell maps.
+
+- effects:
+
+  Optional character vector pinning the global effect order, forwarded
+  to \[dkge_data()\]. Ignored (and checked for agreement) when \`betas\`
+  is already a \`dkge_data\` bundle.
+
 - ...:
 
   Additional arguments forwarded to \[dkge_fit()\] (e.g. \`rank\`,
@@ -135,14 +162,14 @@ smoothness or coupling between design effects.
 DKGE itself operates entirely in this low-dimensional design space: (1)
 the pooled Gram matrix across subjects yields a shared Cholesky factor
 \`R\`; (2) each beta matrix is row-standardised; (3) compressed
-covariance is accumulated in the K-metric with optional subject
-weighting; and (4) a tiny eigenproblem produces the K-orthonormal group
-basis. The input harmonisation performed by this wrapper ensures
-consistent effect naming, subject identifiers, and spatial weights so
-downstream utilities such as \[dkge_loso_contrast()\] can work without
-additional bookkeeping. Use \[dkge_subject()\] to build subjects from
-raw matrices, \`NeuroVec\`, or \`ClusteredNeuroVec\` sources prior to
-calling \`dkge()\`.
+covariance is accumulated in the K-metric with optional subject and
+effect weighting; and (4) a tiny symmetric eigenproblem produces the
+K-orthonormal group basis. The input harmonisation performed by this
+wrapper ensures consistent effect naming, subject identifiers, and
+spatial weights so downstream utilities such as \[dkge_loso_contrast()\]
+can work without additional bookkeeping. Use \[dkge_subject()\] to build
+subjects from raw matrices, \`NeuroVec\`, or \`ClusteredNeuroVec\`
+sources prior to calling \`dkge()\`.
 
 ## See also
 

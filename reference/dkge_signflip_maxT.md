@@ -12,8 +12,9 @@ each subject's value.
 dkge_signflip_maxT(
   Y,
   B = 2000,
-  center = c("mean", "median"),
-  tail = c("two.sided", "greater", "less")
+  center = "mean",
+  tail = c("two.sided", "greater", "less"),
+  flips = NULL
 )
 ```
 
@@ -30,13 +31,25 @@ dkge_signflip_maxT(
 
 - center:
 
-  "mean" or "median" for the location statistic (t uses mean)
+  Location statistic. The beta API supports only \`"mean"\`, matching
+  the one-sample t statistic used for observed and randomized data.
 
 - tail:
 
   "two.sided" \| "greater" \| "less"
 
+- flips:
+
+  Optional precomputed S-by-B matrix of -1/+1 signs. This is an advanced
+  reproducibility hook used to make serial and parallel execution
+  consume exactly the same randomization descriptors.
+
 ## Value
 
-list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector),
-flips (SxB signs)
+A list with fields: \`stat\` (Q-vector of observed t-statistics), \`p\`
+(Q-vector of max-T family-wise-error adjusted p-values), \`p_unadj\`
+(Q-vector of per-column unadjusted permutation p-values), \`maxnull\`
+(B-vector of permutation maximum statistics), and \`flips\` (S-by-B sign
+matrix). Statistic and p-value names follow \`colnames(Y)\` (or stable
+\`feature\*\` defaults); flip rows follow \`rownames(Y)\` (or
+\`subject\*\` defaults).

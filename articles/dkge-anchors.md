@@ -16,6 +16,7 @@ We will:
 3.  evaluate cross-fitted contrasts that operate in the anchor basis.
 
 ``` r
+
 library(dkge)
 library(Matrix)
 set.seed(1)
@@ -29,6 +30,7 @@ subject-specific beta maps by projecting the item responses through SVD
 loadings and adding gaussian noise.
 
 ``` r
+
 # Number of latent anchors and feature dimension
 d <- 20L
 anchors_true <- matrix(rnorm(4 * d), 4, d)
@@ -66,6 +68,7 @@ records both the anchor configuration and the DKGE options to be used
 after congruence.
 
 ``` r
+
 anchor_input <- dkge_input_anchor(
   features_list = features_list,
   K_item_list = K_item_list,
@@ -82,6 +85,7 @@ standard fitter. The resulting object is a regular `dkge` fit containing
 the anchor provenance.
 
 ``` r
+
 fit_anchor <- dkge_fit_from_input(anchor_input)
 fit_anchor
 #> Multiblock Bi-Projector object:
@@ -103,6 +107,7 @@ Contrasts are vectors over the anchor index. For illustration we
 consider the first latent axis and compute LOSO contrasts.
 
 ``` r
+
 contrast_vec <- rep(0, fit_anchor$provenance$anchors$L)
 contrast_vec[1] <- 1
 
@@ -113,20 +118,20 @@ res_contrast$values$anchor1
 #> $s1
 #>  [1]  0.8578792172  0.1872228773 -0.0575353725  0.0210228694  0.0040815713
 #>  [6]  0.0026493434  0.0084611867  0.0060824492 -0.0036419263 -0.0071511478
-#> [11]  0.0020458780  0.0051067140  0.0017552751  0.0019931698 -0.0007561988
+#> [11]  0.0020458780 -0.0051067140  0.0017552751  0.0019931698 -0.0007561988
 #> [16]  0.0008524834
 #> 
 #> $s2
 #>  [1]  0.6501518261  0.0408124609  0.0263281662 -0.0020778356  0.0214882891
 #>  [6] -0.0063855690  0.0001019468  0.0048395348 -0.0024434787 -0.0009357923
-#> [11] -0.0032645685  0.0008471532  0.0003527032 -0.0011270490  0.0016957389
+#> [11]  0.0032645685 -0.0008471532  0.0003527032 -0.0011270490 -0.0016957389
 #> [16]  0.0031749291
 #> 
 #> $s3
 #>  [1]  0.7341606369  0.0011397863  0.1100017265 -0.0159284837  0.0019253123
-#>  [6]  0.0105681143 -0.0110783417  0.0204310852 -0.0192341142 -0.0088613586
+#>  [6]  0.0105681143 -0.0110783417  0.0204310852 -0.0192341142  0.0088613586
 #> [11]  0.0107199583  0.0040217500 -0.0039543365  0.0025623464  0.0002294024
-#> [16] -0.0010917674
+#> [16]  0.0010917674
 ```
 
 ## Using the pipeline helper
@@ -138,6 +143,7 @@ services (contrasts, classification, inference, transport) operate
 exactly as with design-level inputs.
 
 ``` r
+
 pipeline_res <- dkge_pipeline(input = anchor_input,
                                contrasts = list(anchor1 = contrast_vec),
                                method = "analytic",
@@ -147,7 +153,7 @@ summary(pipeline_res$contrasts)
 #> values     1     -none- list     
 #> method     1     -none- character
 #> contrasts  1     -none- list     
-#> metadata  13     -none- list
+#> metadata  14     -none- list
 ```
 
 ## Classification targets
@@ -163,6 +169,7 @@ and
 turn feature-space prototypes or directions into the required matrices.
 
 ``` r
+
 anchors_mat <- fit_anchor$provenance$anchors$anchors
 proto_list <- list(
   classA = anchors_mat[c(1, 2), , drop = FALSE],
@@ -200,6 +207,7 @@ whether the median heuristic and chosen number of anchors provide
 adequate coverage across subjects.
 
 ``` r
+
 dkge_anchor_diagnostics(fit_anchor)
 #> $summary
 #> $summary$method

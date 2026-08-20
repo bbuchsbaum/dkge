@@ -7,7 +7,7 @@ weighting) to a subject's beta matrix.
 ## Usage
 
 ``` r
-dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL)
+dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL, subject = NULL)
 ```
 
 ## Arguments
@@ -28,6 +28,13 @@ dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL)
 - w_s:
 
   Optional subject-level weight (defaults to 1 when omitted).
+
+- subject:
+
+  Optional training-subject index or id. Required when the fit carries
+  non-trivial voxel weights, so the matching
+  \`fit\$voxel_weights_subject\` / \`fit\$voxel_weights\` profile can be
+  applied.
 
 ## Value
 

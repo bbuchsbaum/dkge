@@ -5,11 +5,23 @@ that respects the experimental design. This vignette walks through the
 core pipeline: data prep → fit → component inspection → inference →
 bootstrap.
 
+> **Before you fit.** If you are new to DKGE, read
+> [`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
+> first. It covers what DKGE actually decomposes (it eigendecomposes
+> $`K^{1/2} C K^{1/2}`$, so the kernel is a metric, not a basis), why
+> identity-$`K`$ is the unconstrained baseline that structured kernels
+> should be compared against, and the three levels at which DKGE
+> supports inference (component, contrast, feature). The choices made
+> below — `K = diag(q)`, `method = "loso"`,
+> [`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md)
+> — map directly onto those concepts.
+
 ## Data preparation
 
 Three subjects, three design effects, four spatial clusters each:
 
 ``` r
+
 S <- 3; q <- 3; P <- 4; T <- 30
 
 betas   <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
@@ -32,6 +44,7 @@ harmonises effect ordering and subject IDs across the list.
 ## Fitting
 
 ``` r
+
 fit <- dkge(data_bundle, K = diag(data_bundle$q), rank = 2)
 fit$centroids <- centroids  # convenience: attach for transport helpers; pass explicitly in production
 
@@ -50,6 +63,7 @@ for structured factorial designs.
 Cluster-wise loadings on the first component for each subject:
 
 ``` r
+
 loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
 lapply(loadings, function(A) round(A[, 1, drop = FALSE], 3))
 #> [[1]]
@@ -86,27 +100,35 @@ transports loadings to a shared medoid parcellation and returns test
 statistics with FDR adjustment:
 
 ``` r
+
 comp <- dkge_component_stats(
   fit,
-  mapper     = list(strategy = "sinkhorn", epsilon = 0.05, lambda_spa = 0.5),
+  mapper     = dkge_mapper_spec("sinkhorn", epsilon = 0.05,
+                                lambda_spa = 0.5, max_iter = 2000,
+                                tol = 1e-4),
   centroids  = centroids,
   inference  = list(type = "parametric"),
   medoid     = 1L
 )
 head(comp$summary)
-#>   component cluster       stat         p     p_adj significant
-#> 1         1       1 -1.4591757 0.2819165 0.5634129       FALSE
-#> 2         1       2  0.6948130 0.5590391 0.5634129       FALSE
-#> 3         2       1 -0.6862882 0.5634129 0.5634129       FALSE
-#> 4         2       2  1.0197970 0.4151049 0.5634129       FALSE
+#>   component cluster       stat          p     p_adj significant
+#> 1         1       1 -1.8820080 0.20055240 0.4812961       FALSE
+#> 2         1       2  1.1741750 0.36120890 0.5276625       FALSE
+#> 3         1       3 -0.4819917 0.67740195 0.7741737       FALSE
+#> 4         1       4  3.9565846 0.05834463 0.2333785       FALSE
+#> 5         2       1 -0.2562537 0.82170462 0.8217046       FALSE
+#> 6         2       2  1.0724787 0.39574689 0.5276625       FALSE
 ```
 
-`comp$transport` holds subject × medoid matrices after alignment;
-`comp$statistics` holds raw component vectors.
+`comp$summary` has one row per (component, medoid cluster) pair.
+`comp$transport[[k]]` is the subject × medoid-cluster matrix for
+component `k` after alignment; `comp$statistics` holds the raw component
+vectors.
 
 ## Mapping to voxel space
 
 ``` r
+
 voxels          <- replicate(S, matrix(runif(10 * 3, -20, 20), 10, 3), simplify = FALSE)
 component_values <- lapply(loadings, function(A) A[, 1])
 
@@ -115,7 +137,7 @@ voxel_maps <- dkge_transport_to_voxels(fit,
 round(voxel_maps$value, 3)
 ```
 
-`voxel_maps$value` is the group-average consensus map;
+`voxel_maps$value` is the coordinate-wise group-median consensus map;
 `voxel_maps$subj_values` preserves per-subject interpolations.
 
 ## Bootstrap inference
@@ -124,7 +146,13 @@ Cache the transport operators once; reuse them across all bootstrap
 draws:
 
 ``` r
-cache <- dkge_prepare_transport(fit, centroids = centroids, medoid = 1)
+
+cache <- dkge_prepare_transport(
+  fit,
+  centroids = centroids,
+  mapper = dkge_mapper_spec("sinkhorn", max_iter = 2000, tol = 1e-4),
+  medoid = 1
+)
 values_medoid <- lapply(seq_len(nrow(comp$transport[[1]])),
                         function(i) comp$transport[[1]][i, ])
 
@@ -136,9 +164,9 @@ boot_q <- dkge_bootstrap_qspace(fit, contrasts = c(1, -1, 0), B = 200,
                                 transport_cache = cache, medoid = 1, seed = 99)
 
 boot_proj$medoid$sd[1]
-#> [1] 0.3662273
-boot_q$summary[[1]]$medoid$sd[1]
-#> NULL
+#> [1] 0.4805996
+boot_q$summary[[1]]$sd[1]
+#> [1] 0.6202189
 ```
 
 [`dkge_bootstrap_analytic()`](https://bbuchsbaum.github.io/dkge/reference/dkge_bootstrap_analytic.md)
@@ -147,10 +175,10 @@ thousands of draws are needed.
 
 ## Where next?
 
-| Task                      | Function                                                                                                                                                                                       |
-|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Hypothesis contrasts      | [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md), [`dkge_pipeline()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pipeline.md)                           |
-| Out-of-sample scoring     | [`dkge_project_blocks()`](https://bbuchsbaum.github.io/dkge/reference/dkge_project_blocks.md)                                                                                                  |
-| Structured design kernels | [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md)                                                                                                              |
+| Task | Function |
+|----|----|
+| Hypothesis contrasts | [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md), [`dkge_pipeline()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pipeline.md) |
+| Out-of-sample scoring | [`dkge_project_blocks()`](https://bbuchsbaum.github.io/dkge/reference/dkge_project_blocks.md) |
+| Structured design kernels | [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md) |
 | Classification / decoding | [`dkge_classify()`](https://bbuchsbaum.github.io/dkge/reference/dkge_classify.md) — see [`vignette("dkge-classification")`](https://bbuchsbaum.github.io/dkge/articles/dkge-classification.md) |
-| Inference details         | [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)                                                                               |
+| Inference details | [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md) |

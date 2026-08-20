@@ -21,7 +21,9 @@ dkge_k_orthonormalize(W, K, Kroots = NULL)
 
 - Kroots:
 
-  optional precomputed kernel roots from \`.dkge_kernel_roots\`
+  Optional precomputed kernel roots retained for API compatibility.
+  Orthonormalization is computed from the exact Gram matrix \`t(W) into
+  artificial metric dimensions.
 
 ## Value
 

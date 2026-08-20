@@ -22,9 +22,10 @@ dkge_mapper(type = c("knn", "sinkhorn", "ridge", "gw"), ...)
 
 - type:
 
-  Mapper backend identifier: \`"knn"\` (barycentric kNN, fully
-  implemented), \`"sinkhorn"\` (OT over point clouds), \`"ridge"\`, or
-  \`"gw"\` (Gromov-Wasserstein; latter three require external plugins).
+  Mapper backend identifier: \`"knn"\` (barycentric kNN), \`"sinkhorn"\`
+  (OT over point clouds), \`"ridge"\`, \`"gw"\`, or a custom identifier
+  whose \`fit_mapper.dkge_mapper\_\<type\>()\` method is supplied by an
+  extension. The ridge and Gromov-Wasserstein backends require plugins.
 
 - ...:
 

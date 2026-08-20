@@ -41,8 +41,9 @@ dkge_classification_spec(
 - mode:
 
   Decoding mode passed to \[dkge_classify()\]: "auto" selects
-  automatically, "cell" uses per-cell embeddings, "cell_cross" uses
-  cross-validated per-cell embeddings, and "delta" uses pairwise deltas.
+  automatically, "cell" uses a transductive global-basis embedding,
+  "cell_cross" uses prospective cross-fitted per-cell embeddings, and
+  "delta" uses pairwise deltas.
 
 - ...:
 

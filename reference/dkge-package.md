@@ -7,7 +7,11 @@ contrasts, and transport utilities.
 
 Useful links:
 
+- <https://bbuchsbaum.github.io/dkge/>
+
 - <https://github.com/bbuchsbaum/dkge>
+
+- Report bugs at <https://github.com/bbuchsbaum/dkge/issues>
 
 ## Author
 

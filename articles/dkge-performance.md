@@ -8,6 +8,7 @@ improve computational performance.
 ## Mapper Factory Recap
 
 ``` r
+
 library(dkge)
 dkge_mapper("knn", k = 8, sigx = 3)
 #> $method
@@ -44,79 +45,60 @@ dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1, lambda_feat = 0)
 
 The
 [`dkge_mapper()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper.md)
-function creates a mapper configuration that stores the backend
-parameters for your chosen transport method. When you call
-[`fit_mapper()`](https://bbuchsbaum.github.io/dkge/reference/fit_mapper.md)
-on this configuration, it produces subject-specific transport plans that
-include cached computational state, enabling efficient reuse across
-multiple mapping operations.
+function configures the dense spatial pipeline. A fitted Sinkhorn mapper
+keeps the joint plan, the target-conditional application operator, and
+convergence diagnostics. Reusing that fitted object makes later
+[`apply_mapper()`](https://bbuchsbaum.github.io/dkge/reference/apply_mapper.md)
+calls matrix multiplications rather than new OT solves.
 
 ## Speed Comparison
 
 ``` r
-S <- 3; q <- 3; P <- 200
-centroids <- replicate(S, matrix(rnorm(P * 3), P, 3), simplify = FALSE)
-anchors <- matrix(rnorm(1500 * 3), 1500, 3)
-values <- lapply(seq_len(S), function(s) rnorm(P))
 
-knn_mapper <- dkge_mapper("knn", k = 12, sigx = 5)
-knn_fit <- lapply(seq_len(S), function(s) fit_mapper(knn_mapper, centroids[[s]], anchors))
-
-sink_mapper <- dkge_mapper("sinkhorn", epsilon = 0.02, lambda_xyz = 1)
-sink_fit <- lapply(seq_len(S), function(s) fit_mapper(sink_mapper, centroids[[s]], anchors))
-
-microbenchmark::microbenchmark(
-  knn = lapply(seq_len(S), function(s) apply_mapper(knn_fit[[s]], values[[s]])),
-  sinkhorn = lapply(seq_len(S), function(s) apply_mapper(sink_fit[[s]], values[[s]])),
-  times = 10L
-)
-#> Unit: microseconds
-#>      expr  min   lq mean median   uq   max neval
-#>       knn  331  336  569    379  433  2297    10
-#>  sinkhorn 5173 5245 7928   8314 9366 10799    10
+knitr::kable(performance, digits = 5)
 ```
 
-The performance characteristics of these two mapping approaches differ
-significantly. kNN mapping operates through purely local neighborhoods
-and scales linearly with the number of neighbors `k`, making it
-computationally efficient for most applications. In contrast, Sinkhorn
-mapping offers greater expressiveness by supporting feature-based costs
-and soft matching between points, but this flexibility comes with
-increased computational overhead. However, the optimized C++ solver
-implementation with warm start capabilities makes repeated Sinkhorn
-calls much more tractable for iterative analyses.
+| stage | mapper   | seconds_per_call |
+|:------|:---------|-----------------:|
+| fit   | kNN      |          0.00100 |
+| fit   | Sinkhorn |          0.00300 |
+| apply | kNN      |          0.00007 |
+| apply | Sinkhorn |          0.00017 |
+
+The table separates the solve from application. kNN fitting constructs
+local neighbourhoods; Sinkhorn fitting constructs a dense cost matrix
+and iterates to match both marginals, so its fit is usually the
+expensive stage. Once fitted, both backends reuse their mappings.
+Measure both stages at your own parcel and anchor counts rather than
+extrapolating from apply-only timings.
 
 ## Warm Starts and Dual Caching
 
-The example below calls `dkge:::sinkhorn_plan_cpp()`, an **internal**
-C++ function. It is shown here for illustration only — the DKGE pipeline
-manages warm starts automatically through its renderer objects. Do not
-rely on this function’s signature in production code; use
-[`fit_mapper()`](https://bbuchsbaum.github.io/dkge/reference/fit_mapper.md)
-/
-[`apply_mapper()`](https://bbuchsbaum.github.io/dkge/reference/apply_mapper.md)
-instead.
+DKGE caches duals only after a solve satisfies its requested marginal
+tolerance. The key includes every cost and mass entry, so warm starts
+cannot cross between merely similar problems. The cache is
+process-local; fitted renderer objects store plans and operators, not
+dual vectors.
 
 ``` r
-C <- as.matrix(dist(anchors[1:200, ]))
-mu <- rep(1/nrow(C), nrow(C))
-nu <- rep(1/ncol(C), ncol(C))
-# Internal C++ entry point — exposed here for illustration only
-res1 <- dkge:::sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7)
-res2 <- dkge:::sinkhorn_plan_cpp(C, mu, nu, epsilon = 0.05, max_iter = 400, tol = 1e-7,
-                                 log_u_init = res1$log_u, log_v_init = res1$log_v)
-res1$iterations
-res2$iterations
+
+dkge_clear_sinkhorn_cache()
+cached_mapper <- dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1)
+cold_fit <- fit_mapper(cached_mapper, centroids, anchors)
+warm_fit <- fit_mapper(cached_mapper, centroids, anchors)
+
+rbind(
+  cold = unlist(cold_fit$stats$diagnostics[c("iterations", "cache_hit")]),
+  repeated = unlist(warm_fit$stats$diagnostics[c("iterations", "cache_hit")])
+)
+#>          iterations cache_hit
+#> cold             10         0
+#> repeated          0         1
 ```
 
-The second optimization run converges significantly faster because it
-leverages the saved dual variables from the previous computation. This
-warm start mechanism is automatically handled by the DKGE rendering
-pipeline, which stores these dual variables in the renderer object for
-subsequent use. When working directly with the lower-level
-`sinkhorn_plan_cpp()` function for experimentation, you can manually
-provide these initialization values to achieve similar performance
-gains.
+For this exact repeat, the cached converged plan is returned with zero
+new iterations. If you request a tighter tolerance, DKGE instead uses
+the cached duals as an initialization and continues solving.
 
 ## Adding Custom Mappers
 
@@ -126,19 +108,27 @@ convention recognized by
 [`dkge_mapper()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper.md).
 
 ``` r
-fit_mapper.dkge_mapper_mytransport <- function(mapper, subj_points, anchor_points, ...) {
-  # return object with class 'dkge_mapper_fit_mytransport'
+
+fit_mapper.dkge_mapper_mytransport <- function(mapper, subj_points,
+                                                anchor_points, ...) {
+  structure(list(Q = nrow(anchor_points)),
+            class = "dkge_mapper_fit_mytransport")
 }
 
 apply_mapper.dkge_mapper_fit_mytransport <- function(fitted_mapper, values, ...) {
-  # return length(anchor_points) vector
+  rep(mean(values), fitted_mapper$Q)
 }
+
+custom <- dkge_mapper("mytransport")
+custom_fit <- fit_mapper(custom, centroids, anchors)
+head(apply_mapper(custom_fit, values))
+#> [1] 0.172 0.172 0.172 0.172 0.172 0.172
 ```
 
-As long as you maintain consistent output dimensions that match the
-expected anchor point structure, DKGE will seamlessly integrate your
-custom mapper into the existing analysis pipeline without requiring
-additional configuration.
+The constructor accepts the custom identifier and S3 dispatch finds the
+two methods. A renderer-compatible extension must also validate the
+standard point inputs and return one value per anchor, as this example
+does.
 
 ## Practical Guidance
 
@@ -155,8 +145,7 @@ tune the `epsilon` parameter upward to achieve faster convergence and
 smoother transport plans, though this comes with a trade-off in matching
 precision.
 
-To maximize computational efficiency across multiple analyses, make sure
-to reuse renderer objects when performing bootstraps or computing
-contrasts. This practice allows you to exploit the cached dual variables
-and avoid the computational overhead of recomputing transport plans from
-scratch.
+For repeated maps, reuse renderer or fitted-mapper objects so the
+already-solved plans and application operators are retained. Warm-start
+caching is most useful when an identical fit is requested again; check
+`stats$diagnostics` instead of assuming that a cache was used.

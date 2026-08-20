@@ -12,15 +12,18 @@ dkge_transport_spec(
   centroids,
   sizes = NULL,
   medoid = 1L,
-  method = c("sinkhorn", "sinkhorn_cpp", "knn"),
+  method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
   mapper = NULL,
   epsilon = 0.05,
-  max_iter = 200L,
-  tol = 1e-06,
+  max_iter = 5000L,
+  tol = 1e-04,
   lambda_emb = 1,
   lambda_spa = 0.5,
   sigma_mm = 15,
   lambda_size = 0,
+  value_type = c("intensive", "extensive"),
+  warm_start = TRUE,
+  provenance = NULL,
   ...
 )
 ```
@@ -75,6 +78,21 @@ dkge_transport_spec(
 - lambda_size:
 
   Weight on size regularisation between clusters.
+
+- value_type:
+
+  Semantics of transported values: \`"intensive"\` preserves constant
+  fields; \`"extensive"\` preserves the sum of source totals.
+
+- warm_start:
+
+  Reuse converged Sinkhorn duals for identical problems.
+
+- provenance:
+
+  Optional \[dkge_transport_provenance()\] declaration. When omitted,
+  loading-derived transport is marked descriptive and \[dkge_infer()\]
+  will reject it rather than assume inferential validity.
 
 - ...:
 

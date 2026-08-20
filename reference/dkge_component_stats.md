@@ -92,8 +92,12 @@ res <- dkge_component_stats(fit,
                             inference = "parametric",
                             components = 1)
 head(res$summary)
-#>   component cluster      stat         p     p_adj significant
-#> 1         1       1 -2.284142 0.1497717 0.1497717       FALSE
-#> 2         1       1 -2.645039 0.1181357 0.1497717       FALSE
+#>   component cluster       stat           p      p_adj significant
+#> 1         1       1   2.475140 0.131733897 0.14114346       FALSE
+#> 2         1       2   2.061469 0.175389568 0.17538957       FALSE
+#> 3         1       3   4.964777 0.038256630 0.05738495       FALSE
+#> 4         1       4   6.560291 0.022455895 0.03750143        TRUE
+#> 5         1       5 -15.980768 0.003892808 0.03750143        TRUE
+#> 6         1       6  11.387447 0.007623576 0.03750143        TRUE
 # }
 ```

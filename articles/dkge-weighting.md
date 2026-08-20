@@ -42,8 +42,9 @@ function.
 The second layer involves **subject weights (`w_method`, `w_tau`)**,
 which rescale entire subject blocks based on their energy measured in
 the K-metric. This layer offers Multiple Factor Analysis style scaling
-(`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`)
-schemes, alongside options for manual weight overrides.
+(`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`). Pass a
+numeric `weights` vector only when you already have subject-level masses
+from outside this fit.
 
 The third layer comprises **transport weights (`sizes`)**, which shape
 the optimal-transport alignment process when producing consensus maps.
@@ -62,6 +63,7 @@ heterogeneity makes the effects of different weighting approaches
 readily apparent during inspection.
 
 ``` r
+
 library(dkge)
 library(purrr)
 set.seed(42)
@@ -79,7 +81,11 @@ designs <- map(seq_len(S), function(s) {
 
 centroids <- map(P, ~ matrix(runif(.x * 3, min = -20, max = 20), .x, 3))
 cluster_sizes <- map(P, ~ sample(10:40, .x, replace = TRUE))
-reliability_scores <- map(P, ~ runif(.x, min = 0.4, max = 1))
+reliability_scores <- list(
+  rep(0.95, P[1]),
+  rep(0.20, P[2]),  # subject 2 is the deliberately low-reliability block
+  rep(0.80, P[3])
+)
 ```
 
 In this simulation, the `cluster_sizes` vectors serve as proxies for
@@ -91,6 +97,7 @@ assessments commonly used in neuroimaging analyses.
 ## Baseline Fit (No Spatial Weights)
 
 ``` r
+
 data_equal <- dkge_data(betas, designs = designs)
 k_identity <- diag(data_equal$q)
 
@@ -112,15 +119,17 @@ contribution of larger parcels while maintaining a diagonal information
 structure that preserves the independence assumption between clusters.
 
 ``` r
+
 omega_size <- cluster_sizes
 
 fit_size <- dkge(data_equal,
                  K = k_identity,
                  Omega_list = omega_size,
                  rank = 2,
-                 w_method = "none")
+                 w_method = "mfa_sigma1",
+                 w_tau = 0.25)
 fit_size$weights
-#> [1] 1 1 1
+#> [1] 0.732 1.218 1.049
 ```
 
 Since the subject blocks now differ in their total weighted energy due
@@ -130,34 +139,35 @@ component, we can observe how the loadings are systematically rebalanced
 to favor larger parcels:
 
 ``` r
+
 size_loadings <- lapply(fit_size$Btil, function(Bts) t(Bts) %*% fit_size$K %*% fit_size$U)
 map(size_loadings, ~ round(.x[, 1, drop = FALSE], 3))
 #> [[1]]
 #>             [,1]
-#> cluster_1 -0.544
-#> cluster_2 -2.319
-#> cluster_3 -1.859
-#> cluster_4  1.394
-#> cluster_5  6.112
-#> cluster_6  2.226
+#> cluster_1  0.661
+#> cluster_2  2.439
+#> cluster_3  1.978
+#> cluster_4 -1.359
+#> cluster_5 -5.871
+#> cluster_6 -1.961
 #> 
 #> [[2]]
 #>             [,1]
-#> cluster_1 -1.083
-#> cluster_2 -0.114
-#> cluster_3 -1.565
-#> cluster_4  4.466
-#> cluster_5 -1.239
+#> cluster_1  1.120
+#> cluster_2  0.248
+#> cluster_3  1.681
+#> cluster_4 -4.505
+#> cluster_5  1.341
 #> 
 #> [[3]]
 #>             [,1]
-#> cluster_1  2.182
-#> cluster_2 -1.049
-#> cluster_3 -1.295
-#> cluster_4  3.950
-#> cluster_5 -0.156
-#> cluster_6 -0.587
-#> cluster_7  0.437
+#> cluster_1 -2.295
+#> cluster_2  0.966
+#> cluster_3  1.208
+#> cluster_4 -4.167
+#> cluster_5  0.178
+#> cluster_6  0.420
+#> cluster_7 -0.617
 ```
 
 ## Reliability Weighting
@@ -170,21 +180,51 @@ straightforward Hadamard (element-wise) product of the respective weight
 vectors.
 
 ``` r
+
 omega_reliability <- map2(cluster_sizes, reliability_scores, `*`)
 
 fit_reliability <- dkge(data_equal,
                         K = k_identity,
                         Omega_list = omega_reliability,
                         rank = 2,
-                        w_method = "none")
-fit_reliability$weights
-#> [1] 1 1 1
+                        w_method = "mfa_sigma1",
+                        w_tau = 0.25)
+
+weight_comparison <- rbind(
+  size = fit_size$weights,
+  size_x_reliability = fit_reliability$weights
+)
+round(weight_comparison, 3)
+#>                     [,1] [,2]  [,3]
+#> size               0.732 1.22 1.049
+#> size_x_reliability 0.430 1.97 0.604
+
+weighted_contribution_norm <- function(fit) {
+  fit$weights * vapply(
+    fit$contribs,
+    function(x) sqrt(sum(x * x)),
+    numeric(1)
+  )
+}
+leverage_comparison <- rbind(
+  size = weighted_contribution_norm(fit_size),
+  size_x_reliability = weighted_contribution_norm(fit_reliability)
+)
+round(leverage_comparison, 1)
+#>                    [,1] [,2] [,3]
+#> size               1538 1198 1233
+#> size_x_reliability  858  387  568
 ```
 
-By comparing `fit_reliability$weights` with `fit_size$weights`, we can
-observe that subjects containing systematically noisier clusters receive
-reduced leverage in the analysis, even before any additional
-subject-level scaling is applied.
+The two visible rows are deliberately different. Subject 2 has the
+lowest reliability scores. Its scalar MFA weight increases because
+inverse-leading- singular-value scaling partly compensates for a
+lower-energy block; the scalar weight alone is therefore not a measure
+of leverage. The second table reports the direct contribution scale
+entering `Chat` (subject weight times the Frobenius norm of that
+subject’s unweighted contribution). On this controlled example, adding
+reliability reduces subject 2’s contribution relative to the size-only
+fit.
 
 In real-world applications, reliability vectors can be derived from
 several methodologically sound sources. First, you can use per-cluster
@@ -214,6 +254,7 @@ explicitly reward neighboring parcels for exhibiting coordinated
 activation patterns.
 
 ``` r
+
 gaussian_cov <- function(coords, bandwidth = 15) {
   D <- as.matrix(dist(coords))
   K <- exp(-(D / bandwidth)^2)
@@ -249,6 +290,7 @@ applying weights based on the inverse squared leading singular value of
 their contribution.
 
 ``` r
+
 fit_mfa <- dkge(data_equal,
                 K = k_identity,
                 Omega_list = omega_reliability,
@@ -265,11 +307,11 @@ fit_energy <- dkge(data_equal,
 
 rbind(mfa = fit_mfa$weights,
       energy = fit_energy$weights,
-      none = fit_size$weights)
-#>         [,1] [,2] [,3]
-#> mfa    0.779 1.11 1.11
-#> energy 0.650 1.25 1.10
-#> none   1.000 1.00 1.00
+      size_mfa = fit_size$weights)
+#>           [,1] [,2]  [,3]
+#> mfa      0.430 1.97 0.604
+#> energy   0.223 2.34 0.439
+#> size_mfa 0.732 1.22 1.049
 ```
 
 The `w_tau` parameter provides a mechanism to shrink extreme weight
@@ -288,11 +330,12 @@ remains faithful to the actual surface area characteristics of the brain
 parcels.
 
 ``` r
+
 fit_mfa$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 
 comp_equal <- dkge_component_stats(
   fit_mfa,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, max_iter = 2000),
   centroids = centroids,
   inference = list(type = "parametric"),
   medoid = 1L
@@ -300,7 +343,7 @@ comp_equal <- dkge_component_stats(
 
 comp_weighted <- dkge_component_stats(
   fit_mfa,
-  mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, max_iter = 2000),
   centroids = centroids,
   sizes = cluster_sizes,
   inference = list(type = "parametric"),
@@ -309,11 +352,13 @@ comp_weighted <- dkge_component_stats(
 
 data.frame(equal = head(comp_equal$summary$stat),
            size_weighted = head(comp_weighted$summary$stat))
-#>     equal size_weighted
-#> 1 -1.7510        -1.846
-#> 2 -1.2691        -1.100
-#> 3  3.2796         2.332
-#> 4  0.0809        -0.355
+#>    equal size_weighted
+#> 1 -5.639         -3.89
+#> 2 -4.500         -4.42
+#> 3 -0.857         -1.22
+#> 4  0.657          0.64
+#> 5  6.090          4.79
+#> 6  1.154          1.28
 ```
 
 Even when working with identical component scores, the application of

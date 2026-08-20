@@ -92,17 +92,15 @@ toy <- dkge_sim_toy(
   factors = list(cond = list(L = 3)),
   active_terms = "cond", S = 4, P = 15, snr = 5
 )
-fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
-#> Warning: Argument 'kernel' is deprecated; use 'K' instead.
+fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 q <- nrow(fit$U)
 c_vec <- rep(0, q)
-c_vec[2] <- 1
-c_vec[3] <- -1
+c_vec[seq_len(min(2, q))] <- c(1, -1)[seq_len(min(2, q))]
 res <- dkge_contrast_validated(fit,
                                contrasts = list(cond = c_vec),
                                folds = 3)
 res$summary
 #>   contrast estimate_observed estimate_completed delta sensitivity
-#> 1     cond        0.06764641         0.06764641     0           0
+#> 1     cond       -0.07147284        -0.07147284     0           0
 # }
 ```

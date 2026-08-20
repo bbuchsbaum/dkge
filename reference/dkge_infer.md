@@ -10,10 +10,12 @@ dkge_infer(
   fit,
   contrasts,
   method = c("loso", "kfold", "analytic"),
-  inference = c("signflip", "freedman-lane", "parametric"),
+  inference = c("signflip", "parametric"),
   correction = c("maxT", "fdr", "bonferroni", "none"),
   n_perm = 2000,
   alpha = 0.05,
+  center = "mean",
+  parallel = FALSE,
   transported = FALSE,
   transport = NULL,
   ...
@@ -37,8 +39,7 @@ dkge_infer(
 - inference:
 
   Inference type: - \`"signflip"\`: Sign-flip permutation test
-  (default) - \`"freedman-lane"\`: Freedman-Lane permutation (requires
-  adapters) - \`"parametric"\`: Parametric t-test (assumes normality)
+  (default) - \`"parametric"\`: Parametric t-test (assumes normality)
 
 - correction:
 
@@ -55,6 +56,18 @@ dkge_infer(
 
   Significance level for corrections
 
+- center:
+
+  Location statistic for sign-flip inference. Only \`"mean"\` is
+  implemented in the beta API.
+
+- parallel:
+
+  Logical; compute target-level inference through the parallel apply
+  backend. Randomization descriptors are generated serially first, so
+  serial and parallel results are identical for the same caller RNG
+  state.
+
 - transported:
 
   Logical; retained for backwards compatibility. Deprecated.
@@ -65,7 +78,13 @@ dkge_infer(
   reference before inference. Provide \`centroids\`, \`medoid\`, and an
   optional mapper specification created via \[dkge_mapper_spec()\].
   Additional parameters (e.g. \`epsilon\`, \`lambda_emb\`) are forwarded
-  when constructing the default Sinkhorn mapper.
+  when constructing the default Sinkhorn mapper. Transported inference
+  also requires an explicit \`provenance\` from
+  \[dkge_transport_provenance()\]. A \`fully_recomputed\` declaration
+  must provide \`randomization_recompute(signs, target_index,
+  target_name, contrast_results, observed_values)\`, returning the
+  randomized transported subject-by-feature matrix after rebuilding
+  every data-dependent step.
 
 - ...:
 
@@ -97,9 +116,9 @@ returned in the \`transport\` field of the output for downstream
 inspection.
 
 The workflow is: 1. Compute contrast values via cross-fitting
-(LOSO/K-fold/analytic) 2. Apply inference procedure
-(sign-flip/Freedman-Lane/parametric) 3. Apply multiple testing
-correction (maxT/FDR/Bonferroni)
+(LOSO/K-fold/analytic) 2. Apply an implemented inference procedure
+(sign-flip or parametric) 3. Apply multiple testing correction
+(maxT/FDR/Bonferroni)
 
 For sign-flip inference, the max-T correction provides strong FWER
 control. For parametric inference, FDR may be more appropriate for
@@ -107,7 +126,7 @@ exploratory analyses.
 
 ## See also
 
-\[dkge_contrast()\], \[dkge_signflip_maxT()\], \[dkge_freedman_lane()\]
+\[dkge_contrast()\], \[dkge_signflip_maxT()\]
 
 ## Examples
 

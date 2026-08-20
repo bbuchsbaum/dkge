@@ -68,6 +68,6 @@ q <- nrow(toy$K)
 K_grid <- list(base = toy$K, identity = diag(q))
 cv <- dkge_cv_kernel_grid(toy$B_list, toy$X_list, K_grid, rank = 1)
 cv$pick
-#> [1] "base"
+#> [1] "identity"
 # }
 ```

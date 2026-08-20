@@ -48,6 +48,8 @@ Lower-level functions for custom workflows
   : Create a pluggable DKGE anchor mapper for dense rendering
 - [`dkge_mapper_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper_spec.md)
   : Specify a DKGE mapper strategy for the transport pipeline
+- [`dkge_transport_provenance()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_provenance.md)
+  : Declare the provenance of an inferential transport operator
 - [`dkge_transport_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_spec.md)
   : Transport specification helper
 - [`dkge_transport_contrasts_to_medoid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_medoid.md)
@@ -69,6 +71,16 @@ Lower-level functions for custom workflows
   : Define folds for K-fold cross-validation
 - [`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
   : Construct a DKGE subject record
+- [`dkge_trial_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_trial_subject.md)
+  : Build a DKGE subject from trialwise beta maps
+- [`dkge_trial_subject_chunks()`](https://bbuchsbaum.github.io/dkge/reference/dkge_trial_subject_chunks.md)
+  : Build a trialwise DKGE subject from feature chunks
+- [`dkge_effect_grid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_effect_grid.md)
+  : Construct a DKGE global effect grid
+- [`dkge_effect_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_effect_weights.md)
+  : Specify effect-level reliability weighting
+- [`dkge_split_effect_precision()`](https://bbuchsbaum.github.io/dkge/reference/dkge_split_effect_precision.md)
+  : Export split-half reliability as effect precision
 - [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md)
   : Bundle subject-level inputs for DKGE
 - [`dkge_prepare_transport()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_transport.md)
@@ -114,6 +126,44 @@ Lower-level functions for custom workflows
   : Simulate toy DKGE datasets with known factorial structure
 - [`dkge_update_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_update_weights.md)
   : Refit a DKGE object with a new voxel-weight specification
+
+## Aggregate (cell-mean) decomposition
+
+PLS-style decomposition of group-by-cell aggregate maps with permutation
+and bootstrap inference
+
+- [`dkge_aggregate_target()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_target.md)
+  [`print(`*`<dkge_aggregate_target>`*`)`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_target.md)
+  : Build an aggregate target from subject-level repeated-measures data
+- [`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md)
+  [`print(`*`<dkge_aggregate_fit>`*`)`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md)
+  : Fit a DKGE-regularized aggregate decomposition
+- [`dkge_aggregate_align()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_align.md)
+  : Align aggregate components to a reference fit
+- [`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md)
+  : Evaluate aggregate-fit statistics
+- [`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md)
+  [`print(`*`<dkge_aggregate_permutation>`*`)`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md)
+  : Permutation inference for aggregate targets
+- [`dkge_aggregate_bootstrap()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_bootstrap.md)
+  [`print(`*`<dkge_aggregate_bootstrap>`*`)`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_bootstrap.md)
+  : Bootstrap aggregate targets over subjects
+
+## Between-subject modeling
+
+Second-level reduced-rank regression, subject design, and resampling
+tests
+
+- [`dkge_make_target()`](https://bbuchsbaum.github.io/dkge/reference/dkge_make_target.md)
+  : Build a subject-by-feature target for between-subject DKGE models
+- [`dkge_subject_model()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject_model.md)
+  : Build a between-subject model matrix
+- [`dkge_between_rrr()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_rrr.md)
+  : Reduced-rank regression on a DKGE subject target
+- [`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md)
+  : Resampling tests for between-subject DKGE RRR terms
+- [`dkge_term_map()`](https://bbuchsbaum.github.io/dkge/reference/dkge_term_map.md)
+  : Extract a term-specific coefficient map
 
 ## Anchors and rendering
 
@@ -180,7 +230,7 @@ Design kernels, K-Procrustes alignment, and kernel diagnostics
   : Kernel alignment score
 - [`kernel_roots()`](https://bbuchsbaum.github.io/dkge/reference/kernel_roots.md)
   [`dkge_kernel_roots()`](https://bbuchsbaum.github.io/dkge/reference/kernel_roots.md)
-  : Robust kernel roots
+  : Range-space roots for a positive-semidefinite kernel
 - [`dkge_kernel_prescreen()`](https://bbuchsbaum.github.io/dkge/reference/dkge_kernel_prescreen.md)
   : Kernel alignment pre-screening
 - [`dkge_k_orthonormalize()`](https://bbuchsbaum.github.io/dkge/reference/dkge_k_orthonormalize.md)
@@ -195,6 +245,8 @@ Design kernels, K-Procrustes alignment, and kernel diagnostics
   : K-orthogonal projector onto span(T) in effect space
 - [`dkge_cosines_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_cosines_K.md)
   : Principal-angle cosines in the K-metric
+- [`dkge_principal_angles_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_principal_angles_K.md)
+  : Principal angles between two DKGE bases in the K metric
 - [`dkge_jd_control()`](https://bbuchsbaum.github.io/dkge/reference/dkge_jd_control.md)
   : Control parameters for DKGE joint diagonalisation
 - [`dkge_align_effects()`](https://bbuchsbaum.github.io/dkge/reference/dkge_align_effects.md)
@@ -235,7 +287,7 @@ Cluster-level projections and CPCA filtering
 Plotting and metric functions
 
 - [`dkge_plot_effect_loadings()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_effect_loadings.md)
-  : Effect-space loadings heatmap (K %\*% U)
+  : Effect-space loadings heatmap
 - [`dkge_plot_info_anchor()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_info_anchor.md)
   : Anchor-level information plots
 - [`dkge_plot_scree()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_scree.md)
@@ -251,6 +303,20 @@ Plotting and metric functions
 - [`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md)
   [`dkge_write_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md)
   : Component-level consensus statistics
+- [`dkge_component_saliences()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_saliences.md)
+  : DKGE component saliences in effect space
+- [`dkge_component_contrast_scores()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_contrast_scores.md)
+  : Express DKGE component saliences in a contrast basis
+- [`dkge_design_basis()`](https://bbuchsbaum.github.io/dkge/reference/dkge_design_basis.md)
+  : Build a plotting contrast basis for DKGE effects
+- [`dkge_subject_component_projections()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject_component_projections.md)
+  : Project subjects onto DKGE components
+- [`dkge_plot_component_saliences()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_component_saliences.md)
+  : Plot raw DKGE component saliences
+- [`dkge_plot_component_contrast_scores()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_component_contrast_scores.md)
+  : Plot DKGE component saliences in a contrast basis
+- [`dkge_plot_subject_component_projections()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_subject_component_projections.md)
+  : Plot subject projections onto DKGE components
 - [`dkge_variance_explained()`](https://bbuchsbaum.github.io/dkge/reference/dkge_variance_explained.md)
   : Compute per-component variance explained
 - [`dkge_info_map_from_classifier()`](https://bbuchsbaum.github.io/dkge/reference/dkge_info_map_from_classifier.md)
@@ -300,6 +366,28 @@ Low-level functions exposed for advanced use and testing
   : Print method for dkge_folds
 - [`print(`*`<dkge_inference>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_inference.md)
   : Print method for dkge_inference
+- [`print(`*`<dkge_between_permutation>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_between_permutation.md)
+  : Print between-subject permutation results
+- [`print(`*`<dkge_between_rrr>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_between_rrr.md)
+  : Print a between-subject reduced-rank regression fit
+- [`print(`*`<dkge_classification>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_classification.md)
+  : Print DKGE classification results
+- [`print(`*`<dkge_classification_spec>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_classification_spec.md)
+  : Print a classification specification
+- [`print(`*`<dkge_contrast_validated>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_contrast_validated.md)
+  : Print validated DKGE contrasts
+- [`print(`*`<dkge_inference_spec>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_inference_spec.md)
+  : Print an inference specification
+- [`print(`*`<dkge_regress>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_regress.md)
+  : Print cross-validated regression results
+- [`print(`*`<dkge_subject_model>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_subject_model.md)
+  : Print a subject-level model specification
+- [`print(`*`<dkge_target>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_target.md)
+  : Print a DKGE target
+- [`print(`*`<dkge_transport_spec>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_transport_spec.md)
+  : Print a transport specification
+- [`print(`*`<dkge_weights>`*`)`](https://bbuchsbaum.github.io/dkge/reference/print.dkge_weights.md)
+  : Print a DKGE weight specification
 - [`as.data.frame(`*`<dkge_inference>`*`)`](https://bbuchsbaum.github.io/dkge/reference/as.data.frame.dkge_inference.md)
   : Convert DKGE inference results to a tidy data frame
 - [`as.matrix(`*`<dkge_contrasts>`*`)`](https://bbuchsbaum.github.io/dkge/reference/as.matrix.dkge_contrasts.md)

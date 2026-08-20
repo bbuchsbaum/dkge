@@ -8,7 +8,7 @@ Inference specification helper
 dkge_inference_spec(
   B = 2000L,
   tail = c("two.sided", "greater", "less"),
-  center = c("mean", "median", "none")
+  center = "mean"
 )
 ```
 
@@ -24,7 +24,8 @@ dkge_inference_spec(
 
 - center:
 
-  Centering method for permutations: "mean", "median", or "none".
+  Location statistic for permutations. Only \`"mean"\` is implemented by
+  the beta inference service.
 
 ## Value
 

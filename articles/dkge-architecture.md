@@ -24,15 +24,15 @@ data moves through DKGE.
 
 ## High-Level Package Layout
 
-| Domain                | Key files                                                                                   | Responsibilities                                                                                               |
-|-----------------------|---------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| Data & kernels        | `dkge-data.R`, `design-kernel.R`, `dkge-weights*.R`                                         | Build subject bundles, harmonise design metadata, and construct similarity kernels/weights.                    |
-| Fitting core          | `dkge-fit.R`, `dkge-cpca.R`, `dkge-components.R`                                            | Row-standardise betas, accumulate compressed covariances, run the eigensolver, and expose component summaries. |
-| Contrasts & inference | `dkge-contrast.R`, `dkge-inference*.R`, `dkge-analytic*.R`                                  | Generate LOSO/K-fold contrasts, analytic approximations, and sign-flip inference.                              |
-| Transport & rendering | `dkge-transport*.R`, `dkge-render*.R`, C++ sinkhorn/pwdist                                  | Map subject maps to anchors/voxels via kNN or Sinkhorn operators.                                              |
-| Classification        | `dkge-classify.R`, `dkge-info-maps.R`, `dkge-latent-*.R`                                    | Train latent classifiers, derive Haufe/LOCO maps, and aggregate anchor evidence.                               |
-| Orchestration         | `dkge-pipeline.R`, `dkge-predict.R`, `dkge-bootstrap*.R`                                    | Wrap core steps into workflows, prediction helpers, and resampling utilities.                                  |
-| Visualisation         | `dkge-plot*.R`, [`theme_dkge()`](https://bbuchsbaum.github.io/dkge/reference/theme_dkge.md) | Plot scree, loadings, subject contribution heatmaps, and information maps.                                     |
+| Domain | Key files | Responsibilities |
+|----|----|----|
+| Data & kernels | `dkge-data.R`, `design-kernel.R`, `dkge-weights*.R` | Build subject bundles, harmonise design metadata, and construct similarity kernels/weights. |
+| Fitting core | `dkge-fit.R`, `dkge-cpca.R`, `dkge-components.R` | Row-standardise betas, accumulate compressed covariances, run the eigensolver, and expose component summaries. |
+| Contrasts & inference | `dkge-contrast.R`, `dkge-inference*.R`, `dkge-analytic*.R` | Generate LOSO/K-fold contrasts, analytic approximations, and sign-flip inference. |
+| Transport & rendering | `dkge-transport*.R`, `dkge-render*.R`, C++ sinkhorn/pwdist | Map subject maps to anchors/voxels via kNN or Sinkhorn operators. |
+| Classification | `dkge-classify.R`, `dkge-info-maps.R`, `dkge-latent-*.R` | Train latent classifiers, derive Haufe/LOCO maps, and aggregate anchor evidence. |
+| Orchestration | `dkge-pipeline.R`, `dkge-predict.R`, `dkge-bootstrap*.R` | Wrap core steps into workflows, prediction helpers, and resampling utilities. |
+| Visualisation | `dkge-plot*.R`, [`theme_dkge()`](https://bbuchsbaum.github.io/dkge/reference/theme_dkge.md) | Plot scree, loadings, subject contribution heatmaps, and information maps. |
 
 The package follows standard R conventions (roxygen2, testthat, pkgdown)
 and links to C++ helpers for computational hotspots.
@@ -49,9 +49,12 @@ sequence of responsibilities in one 400+ line function:
     Cholesky factor `R`, and build `Btil` (`R^T B_s`).
 3.  **Kernel preparation**: Symmetrise the kernel, derive square
     roots/inverses, and resolve voxel/anchor weights.
-4.  **Weighting**: Compute optional subject MFA weights (`svd` per
-    subject) and voxel weights, accumulating the compressed covariance
-    `Chat`.
+4.  **Weighting**: Compute optional subject MFA weights (a frozen power
+    iteration per subject) and voxel weights, accumulating the
+    compressed covariance `Chat`. Under partial coverage, `none` and
+    `mask` preserve **observed** pair mass; `rescale` returns an
+    observed-pair mean, and `shrink` blends that mean toward its
+    diagonal rather than restoring cohort mass.
 5.  **CPCA branches**: Optionally split the covariance into
     design/residual parts, re-merge based on `cpca_part`, and inject
     ridge terms.
@@ -148,6 +151,7 @@ logging.
 For prediction workflows we will layer a friendly wrapper, e.g.:
 
 ``` r
+
 predict_subjects <- dkge_predict_subjects(fit, betas, contrasts, ids = NULL)
 ```
 

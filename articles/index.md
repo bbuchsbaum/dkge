@@ -17,6 +17,12 @@
   DKGE](https://bbuchsbaum.github.io/dkge/articles/dkge-classification.md):
 - [Components and
   Interpretability](https://bbuchsbaum.github.io/dkge/articles/dkge-components.md):
+- [Between-Subject Multivariate
+  Modeling](https://bbuchsbaum.github.io/dkge/articles/dkge-between-subjects.md):
+- [Unbalanced and Partial Effect
+  Spaces](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md):
+- [DKGE Concepts: Kernels, Inference, and What the Method Actually
+  Does](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md):
 
 ### Weighting
 
