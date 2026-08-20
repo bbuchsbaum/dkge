@@ -70,6 +70,8 @@
 #   noise_moments      list[S]    subtracted noise moments (NULL unless debias="analytic")
 #   effect_weight_spec list       dkge_effect_weights() specification used
 #   effect_precision   list[S]    resolved per-effect precision vectors
+#   effect_precision_diagnostics list  method-specific precision diagnostics
+#                                 (DL tau2 / cap shares for random_effects)
 #   pool_cache         list       sample-independent pair matrices reused when re-pooling
 #   moment_diagnostics list       spectral diagnostics of the effect-space and
 #                                 transformed moments
@@ -426,6 +428,7 @@
     pair_weight = accum$pair_weight,
     pair_ess = accum$pair_ess,
     effect_precision = effect_precision,
+    effect_precision_diagnostics = attr(effect_precision, "diagnostics"),
     effect_weight_spec = prepped$effect_weight_spec,
     effect_moment = accum$pooled,
     effect_moments = accum$moments,
@@ -970,6 +973,7 @@
     weight_spec = prepped$weight_spec,
     effect_weight_spec = accum$effect_weight_spec,
     effect_precision = accum$effect_precision,
+    effect_precision_diagnostics = accum$effect_precision_diagnostics,
     voxel_weights = accum$voxel_weights,
     voxel_weights_subject = accum$voxel_weights_subject,
     voxel_weights_prior = prepped$weight_eval$prior,

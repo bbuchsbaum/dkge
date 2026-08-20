@@ -104,9 +104,10 @@ original GLM-beta behaviour. `"none"` leaves rows on their input scale and
 uses an identity contrast ruler, which is appropriate when rows already have
 a common absolute interpretation such as AUC minus chance.}
 
-\item{effect_weights}{Optional [dkge_effect_weights()] specification. Count
-or explicit precision weighting is applied to raw q-space effect moments
-before the pooled ruler and design kernel mix effect rows.}
+\item{effect_weights}{Optional [dkge_effect_weights()] specification. Count,
+explicit precision, or DerSimonian-Laird `"random_effects"` weighting is
+applied to raw q-space effect moments before the pooled ruler and design
+kernel mix effect rows. Random-effects fits are q-space-only.}
 
 \item{debias}{Finite-trial noise treatment. `"none"` preserves the observed
 second moment. `"analytic"` subtracts

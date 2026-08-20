@@ -4,12 +4,38 @@
 \alias{dkge_effect_weights}
 \title{Specify effect-level reliability weighting}
 \usage{
-dkge_effect_weights(method = c("none", "count", "precision"))
+dkge_effect_weights(
+  method = c("none", "count", "precision", "random_effects"),
+  within = c("auto", "noise", "count"),
+  tau_method = "DL",
+  max_ratio = 10,
+  variance_floor = 1e-08,
+  tau_floor = 0
+)
 }
 \arguments{
 \item{method}{Effect precision source. \code{"none"} gives every observed effect
-equal precision, \code{"count"} uses \code{effect_n} stored on each subject, and
-\code{"precision"} uses explicitly supplied \code{effect_precision} values.}
+equal precision, \code{"count"} uses \code{effect_n} stored on each subject,
+\code{"precision"} uses explicitly supplied \code{effect_precision} values, and
+\code{"random_effects"} combines within-subject uncertainty with a
+DerSimonian-Laird between-subject variance estimate.}
+
+\item{within}{Within-subject variance source for \code{method = "random_effects"}.
+\code{"noise"} uses \code{effect_noise_cov} and residual variances, \code{"count"} uses
+\code{1 / effect_n}, and \code{"auto"} prefers complete noise statistics before
+falling back to complete counts.}
+
+\item{tau_method}{Between-subject variance estimator. Currently only the
+non-negative DerSimonian-Laird moment estimator (\code{"DL"}) is supported.}
+
+\item{max_ratio}{Maximum random-effects precision relative to the median
+positive precision for the same effect. This cap prevents a single subject
+from owning an effect geometry; \code{Inf} disables it.}
+
+\item{variance_floor}{Positive lower bound for within-subject variances.}
+
+\item{tau_floor}{Non-negative lower bound for the estimated between-subject
+variance.}
 }
 \value{
 An object of class \code{dkge_effect_weights}, suitable for the
@@ -23,7 +49,18 @@ the pooled second moment. They are distinct from \code{\link[=dkge_weights]{dkge
 weights voxels or parcels, and from \code{w_method}, which supplies one scalar per
 subject.
 }
+\details{
+For random effects, effect \code{c} uses
+\code{p_sc = 1 / (v_sc + tau_c^2)}. The DerSimonian-Laird estimate is
+\code{max(tau_floor, (Q - (k - 1)) / C, 0)}, followed by the documented
+median-relative cap. Because subject parcel spaces need not be aligned,
+heterogeneity is estimated from each effect row's spatial mean.
+
+The package-wide default remains \code{"none"}. \code{"random_effects"} is an
+opt-in policy for materially unbalanced trialwise designs.
+}
 \examples{
 dkge_effect_weights("none")
 dkge_effect_weights("count")
+dkge_effect_weights("random_effects", within = "auto")
 }
