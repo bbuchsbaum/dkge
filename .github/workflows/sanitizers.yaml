@@ -15,6 +15,7 @@ jobs:
     env:
       ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
       UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      USE_BUNDLED_LIBUV: 1
       _R_CHECK_FORCE_SUGGESTS_: false
     steps:
       - uses: actions/checkout@v4

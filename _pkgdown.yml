@@ -68,6 +68,7 @@ reference:
       - dkge_design_kernel
       - dkge_mapper
       - dkge_mapper_spec
+      - dkge_transport_provenance
       - dkge_transport_spec
       - dkge_transport_contrasts_to_medoid
       - dkge_transport_loadings_to_medoid
@@ -235,6 +236,17 @@ reference:
       - print.dkge_contrasts
       - print.dkge_folds
       - print.dkge_inference
+      - print.dkge_between_permutation
+      - print.dkge_between_rrr
+      - print.dkge_classification
+      - print.dkge_classification_spec
+      - print.dkge_contrast_validated
+      - print.dkge_inference_spec
+      - print.dkge_regress
+      - print.dkge_subject_model
+      - print.dkge_target
+      - print.dkge_transport_spec
+      - print.dkge_weights
       - as.data.frame.dkge_inference
       - as.matrix.dkge_contrasts
       - dkge-info-maps

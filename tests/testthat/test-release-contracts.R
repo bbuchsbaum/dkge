@@ -58,6 +58,7 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(check_yaml, "actions/download-artifact@v4")
   expect_match(check_yaml, "Verify exact candidate identity")
   expect_match(check_yaml, "rcmdcheck::rcmdcheck")
+  expect_match(check_yaml, "roxygen2@7[.]3[.]3")
   expect_match(check_yaml, "source-tarball[.]sha256")
   expect_match(check_yaml, "e627d4d1861e5cc4aea5a5668d6052e394429b92")
   expect_match(check_yaml, "20c9f07a225f21c4eea1732ea31418ccedd1c056")
@@ -70,6 +71,7 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml, "r-devel-san")
   expect_match(sanitizer_yaml, "ASAN_OPTIONS")
   expect_match(sanitizer_yaml, "UBSAN_OPTIONS")
+  expect_match(sanitizer_yaml, "USE_BUNDLED_LIBUV")
 
   oracle_yaml <- paste(readLines(file.path(workflows, "sinkhorn-oracle.yaml"),
                                  warn = FALSE), collapse = "\n")
@@ -83,4 +85,5 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
     file.path(workflows, "neuralign-integration.yaml"), warn = FALSE
   ), collapse = "\n")
   expect_match(integration_yaml, "ae1468340497ef89a32b148946cebdf6dfa42c47")
+  expect_match(integration_yaml, "compat_neuralign")
 })

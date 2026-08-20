@@ -36,7 +36,7 @@ jobs:
         run: |
           pkgload::load_all(".", quiet = TRUE)
           testthat::test_local(
-            ".", filter = "compat-neuralign",
+            ".", filter = "compat_neuralign",
             stop_on_failure = TRUE, reporter = "summary"
           )
         shell: Rscript {0}
