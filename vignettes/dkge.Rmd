@@ -126,7 +126,9 @@ stopifnot(sum(variance_table$prop_var) > 0)
 ## What does a component express?
 
 Inspect the design-weighted saliences, \(K U\), before mapping anything back to
-space. Rows are effects and columns are components.
+space. Rows are effects and columns are components: a salience says how much a
+named design effect contributes to a component, in the kernel's metric. See
+`?dkge-glossary` for this and the other terms the documentation leans on.
 
 ```{r inspect-saliences}
 round(dkge_component_saliences(fit, comps = 1:2, long = FALSE), 2)

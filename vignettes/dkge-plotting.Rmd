@@ -165,17 +165,23 @@ raw loading is.
 
 `dkge_plot_subject_contrib()` returns two linked panels. The left panel shows
 the subject-level weights used while fitting the model (`fit$weights`). Those
-weights depend on the `w_method` argument passed to
-`dkge()`: in this vignette we deliberately chose `w_method = "none"`, so each
-subject keeps unit weight and the bars are all equal to one. Switching to
-`"mfa_sigma1"` or `"energy"` would display the corresponding MFA-style or
-energy-based weighting actually used in the eigensolve. The heatmap on the
-right shows how much norm ("energy") each subject contributes to the selected
-components after those weights have been applied.
+weights depend on the `w_method` argument passed to `dkge()`. This fit uses
+`w_method = "mfa_sigma1"`, the MFA-style default, so the bars vary around one:
+a subject whose block carries a large leading singular value is downweighted.
+`w_method = "none"` would give every subject unit weight and a flat row of
+bars. The heatmap on the right shows how much norm ("energy") each subject
+contributes to the selected components after those weights have been applied.
 
 ```{r contrib, fig.width=9, fig.height=3, fig.alt="Linked bar and heatmap panels showing subject fitting weights and component contribution energy."}
 contrib <- dkge_plot_subject_contrib(fit, comps = 1:3)
 contrib$weights + contrib$energy + patchwork::plot_layout(widths = c(1, 2))
+```
+
+```{r contrib-checks, include = FALSE}
+# the prose above says the bars vary around one under mfa_sigma1; assert it
+stopifnot(all(is.finite(fit$weights)))
+stopifnot(stats::sd(fit$weights) > 1e-6)
+stopifnot(abs(mean(fit$weights) - 1) < 0.5)
 ```
 
 ### Subspace stability

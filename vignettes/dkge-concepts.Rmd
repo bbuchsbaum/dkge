@@ -80,6 +80,11 @@ missingness and precision must be handled before the kernel transform.
 
 ## What enters the decomposition?
 
+Terms used throughout this page and the rest of the suite are defined in
+`?dkge-glossary`: effect space, design kernel, salience, cross-fitting, medoid,
+transport, and the estimand each analysis targets.
+
+
 For subject \(s\), let \(B_s\) be the `q` by `P_s` beta matrix. In the simplest
 unweighted case, its raw effect-space moment is
 
