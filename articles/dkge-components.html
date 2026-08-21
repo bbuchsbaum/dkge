@@ -149,11 +149,11 @@ this vignette applies unchanged regardless of the solver choice.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">U</span>, <span class="fl">3</span><span class="op">)</span>         <span class="co"># effect-space loadings</span></span>
 <span><span class="co">#&gt;        [,1]   [,2]   [,3]</span></span>
-<span><span class="co">#&gt; [1,]  0.342  0.747 -0.534</span></span>
-<span><span class="co">#&gt; [2,]  0.456 -0.639 -0.447</span></span>
-<span><span class="co">#&gt; [3,] -0.818 -0.030 -0.437</span></span>
-<span><span class="co">#&gt; [4,] -0.056 -0.022  0.039</span></span>
-<span><span class="co">#&gt; [5,]  0.055  0.179  0.568</span></span>
+<span><span class="co">#&gt; [1,]  0.342  0.747  0.534</span></span>
+<span><span class="co">#&gt; [2,]  0.456 -0.639  0.447</span></span>
+<span><span class="co">#&gt; [3,] -0.818 -0.030  0.437</span></span>
+<span><span class="co">#&gt; [4,] -0.056 -0.022 -0.039</span></span>
+<span><span class="co">#&gt; [5,]  0.055  0.179 -0.568</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Btil</span>, <span class="kw">function</span><span class="op">(</span><span class="va">Bts</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Bts</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [[1]]</span></span>
 <span><span class="co">#&gt;         cluster1 cluster2 cluster3</span></span>
@@ -246,12 +246,12 @@ it can be smaller than <code>rot$unconstrained_d</code>.</p>
 <span><span class="va">projected</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_project_clusters.html">dkge_project_clusters</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">new_beta</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">projected</span><span class="op">)</span></span>
 <span><span class="co">#&gt;           [,1]    [,2]     [,3]</span></span>
-<span><span class="co">#&gt; [1,]  0.109688  0.0776  0.12167</span></span>
-<span><span class="co">#&gt; [2,]  0.000515 -0.3380  0.53417</span></span>
-<span><span class="co">#&gt; [3,] -0.273249  0.2488  0.07049</span></span>
-<span><span class="co">#&gt; [4,] -0.204818 -0.0151  0.15044</span></span>
-<span><span class="co">#&gt; [5,]  0.018553  0.0610 -0.10772</span></span>
-<span><span class="co">#&gt; [6,] -0.063557 -0.0554  0.00225</span></span></code></pre></div>
+<span><span class="co">#&gt; [1,]  0.109688  0.0776 -0.12167</span></span>
+<span><span class="co">#&gt; [2,]  0.000515 -0.3380 -0.53417</span></span>
+<span><span class="co">#&gt; [3,] -0.273249  0.2488 -0.07049</span></span>
+<span><span class="co">#&gt; [4,] -0.204818 -0.0151 -0.15044</span></span>
+<span><span class="co">#&gt; [5,]  0.018553  0.0610  0.10772</span></span>
+<span><span class="co">#&gt; [6,] -0.063557 -0.0554 -0.00225</span></span></code></pre></div>
 <p>The <code><a href="../reference/dkge_project_clusters.html">dkge_project_clusters()</a></code> function returns component
 scores for each cluster in the new data, providing a standardized
 representation that is ready for subsequent analyses such as contrast
