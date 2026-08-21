@@ -126,7 +126,8 @@ fit_jd <- dkge(bundle,
                jd_control = dkge_jd_control(maxit = 200, tol = 1e-8))
 ```
 
-Both solvers return the same object structure (`fit$U`, `fit$Chat`, projections, etc.), so the
+Both solvers return the same object structure (`fit$U`, `fit$Chat`,
+projections), so downstream code does not change.
 subsequent workflow in this vignette applies unchanged regardless of the solver choice.
 
 ## Which effects define each component?
@@ -190,7 +191,10 @@ significant spatial effect.
 
 ## Rotating Components
 
-`dkge_procrustes_K()` rotates components toward a target basis in the \(K\) metric — canonical contrasts, or loadings established in an earlier study. This rotation preserves the mathematical properties of the solution by staying within the design-kernel metric space.
+`dkge_procrustes_K()` rotates components toward a target basis in the \(K\)
+metric: canonical contrasts, or loadings from an earlier study. The rotation
+stays inside the design-kernel metric, so the solution's properties are
+preserved.
 
 ```{r rotate}
 # target basis: identity for first two effects
@@ -218,7 +222,8 @@ projected <- dkge_project_clusters(fit, new_beta)
 head(projected)
 ```
 
-The `dkge_project_clusters()` function returns component scores for each cluster in the new data, providing a standardized representation that is ready for subsequent analyses such as contrast testing or optimal transport mapping to reference parcellations.
+`dkge_project_clusters()` returns component scores for each cluster in the new
+data, ready for contrast testing or transport to a reference parcellation.
 
 ## Interpreting Components
 

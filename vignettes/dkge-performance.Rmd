@@ -183,7 +183,8 @@ duals as an initialization and continues solving.
 
 ## Adding Custom Mappers
 
-To integrate a custom mapping approach into the DKGE framework, you need to implement two key S3 methods that follow the established naming convention recognized by `dkge_mapper()`.
+A custom mapper implements two S3 methods, following the naming convention
+`dkge_mapper()` recognises.
 
 ```{r custom-mapper}
 fit_mapper.dkge_mapper_mytransport <- function(mapper, subj_points,
@@ -207,13 +208,18 @@ inputs and return one value per anchor, as this example does.
 
 ## Practical Guidance
 
-The choice between mapping methods should be guided by your specific analysis requirements and data characteristics. For quick exploratory analyses or situations where subject clusters already show good anatomical alignment, kNN mapping provides an efficient and straightforward solution.
+Pick the mapper from the analysis, not from the benchmark. For quick
+exploration, or when subject clusters already align anatomically, kNN is
+efficient and sufficient.
 
-Prefer Sinkhorn mapping when anatomical shifts between subjects are substantial, or when latent features should guide the matching. In these cases, you can tune the `epsilon` parameter upward to achieve faster convergence and smoother transport plans, though this comes with a trade-off in matching precision.
+Prefer Sinkhorn when anatomical shifts between subjects are substantial, or
+when latent features should guide the matching. Raising `epsilon` converges
+faster and smooths the transport plan, at the cost of matching precision.
 
 For repeated maps, reuse renderer or fitted-mapper objects so the already-solved
 plans and application operators are retained. Warm-start caching is most useful
-when an identical fit is requested again; check `warm_fit$stats$diagnostics` on the fitted mapper instead of
+when an identical fit is requested again; check `warm_fit$stats$diagnostics`
+on the fitted
 assuming that a cache was used.
 
 

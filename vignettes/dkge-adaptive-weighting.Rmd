@@ -89,18 +89,18 @@ The examples use small synthetic datasets so they run fast.
 The weight specification is created with `dkge_weights()`, which packages four
 essential pieces of information that work together to define the weighting strategy:
 
-- **Prior weights** describe locations you already trust based on external information (for example, a
-  reliability map from previous studies). These weights must be *sign invariant*, meaning that flipping the
-  sign of a beta map does not change the weight assigned to that voxel. Squares, absolute values, and
+- **Prior weights** describe locations you already trust from external information, such as
+  a reliability map from an earlier study. They must be *sign invariant*: flipping the sign
+  of a beta map must not change a voxel's weight. Squares, absolute values, and
   variances all meet this important requirement and can be used safely as priors.
 - **Adaptive statistics** are computed dynamically from the training subjects inside each
   cross-validation split. The built-in options examine *energy* (squared
   amplitude in the design metric), *precision* (inverse variance), or their
-  product. Energy is simply $\|K^{1/2} B_{:\alpha}\|_2^2$, representing the amount of signal a
-  voxel carries in effect space; precision is defined as $1/(\sigma^2 + \varepsilon)$ and captures measurement reliability.
-- **Combination rules** specify how prior knowledge and adaptive components are blended together
-  (through product, sum, or override operations). The `mix` parameter provides fine-grained control over the relative balance between these two sources of information.
-- **Shrinkage** keeps the final weights well-behaved by applying several regularization steps: we winsorize extreme values and pull
+  product. Energy is $\|K^{1/2} B_{:\alpha}\|_2^2$, the signal a voxel carries in
+  effect space; precision is $1/(\sigma^2 + \varepsilon)$, its measurement reliability
+- **Combination rules** set how prior and adaptive components blend
+  (product, sum, or override). `mix` controls the balance between them.
+- **Shrinkage** keeps the final weights well-behaved: winsorize extremes, then
   everything back towards 1 to ensure that no single voxel dominates the fit.
 
 With `scope = "fold"`, adaptive statistics are computed from the training
@@ -171,7 +171,8 @@ shrinkage parameters enforce: no single voxel dominates.
 
 ## 3. Mixing priors with adaptive statistics
 
-Suppose you have an external reliability image from a previous study. Convert this reliability information into a sign-invariant quantity (here, squared reliability) and incorporate it as a prior. The adaptive
+Suppose you have an external reliability image from a previous study. Convert
+it into a sign-invariant prior, then blend it with the adaptive component.
 component is unchanged; it is now blended with that external knowledge.
 
 ```{r prior}
@@ -276,7 +277,8 @@ in place with your new weighting scheme.
 fit_refit <- dkge_update_weights(fit_uniform, wts_mixed)
 ```
 
-This update operation only modifies the weighting machinery itself; all subject-level projections and stored
+The update touches only the weighting machinery; subject-level projections and
+stored results are reused.
 projections remain fully compatible with the updated model.
 
 ## Summary

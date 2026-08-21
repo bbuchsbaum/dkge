@@ -78,20 +78,32 @@ It does not benchmark accuracy or power.
 ---
 ## What classical PLS does
 
-Classical PLS neuroimaging analysis constructs latent variables that capture the strongest relationships between brain activity and experimental or behavioral variables. The **primary objective** is to build latent variables (LVs) that maximise the covariance between an exogenous block (such as task design or behavior) and a brain-data block (elements × time).
+Classical PLS builds latent variables that maximize the covariance between an
+exogenous block, such as task design or behavior, and a brain-data block of
+elements by time.
 
-The framework encompasses several **methodological variants**, each tailored to different research questions: task PLS analyzes condition differences, behavior PLS examines brain–behavior coupling, seed PLS investigates functional connectivity patterns, and spatiotemporal PLS treats space × time jointly for fMRI/ERP/MEG data.
+Four **variants** answer different questions: task PLS analyzes condition
+differences, behavior PLS examines brain-behavior coupling, seed PLS
+investigates connectivity, and spatiotemporal PLS treats space and time
+jointly.
 
 The **computational workflow** is:
-  1. Data are arranged as a single matrix \(M \in \mathbb{R}^{(n k) \times (m t)}\) with observations nested inside conditions.
-  2. Cross-block covariance is formed with an orthonormal design matrix, followed by singular value decomposition \(C^\top M = U S V^\top\).
-  3. Element/time saliences (singular images), design saliences, and singular values are extracted from the decomposition.
-  4. Brain scores \(B = M U\) and design scores \(D = C V\) are computed to characterize patterns in each domain.
-  5. For behavior PLS specifically, the design block is replaced with behavior matrices and correlated with \(M\) before applying SVD.
+1. Data are arranged as one matrix \(M \in \mathbb{R}^{(n k) \times (m t)}\),
+observations by measurements.
+2. Cross-block covariance is formed against an orthonormal design matrix, then
+decomposed by SVD.
+3. Element and time saliences, design saliences, and singular values are
+extracted.
+4. Brain scores \(B = M U\) and design scores \(D = C V\) characterize the
+patterns.
+5. Behavior PLS replaces the design block with behavior matrices and
+correlates them per group.
 
-**Statistical inference** in PLS relies on resampling approaches: permutation tests assess LV significance, bootstrap procedures evaluate voxel salience reliability, and Procrustes alignment stabilizes resampled LVs across iterations.
+**Inference** is by resampling: permutation for LV significance, bootstrap for
+salience reliability, and Procrustes alignment to stabilize resampled LVs.
 
-The method targets *whole-pattern* effects and time-resolved couplings, using resampling to identify distributed, reliable neural patterns that relate to experimental or behavioral variables.
+The method targets whole-pattern effects and time-resolved couplings, using
+resampling rather than a parametric null.
 
 ## How DKGE relates
 
@@ -207,7 +219,7 @@ table.dkge-vs-pls td {
   <tbody>
     <tr>
       <th scope="row">Latent-space construction</th>
-      <td>SVD on cross-block covariance between design/behaviour and brain data; columns of \(U\) and \(V\) are saliences.</td>
+      <td>SVD on cross-block covariance between design/behavior and brain data; columns of \(U\) and \(V\) are saliences.</td>
       <td>Eigen-decomposition of a design-kernel-weighted covariance, producing orthonormal components \(U\).</td>
     </tr>
     <tr>
@@ -250,11 +262,14 @@ table.dkge-vs-pls td {
 
 ## Similarities worth noting
 
-Despite their methodological differences, PLS and DKGE share several fundamental characteristics that reflect their common mathematical foundations. Both approaches rely on SVD or eigendecomposition techniques to obtain orthogonal latent patterns and their associated scores, ensuring that the derived components capture independent sources of variation in the data.
+The two share a mathematical core. Both use SVD or eigendecomposition to
+obtain orthogonal latent patterns and scores.
 
-Both frameworks rest on resampling, implemented differently: PLS employs permutation tests and bootstrap procedures for statistical inference, while DKGE provides a broader toolkit including analytic approximations, leave-one-subject-out (LOSO) cross-fitting, bootstrap procedures, and transport-aware resampling utilities.
+Both rest on resampling, implemented differently: PLS permutes and bootstraps
+directly; DKGE cross-fits and then resamples the held-out fields.
 
-Both methods require reading latent loadings or saliences alongside subject scores to see how experimental conditions or behavioral variables relate to the underlying neural patterns.
+Both require reading latent loadings or saliences alongside subject scores to
+see what a component means.
 
 ## Which method matches the question?
 
@@ -276,3 +291,12 @@ For an empirical comparison, prespecify one estimand, fit both methods to the
 same analysis units, use identical outer resampling splits, and compare a
 held-out metric with uncertainty. Do not infer superiority from the fact that
 one package exposes a helper that the other workflow leaves to the analyst.
+
+## Where to go next
+
+- `vignette("dkge-concepts")` sets out what each DKGE analysis licenses you to
+  claim, which is the question this comparison keeps returning to.
+- `vignette("dkge-design-kernels")` covers the kernel that gives DKGE its
+  metric, and which classical PLS has no analogue for.
+- `vignette("dkge-contrasts-inference")` is the inference route for a
+  prespecified effect, where PLS would resample the latent variable instead.

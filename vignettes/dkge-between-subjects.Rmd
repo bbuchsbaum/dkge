@@ -69,7 +69,8 @@ The workflow has three steps:
 
 1. build a subject-by-feature target with `dkge_make_target()`
 2. build a second-level design with `dkge_subject_model()`
-3. fit and test a reduced-rank model with `dkge_between_rrr()` and `dkge_between_permute()`
+3. fit and test a reduced-rank model with `dkge_between_rrr()` and
+   `dkge_between_permute()`
 
 ```text
 one common-space row per subject (Y) + subject metadata (X) -> distributed coefficient map (B) -> term-level resampling test
