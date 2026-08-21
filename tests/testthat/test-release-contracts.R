@@ -24,8 +24,8 @@ test_that("core dependency metadata is immutable and beta-resolvable", {
     expect_setequal(
       lock$package,
       c(
-        "delarr", "fmriAR", "fmridesign", "fmridataset", "fmrigds",
-        "fmrihrf", "fmrilss", "fmrireg", "hdf5r", "neuralign"
+        "albersdown", "delarr", "fmriAR", "fmridesign", "fmridataset",
+        "fmrigds", "fmrihrf", "fmrilss", "fmrireg", "hdf5r", "neuralign"
       )
     )
     expect_true(all(grepl("^[0-9a-f]{40}$", lock$sha)))
@@ -33,12 +33,15 @@ test_that("core dependency metadata is immutable and beta-resolvable", {
                      c("Import", "Import"))
     expect_true(all(
       lock$role[!lock$package %in%
-                  c("fmridesign", "fmrireg", "hdf5r", "neuralign")] ==
+                  c("albersdown", "fmridesign", "fmrireg", "hdf5r",
+                    "neuralign")] ==
         "TransitiveImport"
     ))
     expect_identical(lock$role[lock$package == "hdf5r"],
                      "SanitizerCompatibility")
     expect_identical(lock$role[lock$package == "neuralign"], "Enhances")
+    expect_identical(lock$role[lock$package == "albersdown"],
+                     "WebsiteSuggest")
   }
 })
 
@@ -67,6 +70,7 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(check_yaml, "20c9f07a225f21c4eea1732ea31418ccedd1c056")
   expect_match(check_yaml, "d366e79fce8db7c5c46e883291e73732b20c545c")
   expect_match(check_yaml, "f015b7c7fa5008e2435d269aeb1882a9aa24eaf0")
+  expect_match(check_yaml, "54a7432e551413fd15253544d361295d3d65f2b5")
   expect_match(check_yaml, "dependencies: '\"hard\"'")
 
   sanitizer_yaml <- paste(readLines(file.path(workflows, "sanitizers.yaml"),
@@ -110,4 +114,8 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   ), collapse = "\n")
   expect_match(integration_yaml, "ae1468340497ef89a32b148946cebdf6dfa42c47")
   expect_match(integration_yaml, "compat_neuralign")
+
+  pkgdown_yaml <- paste(readLines(file.path(workflows, "pkgdown.yaml"),
+                                  warn = FALSE), collapse = "\n")
+  expect_match(pkgdown_yaml, "54a7432e551413fd15253544d361295d3d65f2b5")
 })

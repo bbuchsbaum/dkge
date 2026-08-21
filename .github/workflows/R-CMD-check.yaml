@@ -38,6 +38,7 @@ jobs:
             any::microbenchmark
             any::remotes
             any::pkgdown
+            github::bbuchsbaum/albersdown@54a7432e551413fd15253544d361295d3d65f2b5
             github::bbuchsbaum/delarr@e8bdf22462897049230202a5287e6f1ef88b524a
             github::bbuchsbaum/fmriAR@0c3d04f8d4a7133032b4b07ffe228f8d2e32dd33
             github::bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92
@@ -138,6 +139,7 @@ jobs:
             any::microbenchmark
             any::remotes
             any::pkgdown
+            github::bbuchsbaum/albersdown@54a7432e551413fd15253544d361295d3d65f2b5
             github::bbuchsbaum/delarr@e8bdf22462897049230202a5287e6f1ef88b524a
             github::bbuchsbaum/fmriAR@0c3d04f8d4a7133032b4b07ffe228f8d2e32dd33
             github::bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92
