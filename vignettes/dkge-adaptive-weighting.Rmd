@@ -89,9 +89,9 @@ The examples use small synthetic datasets so they run fast.
 The weight specification is created with `dkge_weights()`, which packages four
 essential pieces of information that work together to define the weighting strategy:
 
-- **Prior weights** describe locations you already trust from external information, such as
-  a reliability map from an earlier study. They must be *sign invariant*: flipping the sign
-  of a beta map must not change a voxel's weight. Squares, absolute values, and
+- **Prior weights** describe locations you already trust from external
+  information, such as a reliability map from an earlier study. They must be
+  *sign invariant*: flipping the sign of a beta map must not change a voxel's
   variances all meet this important requirement and can be used safely as priors.
 - **Adaptive statistics** are computed dynamically from the training subjects inside each
   cross-validation split. The built-in options examine *energy* (squared

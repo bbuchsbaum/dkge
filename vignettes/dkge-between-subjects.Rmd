@@ -433,7 +433,8 @@ is individually significant.
 
 Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
 latent target, and use `type = "transported_maps"` when spatial interpretation
-in a common map space matters. See `vignette("dkge-contrasts-inference")` for within-subject contrast inference.
+in a common map space matters. See `vignette("dkge-contrasts-inference")` for
+within-subject contrast inference.
 For cohorts with partial or unbalanced effect grids, first see
 `vignette("dkge-partial-effect-spaces")` for the coverage, precision-weighting,
 and estimability contracts that precede this between-subject layer.
