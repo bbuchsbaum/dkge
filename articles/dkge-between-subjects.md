@@ -277,7 +277,7 @@ perm_transport <- dkge_between_permute(
 perm_transport$summary[, c("term", "p")]
 #>                    term    p
 #> group             group 0.76
-#> trait             trait 0.78
+#> trait             trait 0.80
 #> group:trait group:trait 1.00
 ```
 

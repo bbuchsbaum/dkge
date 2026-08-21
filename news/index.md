@@ -90,12 +90,13 @@
 
 - Sinkhorn transport now separates joint couplings from
   value-application operators. Intensive fields preserve constants,
-  extensive values preserve total mass, fitted reliability is not
-  applied twice, and each solve reports convergence, iteration,
-  marginal-error, and cache-hit diagnostics. Warm-start keys digest the
-  complete numerical problem and non-converged states are not cached;
-  the legacy `sinkhorn_cpp` method name is a deprecated alias because
-  the main path already uses C++.
+  extensive values preserve total mass, and null support is represented
+  by zero columns or rows in the corresponding application operator.
+  Fitted reliability is not applied twice, and each solve reports
+  convergence, iteration, marginal-error, and cache-hit diagnostics.
+  Warm-start keys digest the complete numerical problem and
+  non-converged states are not cached; the legacy `sinkhorn_cpp` method
+  name is a deprecated alias because the main path already uses C++.
 - K-Procrustes now reports the achieved proper-rotation objective when
   reflections are forbidden, validates PSD kernels and K-orthonormal
   inputs, accepts arbitrary eigenvector sign reflections in

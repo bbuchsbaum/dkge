@@ -145,8 +145,10 @@ alias. The main function already uses the compiled Sinkhorn backend.</p>
 
 <dt id="arg-value-type">value_type<a class="anchor" aria-label="anchor" href="#arg-value-type"></a></dt>
 <dd><p>Value semantics. `"intensive"` transports field values as
-target-conditional averages and preserves constants; `"extensive"`
-distributes source totals and preserves their sum.</p></dd>
+target-conditional averages and preserves constants on positive-mass
+targets; `"extensive"` distributes source totals and preserves their sum
+over positive-mass sources. Null-mass target columns (intensive) and source
+rows (extensive) are represented by zeros in the application operator.</p></dd>
 
 
 <dt id="arg-warm-start">warm_start<a class="anchor" aria-label="anchor" href="#arg-warm-start"></a></dt>

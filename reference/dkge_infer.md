@@ -50,7 +50,8 @@ dkge_infer(
 
 - n_perm:
 
-  Number of permutations for non-parametric tests
+  Number of permutations for sign-flip inference; ignored for parametric
+  inference.
 
 - alpha:
 
