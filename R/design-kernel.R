@@ -17,7 +17,9 @@
 #'   }
 #' @param terms List of character vectors describing which factors appear in each
 #'   kernel term (e.g. list("A","B", c("A","B"))). Defaults to all main
-#'   effects plus the full interaction.
+#'   effects plus the full interaction when there is more than one factor. For
+#'   a one-factor design, the main effect and full interaction coincide and are
+#'   included once.
 #' @param rho Named numeric weights per term (names like "A", "A:B"). Defaults
 #'   to 1 for each term if omitted. Must be non-negative.
 #' @param include_intercept Logical; if TRUE adds a small identity ridge
@@ -41,7 +43,8 @@
 #'   (default 1e-8).
 #' @return A list with elements `K` (kernel in requested basis), `K_cell` (always
 #'   returned), and `info` containing metadata such as factor/term names, mapping
-#'   matrix, and block indices.
+#'   matrix, block indices, explicit cell/effect coordinate spaces, and the
+#'   labels on each coordinate axis.
 #' @examples
 #' # Simple 2x3 factorial design
 #' kern <- design_kernel(
@@ -189,10 +192,11 @@ design_kernel <- function(factors,
 
   terms_supplied <- !is.null(terms)
   if (!terms_supplied) {
-    # Main effects plus the full interaction. With a single factor the two
-    # coincide; the historical default keeps both, which only rescales the
-    # kernel.
-    terms <- c(as.list(fact_names), list(fact_names))
+    terms <- if (!is.null(effect_grid$default_terms)) {
+      effect_grid$default_terms
+    } else {
+      .dkge_default_kernel_terms(fact_names)
+    }
   }
   if (!is.list(terms)) terms <- as.list(terms)
   terms <- lapply(seq_along(terms), function(k) {
@@ -290,12 +294,24 @@ design_kernel <- function(factors,
                block_factors = block_factors,
                cells = grid_labels$cells,
                cell_labels = grid_labels$labels,
+               effect_labels = NULL,
+               kernel_labels = NULL,
                basis = basis,
+               coordinate_space = list(
+                 kernel = basis,
+                 kernel_labels = basis,
+                 cell_labels = "cell",
+                 cells = "cell",
+                 map_rows = "cell",
+                 map_columns = "effect",
+                 blocks = basis
+               ),
                map = NULL,
                blocks = NULL,
                dims = list(Qcell = Qcell))
 
   if (basis == "cell") {
+    info$kernel_labels <- grid_labels$labels
     info$blocks <- list(cells = seq_len(Qcell))
     return(list(K = K_cell, K_cell = K_cell, info = info))
   }
@@ -337,17 +353,21 @@ design_kernel <- function(factors,
   T <- do.call(cbind, T_list)
   rownames(T) <- grid_labels$labels
 
+  effect_names <- unlist(Map(function(block, n) {
+    if (n == 1L) block else paste0(block, seq_len(n))
+  }, block_structure, out_cols), use.names = FALSE)
+  colnames(T) <- effect_names
+
   block_idx <- split(seq_len(sum(out_cols)),
                      rep(block_structure, times = out_cols))
 
   info$map    <- T
   info$blocks <- block_idx
   info$dims$q <- ncol(T)
+  info$effect_labels <- effect_names
+  info$kernel_labels <- effect_names
 
   K <- crossprod(T, K_cell %*% T)
-  effect_names <- unlist(Map(function(block, n) {
-    if (n == 1L) block else paste0(block, seq_len(n))
-  }, block_structure, out_cols), use.names = FALSE)
   dimnames(K) <- list(effect_names, effect_names)
   list(K = K, K_cell = K_cell, info = info)
 }

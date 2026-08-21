@@ -1,9 +1,22 @@
 # Residual-space rotation calibration report
 
-Executed 2026-08-16/17 under the frozen plan in
+Originally executed 2026-08-16/17 and independently rerun from clean source on
+2026-08-20 under the frozen plan in
 `data-raw/dkge-between-rotation-plan.md`. The method, seeds, simulation arms,
 gates, and promotion rule were fixed and versioned before the formal run. No
 failed gate was relaxed or rerun with a replacement seed family.
+
+## Certification status
+
+The original run recorded source `HEAD 953d2a6` but did not capture its dirty
+working-tree digest, so that run alone is historical, non-certifying evidence.
+The complete frozen runner was rerun without modification in a disposable,
+clean Git snapshot of the intended 2026-08-20 source. Snapshot commit
+`5b185e9fd92e1e68a2984eaf33f9421a38fa51eb` identifies the exact rerun source;
+it is deliberately not a commit in the primary checkout. All 8,100 replicate
+rows and all 14 summary rows are byte-identical to the original uncompressed
+artifacts, so the numerical decisions below are independently reproduced while
+the missing historical digest is not fabricated.
 
 ## Decision
 
@@ -92,10 +105,12 @@ power arm. All 8,100 term-level results are shipped in
 - Summary artifact SHA-256:
   `efef6f51cd4f9c0e9429aac191cce570c50e07824d106edf465618f3aa634b95`
 - Metadata artifact SHA-256:
-  `38fcc41abc3a5a06439c2457f51704865d23e0c56adf50f86e6c7655e1833ed9`
-- Recorded source HEAD: `953d2a64ff356d55f4a6fd3278a7f11db018fea6`
-- Working-tree digest: not captured at freeze; the recorded HEAD is the
-  last commit, and the formal run used uncommitted code on that tree.
-  The two replicate CSVs were later gzipped for packaging
-  (`read.csv()` reads `.gz` transparently); uncompressed content is unchanged.
-- Runtime: 839 seconds with R 4.5.1 on `aarch64-apple-darwin20`.
+  `e267ab454cb59dd4b977f0a75ef64ca8cd2b4d8119ed4340e192a9b5db5de90c`
+- Exact clean-source snapshot commit:
+  `5b185e9fd92e1e68a2984eaf33f9421a38fa51eb`
+- Historical source record: `HEAD 953d2a64ff356d55f4a6fd3278a7f11db018fea6`;
+  working-tree digest not captured, explicitly non-certifying on its own.
+- The replicate CSV is packaged as `.csv.gz`; its uncompressed content is
+  byte-identical to the clean rerun and has the SHA-256 above.
+- Clean-rerun runtime: 663 seconds with R 4.5.1 on
+  `aarch64-apple-darwin20`.

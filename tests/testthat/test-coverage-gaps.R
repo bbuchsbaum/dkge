@@ -161,7 +161,7 @@ test_that("dkge_pipeline handles minimal inputs", {
 
 test_that("dkge_contrast analytic method returns valid structure", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)),
+    factors = list(A = list(L = 3)),
     active_terms = "A", S = 3, P = 10, snr = 5
   )
   fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
@@ -176,7 +176,7 @@ test_that("dkge_contrast analytic method returns valid structure", {
 
 test_that("dkge_contrast kfold method works", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)),
+    factors = list(A = list(L = 3)),
     active_terms = "A", S = 4, P = 10, snr = 5
   )
   fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
@@ -193,7 +193,7 @@ test_that("dkge_contrast kfold method works", {
 
 test_that("print.dkge_contrasts works", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)),
+    factors = list(A = list(L = 3)),
     active_terms = "A", S = 3, P = 8, snr = 5
   )
   fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
@@ -207,7 +207,7 @@ test_that("print.dkge_contrasts works", {
 
 test_that("as.data.frame.dkge_contrasts works", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)),
+    factors = list(A = list(L = 3)),
     active_terms = "A", S = 3, P = 8, snr = 5
   )
   fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)
@@ -238,9 +238,10 @@ test_that("dkge_signflip_maxT handles minimum inputs", {
 
   result <- dkge_signflip_maxT(Y, B = 100)
 
-  expect_named(result, c("stat", "p", "maxnull", "flips"))
+  expect_named(result, c("stat", "p", "p_unadj", "maxnull", "flips"))
   expect_length(result$stat, 10)
   expect_length(result$p, 10)
+  expect_length(result$p_unadj, 10)
   expect_length(result$maxnull, 100)
 })
 

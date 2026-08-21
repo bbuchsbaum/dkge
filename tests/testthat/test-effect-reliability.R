@@ -140,9 +140,41 @@ test_that("fold pooling inherits effect reliability and missingness policy", {
   expect_equal(ctx$pair_ess, oracle$pair_ess, tolerance = 1e-12)
   expect_equal(ctx$missingness, "shrink")
 
-  analytic <- dkge_analytic_loso(fit, 2, c(1, -1))
+  # Force the later perturbation trigger as well. The structural pooling
+  # invalidation must retain precedence over this numeric condition.
+  forced <- fit
+  forced$eig_vectors_full <- diag(2)
+  forced$eig_values_full <- c(1, 0.5)
+  forced$contribs[[2]] <- matrix(c(1, 2, 2, 4), 2, 2)
+  H <- crossprod(forced$eig_vectors_full,
+                 forced$contribs[[2]] %*% forced$eig_vectors_full)
+  forced_coeff <- abs(forced$weights[[2]] * H[2, 1] /
+                        (forced$eig_values_full[1] - forced$eig_values_full[2]))
+  expect_gt(forced_coeff, 0.1)
+
+  analytic <- dkge_analytic_loso(forced, 2, c(1, -1))
   expect_equal(analytic$method, "fallback")
   expect_equal(analytic$diagnostic$reason, "pair_normalized_pooling")
+  expect_true(is.na(analytic$diagnostic$max_abs_coeff))
+
+  reported <- dkge_contrast(fit, list(difference = c(1, -1)),
+                            method = "analytic")
+  expect_true(all(reported$metadata$fallback_detail$reason ==
+                    "pair_normalized_pooling"))
+  printed <- capture.output(print(reported))
+  expect_true(any(grepl("reason=pair_normalized_pooling", printed,
+                        fixed = TRUE)))
+})
+
+test_that("sparse-pair pooling reports the structural fallback reason", {
+  fx <- make_partial_fit(
+    seed = 903L,
+    effect_scaling = "none",
+    missingness = "rescale"
+  )
+  result <- dkge_analytic_loso(fx$fit, 1, c(1, -1, 0, 0))
+  expect_equal(result$method, "fallback")
+  expect_equal(result$diagnostic$reason, "pair_normalized_pooling")
 })
 
 test_that("missingness='rescale' is not a no-op under effect weighting", {

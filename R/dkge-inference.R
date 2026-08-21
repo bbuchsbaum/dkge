@@ -13,13 +13,22 @@
 #' @param B number of sign-flip permutations
 #' @param center "mean" or "median" for the location statistic (t uses mean)
 #' @param tail "two.sided" | "greater" | "less"
-#' @return list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector), flips (SxB signs)
+#' @return A list with fields: `stat` (Q-vector of observed t-statistics), `p`
+#'   (Q-vector of max-T family-wise-error adjusted p-values), `p_unadj`
+#'   (Q-vector of per-column unadjusted permutation p-values), `maxnull`
+#'   (B-vector of permutation maximum statistics), and `flips` (S-by-B sign
+#'   matrix). Statistic and p-value names follow `colnames(Y)` (or stable
+#'   `feature*` defaults); flip rows follow `rownames(Y)` (or `subject*`
+#'   defaults).
 #' @export
 dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
                                tail = c("two.sided","greater","less")) {
   center <- match.arg(center); tail <- match.arg(tail)
   Y <- as.matrix(Y); S <- nrow(Y); Q <- ncol(Y)
   stopifnot(S >= 5, B >= 100)
+  subject_ids <- rownames(Y) %||% paste0("subject", seq_len(S))
+  feature_ids <- colnames(Y) %||% paste0("feature", seq_len(Q))
+  permutation_ids <- paste0("perm", seq_len(B))
 
   # observed t per cluster
   mu  <- colMeans(Y)
@@ -28,6 +37,7 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
 
   # generate random sign matrix (SxB)
   flips <- matrix(sample(c(-1,1), S*B, replace=TRUE), S, B)
+  dimnames(flips) <- list(subject_ids, permutation_ids)
   # center data if using "median" just for display; t uses mean in any case
   Yc <- Y
 
@@ -59,6 +69,10 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
   # p-values: max-T (strong FWER control) and per-cluster uncorrected.
   p <- sapply(obs_side, function(x) (1 + sum(maxnull >= x)) / (B + 1))
   p_unadj <- (1 + exceed_unadj) / (B + 1)
+  names(t_obs) <- feature_ids
+  names(p) <- feature_ids
+  names(p_unadj) <- feature_ids
+  names(maxnull) <- permutation_ids
 
   list(stat = t_obs, p = p, p_unadj = p_unadj, maxnull = maxnull, flips = flips)
 }

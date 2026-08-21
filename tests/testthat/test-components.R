@@ -30,7 +30,10 @@ test_that("dkge_component_stats returns tidy summary", {
 test_that("auto centroids and Sinkhorn mapper produce consensus summary", {
   fixture <- make_component_fixture(S = 5)
   res <- dkge_component_stats(fixture$fit,
-                              mapper = list(strategy = "sinkhorn", epsilon = 0.05),
+                              mapper = dkge_mapper_spec(
+                                "sinkhorn", epsilon = 0.05,
+                                max_iter = 2000, tol = 1e-3
+                              ),
                               components = 1,
                               inference = list(type = "parametric"))
   expect_equal(unique(res$summary$component), 1)

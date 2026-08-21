@@ -16,6 +16,51 @@ NULL
 #' @keywords internal
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
+#' Signal a stable DKGE error condition
+#'
+#' Base condition subclasses let callers distinguish input-contract failures
+#' without making message text or a new dependency part of the API.
+#'
+#' @param message User-facing error message.
+#' @param subclass Specific condition subclass.
+#' @keywords internal
+#' @noRd
+.dkge_abort <- function(message, subclass = "dkge_input_error") {
+  condition <- structure(
+    list(message = as.character(message), call = NULL),
+    class = c(subclass, "dkge_input_error", "dkge_error", "error", "condition")
+  )
+  stop(condition)
+}
+
+#' Validate optional design-kernel metadata
+#'
+#' @param info Optional metadata associated with a design kernel.
+#' @return `info`, invisibly validated as a list or `NULL`.
+#' @keywords internal
+#' @noRd
+.dkge_validate_kernel_info <- function(info) {
+  if (is.null(info)) {
+    return(NULL)
+  }
+  if (!is.list(info)) {
+    .dkge_abort(
+      paste0(
+        "Design-kernel metadata `info` must be a list or NULL; got class ",
+        paste(class(info), collapse = "/"), "."
+      ),
+      "dkge_kernel_info_error"
+    )
+  }
+  if (!is.null(info$info) && !is.list(info$info)) {
+    .dkge_abort(
+      "Nested design-kernel metadata `info$info` must be a list or NULL.",
+      "dkge_kernel_info_error"
+    )
+  }
+  info
+}
+
 #' Apply helper with optional parallelism
 #'
 #' Wraps `lapply()` with an optional future.apply backend so callers can enable

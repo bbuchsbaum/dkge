@@ -249,13 +249,7 @@ dkge_contrast <- function(fit, contrasts,
   if (is.null(factor_scope) || is.null(names(factor_scope))) {
     return(NULL)
   }
-  cells <- .dkge_match_kernel_cells(
-    fit, info,
-    message_on_miss = paste(
-      "kernel_info$cell_labels do not match fit$effects;",
-      "structural estimability scope is unavailable."
-    )
-  )
+  cells <- .dkge_match_kernel_cells(fit, info)
   cvec <- as.numeric(contrast)
   if (is.null(cells) || !nrow(cells) || nrow(cells) != length(cvec) || anyNA(cvec)) {
     return(NULL)

@@ -22,6 +22,42 @@ test_that("dkge_targets constructs effect targets", {
   expect_true(all(vapply(tg, function(x) nrow(x$weight_matrix) >= 1, logical(1))))
 })
 
+test_that("dkge_targets rematches both named map axes and rejects ambiguity", {
+  fixture <- make_classification_fit(S = 4, seed = 19)
+  fit <- fixture$fit
+  reference <- dkge_targets(fit, ~ A + B + A:B, residualize = FALSE)
+
+  permuted <- fit
+  map <- fit$kernel_info$map
+  row_perm <- rev(seq_len(nrow(map)))
+  col_perm <- c(seq_len(ncol(map))[-1L], 1L)
+  permuted$kernel_info$map <- map[row_perm, col_perm, drop = FALSE]
+  observed <- dkge_targets(permuted, ~ A + B + A:B, residualize = FALSE)
+
+  expect_identical(vapply(observed, `[[`, character(1), "name"),
+                   vapply(reference, `[[`, character(1), "name"))
+  for (i in seq_along(reference)) {
+    expect_equal(observed[[i]]$weight_matrix,
+                 reference[[i]]$weight_matrix,
+                 tolerance = 1e-12)
+  }
+
+  unnamed <- fit
+  dimnames(unnamed$kernel_info$map) <- NULL
+  expect_error(
+    dkge_targets(unnamed, ~ A),
+    "map.*named cell rows and effect columns"
+  )
+
+  duplicated <- fit
+  colnames(duplicated$kernel_info$map)[2L] <-
+    colnames(duplicated$kernel_info$map)[1L]
+  expect_error(
+    dkge_targets(duplicated, ~ A),
+    "map column names.*unique"
+  )
+})
+
 test_that("dkge_classify returns metrics", {
   fixture <- make_classification_fit()
   fit <- fixture$fit

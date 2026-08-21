@@ -21,7 +21,13 @@ dkge_signflip_maxT(
 \item{tail}{"two.sided" | "greater" | "less"}
 }
 \value{
-list with fields: stat (Q-vector), p (Q-vector), maxnull (B-vector), flips (SxB signs)
+A list with fields: `stat` (Q-vector of observed t-statistics), `p`
+  (Q-vector of max-T family-wise-error adjusted p-values), `p_unadj`
+  (Q-vector of per-column unadjusted permutation p-values), `maxnull`
+  (B-vector of permutation maximum statistics), and `flips` (S-by-B sign
+  matrix). Statistic and p-value names follow `colnames(Y)` (or stable
+  `feature*` defaults); flip rows follow `rownames(Y)` (or `subject*`
+  defaults).
 }
 \description{
 Computes cluster-wise one-sample t-statistics across subjects on transported

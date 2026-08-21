@@ -219,10 +219,56 @@ test_that("Analytic LOSO falls back when perturbation magnitude is large", {
   # Should fall back due to perturbation magnitude (coeff >> 0.1)
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "perturbation_magnitude")
+  expect_gt(result$diagnostic$max_abs_coeff,
+            result$diagnostic$threshold_coeff)
 
   # Verify fallback produces valid result (same as direct LOSO)
   exact <- dkge_loso_contrast(fit, s = 1, contrasts = cvec)
   expect_lt(max(abs(result$v - exact$v)), 1e-12)
+})
+
+test_that("structural fallback precedence and vocabulary are stable", {
+  expect_identical(
+    dkge:::.dkge_analytic_reason_levels,
+    c(
+      "analytic", "solver_not_pooled", "pair_normalized_pooling",
+      "covariance_aware_moment", "nonuniform_voxel_weights",
+      "missing_full_decomposition", "dimension_mismatch", "eigengap",
+      "perturbation_magnitude", "fallback"
+    )
+  )
+
+  set.seed(309)
+  cells <- factor(rep(c("e1", "e2"), each = 5),
+                  levels = c("e1", "e2"))
+  X <- model.matrix(~ 0 + cells)
+  colnames(X) <- levels(cells)
+  subjects <- lapply(seq_len(3), function(s) {
+    Y <- X %*% matrix(c(1, -0.5, 0.25, 1.5), 2, 2) +
+      matrix(rnorm(20, sd = 0.2 + 0.1 * s), 10, 2)
+    dkge_trial_subject(Y, X, id = paste0("s", s))
+  })
+  data <- dkge_data(subjects)
+  fit <- dkge_fit(
+    data, K = diag(2), rank = 1, w_method = "none",
+    effect_scaling = "none", debias = "analytic"
+  )
+  result <- dkge_analytic_loso(fit, s = 1, contrasts = c(1, -1))
+  expect_equal(result$diagnostic$reason, "covariance_aware_moment")
+
+  fit_both <- dkge_fit(
+    data, K = diag(2), rank = 1, w_method = "none",
+    effect_scaling = "none", debias = "analytic",
+    effect_weights = dkge_effect_weights("count")
+  )
+  result_pair <- dkge_analytic_loso(fit_both, s = 1,
+                                    contrasts = c(1, -1))
+  expect_equal(result_pair$diagnostic$reason, "pair_normalized_pooling")
+
+  expect_error(
+    dkge:::.dkge_analytic_diagnostic("not_a_reason"),
+    "unknown analytic fallback reason"
+  )
 })
 
 # ---------- Test 7: Analytic matches iterative within tolerance ----------

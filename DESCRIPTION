@@ -2,8 +2,6 @@ Package: dkge
 Type: Package
 Title: Design-Kernel Group Embedding for Cluster-Level fMRI
 Version: 0.0.0.9000
-Author: Brad Buchsbaum <brad.buchsbaum@gmail.com>
-Maintainer: Brad Buchsbaum <brad.buchsbaum@gmail.com>
 Authors@R: c(
     person(given = "Brad", family = "Buchsbaum", email = "brad.buchsbaum@gmail.com", role = c("aut", "cre"))
   )
@@ -30,7 +28,9 @@ Imports:
     ggplot2,
     glmnet
 Suggests:
+    albersdown,
     fmriAR,
+    future,
     microbenchmark,
     neuralign,
     pkgdown,
@@ -39,14 +39,18 @@ Suggests:
     T4transport,
     knitr,
     rmarkdown,
+    ragg,
     patchwork,
     ggrepel,
     tidyr,
-    purrr
+    purrr,
+    withr,
+    systemfonts
 LinkingTo:
     Rcpp,
     RcppArmadillo
 Remotes:
+    bbuchsbaum/albersdown,
     bbuchsbaum/neuralign,
     bbuchsbaum/neuroim2,
     bbuchsbaum/fmridesign,
@@ -60,3 +64,4 @@ URL: https://bbuchsbaum.github.io/dkge/, https://github.com/bbuchsbaum/dkge
 BugReports: https://github.com/bbuchsbaum/dkge/issues
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/Needs/website: albersdown

@@ -26,6 +26,7 @@ as_dkge_kernel.default <- function(x, ...) {
     return(list(K = x, info = NULL))
   }
   if (is.list(x) && !is.null(x$K)) {
+    x$info <- .dkge_validate_kernel_info(x$info %||% NULL)
     return(x)
   }
   stop(

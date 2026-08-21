@@ -552,6 +552,7 @@ dkge_weights_auto <- function() {
 }
 
 .dkge_weight_kernel_payload <- function(K, info) {
+  info <- .dkge_validate_kernel_info(info)
   levels <- NULL
   map <- NULL
   if (!is.null(info)) {

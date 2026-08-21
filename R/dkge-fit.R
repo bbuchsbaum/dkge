@@ -67,6 +67,48 @@
   max(0, eigen(G, symmetric = TRUE, only.values = TRUE)$values[1L])
 }
 
+#' Frozen MFA power-iteration approximation
+#'
+#' The original public default used this 50-step approximation. Its random
+#' initial vector was formerly drawn from the caller's RNG stream. The enclosing
+#' subject-weight calculation now runs it in one frozen, private RNG scope, which
+#' preserves the historical numerical result for the canonical compatibility
+#' seed without perturbing or depending on caller state.
+#'
+#' @param X Numeric matrix.
+#' @param tol Relative convergence tolerance.
+#' @param max_iter Maximum number of iterations.
+#' @return Approximate squared leading singular value.
+#' @keywords internal
+#' @noRd
+.dkge_mfa_leading_sv_squared <- function(X, tol = 1e-6, max_iter = 50L) {
+  X <- as.matrix(X)
+  if (!all(is.finite(X))) X[!is.finite(X)] <- 0
+  n <- nrow(X)
+  if (n == 0L || ncol(X) == 0L) return(0)
+
+  v <- stats::rnorm(n)
+  v_norm <- sqrt(sum(v * v))
+  if (!is.finite(v_norm) || v_norm == 0) return(0)
+  v <- v / v_norm
+  sigma_sq <- 0
+  for (iter in seq_len(max_iter)) {
+    w <- X %*% (t(X) %*% v)
+    w_norm <- sqrt(sum(w * w))
+    if (!is.finite(w_norm) || w_norm == 0) break
+    v <- w / w_norm
+    s_sq_new <- sum((t(X) %*% v)^2)
+    if (abs(s_sq_new - sigma_sq) <= tol * max(1, sigma_sq)) {
+      sigma_sq <- s_sq_new
+      break
+    }
+    sigma_sq <- s_sq_new
+  }
+  sigma_sq
+}
+
+.dkge_mfa_compatibility_seed <- 8172026L
+
 #' Derive optional subject-level weights
 #'
 #' Weights are computed on the same quantity the eigensolve sees: the subject's
@@ -93,6 +135,10 @@
   if (w_method == "none") {
     return(rep(1, S))
   }
+  if (identical(w_method, "mfa_sigma1")) {
+    rng_state <- .dkge_seed_enter(.dkge_mfa_compatibility_seed)
+    on.exit(.dkge_seed_exit(rng_state), add = TRUE)
+  }
   q <- nrow(Btil[[1]])
   weights <- numeric(S)
   usable <- rep(TRUE, S)
@@ -116,7 +162,7 @@
       Khalf %*% Bts %*% sqrtm_sym(Omega)
     }
     if (w_method == "mfa_sigma1") {
-      sigma_sq <- .dkge_leading_sv_squared(KsBt)
+      sigma_sq <- .dkge_mfa_leading_sv_squared(KsBt)
       weights[s] <- 1 / (sigma_sq + 1e-12)
     } else {
       weights[s] <- 1 / (sum(KsBt * KsBt) + 1e-12)

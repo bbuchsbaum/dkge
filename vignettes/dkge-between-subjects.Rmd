@@ -1,13 +1,31 @@
 ---
-title: "Between-Subject Multivariate Modeling"
-output: rmarkdown::html_vignette
-vignette: >
+title: Between-Subject Multivariate Modeling
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    toc_depth: 2.0
+    css: albers.css
+    includes:
+      in_header: albers-header.html
+params:
+  family: red
+  preset: interaction
+resource_files:
+- albers.css
+- albers.js
+- albers-header.html
+- fonts
+
+vignette: |
   %\VignetteIndexEntry{Between-Subject Multivariate Modeling}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include = FALSE}
+if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
+if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -16,6 +34,19 @@ knitr::opts_chunk$set(
 )
 library(dkge)
 set.seed(2026)
+```
+
+```{r albers-classes, echo=FALSE, results='asis'}
+cat(sprintf(
+  paste0(
+    '<script>document.addEventListener("DOMContentLoaded",function(){',
+    'document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");',
+    'document.body.classList.add("palette-%s","preset-%s");',
+    '});</script>'
+  ),
+  params$family,
+  params$preset
+))
 ```
 
 Suppose you have one brain-derived feature vector per subject and want to ask
@@ -188,13 +219,19 @@ calibration_table <- data.frame(
   rotation_gate = ifelse(rotation_global$gate_pass & rotation_partial$gate_pass,
                          "pass", "fail")
 )
-power_table <- subset(rotation_calibration,
-                      arm == "strong_interaction_power",
-                      c("method", "rejection_005", "wilson_lower", "wilson_upper"))
+power_rows <- subset(rotation_calibration,
+                     arm == "strong_interaction_power")
+power_table <- power_rows[, c("method", "rejection_005",
+                              "wilson_lower", "wilson_upper")]
 rownames(power_table) <- NULL
 stopifnot(nrow(calibration_table) == 3L)
 stopifnot(all(rotation_global$gate_pass))
 stopifnot(identical(rotation_partial$gate_pass, c(TRUE, TRUE, FALSE)))
+stopifnot(all(rotation_global$B == 399L))
+stopifnot(all(rotation_partial$B == 399L))
+stopifnot(all(legacy_primary$n == 20L))
+stopifnot(all(legacy_primary$permutations == 399L))
+stopifnot(all(power_rows$B == 199L))
 stopifnot(power_table$rejection_005[power_table$method == "rotation"] == 0.43)
 ```
 
@@ -334,3 +371,6 @@ is individually significant.
 Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
 latent target, and use `type = "transported_maps"` when spatial interpretation
 in a common map space matters. See `vignette("dkge-contrasts-inference")` for within-subject contrast inference.
+For cohorts with partial or unbalanced effect grids, first see
+`vignette("dkge-partial-effect-spaces")` for the coverage, precision-weighting,
+and estimability contracts that precede this between-subject layer.

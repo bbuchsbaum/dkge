@@ -2,6 +2,16 @@
 
 ## New features
 
+* `dkge_signflip_maxT()` now explicitly exposes both max-T FWER-adjusted `p`
+  and per-location unadjusted `p_unadj`. The latter is the raw value reported
+  by `dkge_infer()` in `p_values`, while `p_adjusted` retains max-T control;
+  result axes carry stable subject, feature, and permutation labels.
+* The partial-effect-space article is restored and now executes coverage,
+  pair-ESS, weighted chunked-debiasing, and estimability-warning contracts.
+  The frozen 8,100-result between-subject rotation calibration was also rerun
+  from exact clean snapshot `5b185e9f`; replicate and summary artifacts were
+  byte-identical to the historical run, whose missing dirty-tree digest is now
+  explicitly labeled non-certifying on its own.
 * **Partial effect spaces.** Subjects may observe only a subset of the design
   effects (`observed_rows` on `dkge_subject()`; `dkge_effect_grid()` for a
   canonical cell grid). Coverage provenance (`obs_mask`, `pair_counts`) flows
@@ -60,6 +70,17 @@
   and validates consensus controls. `dkge_sim_toy()` also samples named term
   blocks by position, fixing the scalar-`sample()` ambiguity that could plant
   duplicate, metric-singular components.
+* Design-kernel metadata now declares cell and effect coordinate spaces and
+  names both axes of the cell-to-effect map. Kernel permutations align only the
+  declared K axis; design-basis, target, plotting, classification, and
+  estimability consumers rematch names and fail closed on ambiguous mappings.
+  In particular, equal cell/effect dimensions are no longer treated as proof
+  that cell metadata indexes effect rows.
+* Analytic LOSO now reports structural fallback causes before numerical ones.
+  Pair-normalized effect/missingness pooling is again labelled
+  `pair_normalized_pooling`, covariance-aware moments are labelled
+  `covariance_aware_moment`, and a later large perturbation cannot mask either
+  primary cause.
 * `dkge_procrustes_K()` returned the transpose of the optimal rotation; the
   error was invisible at rank ≤ 2 (transpositions are involutions) but permuted
   components at rank ≥ 3. All K-Procrustes call sites (bootstrap, analytic,
@@ -86,10 +107,10 @@
   `design$nuisance`. Rotation accepts a factor with unused block levels.
 * `dkge_subject_model(na.action = na.omit)` keeps subject IDs aligned with
   retained rows.
-* Subject weights under the default `w_method = "mfa_sigma1"` were computed
-  by a randomly seeded power iteration, so `dkge_fit()` results (including
-  component signs) depended on ambient RNG state. The leading singular value
-  is now computed exactly and fits are bit-reproducible.
+* Subject weights under the default `w_method = "mfa_sigma1"` retain the
+  legacy power-iteration numerical contract inside a frozen private RNG scope.
+  Fits are reproducible and leave the caller's RNG unchanged, while matching
+  the canonical pre-extension default weights and downstream results.
 * Contrast estimability now prefers structural evidence over a contrast's
   name, so a between-subject contrast named after a within-subject term is
   still flagged.
@@ -98,6 +119,12 @@
 
 ## Breaking / behaviour changes
 
+* A one-factor `design_kernel(terms = NULL)` now contains its main-effect term
+  once. Previously the identical main effect and full interaction were both
+  added, which doubled an unnormalised cell kernel and duplicated the
+  effect-basis block and labels. Multi-factor defaults are unchanged; callers
+  that intentionally need the old cell-kernel scale can set the sole term's
+  `rho` to 2 explicitly.
 * Cross-fitting helpers (`dkge_loso_contrast()`, `dkge_cv_*`, k-fold builders)
   now inherit `missingness` from the fit instead of defaulting to `"none"`.
   Numerically identical for full-coverage fits.

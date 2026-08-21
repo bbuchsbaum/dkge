@@ -45,6 +45,10 @@ test_that("frozen rotation calibration evidence is complete and decision-stable"
   expect_true(all(is.finite(replicates$p)))
   expect_true(all(replicates$p > 0 & replicates$p <= 1))
   expect_equal(sort(unique(replicates$B)), c(199L, 399L))
+  expect_identical(
+    unname(metadata[["git_head"]]),
+    "5b185e9fd92e1e68a2984eaf33f9421a38fa51eb"
+  )
   plan_path <- file.path(pkg_root, "data-raw/dkge-between-rotation-plan.md")
   runner_path <- file.path(pkg_root, "dev/calibrate-dkge-between-rotation.R")
   if (file.exists(plan_path) && file.exists(runner_path)) {
@@ -106,6 +110,8 @@ test_that("frozen rotation calibration evidence is complete and decision-stable"
   if (file.exists(report_path)) {
     report <- paste(readLines(report_path), collapse = "\n")
     expect_true(grepl("(?i)size-adjusted comparison", report, perl = TRUE))
+    expect_true(grepl("non-certifying", report, fixed = TRUE))
+    expect_true(grepl("byte-identical", report, fixed = TRUE))
     expect_true(grepl("0\\.086", report))
     expect_true(grepl("0\\.49", report))
   }

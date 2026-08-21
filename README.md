@@ -88,6 +88,20 @@ Project home and documentation: <https://github.com/bbuchsbaum/dkge>. Issues and
 ## Development
 - Pull requests are encouraged; please accompany user-facing changes with tests and documentation.
 - For large feature work, open an issue to discuss design choices before implementation.
+- `Authors@R` is the canonical author/maintainer record; legacy `Author` and
+  `Maintainer` fields are intentionally omitted.
+- `Remotes` is retained because several development dependencies are sourced
+  from the bbuchsbaum GitHub/R-universe ecosystem. This repository is not
+  currently claiming a CRAN-ready dependency graph.
+- The supported local package gate sets `_R_CHECK_FORCE_SUGGESTS_=false` when
+  optional `T4transport` is unavailable. Core checks must still pass; the
+  independent Sinkhorn comparison is an additional gate run in environments
+  where `T4transport` is installed.
 
 ## License
 MIT License. See `LICENSE` for details.
+
+<!-- albersdown:theme-note:start -->
+## Albers theme
+This package uses the albersdown theme. Existing vignette theme hooks are replaced so `albers.css` and local `albers.js` render consistently on CRAN and GitHub Pages. The defaults are configured via `params$family` and `params$preset` (family = 'red', preset = 'interaction'). The pkgdown site uses `template: { package: albersdown }` together with generated `pkgdown/extra.css` and `pkgdown/extra.js` so the theme is linked and activated on site pages.
+<!-- albersdown:theme-note:end -->

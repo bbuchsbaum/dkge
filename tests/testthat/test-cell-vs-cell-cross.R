@@ -9,7 +9,7 @@
 
 test_that("cell mode loaders use the global fit$U for every fold", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)), active_terms = "A",
+    factors = list(A = list(L = 3)), active_terms = "A",
     S = 5, P = 12, snr = 5, seed = 1
   )
   fit  <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
@@ -25,7 +25,7 @@ test_that("cell mode loaders use the global fit$U for every fold", {
 
 test_that("cell_cross mode loaders use fold-specific LOSO bases", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)), active_terms = "A",
+    factors = list(A = list(L = 3)), active_terms = "A",
     S = 5, P = 12, snr = 5, seed = 1
   )
   fit  <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
@@ -44,7 +44,7 @@ test_that("cell_cross mode loaders use fold-specific LOSO bases", {
 
 test_that("held-out subject Y matrix differs between cell and cell_cross", {
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)), active_terms = "A",
+    factors = list(A = list(L = 3)), active_terms = "A",
     S = 5, P = 12, snr = 5, seed = 3
   )
   fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
@@ -110,7 +110,7 @@ test_that("cell mode basis includes held-out subject (documented leakage)", {
   # fit$U is estimated on ALL subjects, then the classifier is cross-validated.
   # This test documents that property explicitly.
   toy <- dkge_sim_toy(
-    factors = list(A = list(L = 2)), active_terms = "A",
+    factors = list(A = list(L = 3)), active_terms = "A",
     S = 4, P = 10, snr = 5, seed = 5
   )
   fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 1)

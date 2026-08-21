@@ -161,7 +161,12 @@
     idx <- match(effects, labels)
     K <- K[idx, idx, drop = FALSE]
     dimnames(K) <- list(effects, effects)
-    kernel_info <- .dkge_permute_kernel_info(kernel_info, idx)
+    kernel_info <- .dkge_permute_kernel_info(
+      kernel_info,
+      idx = idx,
+      from_labels = labels,
+      to_labels = effects
+    )
     message("Design kernel reordered to match the data effect order.")
   } else {
     dimnames(K) <- list(effects, effects)
@@ -169,23 +174,65 @@
   out(K, effects, kernel_info)
 }
 
-.dkge_permute_kernel_info <- function(info, idx) {
+.dkge_kernel_info_space <- function(info, kernel_labels = NULL) {
+  if (!is.list(info)) return(NULL)
+  declared <- NULL
+  if (is.list(info$coordinate_space)) {
+    declared <- info$coordinate_space$kernel
+  }
+  declared <- declared %||% info$basis
+  if (!is.null(declared)) {
+    declared <- as.character(declared)
+    if (length(declared) != 1L || !declared %in% c("cell", "effect")) {
+      stop("kernel_info must declare its kernel coordinate space as 'cell' or 'effect'.",
+           call. = FALSE)
+    }
+    return(declared)
+  }
+
+  # Backward-compatible derivation is name-based. Equal lengths alone are
+  # deliberately not evidence of a shared coordinate system.
+  kernel_labels <- as.character(kernel_labels %||% character())
+  name_matches <- function(x) {
+    x <- as.character(x %||% character())
+    length(x) && !anyDuplicated(x) && !anyDuplicated(kernel_labels) &&
+      setequal(x, kernel_labels)
+  }
+  cell_match <- name_matches(info$cell_labels)
+  effect_match <- name_matches(info$effect_labels)
+  if (cell_match && effect_match) {
+    stop(
+      "kernel_info coordinate space is ambiguous; declare `basis` or `coordinate_space$kernel`.",
+      call. = FALSE
+    )
+  }
+  if (cell_match) return("cell")
+  if (effect_match) return("effect")
+  NULL
+}
+
+.dkge_permute_kernel_info <- function(info, idx, from_labels = NULL,
+                                      to_labels = NULL) {
   if (!is.list(info)) {
     return(info)
   }
   q <- length(idx)
-  # Cell-space metadata (`cell_labels`, `cells`) is length-q only for a
-  # cell-basis kernel. Effect-basis kernels keep those in Qcell and must
-  # not be row-permuted with the q-dimensional `K`.
-  if (!is.null(info$cell_labels) && length(info$cell_labels) == q) {
+  space <- .dkge_kernel_info_space(info, from_labels)
+  declared <- if (is.list(info$coordinate_space)) info$coordinate_space else list()
+
+  if (!is.null(info$kernel_labels)) {
+    info$kernel_labels <- info$kernel_labels[idx]
+  }
+  if (identical(space, "cell") && !is.null(info$cell_labels)) {
     info$cell_labels <- info$cell_labels[idx]
   }
-  if (!is.null(info$cells)) {
+  if (identical(space, "effect") && !is.null(info$effect_labels)) {
+    info$effect_labels <- info$effect_labels[idx]
+  }
+  if (identical(space, "cell") && !is.null(info$cells)) {
     cells <- as.data.frame(info$cells, stringsAsFactors = FALSE)
-    if (nrow(cells) == q) {
-      info$cells <- cells[idx, , drop = FALSE]
-      rownames(info$cells) <- NULL
-    }
+    info$cells <- cells[idx, , drop = FALSE]
+    rownames(info$cells) <- NULL
   }
   if (!is.null(info$blocks)) {
     info$blocks <- lapply(info$blocks, function(b) {
@@ -193,15 +240,28 @@
       match(as.integer(b), idx)
     })
   }
-  if (!is.null(info$map) && is.matrix(info$map) && ncol(info$map) == q) {
-    info$map <- info$map[, idx, drop = FALSE]
+  if (!is.null(info$map) && is.matrix(info$map)) {
+    if (identical(space, "effect")) {
+      info$map <- info$map[, idx, drop = FALSE]
+    } else if (identical(space, "cell")) {
+      info$map <- info$map[idx, , drop = FALSE]
+    }
   }
-  known <- c("cell_labels", "cells", "blocks", "map", "levels",
+  known <- c("cell_labels", "effect_labels", "kernel_labels", "cells",
+             "blocks", "map", "levels", "coordinate_space",
              "factor_names", "term_names", "factor_scope", "term_scope",
              "block_factors", "basis", "dims")
   for (nm in setdiff(names(info), known)) {
     val <- info[[nm]]
-    if (is.atomic(val) && is.null(dim(val)) && length(val) == q) {
+    if (!is.atomic(val) || !is.null(dim(val))) next
+    val_space <- declared[[nm]] %||% NULL
+    named_on_kernel <- !is.null(names(val)) &&
+      !anyDuplicated(names(val)) &&
+      !is.null(from_labels) &&
+      setequal(names(val), from_labels)
+    if (named_on_kernel) {
+      info[[nm]] <- val[match(to_labels, names(val))]
+    } else if (!is.null(space) && identical(val_space, space) && length(val) == q) {
       info[[nm]] <- val[idx]
     }
   }
@@ -210,17 +270,63 @@
 
 .dkge_check_kernel_info <- function(fit) {
   info <- fit$kernel_info
-  if (!is.list(info) || is.null(info$cell_labels) || is.null(fit$effects)) {
+  if (!is.list(info) || is.null(fit$effects)) {
     return(invisible(fit))
   }
-  # Effect-basis kernels keep cell_labels in cell space (Qcell != q); the
-  # invariant applies only when the labels index the same rows as `K`.
-  if (length(info$cell_labels) != length(fit$effects)) {
-    return(invisible(fit))
-  }
-  if (!identical(as.character(info$cell_labels), as.character(fit$effects))) {
-    stop("kernel_info$cell_labels must match fit$effects after kernel alignment.",
+  effects <- as.character(fit$effects)
+  kernel_labels <- rownames(fit$K) %||% colnames(fit$K) %||% effects
+  space <- .dkge_kernel_info_space(info, kernel_labels)
+  if (is.null(space)) return(invisible(fit))
+
+  if (!is.null(info$kernel_labels) &&
+      !identical(as.character(info$kernel_labels), effects)) {
+    stop("kernel_info$kernel_labels must match fit$effects after kernel alignment.",
          call. = FALSE)
+  }
+
+  cell_labels <- as.character(info$cell_labels %||% character())
+  if (length(cell_labels) && anyDuplicated(cell_labels)) {
+    stop("kernel_info$cell_labels must be unique.", call. = FALSE)
+  }
+  if (!is.null(info$cells) && nrow(as.data.frame(info$cells)) != length(cell_labels)) {
+    stop("kernel_info$cells must have one row per cell label.", call. = FALSE)
+  }
+
+  if (identical(space, "cell") &&
+      !identical(cell_labels, effects)) {
+    stop("kernel_info$cell_labels must match fit$effects for a cell-basis kernel.",
+         call. = FALSE)
+  }
+
+  if (identical(space, "effect")) {
+    effect_labels <- as.character(info$effect_labels %||% character())
+    if (!identical(effect_labels, effects)) {
+      stop("kernel_info$effect_labels must match fit$effects for an effect-basis kernel.",
+           call. = FALSE)
+    }
+    if (!is.null(info$map)) {
+      map <- info$map
+      if (!is.matrix(map) || nrow(map) != length(cell_labels) ||
+          ncol(map) != length(effect_labels)) {
+        stop("kernel_info$map must have cell rows and effect columns.", call. = FALSE)
+      }
+      if (!identical(as.character(rownames(map)), cell_labels)) {
+        stop("kernel_info$map row names must match cell_labels.", call. = FALSE)
+      }
+      if (!identical(as.character(colnames(map)), effect_labels)) {
+        stop("kernel_info$map column names must match effect_labels.", call. = FALSE)
+      }
+    }
+  }
+
+  if (!is.null(info$blocks)) {
+    block_idx <- unlist(info$blocks, use.names = FALSE)
+    if (length(block_idx) &&
+        (!is.numeric(block_idx) || anyNA(block_idx) ||
+         any(block_idx < 1L | block_idx > length(effects)))) {
+      stop("kernel_info$blocks must index the declared kernel coordinate space.",
+           call. = FALSE)
+    }
   }
   invisible(fit)
 }
@@ -776,31 +882,154 @@
 #'
 #' @keywords internal
 #' @noRd
+.dkge_block_factor_diagnostics <- function(fit, Xstar, tolerance = 1e-10) {
+  r <- fit$rank
+  chat_residual <- fit$Chat - tcrossprod(Xstar)
+  chat_scale <- max(1, norm(fit$Chat, "F"))
+  chat_error <- norm(chat_residual, "F") / chat_scale
+  symmetry_error <- norm(fit$Chat - t(fit$Chat), "F") / chat_scale
+
+  out <- list(
+    chat_scale = chat_scale,
+    factor_scale = norm(Xstar, "F"),
+    chat_relative_error = chat_error,
+    symmetry_relative_error = symmetry_error,
+    orthogonality_error = 0,
+    orthogonality_tolerance = tolerance,
+    backward_error = 0,
+    condition_proxy = 1
+  )
+  if (r == 0L) {
+    return(out)
+  }
+
+  Q <- fit$eig_vectors_full[, seq_len(r), drop = FALSE]
+  component_variances <- fit$sdev^2
+  projected_residual <-
+    crossprod(Q, fit$Chat %*% Q) - diag(component_variances, nrow = r)
+
+  # With D = diag(sdev), V = Xstar' Q D^-1 and therefore
+  #
+  #   V'V - I = D^-1 Q'(Xstar Xstar' - Chat)Q D^-1
+  #            + D^-1(Q' Chat Q - D^2)D^-1.
+  #
+  # The measured backward error below is consequently an upper bound, up to
+  # ordinary rounding in the matrix products, on loss of orthogonality caused
+  # by a small retained component. This is more informative than applying the
+  # same absolute threshold to well- and ill-conditioned fits.
+  min_variance <- min(component_variances)
+  backward_error <-
+    (norm(chat_residual, "2") + norm(projected_residual, "2")) /
+    min_variance
+  condition_proxy <- max(component_variances) / min_variance
+
+  # Inverse square-root normalization can lose at most the square root of the
+  # primary factorization tolerance. The error must also be explained by the
+  # measured backward residual; poor conditioning alone never excuses it.
+  orthogonality_tolerance <- max(
+    tolerance,
+    min(
+      sqrt(tolerance),
+      2 * backward_error + 32 * .Machine$double.eps
+    )
+  )
+
+  out$orthogonality_error <-
+    norm(crossprod(fit$v) - diag(r), "2")
+  out$orthogonality_tolerance <- orthogonality_tolerance
+  out$backward_error <- backward_error
+  out$condition_proxy <- condition_proxy
+  out
+}
+
 .dkge_validate_block_factor <- function(fit, Xstar, tolerance = 1e-10) {
   if (!identical(fit$representation, "block_biprojector")) {
     return(invisible(fit))
+  }
+  if (length(tolerance) != 1L || !is.numeric(tolerance) ||
+      !is.finite(tolerance) || tolerance <= 0 || tolerance >= 1) {
+    stop("Internal DKGE algebra error: block-factor tolerance must be a finite scalar in (0, 1).",
+         call. = FALSE)
   }
   if (is.null(Xstar)) {
     stop("Internal DKGE algebra error: block representation has no Xstar factor.",
          call. = FALSE)
   }
-  chat_error <- norm(fit$Chat - tcrossprod(Xstar), "F") /
-    max(1, norm(fit$Chat, "F"))
-  if (!is.finite(chat_error) || chat_error > tolerance) {
+  if (!is.matrix(fit$Chat) || !is.numeric(fit$Chat) ||
+      nrow(fit$Chat) != ncol(fit$Chat) || any(!is.finite(fit$Chat))) {
+    stop("Internal DKGE algebra error: Chat must be a finite square numeric matrix.",
+         call. = FALSE)
+  }
+  if (!is.matrix(Xstar) || !is.numeric(Xstar) ||
+      nrow(Xstar) != nrow(fit$Chat) || any(!is.finite(Xstar))) {
+    stop("Internal DKGE algebra error: Xstar must be a finite numeric matrix with one row per Chat row.",
+         call. = FALSE)
+  }
+
+  r <- fit$rank
+  if (length(r) != 1L || !is.numeric(r) || !is.finite(r) ||
+      r < 0 || r != as.integer(r)) {
+    stop("Internal DKGE algebra error: block-factor rank must be one non-negative integer.",
+         call. = FALSE)
+  }
+  r <- as.integer(r)
+  if (!is.matrix(fit$v) || !is.numeric(fit$v) ||
+      nrow(fit$v) != ncol(Xstar) || ncol(fit$v) != r ||
+      any(!is.finite(fit$v))) {
+    stop("Internal DKGE algebra error: block loadings must be a finite ncol(Xstar)-by-rank matrix.",
+         call. = FALSE)
+  }
+  if (r > 0L) {
+    if (!is.matrix(fit$eig_vectors_full) ||
+        !is.numeric(fit$eig_vectors_full) ||
+        nrow(fit$eig_vectors_full) != nrow(fit$Chat) ||
+        ncol(fit$eig_vectors_full) < r ||
+        any(!is.finite(fit$eig_vectors_full[, seq_len(r), drop = FALSE]))) {
+      stop("Internal DKGE algebra error: fitted eigenvectors do not match Chat and rank.",
+           call. = FALSE)
+    }
+    if (!is.numeric(fit$sdev) || length(fit$sdev) != r ||
+        any(!is.finite(fit$sdev)) || any(fit$sdev <= 0)) {
+      stop("Internal DKGE algebra error: block representation requires one positive finite sdev per retained component.",
+           call. = FALSE)
+    }
+    component_variances <- fit$sdev^2
+    if (any(!is.finite(component_variances)) ||
+        any(component_variances <= 0)) {
+      stop("Internal DKGE algebra error: block representation requires one positive finite sdev per retained component.",
+           call. = FALSE)
+    }
+  }
+
+  diagnostics <- .dkge_block_factor_diagnostics(fit, Xstar, tolerance)
+  if (!is.finite(diagnostics$symmetry_relative_error) ||
+      diagnostics$symmetry_relative_error > tolerance) {
     stop(sprintf(
-      "Internal DKGE algebra error: Chat is not Xstar Xstar' (relative error %.3e).",
-      chat_error
+      "Internal DKGE algebra error: Chat is not symmetric (relative error %.3e).",
+      diagnostics$symmetry_relative_error
     ), call. = FALSE)
   }
-  r <- fit$rank
-  if (r > 0L && !is.null(fit$v)) {
-    v_error <- max(abs(crossprod(fit$v) - diag(r)))
-    if (!is.finite(v_error) || v_error > tolerance) {
-      stop(sprintf(
-        "Internal DKGE algebra error: advertised block loadings are not orthonormal (max error %.3e).",
-        v_error
-      ), call. = FALSE)
-    }
+  if (!is.finite(diagnostics$chat_relative_error) ||
+      diagnostics$chat_relative_error > tolerance) {
+    stop(sprintf(
+      "Internal DKGE algebra error: Chat is not Xstar Xstar' (relative error %.3e).",
+      diagnostics$chat_relative_error
+    ), call. = FALSE)
+  }
+  if (!is.finite(diagnostics$orthogonality_error) ||
+      !is.finite(diagnostics$orthogonality_tolerance) ||
+      diagnostics$orthogonality_error > diagnostics$orthogonality_tolerance) {
+    stop(sprintf(
+      paste0(
+        "Internal DKGE algebra error: advertised block loadings are not ",
+        "orthonormal (spectral error %.3e; scale-aware bound %.3e; ",
+        "backward error %.3e; condition proxy %.3e)."
+      ),
+      diagnostics$orthogonality_error,
+      diagnostics$orthogonality_tolerance,
+      diagnostics$backward_error,
+      diagnostics$condition_proxy
+    ), call. = FALSE)
   }
   invisible(fit)
 }

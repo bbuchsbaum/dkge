@@ -1780,6 +1780,8 @@ dkge_aggregate_bootstrap <- function(target,
 
 #' @export
 #' @rdname dkge_aggregate_target
+#' @param x A `dkge_aggregate_target` object to print.
+#' @param ... Unused; present for S3 method compatibility.
 print.dkge_aggregate_target <- function(x, ...) {
   cat("<dkge_aggregate_target>\n")
   cat("  rows:     ", nrow(x$Y), "\n", sep = "")
@@ -1790,6 +1792,8 @@ print.dkge_aggregate_target <- function(x, ...) {
 
 #' @export
 #' @rdname dkge_aggregate_fit
+#' @param x A `dkge_aggregate_fit` object to print.
+#' @param ... Unused; present for S3 method compatibility.
 print.dkge_aggregate_fit <- function(x, ...) {
   cat("<dkge_aggregate_fit>\n")
   cat("  estimand: ", x$estimand, "\n", sep = "")
@@ -1801,6 +1805,7 @@ print.dkge_aggregate_fit <- function(x, ...) {
 
 #' @export
 #' @rdname dkge_aggregate_permute
+#' @param x A `dkge_aggregate_permutation` object to print.
 print.dkge_aggregate_permutation <- function(x, ...) {
   cat("<dkge_aggregate_permutation>\n")
   cat("  statistic: ", signif(x$observed, 4), "\n", sep = "")
@@ -1812,6 +1817,7 @@ print.dkge_aggregate_permutation <- function(x, ...) {
 
 #' @export
 #' @rdname dkge_aggregate_bootstrap
+#' @param x A `dkge_aggregate_bootstrap` object to print.
 print.dkge_aggregate_bootstrap <- function(x, ...) {
   cat("<dkge_aggregate_bootstrap>\n")
   cat("  statistic: ", signif(x$observed, 4), "\n", sep = "")

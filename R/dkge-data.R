@@ -37,10 +37,16 @@
 .align_effects <- function(beta, design) {
   stopifnot(is.matrix(beta), is.matrix(design))
   if (nrow(beta) != ncol(design)) {
-    stop(sprintf(
-      "Beta matrix has %d effect rows but the design has %d columns.",
-      nrow(beta), ncol(design)
-    ), call. = FALSE)
+    .dkge_abort(
+      sprintf(
+        paste0(
+          "Beta matrix effect-row count (%d) must match design column ",
+          "count (%d)."
+        ),
+        nrow(beta), ncol(design)
+      ),
+      "dkge_dimension_error"
+    )
   }
   effects <- colnames(design)
   beta_names <- rownames(beta)
@@ -61,7 +67,10 @@
     rownames(beta) <- effects
   }
   if (!setequal(rownames(beta), effects)) {
-    stop("Row names of beta matrix must match design column names (effects).", call. = FALSE)
+    .dkge_abort(
+      "Row names of beta matrix must match design column names (effects).",
+      "dkge_effect_alignment_error"
+    )
   }
   if (!identical(rownames(beta), effects)) {
     beta <- beta[effects, , drop = FALSE]

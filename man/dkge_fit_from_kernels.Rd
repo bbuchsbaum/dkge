@@ -33,7 +33,9 @@ setup.}
 }
 \value{
 A `dkge` object identical to one obtained from [dkge_fit()], with
-  provenance annotated to record the kernel-driven construction.
+  provenance annotated to record the kernel-driven construction. Effect
+  matrices use `effect_ids` as canonical dimnames, subject-indexed lists use
+  `subject_ids`, and component axes are labelled `LV1`, `LV2`, and so on.
 }
 \description{
 Converts a list of subject-level effect kernels \eqn{K_s \in \mathbb{R}^{q \times q}} into

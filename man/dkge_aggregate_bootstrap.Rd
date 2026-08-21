@@ -88,6 +88,8 @@ the calling RNG stream, so results are identical for either setting of
 other setting is a named formal, so a misspelled argument (`sed = 1` for
 `seed = 1`) lands here and is reported as an error whenever `statistic` is
 one of the built-ins; `...` reaches only user-supplied statistic functions.}
+
+\item{x}{A `dkge_aggregate_bootstrap` object to print.}
 }
 \value{
 Object of class `dkge_aggregate_bootstrap`. `observed` and

@@ -38,6 +38,10 @@ the leading component largely a mean-level effect; under
 survives subject-label permutation, so the resulting test has little power.
 Use `"grand"`/`"column"` centering, or a contrast statistic, when the
 question is about differences between aggregate rows.}
+
+\item{x}{A `dkge_aggregate_fit` object to print.}
+
+\item{...}{Unused; present for S3 method compatibility.}
 }
 \value{
 Object of class `dkge_aggregate_fit`. Notable fields:
