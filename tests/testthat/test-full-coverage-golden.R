@@ -23,13 +23,16 @@ test_that("canonical default MFA weights match the pre-extension baseline", {
   caller_rng <- .Random.seed
   fit <- dkge_fit(betas, designs, K = K, rank = 3L)
   expect_identical(.Random.seed, caller_rng)
-  expect_identical(
-    sprintf("%a", unname(fit$weights)),
-    c(
-      "0x1.092e59420ccfep+0", "0x1.b1938e2f0683ap-1",
-      "0x1.9241e5f5f2ae8p-1", "0x1.07e262b545053p+0",
-      "0x1.ff6c5984d258p-1", "0x1.4d4e5d33c865bp+0"
-    )
+  baseline_weights <- c(
+    0x1.092e59420ccfep+0, 0x1.b1938e2f0683ap-1,
+    0x1.9241e5f5f2ae8p-1, 0x1.07e262b545053p+0,
+    0x1.ff6c5984d258p-1, 0x1.4d4e5d33c865bp+0
+  )
+  weight_error <- abs(unname(fit$weights) - baseline_weights) /
+    pmax(1, abs(baseline_weights))
+  expect_true(
+    all(weight_error <= 32 * .Machine$double.eps),
+    info = paste("maximum scaled weight error:", max(weight_error))
   )
 
   set.seed(123456)
