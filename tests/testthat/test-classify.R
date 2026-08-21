@@ -142,6 +142,35 @@ test_that("cell permutations invoke full-pipeline recomputation", {
                    "full_pipeline_recomputed")
 })
 
+test_that("cell recomputation aligns permutation metrics by name", {
+  fixture <- make_classification_fit(S = 4, seed = 52)
+  recompute <- function(...) {
+    list(metrics = c(extra = 99, brier = 0.3, logloss = 0.2,
+                     accuracy = 0.1))
+  }
+  metrics <- c("accuracy", "logloss", "brier")
+
+  expect_no_warning(
+    cls <- dkge_classify(
+      fixture$fit,
+      targets = ~ A,
+      mode = "cell_cross",
+      lambda = 1e-3,
+      metric = metrics,
+      n_perm = 2,
+      seed = 73,
+      control = list(randomization_recompute = recompute)
+    )
+  )
+
+  expected <- matrix(
+    rep(c(0.1, 0.2, 0.3), each = 2L),
+    nrow = 2L,
+    dimnames = list(NULL, metrics)
+  )
+  expect_equal(cls$results$A$permutations[, metrics, drop = FALSE], expected)
+})
+
 test_that("dkge_classify delta mode handles rank-1 targets", {
   fixture <- make_classification_fit(S = 5)  # S > rank to avoid singular covariance
   fit <- fixture$fit

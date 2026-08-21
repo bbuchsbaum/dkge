@@ -286,7 +286,7 @@
         )
       }
       if (length(metric_eval)) {
-        perm_matrix[b, metric_eval] <- perm_res$metrics
+        perm_matrix[b, metric_eval] <- perm_res$metrics[metric_eval]
       }
     }
   }
