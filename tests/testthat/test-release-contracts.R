@@ -89,6 +89,8 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml,
                "LIBRARY_PATH: /usr/lib/x86_64-linux-gnu/hdf5/serial",
                fixed = TRUE)
+  expect_match(sanitizer_yaml, '"FNN", "adjoin", "multivarious"',
+               fixed = TRUE)
   expect_match(sanitizer_yaml,
                "310f7206ce149c1a186ed59e473ce5a8d50637af")
 
