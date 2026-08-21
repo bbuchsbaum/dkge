@@ -14,25 +14,25 @@ dkge_between_rrr(
 )
 }
 \arguments{
-\item{target}{A `dkge_target` from [dkge_make_target()] or a numeric matrix.}
+\item{target}{A \code{dkge_target} from \code{\link[=dkge_make_target]{dkge_make_target()}} or a numeric matrix.}
 
-\item{design}{A `dkge_subject_model` from [dkge_subject_model()] or a numeric
+\item{design}{A \code{dkge_subject_model} from \code{\link[=dkge_subject_model]{dkge_subject_model()}} or a numeric
 model matrix.}
 
 \item{rank}{Reduced rank. Defaults to the maximum estimable rank.}
 
-\item{weights}{`"none"`, `"target"`, or a list with optional `subject` and
-`feature` numeric weights.}
+\item{weights}{\code{"none"}, \code{"target"}, or a list with optional \code{subject} and
+\code{feature} numeric weights.}
 
 \item{feature_mask}{Optional logical vector selecting target features.}
 
 \item{tol}{Numerical tolerance for rank checks; a single positive finite
 number. It is stored on the fit and reused for every refit performed by
-[dkge_between_permute()], so a design accepted here is also accepted by the
+\code{\link[=dkge_between_permute]{dkge_between_permute()}}, so a design accepted here is also accepted by the
 permutation machinery.}
 }
 \value{
-Object of class `dkge_between_rrr`.
+Object of class \code{dkge_between_rrr}.
 }
 \description{
 Fits a directional multivariate second-level model

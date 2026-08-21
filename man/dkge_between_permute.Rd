@@ -19,83 +19,83 @@ dkge_between_permute(
 )
 }
 \arguments{
-\item{object}{A `dkge_between_rrr` object.}
+\item{object}{A \code{dkge_between_rrr} object.}
 
 \item{terms}{Character vector of terms or model-matrix columns to test. When
-`NULL`, all non-intercept formula terms except those listed in
-`object$design$nuisance` are tested.}
+\code{NULL}, all non-intercept formula terms except those listed in
+\code{object$design$nuisance} are tested.}
 
-\item{method}{Resampling method. `"rotation"` uses Haar rotations in the
-orthogonal complement of the reduced design; `"freedman_lane"` permutes
+\item{method}{Resampling method. \code{"rotation"} uses Haar rotations in the
+orthogonal complement of the reduced design; \code{"freedman_lane"} permutes
 reduced-model residual rows.}
 
 \item{B}{Number of rotations or permutations.}
 
-\item{blocks}{Optional exchangeability blocks of length `n_subjects`.}
+\item{blocks}{Optional exchangeability blocks of length \code{n_subjects}.}
 
 \item{seed}{Optional random seed.}
 
-\item{adjust}{P-value adjustment method passed to [stats::p.adjust()].}
+\item{adjust}{P-value adjustment method passed to \code{\link[stats:p.adjust]{stats::p.adjust()}}.}
 
-\item{statistic}{Test statistic. Currently `"frob"` for reduced-minus-full
+\item{statistic}{Test statistic. Currently \code{"frob"} for reduced-minus-full
 weighted residual sum of squares.}
 
-\item{scope}{`"global"` for the term-level test only, `"features"` for
-featurewise tests only, or `"both"`.}
+\item{scope}{\code{"global"} for the term-level test only, \code{"features"} for
+featurewise tests only, or \code{"both"}.}
 
 \item{feature_adjust}{Multiplicity adjustment for featurewise p-values.}
 
 \item{parallel}{Logical; evaluate resampling replicates with
-[future.apply::future_lapply()]. Randomization descriptors are always
+\code{\link[future.apply:future_lapply]{future.apply::future_lapply()}}. Randomization descriptors are always
 drawn serially up front, so results are identical to the serial path for a
-given `seed`. The serial path streams replicates and is preferred when
-`scope != "global"` with many features.}
+given \code{seed}. The serial path streams replicates and is preferred when
+\code{scope != "global"} with many features.}
 }
 \value{
-Object of class `dkge_between_permutation`.
+Object of class \code{dkge_between_permutation}.
 }
 \description{
-Performs term-specific global tests for a fitted [dkge_between_rrr()] model.
+Performs term-specific global tests for a fitted \code{\link[=dkge_between_rrr]{dkge_between_rrr()}} model.
 Residual-space rotation fixes the nuisance-design column space and rotates
 its orthogonal complement before comparing the reduced and full reduced-rank
 residual sums of squares. Freedman-Lane residual permutation remains
 available as a legacy approximate method.
 }
 \details{
-For `method = "rotation"`, let `Q0` span the reduced design and `Qe` span
+For \code{method = "rotation"}, let \code{Q0} span the reduced design and \code{Qe} span
 its orthogonal complement. Each null response is equivalent to
-`Q0 Q0' Y + Qe G Qe' Y`, where `G` is Haar-uniform on the residual-space
+\verb{Q0 Q0' Y + Qe G Qe' Y}, where \code{G} is Haar-uniform on the residual-space
 orthogonal group. This fixes every reduced-model mean and preserves
-`crossprod(Y)` exactly. The test is finite-sample exact under a matrix-normal
+\code{crossprod(Y)} exactly. The test is finite-sample exact under a matrix-normal
 null with independent homoscedastic subject rows and arbitrary feature
 covariance. Version 1 supports unweighted fits and one exchangeability block
 only; unsupported weights or blocks are rejected. With non-Gaussian or
 heteroscedastic subject errors, rotation is approximate rather than exact.
 
-Both methods refit the reduced model at the same fitted rank (`object$rank`)
+Both methods refit the reduced model at the same fitted rank (\code{object$rank})
 as the full model.
-For `method = "freedman_lane"`, when the tested term removes enough design
+For \code{method = "freedman_lane"}, when the tested term removes enough design
 columns that the reduced model's estimable rank drops below that value, the
 reduced fit is clipped to its own maximum rank while the full fit is not, and
 the reduced-minus-full residual statistic then also absorbs that rank
 difference. This affects the observed statistic and every permutation
 replicate alike, but the null is not exactly
 a test of the omitted term alone. Rotation does not have this caveat: the
-reduced design is held fixed in `Q0` and the Haar draw lives in its
+reduced design is held fixed in \code{Q0} and the Haar draw lives in its
 orthogonal complement.
 
 The legacy Freedman-Lane method's frozen package audit
-(`null-calibration-v1`) found empirical
+(\code{null-calibration-v1}) found empirical
 type-I error of 0.074, 0.076, and 0.077 at nominal 0.05 for three terms with
 20 subjects (1,000 null data sets per term and 399 permutations). Distortion
 attenuated but was mixed at 40 subjects; at 80 subjects the three estimates
 were 0.030, 0.048, and 0.052. These results establish a material small-sample
 limitation, not merely uncertainty from the number of permutations. Treat
 small-sample p-values close to alpha as exploratory, report the limitation,
-and use an independently justified exchangeability design. Increasing `B`
+and use an independently justified exchangeability design. Increasing \code{B}
 improves Monte Carlo resolution but does not remove this size distortion.
 The frozen plan, replicate p-values, and summary are shipped under
-`data-raw/dkge-null-calibration-*` and `inst/extdata/dkge-null-calibration-*`.
+\verb{data-raw/dkge-null-calibration-*} and \verb{inst/extdata/dkge-null-calibration-*}.
 
 A separate predeclared audit of residual rotation found global-null sizes of
 0.049, 0.055, and 0.058 and nonzero-nuisance null sizes of 0.040, 0.042,
@@ -106,8 +106,8 @@ gap is mostly Freedman-Lane size inflation (matched-condition sizes 0.050
 versus 0.086; size-matched Freedman-Lane power about 0.49). The predeclared
 gates are not relaxed, so rotation remains opt-in. Its frozen plan, 8,100
 results, and decision report are shipped as
-`data-raw/dkge-between-rotation-*` and
-`inst/extdata/dkge-between-rotation-*`.
+\verb{data-raw/dkge-between-rotation-*} and
+\verb{inst/extdata/dkge-between-rotation-*}.
 }
 \examples{
 set.seed(1)

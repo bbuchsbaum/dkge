@@ -8,7 +8,7 @@ NULL
 #' DKGE minimal theme for ggplot2 outputs
 #'
 #' Produces a light-weight theme used by the DKGE plotting helpers. Adjust
-#' `base_size` / `base_family` to customise font size or typeface.
+#' `base_size` / `base_family` to customize font size or typeface.
 #'
 #' @param base_size Base font size.
 #' @param base_family Base font family.
@@ -909,7 +909,7 @@ dkge_plot_component_contrast_scores <- function(fit,
 #' up to each fold's own eigen-solve, so cross-subject comparison is not
 #' meaningful.
 #'
-#' Voxel weights are normalised to mean 1 and applied as \eqn{\sqrt{w}} column
+#' Voxel weights are normalized to mean 1 and applied as \eqn{\sqrt{w}} column
 #' scales — the same convention as the training blocks — so a uniform weight
 #' of any magnitude leaves the projection unchanged. This is not the
 #' column-wise weighted mean \eqn{\sum_p w_p b_p / \sum_p w_p}; that would
@@ -1016,7 +1016,7 @@ dkge_subject_component_projections <- function(fit,
 #'   `projection`. When supplied, `fit`, `groups`, `comps`, `align`, `ridge`,
 #'   and `mode` are all ignored: the panel label is read from the frame's own
 #'   `mode` column, and a frame without one (or mixing modes) is left
-#'   unlabelled rather than being captioned with the `mode` default.
+#'   unlabeled rather than being captioned with the `mode` default.
 #' @return A ggplot object.
 #' @examples
 #' toy <- dkge_sim_toy(

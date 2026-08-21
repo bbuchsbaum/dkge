@@ -31,19 +31,19 @@ dkge_classify(
 \arguments{
 \item{fit}{dkge object.}
 
-\item{targets}{Target specification consumed by [dkge_targets()] or a list of
-`dkge_target` objects.}
+\item{targets}{Target specification consumed by \code{\link[=dkge_targets]{dkge_targets()}} or a list of
+\code{dkge_target} objects.}
 
 \item{y}{Optional subject-level labels for delta-mode targets. Can be a vector
-(recycled across all delta targets) or a list matching `targets`; values are
-coerced to factors using each target's `class_labels`.}
+(recycled across all delta targets) or a list matching \code{targets}; values are
+coerced to factors using each target's \code{class_labels}.}
 
 \item{method}{Classifier backend: "lda" (default) or "logit" (one-vs-rest
 ridge logistic regression).}
 
-\item{folds}{Cross-fitting specification. `NULL` (default) performs LOSO.
-Integer values request subject-level K-fold. A `dkge_folds` object is also
-accepted. Other coercible inputs are routed through [as_dkge_folds()].}
+\item{folds}{Cross-fitting specification. \code{NULL} (default) performs LOSO.
+Integer values request subject-level K-fold. A \code{dkge_folds} object is also
+accepted. Other coercible inputs are routed through \code{\link[=as_dkge_folds]{as_dkge_folds()}}.}
 
 \item{lambda}{Optional ridge parameter passed to the classifier backend.}
 
@@ -54,14 +54,14 @@ accepted. Other coercible inputs are routed through [as_dkge_folds()].}
 the held-out subject.}
 
 \item{standardize_within_fold}{Logical indicating whether to z-score features
-using training data inside each fold. When `NULL` (default), standardisation
-is enabled automatically for `mode = "cell_cross"` and disabled otherwise.}
+using training data inside each fold. When \code{NULL} (default), standardisation
+is enabled automatically for \code{mode = "cell_cross"} and disabled otherwise.}
 
-\item{residualize}{Forwarded to [dkge_targets()].}
+\item{residualize}{Forwarded to \code{\link[=dkge_targets]{dkge_targets()}}.}
 
-\item{collapse}{Forwarded to [dkge_targets()] for factor collapsing.}
+\item{collapse}{Forwarded to \code{\link[=dkge_targets]{dkge_targets()}} for factor collapsing.}
 
-\item{restrict_factors}{Optional factor subset for `spec = "fullcell"`.}
+\item{restrict_factors}{Optional factor subset for \code{spec = "fullcell"}.}
 
 \item{n_perm}{Number of permutations for empirical p-values (default 0).}
 
@@ -71,15 +71,15 @@ is enabled automatically for `mode = "cell_cross"` and disabled otherwise.}
 
 \item{ridge}{Optional ridge added when recomputing held-out bases (default 0).}
 
-\item{control}{Optional list of advanced controls (power users). Recognised
-entries: `lambda_grid` (numeric vector of candidate penalties) and
-`lambda_fun` (function returning a lambda per target/fold with signature
-`function(target, fold, method, default)`). Defaults to `NULL`, leaving the
-standard `lambda` behaviour unchanged.}
+\item{control}{Optional list of advanced controls (power users). Recognized
+entries: \code{lambda_grid} (numeric vector of candidate penalties) and
+\code{lambda_fun} (function returning a lambda per target/fold with signature
+\verb{function(target, fold, method, default)}). Defaults to \code{NULL}, leaving the
+standard \code{lambda} behavior unchanged.}
 
 \item{blocks}{Optional vector identifying within-subject blocks (e.g., runs or
 sessions) used to constrain permutations. Length must match the number of
-subjects in `fit` when supplied.}
+subjects in \code{fit} when supplied.}
 
 \item{parallel}{Logical; reserved for future parallelism hooks.}
 
@@ -91,12 +91,12 @@ subjects in `fit` when supplied.}
 Cross-validated classification on DKGE effect patterns
 }
 \details{
-Anchor-based fits produced by [dkge_anchor_fit()] do not retain the
-design-factor metadata that `dkge_targets()` expects. In that setting you must
+Anchor-based fits produced by \code{\link[=dkge_anchor_fit]{dkge_anchor_fit()}} do not retain the
+design-factor metadata that \code{dkge_targets()} expects. In that setting you must
 supply explicit weight matrices (rows = classes, columns = effects) or
-ready-made [`dkge_target`] objects—helpers such as
-[dkge_anchor_targets_from_prototypes()] and
-[dkge_anchor_targets_from_directions()] can be used to construct them.
+ready-made \code{dkge_target} objects—helpers such as
+\code{\link[=dkge_anchor_targets_from_prototypes]{dkge_anchor_targets_from_prototypes()}} and
+\code{\link[=dkge_anchor_targets_from_directions]{dkge_anchor_targets_from_directions()}} can be used to construct them.
 }
 \examples{
 # Simulate toy data with design kernel (includes kernel_info for targets)

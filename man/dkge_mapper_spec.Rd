@@ -7,29 +7,29 @@
 dkge_mapper_spec(type = c("sinkhorn", "ridge", "ols"), ..., name = NULL)
 }
 \arguments{
-\item{type}{Mapping strategy identifier: `"sinkhorn"` (optimal transport),
-`"ridge"` (ridge regression), or `"ols"` (ordinary least squares).}
+\item{type}{Mapping strategy identifier: \code{"sinkhorn"} (optimal transport),
+\code{"ridge"} (ridge regression), or \code{"ols"} (ordinary least squares).}
 
 \item{...}{Strategy-specific hyperparameters stored in the specification
-(e.g. `lambda`, `epsilon`, `lambda_emb`, `lambda_spa`).}
+(e.g. \code{lambda}, \code{epsilon}, \code{lambda_emb}, \code{lambda_spa}).}
 
 \item{name}{Optional user-facing name for diagnostics.}
 }
 \value{
-A `dkge_mapper_spec` object consumed by [fit_mapper()] and
-  [predict_mapper()].
+A \code{dkge_mapper_spec} object consumed by \code{\link[=fit_mapper]{fit_mapper()}} and
+\code{\link[=predict_mapper]{predict_mapper()}}.
 }
 \description{
-Creates a mapper specification for the **transport pipeline** — used when
+Creates a mapper specification for the \strong{transport pipeline} — used when
 mapping subject-level contrast/loading vectors from a source feature space
 (e.g., parcel embeddings) to a common reference space.  Pass the result to
-[dkge_transport_spec()], [dkge_prepare_transport()], or directly to
-[fit_mapper()] together with `source_feat` / `target_feat` matrices.
+\code{\link[=dkge_transport_spec]{dkge_transport_spec()}}, \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}, or directly to
+\code{\link[=fit_mapper]{fit_mapper()}} together with \code{source_feat} / \code{target_feat} matrices.
 
-Use [dkge_mapper()] instead when you need a **dense rendering / anchor
-mapper** that works in 3-D spatial coordinates (kNN barycentric, Sinkhorn
-OT over point clouds) for functions such as [dkge_build_renderer()] or
-[dkge_render_subject_values()].
+Use \code{\link[=dkge_mapper]{dkge_mapper()}} instead when you need a \strong{dense rendering / anchor
+mapper} that works in 3-D spatial coordinates (kNN barycentric, Sinkhorn
+OT over point clouds) for functions such as \code{\link[=dkge_build_renderer]{dkge_build_renderer()}} or
+\code{\link[=dkge_render_subject_values]{dkge_render_subject_values()}}.
 }
 \examples{
 spec <- dkge_mapper_spec(type = "ridge", lambda = 1e-2)

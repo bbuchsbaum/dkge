@@ -7,12 +7,12 @@
 dkge_project_clusters_to_latent(fit)
 }
 \arguments{
-\item{fit}{Fitted object of class `dkge` containing `Btil`, `K`, and `U`.}
+\item{fit}{Fitted object of class \code{dkge} containing \code{Btil}, \code{K}, and \code{U}.}
 }
 \value{
-A list of length `S` (number of subjects). Element `s` is a
-  `P_s x r` matrix holding the latent representation of subject `s`'s
-  clusters.
+A list of length \code{S} (number of subjects). Element \code{s} is a
+\verb{P_s x r} matrix holding the latent representation of subject \code{s}'s
+clusters.
 }
 \description{
 For each subject, computes \eqn{Z_s = B_s^\top K U} so that every row

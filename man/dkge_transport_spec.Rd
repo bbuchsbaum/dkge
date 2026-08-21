@@ -48,8 +48,8 @@ are available.}
 
 \item{lambda_size}{Weight on size regularisation between clusters.}
 
-\item{value_type}{Semantics of transported values: `"intensive"` preserves
-constant fields; `"extensive"` preserves the sum of source totals.}
+\item{value_type}{Semantics of transported values: \code{"intensive"} preserves
+constant fields; \code{"extensive"} preserves the sum of source totals.}
 
 \item{warm_start}{Reuse converged Sinkhorn duals for identical problems.}
 
@@ -57,11 +57,11 @@ constant fields; `"extensive"` preserves the sum of source totals.}
 or betas).}
 }
 \value{
-Object with class `dkge_transport_spec`.
+Object with class \code{dkge_transport_spec}.
 }
 \description{
 Builds a validated transport configuration that can be passed to
-[dkge_pipeline()] or transport utilities. The helper enforces basic argument
+\code{\link[=dkge_pipeline]{dkge_pipeline()}} or transport utilities. The helper enforces basic argument
 checks and provides sensible defaults for Sinkhorn-based mapping.
 }
 \examples{

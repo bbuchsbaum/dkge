@@ -19,10 +19,10 @@ Used when anchors need to be derived from voxel locations.}
 \item{anchors}{Optional precomputed \eqn{Q \times 3} anchor matrix. When
 supplied it is validated and returned unchanged.}
 
-\item{n_anchor}{Target number of anchors when deriving them from `xyz`.}
+\item{n_anchor}{Target number of anchors when deriving them from \code{xyz}.}
 
-\item{method}{Selection strategy when deriving anchors. `"kmeans"`
-(default) uses k-means centroids, `"sample"` performs a uniform
+\item{method}{Selection strategy when deriving anchors. \code{"kmeans"}
+(default) uses k-means centroids, \code{"sample"} performs a uniform
 subsample.}
 
 \item{seed}{Optional random seed for reproducibility.}

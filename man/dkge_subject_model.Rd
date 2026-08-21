@@ -14,31 +14,31 @@ dkge_subject_model(
 )
 }
 \arguments{
-\item{formula}{A model formula such as `~ group * trait + age + sex`.}
+\item{formula}{A model formula such as \code{~ group * trait + age + sex}.}
 
 \item{data}{Data frame containing subject-level variables.}
 
-\item{subject_ids}{Optional subject identifiers aligned with `data` rows.
-Defaults to the `subject_id` column when present, then `rownames(data)`,
-then sequential IDs. Identifiers are stored as `rownames` of `data` before
-[stats::model.frame()] so `na.action = stats::na.omit` keeps IDs in sync
+\item{subject_ids}{Optional subject identifiers aligned with \code{data} rows.
+Defaults to the \code{subject_id} column when present, then \code{rownames(data)},
+then sequential IDs. Identifiers are stored as \code{rownames} of \code{data} before
+\code{\link[stats:model.frame]{stats::model.frame()}} so \code{na.action = stats::na.omit} keeps IDs in sync
 with the retained rows.}
 
 \item{nuisance}{Optional character vector of term labels to treat as nuisance
-in downstream inference. When `dkge_between_permute(terms = NULL)`, these
+in downstream inference. When \code{dkge_between_permute(terms = NULL)}, these
 terms are excluded from the default test set.}
 
-\item{contrasts.arg}{Optional contrasts passed to [stats::model.matrix()].}
+\item{contrasts.arg}{Optional contrasts passed to \code{\link[stats:model.matrix]{stats::model.matrix()}}.}
 
-\item{na.action}{NA handler for the model frame. Defaults to [stats::na.fail()].}
+\item{na.action}{NA handler for the model frame. Defaults to \code{\link[stats:na.fail]{stats::na.fail()}}.}
 }
 \value{
-Object of class `dkge_subject_model`.
+Object of class \code{dkge_subject_model}.
 }
 \description{
 Wraps formula handling for subject-level DKGE analyses. The result owns the
 model matrix, term metadata, and subject identifiers used by
-[dkge_between_rrr()].
+\code{\link[=dkge_between_rrr]{dkge_between_rrr()}}.
 }
 \examples{
 dat <- data.frame(

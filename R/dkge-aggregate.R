@@ -565,7 +565,7 @@ dkge_aggregate_target <- function(values,
 #'   row names (or only column names) is validated and reordered on whichever
 #'   labels are present. Rank-deficient PSD kernels keep a true square
 #'   root: null directions stay at zero rather than receiving the jitter
-#'   that [`.dkge_kernel_roots()`] uses for invertibility elsewhere.
+#'   that `.dkge_kernel_roots()` uses for invertibility elsewhere.
 #' @param rank Number of components to retain. Requests larger than
 #'   `min(nrow(Y), ncol(Y))` are capped with a message.
 #' @param center Centering applied to the aggregate matrix before fitting.
@@ -683,7 +683,7 @@ dkge_aggregate_fit <- function(target,
 
 #' True PSD square-root / pseudoinverse for aggregate kernels
 #'
-#' Unlike [`.dkge_kernel_roots()`], null eigenvalues stay zero. Jittering them
+#' Unlike `.dkge_kernel_roots()`, null eigenvalues stay zero. Jittering them
 #' would put energy into `Chat` in directions that `K` still annihilates, so
 #' `singular_values` and `scores_feature` would disagree.
 #'

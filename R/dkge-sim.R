@@ -5,7 +5,7 @@
 #' per-subject noise levels. The routine also returns the per-subject design
 #' 'rulers' (typically identity matrices) and the design kernel \eqn{K} so the
 #' synthetic dataset can be fed directly to [dkge_fit()]. Components are planted
-#' inside chosen effect blocks, then \eqn{K}-orthonormalised to provide a ground
+#' inside chosen effect blocks, then \eqn{K}-orthonormalized to provide a ground
 #' truth subspace.
 #'
 #' Construction follows the model
@@ -157,7 +157,7 @@ dkge_sim_toy <- function(factors,
 #' @param U Matrix with `q` rows.
 #' @param V Matrix with `q` rows.
 #' @param K Symmetric positive (semi-)definite matrix defining the metric.
-#' @return Numeric vector of singular values in [0, 1].
+#' @return Numeric vector of singular values in `[0, 1]`.
 #' @export
 dkge_cosines_K <- function(U, V, K) {
   s <- svd(t(U) %*% K %*% V, nu = 0, nv = 0)$d

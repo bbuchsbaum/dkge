@@ -10,7 +10,7 @@
 #' Anchor-based fits produced by [dkge_anchor_fit()] do not retain the
 #' design-factor metadata that `dkge_targets()` expects. In that setting you must
 #' supply explicit weight matrices (rows = classes, columns = effects) or
-#' ready-made [`dkge_target`] objects—helpers such as
+#' ready-made `dkge_target` objects—helpers such as
 #' [dkge_anchor_targets_from_prototypes()] and
 #' [dkge_anchor_targets_from_directions()] can be used to construct them.
 #' @param y Optional subject-level labels for delta-mode targets. Can be a vector
@@ -33,11 +33,11 @@
 #' @param scope Override permutation scope (otherwise target scope used).
 #' @param class_weights Class weighting scheme ("none", "balanced", "inverse").
 #' @param ridge Optional ridge added when recomputing held-out bases (default 0).
-#' @param control Optional list of advanced controls (power users). Recognised
+#' @param control Optional list of advanced controls (power users). Recognized
 #'   entries: `lambda_grid` (numeric vector of candidate penalties) and
 #'   `lambda_fun` (function returning a lambda per target/fold with signature
 #'   `function(target, fold, method, default)`). Defaults to `NULL`, leaving the
-#'   standard `lambda` behaviour unchanged.
+#'   standard `lambda` behavior unchanged.
 #' @param blocks Optional vector identifying within-subject blocks (e.g., runs or
 #'   sessions) used to constrain permutations. Length must match the number of
 #'   subjects in `fit` when supplied.

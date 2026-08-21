@@ -12,24 +12,24 @@ dkge_anchor_targets_from_directions(
 )
 }
 \arguments{
-\item{anchors}{Matrix of anchor coordinates (`L x d`).}
+\item{anchors}{Matrix of anchor coordinates (\verb{L x d}).}
 
-\item{directions}{Either a named list of numeric vectors (length `d`) or a
+\item{directions}{Either a named list of numeric vectors (length \code{d}) or a
 matrix whose rows are named directions in the same feature space as
-`anchors`.}
+\code{anchors}.}
 
 \item{sigma}{Optional bandwidth forwarded to
-[dkge_anchor_contrast_from_direction()].}
+\code{\link[=dkge_anchor_contrast_from_direction]{dkge_anchor_contrast_from_direction()}}.}
 
-\item{normalize}{Logical; when `TRUE` (default) the resulting weights are
-L2-normalised.}
+\item{normalize}{Logical; when \code{TRUE} (default) the resulting weights are
+L2-normalized.}
 }
 \value{
-Matrix with one row per supplied direction and `nrow(anchors)` columns.
+Matrix with one row per supplied direction and \code{nrow(anchors)} columns.
 }
 \description{
 Converts named direction vectors into anchor weight rows using
-[dkge_anchor_contrast_from_direction()].
+\code{\link[=dkge_anchor_contrast_from_direction]{dkge_anchor_contrast_from_direction()}}.
 }
 \examples{
 anchors <- matrix(rnorm(10 * 4), 10, 4)

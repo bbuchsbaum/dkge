@@ -21,23 +21,23 @@ dkpp_select_anchors(
 
 \item{rho}{Fraction of anchors chosen by the DPP stage (0 < rho <= 1).}
 
-\item{sigma}{Optional RBF bandwidth. When `NULL`, the median heuristic is
-applied on `X_train`.}
+\item{sigma}{Optional RBF bandwidth. When \code{NULL}, the median heuristic is
+applied on \code{X_train}.}
 
 \item{fill}{Strategy for completing the anchor set after the DPP stage:
-`"kcenter"` (farthest-first) or `"kmeanspp"`.}
+\code{"kcenter"} (farthest-first) or \code{"kmeanspp"}.}
 
 \item{seed}{Integer seed for reproducibility.}
 
 \item{min_gain}{Minimum marginal gain tolerated during the DPP phase.}
 }
 \value{
-List with `indices` (row indices in `X_train`), `sigma`, and
-  selection diagnostics.
+List with \code{indices} (row indices in \code{X_train}), \code{sigma}, and
+selection diagnostics.
 }
 \description{
 Combines a greedy k-DPP seeding phase with either farthest-first or D^2
-sampling to reach `L` anchors. The kernel bandwidth defaults to the median
+sampling to reach \code{L} anchors. The kernel bandwidth defaults to the median
 distance heuristic computed on the training pool.
 }
 \examples{

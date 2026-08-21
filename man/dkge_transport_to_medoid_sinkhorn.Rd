@@ -57,14 +57,14 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 \item{epsilon, max_iter, tol}{Sinkhorn parameters.}
 
-\item{value_type}{Value semantics. `"intensive"` transports field values as
-target-conditional averages and preserves constants; `"extensive"`
+\item{value_type}{Value semantics. \code{"intensive"} transports field values as
+target-conditional averages and preserves constants; \code{"extensive"}
 distributes source totals and preserves their sum.}
 
 \item{warm_start}{Logical; reuse converged dual variables for an identical
 cost-and-mass problem.}
 
-\item{transport_cache}{Optional cache returned by [dkge_prepare_transport()].
+\item{transport_cache}{Optional cache returned by \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.
 When supplied, cached operators are reused and the mapper configuration
 stored in the cache takes precedence.}
 
@@ -72,10 +72,10 @@ stored in the cache takes precedence.}
 }
 \value{
 List containing summary statistics, transported subject maps, and
-  per-subject joint `plans`, application `operators`, and solver
-  `diagnostics`.
+per-subject joint \code{plans}, application \code{operators}, and solver
+\code{diagnostics}.
 }
 \description{
-`dkge_transport_to_medoid_sinkhorn_cpp()` is a deprecated compatibility
+\code{dkge_transport_to_medoid_sinkhorn_cpp()} is a deprecated compatibility
 alias. The main function already uses the compiled Sinkhorn backend.
 }

@@ -48,7 +48,7 @@ dkge_make_anchors <- function(xyz = NULL, anchors = NULL,
 #' Construct a kNN anchor graph and Laplacian
 #'
 #' @param anchors \eqn{Q \times 3} matrix of anchor coordinates.
-#' @param k Number of neighbours used in the graph (default 10).
+#' @param k Number of neighbors used in the graph (default 10).
 #' @param sigma Optional Gaussian length-scale (mm). If `NULL`, the
 #'   `adjoin` defaults are used.
 #' @param weight_mode Edge weighting scheme passed to
@@ -56,7 +56,7 @@ dkge_make_anchors <- function(xyz = NULL, anchors = NULL,
 #' @param type Graph symmetrisation strategy (see
 #'   [adjoin::graph_weights()]); `"mutual"` helps enforce
 #'   symmetry.
-#' @return A list containing the neighbour graph, sparse adjacency `W`,
+#' @return A list containing the neighbor graph, sparse adjacency `W`,
 #'   degree matrix `D`, and Laplacian `L`.
 #' @examples
 #' anchors <- matrix(rnorm(40 * 3), 40, 3)
@@ -101,7 +101,7 @@ dkge_anchor_graph <- function(anchors,
 #' @param sigma Optional Gaussian length-scale. If `NULL`, it is set to the
 #'   square root of the median squared distance between voxels and their
 #'   nearest anchors.
-#' @return A decoder object storing neighbour indices, weights, and a sparse
+#' @return A decoder object storing neighbor indices, weights, and a sparse
 #'   matrix implementing the transformation.
 #' @examples
 #' anchors <- matrix(rnorm(20 * 3), 20, 3)
@@ -241,7 +241,7 @@ dkge_anchor_aggregate <- function(anchor_list,
 #' @param reliabilities Optional list of per-subject reliability vectors passed
 #'   to the mapper during fitting.
 #' @param graph_k Optional integer; when provided, an anchor graph of this
-#'   neighbourhood size is constructed for subsequent smoothing.
+#'   neighborhood size is constructed for subsequent smoothing.
 #' @param decoder_k Number of anchors per voxel when building the decoder.
 #' @return A list bundling anchors, optional graph/decoder, fitted per-subject
 #'   mappers, and subject weights.

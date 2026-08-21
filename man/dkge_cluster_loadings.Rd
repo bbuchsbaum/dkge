@@ -7,10 +7,10 @@
 dkge_cluster_loadings(fit)
 }
 \arguments{
-\item{fit}{Fitted object of class `dkge` containing `Btil`, `K`, and `U`.}
+\item{fit}{Fitted object of class \code{dkge} containing \code{Btil}, \code{K}, and \code{U}.}
 }
 \value{
-A list of `P_s x r` matrices of cluster loadings.
+A list of \verb{P_s x r} matrices of cluster loadings.
 }
 \description{
 Computes \eqn{A_s = B_s^\top K U}, the linear map that pulls latent-space

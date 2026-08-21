@@ -7,7 +7,7 @@
 dkge_project_clusters(fit, B, omega_vec = NULL, w = 1)
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 
 \item{B}{qxP matrix of cluster betas.}
 

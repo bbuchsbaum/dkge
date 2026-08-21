@@ -7,7 +7,7 @@
 dkge_loso_contrast(fit, s, contrasts, ridge = 0)
 }
 \arguments{
-\item{fit}{`dkge` object}
+\item{fit}{\code{dkge} object}
 
 \item{s}{Subject index (1-based)}
 
@@ -16,7 +16,7 @@ dkge_loso_contrast(fit, s, contrasts, ridge = 0)
 \item{ridge}{Optional ridge when recomputing the held-out compressed matrix}
 }
 \value{
-List with fields `v`, `alpha`, and `basis`
+List with fields \code{v}, \code{alpha}, and \code{basis}
 }
 \description{
 Leave-one-subject-out DKGE contrast

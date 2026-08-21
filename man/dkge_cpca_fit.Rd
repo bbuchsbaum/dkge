@@ -13,25 +13,25 @@ dkge_cpca_fit(
 )
 }
 \arguments{
-\item{...}{Additional arguments passed to [dkge()].}
+\item{...}{Additional arguments passed to \code{\link[=dkge]{dkge()}}.}
 
 \item{cpca_blocks}{Optional integer vector specifying the effect rows that
-span a CPCA design subspace. Ignored when `cpca_part = "none"` or when
-`cpca_T` is provided.}
+span a CPCA design subspace. Ignored when \code{cpca_part = "none"} or when
+\code{cpca_T} is provided.}
 
 \item{cpca_T}{Optional qxq0 matrix giving the CPCA design basis explicitly.
-Overrides `cpca_blocks` when supplied.}
+Overrides \code{cpca_blocks} when supplied.}
 
-\item{cpca_part}{Which CPCA-filtered component to fit: `"none"` (default)
-performs the standard DKGE fit; `"design"` uses only the CPCA design part;
-`"resid"` uses the residual part; `"both"` fits the design part but also
+\item{cpca_part}{Which CPCA-filtered component to fit: \code{"none"} (default)
+performs the standard DKGE fit; \code{"design"} uses only the CPCA design part;
+\code{"resid"} uses the residual part; \code{"both"} fits the design part but also
 stores the residual basis.}
 
 \item{cpca_ridge}{Optional ridge applied to the CPCA-filtered matrices before
 eigen-decomposition.}
 }
 \description{
-Convenience wrapper around [dkge()] that enables CPCA filtering with a
-slightly terser interface. Either `cpca_blocks` or `cpca_T` must be provided.
-Additional arguments are forwarded to [dkge()].
+Convenience wrapper around \code{\link[=dkge]{dkge()}} that enables CPCA filtering with a
+slightly terser interface. Either \code{cpca_blocks} or \code{cpca_T} must be provided.
+Additional arguments are forwarded to \code{\link[=dkge]{dkge()}}.
 }

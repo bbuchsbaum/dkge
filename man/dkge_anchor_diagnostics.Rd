@@ -7,11 +7,11 @@
 dkge_anchor_diagnostics(fit)
 }
 \arguments{
-\item{fit}{Object returned by [dkge_anchor_fit()] or [dkge_fit_from_kernels()].}
+\item{fit}{Object returned by \code{\link[=dkge_anchor_fit]{dkge_anchor_fit()}} or \code{\link[=dkge_fit_from_kernels]{dkge_fit_from_kernels()}}.}
 }
 \value{
 List containing per-subject coverage quantiles and per-anchor leverage
-  estimates.
+estimates.
 }
 \description{
 Extract anchor diagnostics from a DKGE fit

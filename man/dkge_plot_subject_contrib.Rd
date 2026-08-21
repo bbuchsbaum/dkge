@@ -7,12 +7,12 @@
 dkge_plot_subject_contrib(fit, comps = NULL)
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{comps}{Components to display (default first min(rank,6)).}
 }
 \value{
-List with `weights` and `energy` ggplots.
+List with \code{weights} and \code{energy} ggplots.
 }
 \description{
 Subject weights and per-component energy heatmap

@@ -13,7 +13,7 @@ dkge_anchor_contrast_from_prototypes(
 )
 }
 \arguments{
-\item{anchors}{Matrix of anchor coordinates (`L x d`).}
+\item{anchors}{Matrix of anchor coordinates (\verb{L x d}).}
 
 \item{positives}{Matrix (or vector) of positive prototypes in feature space.}
 
@@ -22,10 +22,10 @@ dkge_anchor_contrast_from_prototypes(
 \item{sigma}{Optional bandwidth for the prototype kernel. Defaults to the
 median distance between anchors and prototypes.}
 
-\item{normalize}{Logical; L2-normalise the resulting contrast.}
+\item{normalize}{Logical; L2-normalize the resulting contrast.}
 }
 \value{
-Numeric vector of length `L` suitable for [dkge_contrast()].
+Numeric vector of length \code{L} suitable for \code{\link[=dkge_contrast]{dkge_contrast()}}.
 }
 \description{
 Build an anchor contrast from prototype feature sets

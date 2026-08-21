@@ -7,12 +7,12 @@
 dkge_term_map(object, term, contrast = NULL, drop = TRUE)
 }
 \arguments{
-\item{object}{A `dkge_between_rrr` object.}
+\item{object}{A \code{dkge_between_rrr} object.}
 
 \item{term}{Formula term or model-matrix column name.}
 
 \item{contrast}{Optional numeric contrast over model-matrix columns. When
-supplied, `term` is used only as a label.}
+supplied, \code{term} is used only as a label.}
 
 \item{drop}{Logical; drop single-row results to a vector.}
 }

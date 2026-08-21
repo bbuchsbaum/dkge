@@ -18,22 +18,26 @@ dkge_infer(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object from [dkge_fit()] or [dkge()]}
+\item{fit}{A \code{dkge} object from \code{\link[=dkge_fit]{dkge_fit()}} or \code{\link[=dkge]{dkge()}}}
 
-\item{contrasts}{Contrast specification (see [dkge_contrast()])}
+\item{contrasts}{Contrast specification (see \code{\link[=dkge_contrast]{dkge_contrast()}})}
 
 \item{method}{Cross-fitting method: "loso", "kfold", or "analytic"}
 
 \item{inference}{Inference type:
-- `"signflip"`: Sign-flip permutation test (default)
-- `"freedman-lane"`: Freedman-Lane permutation (requires adapters)
-- `"parametric"`: Parametric t-test (assumes normality)}
+\itemize{
+\item \code{"signflip"}: Sign-flip permutation test (default)
+\item \code{"freedman-lane"}: Freedman-Lane permutation (requires adapters)
+\item \code{"parametric"}: Parametric t-test (assumes normality)
+}}
 
 \item{correction}{Multiple testing correction:
-- `"maxT"`: Family-wise error rate via max-T (default)
-- `"fdr"`: False discovery rate (Benjamini-Hochberg)
-- `"bonferroni"`: Bonferroni correction
-- `"none"`: No correction}
+\itemize{
+\item \code{"maxT"}: Family-wise error rate via max-T (default)
+\item \code{"fdr"}: False discovery rate (Benjamini-Hochberg)
+\item \code{"bonferroni"}: Bonferroni correction
+\item \code{"none"}: No correction
+}}
 
 \item{n_perm}{Number of permutations for non-parametric tests}
 
@@ -42,45 +46,49 @@ dkge_infer(
 \item{transported}{Logical; retained for backwards compatibility. Deprecated.}
 
 \item{transport}{Optional list describing how to map subject clusters to a
-shared reference before inference. Provide `centroids`, `medoid`, and an
-optional mapper specification created via [dkge_mapper_spec()]. Additional
-parameters (e.g. `epsilon`, `lambda_emb`) are forwarded when constructing
+shared reference before inference. Provide \code{centroids}, \code{medoid}, and an
+optional mapper specification created via \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}. Additional
+parameters (e.g. \code{epsilon}, \code{lambda_emb}) are forwarded when constructing
 the default Sinkhorn mapper.}
 
-\item{...}{Additional arguments passed to [dkge_contrast()] and inference functions}
+\item{...}{Additional arguments passed to \code{\link[=dkge_contrast]{dkge_contrast()}} and inference functions}
 }
 \value{
-An object of class `dkge_inference` containing:
-  - `contrasts`: The contrast results from cross-fitting
-  - `statistics`: Test statistics per cluster/voxel
-  - `p_values`: Raw p-values
-  - `p_adjusted`: Adjusted p-values based on correction method
-  - `significant`: Logical indicators of significance
-  - `method`: Cross-fitting method used
-  - `inference`: Inference type used
-  - `correction`: Correction method applied
-  - `metadata`: Additional information about the analysis
+An object of class \code{dkge_inference} containing:
+\itemize{
+\item \code{contrasts}: The contrast results from cross-fitting
+\item \code{statistics}: Test statistics per cluster/voxel
+\item \code{p_values}: Raw p-values
+\item \code{p_adjusted}: Adjusted p-values based on correction method
+\item \code{significant}: Logical indicators of significance
+\item \code{method}: Cross-fitting method used
+\item \code{inference}: Inference type used
+\item \code{correction}: Correction method applied
+\item \code{metadata}: Additional information about the analysis
+}
 }
 \description{
 High-level interface for statistical inference on DKGE contrasts with
 integrated cross-fitting and multiple testing correction.
 }
 \details{
-This function integrates the cross-fitting machinery from [dkge_contrast()]
+This function integrates the cross-fitting machinery from \code{\link[=dkge_contrast]{dkge_contrast()}}
 with various statistical inference procedures. It first computes contrast
 values using the specified cross-fitting method, then applies the chosen
 inference procedure to obtain p-values, and finally applies multiple
 testing correction.
 
 When subject cluster counts differ across participants, supply the
-`transport` argument so that contrasts are first mapped to a shared
+\code{transport} argument so that contrasts are first mapped to a shared
 parcellation before stacking. The resulting mapped subject matrices are
-returned in the `transport` field of the output for downstream inspection.
+returned in the \code{transport} field of the output for downstream inspection.
 
 The workflow is:
-1. Compute contrast values via cross-fitting (LOSO/K-fold/analytic)
-2. Apply inference procedure (sign-flip/Freedman-Lane/parametric)
-3. Apply multiple testing correction (maxT/FDR/Bonferroni)
+\enumerate{
+\item Compute contrast values via cross-fitting (LOSO/K-fold/analytic)
+\item Apply inference procedure (sign-flip/Freedman-Lane/parametric)
+\item Apply multiple testing correction (maxT/FDR/Bonferroni)
+}
 
 For sign-flip inference, the max-T correction provides strong FWER control.
 For parametric inference, FDR may be more appropriate for exploratory analyses.
@@ -101,5 +109,5 @@ results
 
 }
 \seealso{
-[dkge_contrast()], [dkge_signflip_maxT()], [dkge_freedman_lane()]
+\code{\link[=dkge_contrast]{dkge_contrast()}}, \code{\link[=dkge_signflip_maxT]{dkge_signflip_maxT()}}, \code{\link[=dkge_freedman_lane]{dkge_freedman_lane()}}
 }

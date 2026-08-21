@@ -81,7 +81,7 @@ dkge_anchor_targets_from_prototypes <- function(anchors,
 #' @param sigma Optional bandwidth forwarded to
 #'   [dkge_anchor_contrast_from_direction()].
 #' @param normalize Logical; when `TRUE` (default) the resulting weights are
-#'   L2-normalised.
+#'   L2-normalized.
 #'
 #' @return Matrix with one row per supplied direction and `nrow(anchors)` columns.
 #' @examples

@@ -2,12 +2,12 @@
 % Please edit documentation in R/dkge-cv.R
 \name{dkge_diagnostics}
 \alias{dkge_diagnostics}
-\title{Summarise DKGE diagnostics}
+\title{Summarize DKGE diagnostics}
 \usage{
 dkge_diagnostics(fit)
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 }
 \value{
 List with variance table, subject weights, and rank info.

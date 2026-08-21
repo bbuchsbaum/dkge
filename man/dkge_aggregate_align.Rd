@@ -7,27 +7,27 @@
 dkge_aggregate_align(reference, fit, rank = NULL, degeneracy_tol = 0.001)
 }
 \arguments{
-\item{reference}{Reference `dkge_aggregate_fit`.}
+\item{reference}{Reference \code{dkge_aggregate_fit}.}
 
 \item{fit}{Fit to align.}
 
 \item{rank}{Optional rank truncation before alignment.}
 
 \item{degeneracy_tol}{Relative singular-value gap below which components
-are flagged as near-tied. The gap is computed on the *unrotated* (sorted)
-spectrum of `fit`, which is the quantity that governs how identifiable the
-rotation is. Treat `alignment_summary$min_cosine` as the primary
-diagnostic; `near_tie` is a coarse flag on this relative gap.}
+are flagged as near-tied. The gap is computed on the \emph{unrotated} (sorted)
+spectrum of \code{fit}, which is the quantity that governs how identifiable the
+rotation is. Treat \code{alignment_summary$min_cosine} as the primary
+diagnostic; \code{near_tie} is a coarse flag on this relative gap.}
 }
 \value{
-Aligned `dkge_aggregate_fit` with `alignment` metadata. `U`,
-  `saliences`, `scores_feature`, and `singular_values` are all carried
-  through the rotation together: `singular_values` is recomputed as
-  `sqrt(colSums(scores_feature^2))`, which reproduces the unaligned singular
-  values exactly when the rotation is the identity. `Chat` and `eig_values`
-  are rotation-invariant properties of the data and are left untouched, so
-  after alignment `singular_values` no longer equals
-  `sqrt(eig_values[seq_len(rank)])`.
+Aligned \code{dkge_aggregate_fit} with \code{alignment} metadata. \code{U},
+\code{saliences}, \code{scores_feature}, and \code{singular_values} are all carried
+through the rotation together: \code{singular_values} is recomputed as
+\code{sqrt(colSums(scores_feature^2))}, which reproduces the unaligned singular
+values exactly when the rotation is the identity. \code{Chat} and \code{eig_values}
+are rotation-invariant properties of the data and are left untouched, so
+after alignment \code{singular_values} no longer equals
+\code{sqrt(eig_values[seq_len(rank)])}.
 }
 \description{
 Aligns a resampled aggregate fit to a reference using sign alignment for

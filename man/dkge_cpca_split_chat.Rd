@@ -14,7 +14,7 @@ dkge_cpca_split_chat(Chat, T, K)
 \item{K}{qxq design kernel.}
 }
 \value{
-List with `Chat_design`, `Chat_resid`, and the projector `P_hat`.
+List with \code{Chat_design}, \code{Chat_resid}, and the projector \code{P_hat}.
 }
 \description{
 Split compressed covariance into design/residual parts (CPCA inside-span)

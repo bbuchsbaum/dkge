@@ -26,11 +26,11 @@ dkge_cv_kernel_grid(
 
 \item{Omega_list}{Optional list of spatial weights.}
 
-\item{ridge}{Optional ridge parameter passed to [dkge_fit()].}
+\item{ridge}{Optional ridge parameter passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
-\item{w_method}{Subject-level weighting scheme passed to [dkge_fit()].}
+\item{w_method}{Subject-level weighting scheme passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
-\item{w_tau}{Shrinkage parameter toward equal weights passed to [dkge_fit()].}
+\item{w_tau}{Shrinkage parameter toward equal weights passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 }
 \value{
 List with the one-SE pick, best kernel, summary table, and raw scores.

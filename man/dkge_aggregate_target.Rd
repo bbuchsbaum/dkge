@@ -30,39 +30,39 @@ have the same column-name set; columns are reordered to subject 1.}
 \item{subject_data}{Data frame with one row per subject.}
 
 \item{cell_data}{Data frame with one row per repeated-measures cell. If
-`NULL`, a cell factor named `cell` is inferred from matrix row names
-(or `cell1`, `cell2`, ...) and is kept in the aggregate rows. Pass
-`cell_vars = character(0)` to collapse those cells.}
+\code{NULL}, a cell factor named \code{cell} is inferred from matrix row names
+(or \code{cell1}, \code{cell2}, ...) and is kept in the aggregate rows. Pass
+\code{cell_vars = character(0)} to collapse those cells.}
 
 \item{group_vars}{Character vector of subject-level grouping variables.}
 
 \item{cell_vars}{Character vector of cell-level variables. Defaults to
-the inferred `cell` column when `cell_data` is `NULL`, otherwise to all
-columns in `cell_data` except `cell_id_col`.}
+the inferred \code{cell} column when \code{cell_data} is \code{NULL}, otherwise to all
+columns in \code{cell_data} except \code{cell_id_col}.}
 
-\item{subject_id_col}{Subject identifier column in `subject_data`.}
+\item{subject_id_col}{Subject identifier column in \code{subject_data}.}
 
-\item{cell_id_col}{Optional cell identifier column in `cell_data`.}
+\item{cell_id_col}{Optional cell identifier column in \code{cell_data}.}
 
 \item{weights}{Optional subject or subject-by-cell weights.}
 
-\item{aggregate}{Aggregation method. `"mean"` ignores `weights`;
-`"weighted_mean"` uses them.}
+\item{aggregate}{Aggregation method. \code{"mean"} ignores \code{weights};
+\code{"weighted_mean"} uses them.}
 
 \item{row_sep}{Separator used to build aggregate row labels. No level of a
-`group_vars`/`cell_vars` variable may contain it, otherwise two distinct
+\code{group_vars}/\code{cell_vars} variable may contain it, otherwise two distinct
 aggregate rows could be given the same row ID; violations are rejected.}
 
-\item{x}{A `dkge_aggregate_target` object to print.}
+\item{x}{A \code{dkge_aggregate_target} object to print.}
 
 \item{...}{Unused; present for S3 method compatibility.}
 }
 \value{
-Object of class `dkge_aggregate_target`.
+Object of class \code{dkge_aggregate_target}.
 }
 \description{
 Constructs row-by-feature aggregate targets such as
-`group:task:measure` cell means from subject-level repeated-measures
+\code{group:task:measure} cell means from subject-level repeated-measures
 matrices. The returned object stores the source metadata required to
 recompute aggregates under subject-label permutations or subject bootstrap
 resampling. The unit of inference remains subjects; aggregate rows are never

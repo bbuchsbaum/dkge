@@ -7,9 +7,9 @@
 dkge_plot_info_anchor(info_haufe = NULL, info_loco = NULL, top = 20)
 }
 \arguments{
-\item{info_haufe}{Result from `dkge_info_map_haufe()`.}
+\item{info_haufe}{Result from \code{dkge_info_map_haufe()}.}
 
-\item{info_loco}{Result from `dkge_info_map_loco()`.}
+\item{info_loco}{Result from \code{dkge_info_map_loco()}.}
 
 \item{top}{Number of anchors to annotate.}
 }

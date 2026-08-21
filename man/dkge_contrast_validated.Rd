@@ -20,11 +20,11 @@ dkge_contrast_validated(
 )
 }
 \arguments{
-\item{fit}{Fitted [dkge()] object.}
+\item{fit}{Fitted \code{\link[=dkge]{dkge()}} object.}
 
-\item{contrasts}{Contrast specification accepted by [dkge_contrast()].}
+\item{contrasts}{Contrast specification accepted by \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 
-\item{folds}{Fold definition (integer `k`, `dkge_folds`, data frame, or list).}
+\item{folds}{Fold definition (integer \code{k}, \code{dkge_folds}, data frame, or list).}
 
 \item{ridge}{Ridge added to held-out compressed matrices.}
 
@@ -39,7 +39,7 @@ dkge_contrast_validated(
 \item{completed_missingness}{Coverage policy for the completed path.}
 
 \item{observed_args}{Optional list of arguments for the observed policy
-(e.g., `list(min_pairs = 2)` for masking).}
+(e.g., \code{list(min_pairs = 2)} for masking).}
 
 \item{completed_args}{Optional list of arguments for the completed policy.}
 
@@ -47,16 +47,18 @@ dkge_contrast_validated(
 helper.}
 }
 \value{
-A list with class `dkge_contrast_validated` containing:
-  - `observed`, `completed`: outputs from the respective paths.
-  - `summary`: data frame with weighted means and sensitivity indices.
-  - `provenance`: coverage metadata (effect IDs, subject masks, per-fold
-    pair-count matrices).
+A list with class \code{dkge_contrast_validated} containing:
+\itemize{
+\item \code{observed}, \code{completed}: outputs from the respective paths.
+\item \code{summary}: data frame with weighted means and sensitivity indices.
+\item \code{provenance}: coverage metadata (effect IDs, subject masks, per-fold
+pair-count matrices).
+}
 }
 \description{
 Computes DKGE contrasts twice on the same fold structure: once with an
-observed-only coverage policy (typically `missingness = "rescale"`) and once with a
-completed/penalised policy (e.g., `missingness = "shrink"`). Coverage metadata
+observed-only coverage policy (typically \code{missingness = "rescale"}) and once with a
+completed/penalised policy (e.g., \code{missingness = "shrink"}). Coverage metadata
 from the fit and folds is returned together with simple sensitivity summaries.
 }
 \examples{

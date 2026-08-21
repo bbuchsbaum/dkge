@@ -7,13 +7,13 @@
 dkge_neuro_loader(design_objs, bv_list, labels_list = NULL, omega_fun = NULL)
 }
 \arguments{
-\item{design_objs}{List of design matrices or `fmridesign` objects.}
+\item{design_objs}{List of design matrices or \code{fmridesign} objects.}
 
-\item{bv_list}{List of `neuroim2::NeuroVec` objects, `ClusteredNeuroVec`
-objects, or file paths readable by `neuroim2::read_vec()`.}
+\item{bv_list}{List of \code{neuroim2::NeuroVec} objects, \code{ClusteredNeuroVec}
+objects, or file paths readable by \code{neuroim2::read_vec()}.}
 
-\item{labels_list}{List of `neuroim2::NeuroVol` label volumes (same length
-as `bv_list`). Can be NULL if bv_list contains ClusteredNeuroVec objects.}
+\item{labels_list}{List of \code{neuroim2::NeuroVol} label volumes (same length
+as \code{bv_list}). Can be NULL if bv_list contains ClusteredNeuroVec objects.}
 
 \item{omega_fun}{Optional function mapping a label volume or
 ClusteredNeuroVec to cluster weights. Default uses cluster sizes as
@@ -23,7 +23,7 @@ weights.}
 Loader list suitable for streaming DKGE fits.
 }
 \description{
-The returned loader exposes `n()`, `X(s)`, `B(s)`, and `Omega(s)` methods
+The returned loader exposes \code{n()}, \code{X(s)}, \code{B(s)}, and \code{Omega(s)} methods
 compatible with streaming DKGE fits.
 }
 \examples{

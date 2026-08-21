@@ -12,8 +12,8 @@ dkge_projector_K(T, K)
 \item{K}{qxq positive semi-definite design kernel.}
 }
 \value{
-List with entries `P_K` (effect-space projector) and `P_hat`
-  (projector in the \eqn{K^{1/2}} metric).
+List with entries \code{P_K} (effect-space projector) and \code{P_hat}
+(projector in the \eqn{K^{1/2}} metric).
 }
 \description{
 Builds both the K-selfadjoint projector operating in effect coordinates and
@@ -22,10 +22,10 @@ for CPCA-style splits of the compressed covariance.
 }
 \details{
 All computations take place in the metric induced by the design kernel
-`K`. Choosing a non-identity kernel therefore changes the projector: smooth
+\code{K}. Choosing a non-identity kernel therefore changes the projector: smooth
 kernels diffuse energy across correlated effects, whereas a diagonal kernel
 keeps the split tied to the raw effect indices. When the design-aligned
-subspace is not well represented by coordinate axes, supply `cpca_T` with
+subspace is not well represented by coordinate axes, supply \code{cpca_T} with
 columns that already capture the kernel geometry so the CPCA basis respects
 those relationships.
 }

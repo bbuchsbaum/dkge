@@ -10,16 +10,16 @@
 \method{predict}{dkge_model}(object, newdata = NULL, ...)
 }
 \arguments{
-\item{object}{A `dkge` fit.}
+\item{object}{A \code{dkge} fit.}
 
-\item{newdata}{Optional list with elements `betas`/`B_list` and `contrasts`.}
+\item{newdata}{Optional list with elements \code{betas}/\code{B_list} and \code{contrasts}.}
 
-\item{...}{Additional arguments passed to [dkge_predict()].}
+\item{...}{Additional arguments passed to \code{\link[=dkge_predict]{dkge_predict()}}.}
 }
 \value{
-Output of [dkge_predict()].
+Output of \code{\link[=dkge_predict]{dkge_predict()}}.
 }
 \description{
-S3 front-end that forwards to [dkge_predict()] while accepting `newdata`
-lists with `betas`/`B_list` and `contrasts` entries.
+S3 front-end that forwards to \code{\link[=dkge_predict]{dkge_predict()}} while accepting \code{newdata}
+lists with \code{betas}/\code{B_list} and \code{contrasts} entries.
 }

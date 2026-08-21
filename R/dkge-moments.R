@@ -332,7 +332,7 @@
 #' This is the single pooling engine used by batch and resampled fits. With no
 #' effect weighting it preserves the historical missingness policies, now in
 #' unmixed effect space. With count or explicit precision weighting it computes
-#' a pair-normalised precision-weighted mean and rescales it by the observed
+#' a pair-normalized precision-weighted mean and rescales it by the observed
 #' subject mass \eqn{\sum_s a_s w_s 1[\mathrm{obs}_s]} so that unit precision
 #' recovers the unweighted sum (and equals the legacy cohort-mass scale under
 #' full coverage).
@@ -356,7 +356,7 @@
 #' branches. Unweighted, that is `numerator / pair_counts`; under precision
 #' weighting it is `numerator / pair_weight`, i.e. `pooled` divided by the
 #' observed subject mass that scaled it up. Dividing by `pair_ess` instead
-#' would apply the per-pair normalisation twice.
+#' would apply the per-pair normalization twice.
 #'
 #' @param pool_cache Optional list from `.dkge_pool_cache()` holding the
 #'   sample-independent `structural`/`reliability` pair matrices.

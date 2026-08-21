@@ -7,18 +7,18 @@
 \method{as.data.frame}{dkge_inference}(x, row.names = NULL, optional = FALSE, ...)
 }
 \arguments{
-\item{x}{A `dkge_inference` object}
+\item{x}{A \code{dkge_inference} object}
 
 \item{row.names}{NULL or a character vector giving the row names}
 
 \item{optional}{Logical; if TRUE, setting row names is optional}
 
-\item{...}{Additional arguments passed to [base::data.frame()], including
-`stringsAsFactors`}
+\item{...}{Additional arguments passed to \code{\link[base:data.frame]{base::data.frame()}}, including
+\code{stringsAsFactors}}
 }
 \value{
-Data frame with columns `contrast`, `cluster`, `statistic`, `p_value`,
-  `p_adjusted`, and `significant`
+Data frame with columns \code{contrast}, \code{cluster}, \code{statistic}, \code{p_value},
+\code{p_adjusted}, and \code{significant}
 }
 \description{
 Convert DKGE inference results to a tidy data frame

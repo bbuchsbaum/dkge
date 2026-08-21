@@ -26,15 +26,15 @@ dkge_cv_rank_loso(
 
 \item{Omega_list}{Optional list of spatial weights.}
 
-\item{ridge}{Optional ridge parameter passed to [dkge_fit()].}
+\item{ridge}{Optional ridge parameter passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
-\item{w_method}{Subject-level weighting scheme passed to [dkge_fit()].}
+\item{w_method}{Subject-level weighting scheme passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
-\item{w_tau}{Shrinkage parameter toward equal weights passed to [dkge_fit()].}
+\item{w_tau}{Shrinkage parameter toward equal weights passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 }
 \value{
-List containing the one-SE selection (`pick`), the best rank, and the
-  aggregated score table.
+List containing the one-SE selection (\code{pick}), the best rank, and the
+aggregated score table.
 }
 \description{
 Evaluates candidate ranks by recomputing LOSO bases and measuring explained

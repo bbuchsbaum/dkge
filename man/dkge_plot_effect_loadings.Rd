@@ -7,7 +7,7 @@
 dkge_plot_effect_loadings(fit, comps = NULL, zscore = FALSE)
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{comps}{Components to include (defaults to first min(rank,6)).}
 

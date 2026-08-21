@@ -27,11 +27,11 @@ dkge_jd_control(
 
 \item{tol}{Convergence tolerance applied to both gradient norm and off-diagonal energy.}
 
-\item{linesearch}{Logical; when `TRUE` perform Armijo backtracking.}
+\item{linesearch}{Logical; when \code{TRUE} perform Armijo backtracking.}
 
 \item{armijo}{Armijo condition constant used during backtracking.}
 
-\item{verbose}{Logical; emit per-iteration progress when `TRUE`.}
+\item{verbose}{Logical; emit per-iteration progress when \code{TRUE}.}
 
 \item{record}{Logical; store per-iteration diagnostics.}
 }

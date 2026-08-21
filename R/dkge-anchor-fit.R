@@ -101,7 +101,7 @@ dkge_anchor_fit <- function(features_list,
   fit
 }
 
-#' Summarise per-subject anchor coverage
+#' Summarize per-subject anchor coverage
 #'
 #' @keywords internal
 #' @noRd
@@ -147,7 +147,7 @@ dkge_anchor_fit <- function(features_list,
 #' @param negatives Optional matrix (or vector) of negative prototypes.
 #' @param sigma Optional bandwidth for the prototype kernel. Defaults to the
 #'   median distance between anchors and prototypes.
-#' @param normalize Logical; L2-normalise the resulting contrast.
+#' @param normalize Logical; L2-normalize the resulting contrast.
 #'
 #' @return Numeric vector of length `L` suitable for [dkge_contrast()].
 #' @examples
@@ -190,7 +190,7 @@ dkge_anchor_contrast_from_prototypes <- function(anchors,
 #' @param direction Numeric vector (length `d`) describing a linear probe in the
 #'   shared feature space.
 #' @param sigma Optional bandwidth; defaults to the anchor median heuristic.
-#' @param normalize Logical; L2-normalise the resulting contrast.
+#' @param normalize Logical; L2-normalize the resulting contrast.
 #'
 #' @return Numeric vector of length `L` suitable for [dkge_contrast()].
 #' @examples

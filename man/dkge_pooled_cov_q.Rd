@@ -14,8 +14,8 @@ dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
 \item{Omega_list}{Optional list of spatial weights.}
 }
 \value{
-List containing `C` (pooled covariance in the ruler metric), `R`
-  (upper-triangular Cholesky factor), and `G` (pooled design Gram matrix).
+List containing \code{C} (pooled covariance in the ruler metric), \code{R}
+(upper-triangular Cholesky factor), and \code{G} (pooled design Gram matrix).
 }
 \description{
 Computes the qxq pooled design covariance and the corresponding Cholesky factor

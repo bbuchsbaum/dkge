@@ -412,7 +412,7 @@
 #'   `P_s` (diagonal weights for clusters/voxels), or a full `P_s x P_s` matrix
 #'   specifying custom covariance. These weights are applied both when
 #'   accumulating the compressed covariance and when computing MFA/energy block
-#'   normalisation.
+#'   normalization.
 #' @param w_method Subject-level weighting scheme.
 #'   * `"mfa_sigma1"` (default): inverse squared leading singular value of
 #'     \eqn{K^{1/2} Btil_s \Omega_s^{1/2}} (Multiple Factor Analysis scaling).
@@ -453,7 +453,7 @@
 #' @param effect_scaling Effect-space scaling applied before accumulating the
 #'   compressed covariance. `"pooled_design"` (default) multiplies each subject
 #'   beta/effect matrix by the pooled design Cholesky factor, preserving the
-#'   original GLM-beta behaviour. `"none"` leaves rows on their input scale and
+#'   original GLM-beta behavior. `"none"` leaves rows on their input scale and
 #'   uses an identity contrast ruler, which is appropriate when rows already have
 #'   a common absolute interpretation such as AUC minus chance.
 #' @param effect_weights Optional [dkge_effect_weights()] specification. Count,

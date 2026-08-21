@@ -13,9 +13,9 @@ dkge_data(
 )
 }
 \arguments{
-\item{betas}{List of subject records (matrices or `dkge_subject` objects)}
+\item{betas}{List of subject records (matrices or \code{dkge_subject} objects)}
 
-\item{designs}{Optional list of design matrices (ignored when `betas` already contain subjects)}
+\item{designs}{Optional list of design matrices (ignored when \code{betas} already contain subjects)}
 
 \item{omega}{Optional list of cluster weights}
 
@@ -24,13 +24,13 @@ dkge_data(
 \item{effects}{Optional character vector pinning the global effect order.
 It must be a permutation of the effects observed across subjects (the
 union when coverage is partial). Supply
-`dkge_effect_grid()$cell_labels` here so that the bundle, the design
+\code{dkge_effect_grid()$cell_labels} here so that the bundle, the design
 kernel, and the grid all index effects identically; without it the union
 is ordered by first appearance across subjects, which depends on the order
-of `betas`.}
+of \code{betas}.}
 }
 \value{
-An object of class `dkge_data`
+An object of class \code{dkge_data}
 }
 \description{
 Bundle subject-level inputs for DKGE

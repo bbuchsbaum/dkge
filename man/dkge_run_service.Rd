@@ -19,8 +19,8 @@ dkge_run_service(service, ...)
 \method{dkge_run_service}{default}(service, ...)
 }
 \arguments{
-\item{service}{A service object created by `dkge_contrast_service()`,
-`dkge_inference_service()`, or `dkge_transport_service()`}
+\item{service}{A service object created by \code{dkge_contrast_service()},
+\code{dkge_inference_service()}, or \code{dkge_transport_service()}}
 
 \item{...}{Additional arguments passed to the typed runner}
 }

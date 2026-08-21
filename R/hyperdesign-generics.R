@@ -4,7 +4,7 @@
 #' Convert to a DKGE design kernel
 #'
 #' Coerce arbitrary objects into a DKGE kernel bundle. The default method
-#' preserves existing behaviour by accepting matrices or list objects with a
+#' preserves existing behavior by accepting matrices or list objects with a
 #' `$K` component and optional metadata.
 #'
 #' @param x Object containing kernel information

@@ -24,50 +24,50 @@ dkge_aggregate_permute(
 \method{print}{dkge_aggregate_permutation}(x, ...)
 }
 \arguments{
-\item{target}{A `dkge_aggregate_target`.}
+\item{target}{A \code{dkge_aggregate_target}.}
 
-\item{K}{Optional aggregate-row design kernel. See [dkge_aggregate_fit()] for
-the row-space convention (`q` = number of aggregate rows).}
+\item{K}{Optional aggregate-row design kernel. See \code{\link[=dkge_aggregate_fit]{dkge_aggregate_fit()}} for
+the row-space convention (\code{q} = number of aggregate rows).}
 
 \item{statistic}{Built-in statistic name or function.}
 
 \item{B}{Number of permutation draws.}
 
 \item{group_vars}{Subject-level labels to permute. Defaults to
-`target$group_vars`, and must include all of `target$group_vars`.}
+\code{target$group_vars}, and must include all of \code{target$group_vars}.}
 
-\item{rank, center}{Passed to [dkge_aggregate_fit()].}
+\item{rank, center}{Passed to \code{\link[=dkge_aggregate_fit]{dkge_aggregate_fit()}}.}
 
-\item{component}{Component index passed to [dkge_aggregate_stat()] for the
-built-in statistics. It is a formal argument rather than part of `...`
-because R's partial matching would otherwise bind a `component =` argument
-to `component_scale`/`component_contrasts`. User-supplied statistic
+\item{component}{Component index passed to \code{\link[=dkge_aggregate_stat]{dkge_aggregate_stat()}} for the
+built-in statistics. It is a formal argument rather than part of \code{...}
+because R's partial matching would otherwise bind a \verb{component =} argument
+to \code{component_scale}/\code{component_contrasts}. User-supplied statistic
 functions do not receive it.}
 
-\item{alternative}{Direction of the permutation p-value. `"two.sided"`
-(the default) compares `abs(null)` to `abs(observed)`, which is the
+\item{alternative}{Direction of the permutation p-value. \code{"two.sided"}
+(the default) compares \code{abs(null)} to \code{abs(observed)}, which is the
 appropriate choice for the signed contrast statistics returned by
-[dkge_aggregate_stat()] because the component sign is arbitrary.
-`"greater"`/`"less"` compare the signed values, and `"greater"` is the
-natural choice for a non-negative statistic such as `"singular_value"`.}
+\code{\link[=dkge_aggregate_stat]{dkge_aggregate_stat()}} because the component sign is arbitrary.
+\code{"greater"}/\code{"less"} compare the signed values, and \code{"greater"} is the
+natural choice for a non-negative statistic such as \code{"singular_value"}.}
 
-\item{parallel}{Logical; if `TRUE`, evaluate draws with
-`future.apply::future_lapply()`. Permutation indices are drawn up front in
+\item{parallel}{Logical; if \code{TRUE}, evaluate draws with
+\code{future.apply::future_lapply()}. Permutation indices are drawn up front in
 the calling RNG stream, so results are identical for either setting of
-`parallel` given the same `seed`.}
+\code{parallel} given the same \code{seed}.}
 
 \item{seed}{Optional random seed.}
 
-\item{...}{Additional arguments passed to [dkge_aggregate_stat()]. Every
-other setting is a named formal, so a misspelled argument (`sed = 1` for
-`seed = 1`) lands here and is reported as an error whenever `statistic` is
-one of the built-ins; `...` reaches only user-supplied statistic functions.}
+\item{...}{Additional arguments passed to \code{\link[=dkge_aggregate_stat]{dkge_aggregate_stat()}}. Every
+other setting is a named formal, so a misspelled argument (\code{sed = 1} for
+\code{seed = 1}) lands here and is reported as an error whenever \code{statistic} is
+one of the built-ins; \code{...} reaches only user-supplied statistic functions.}
 
-\item{x}{A `dkge_aggregate_permutation` object to print.}
+\item{x}{A \code{dkge_aggregate_permutation} object to print.}
 }
 \value{
-Object of class `dkge_aggregate_permutation`. `observed` and `null`
-  hold signed statistics; `p` is computed according to `alternative`.
+Object of class \code{dkge_aggregate_permutation}. \code{observed} and \code{null}
+hold signed statistics; \code{p} is computed according to \code{alternative}.
 }
 \description{
 Performs subject-label permutation for aggregate cell-mean targets. Each
@@ -77,22 +77,21 @@ unaligned refit.
 }
 \details{
 Because a permuted subject label changes which aggregate row each subject
-contributes to, `group_vars` must cover every subject-level variable that
-defines the aggregate rows (`target$group_vars`). Permuting a strict subset
+contributes to, \code{group_vars} must cover every subject-level variable that
+defines the aggregate rows (\code{target$group_vars}). Permuting a strict subset
 would let the joint set of row keys change from draw to draw, so it is
 rejected up front rather than failing partway through the run.
 
-
-Null draws are evaluated **unaligned**. Aligning every permutation to the
+Null draws are evaluated \strong{unaligned}. Aligning every permutation to the
 observed fit shrinks component statistics (aligned
 \eqn{sv_1 = \sqrt{\sum_k d_k^2 R_{k1}^2} \le d_1}) and invalidates the
-null at rank greater than one. [dkge_aggregate_align()] is still run so
-that `alignment_summary` can flag weak or near-tied components, but that
+null at rank greater than one. \code{\link[=dkge_aggregate_align]{dkge_aggregate_align()}} is still run so
+that \code{alignment_summary} can flag weak or near-tied components, but that
 rotation is diagnostic only and is not passed to
-[dkge_aggregate_stat()]. `"two.sided"` is the right default for
+\code{\link[=dkge_aggregate_stat]{dkge_aggregate_stat()}}. \code{"two.sided"} is the right default for
 sign-ambiguous component statistics because the unaligned component sign
-is arbitrary; `"greater"` remains the natural choice for the non-negative
-`"singular_value"` statistic. Bootstrap resampling keeps alignment
+is arbitrary; \code{"greater"} remains the natural choice for the non-negative
+\code{"singular_value"} statistic. Bootstrap resampling keeps alignment
 because the observed fit is a legitimate reference for a CI.
 }
 \examples{

@@ -19,9 +19,9 @@ dkge_transport_contrasts_to_medoid(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object used to compute the contrasts.}
+\item{fit}{A \code{dkge} object used to compute the contrasts.}
 
-\item{contrast_obj}{A `dkge_contrasts` result.}
+\item{contrast_obj}{A \code{dkge_contrasts} result.}
 
 \item{medoid}{Integer index of the reference subject (1-based).}
 
@@ -33,12 +33,12 @@ dkge_transport_contrasts_to_medoid(
 
 \item{sizes}{Optional list of cluster masses.}
 
-\item{mapper}{Optional mapper specification created by [dkge_mapper_spec()].}
+\item{mapper}{Optional mapper specification created by \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}.}
 
-\item{method}{Mapper strategy (`"sinkhorn"`, `"ridge"`, or `"ols"`). The
-legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.}
+\item{method}{Mapper strategy (\code{"sinkhorn"}, \code{"ridge"}, or \code{"ols"}). The
+legacy \code{"sinkhorn_cpp"} name is a deprecated alias for \code{"sinkhorn"}.}
 
-\item{transport_cache}{Optional cache from [dkge_prepare_transport()]. When
+\item{transport_cache}{Optional cache from \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}. When
 supplied, cached operators are reused for every contrast.}
 
 \item{...}{Additional parameters passed when building the default mapper
@@ -46,7 +46,7 @@ specification.}
 }
 \value{
 Named list of transport results (one per contrast) with an attached
-  `cache` element for reuse.
+\code{cache} element for reuse.
 }
 \description{
 Transport subject contrasts to a medoid parcellation

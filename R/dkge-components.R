@@ -5,7 +5,7 @@
 #'
 #' Transports each subject's component loadings to a reference parcellation,
 #' computes inference statistics, and returns tidy summaries ready for
-#' visualisation.
+#' visualization.
 #'
 #' @param fit A fitted `dkge` object.
 #' @param mapper Mapper strategy (string or [dkge_mapper_spec()]). Defaults to

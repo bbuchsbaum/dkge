@@ -7,17 +7,17 @@
 dkge_update_weights(fit, weights = NULL)
 }
 \arguments{
-\item{fit}{A fitted `dkge` object.}
+\item{fit}{A fitted \code{dkge} object.}
 
-\item{weights}{A `dkge_weights` specification to apply. When `NULL`, the
-existing weight spec stored in `fit$weight_spec` is reused.}
+\item{weights}{A \code{dkge_weights} specification to apply. When \code{NULL}, the
+existing weight spec stored in \code{fit$weight_spec} is reused.}
 }
 \value{
-A new `dkge` object with updated voxel weights.
+A new \code{dkge} object with updated voxel weights.
 }
 \description{
 Convenience helper that rebuilds a DKGE fit using the original inputs but a
-different [dkge_weights()] specification. The original fit must have been
-constructed with `keep_inputs = TRUE` (the default for [dkge()]), so the
-underlying `dkge_data` bundle is available.
+different \code{\link[=dkge_weights]{dkge_weights()}} specification. The original fit must have been
+constructed with \code{keep_inputs = TRUE} (the default for \code{\link[=dkge]{dkge()}}), so the
+underlying \code{dkge_data} bundle is available.
 }

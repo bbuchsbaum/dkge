@@ -25,8 +25,8 @@
 #'
 #' Whichever side carries labels supplies them: design column names win when
 #' present, otherwise the beta row names are adopted, and placeholders
-#' (`effect1`, ...) are invented only when neither side is labelled. Inventing
-#' placeholders while the other side is labelled would manufacture a name
+#' (`effect1`, ...) are invented only when neither side is labeled. Inventing
+#' placeholders while the other side is labeled would manufacture a name
 #' clash out of two consistent inputs.
 #'
 #' @param beta qxP matrix of subject coefficients.
@@ -82,7 +82,7 @@
 #'
 #' @param omega Weight specification (`NULL`, vector, or matrix).
 #' @param clusters Number of spatial units (P).
-#' @return Normalised weight object suitable for multiplication.
+#' @return Normalized weight object suitable for multiplication.
 #' @keywords internal
 #' @noRd
 .validate_omega <- function(omega, clusters) {
@@ -483,7 +483,7 @@ dkge_subject.ClusteredNeuroVec <- function(x, design, id = NULL, omega = NULL, .
 #' @noRd
 .is_dkge_subject <- function(x) inherits(x, "dkge_subject")
 
-#' Normalise subject identifiers
+#' Normalize subject identifiers
 #'
 #' @param subjects List of `dkge_subject` objects.
 #' @param provided Optional identifiers supplied by the caller.
@@ -803,7 +803,7 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL,
 #' @param cpca_ridge Optional ridge applied to the CPCA-filtered matrices before
 #'   eigen-decomposition.
 #' @param weights Optional [`dkge_weights()`] specification that overrides the
-#'   default adaptive weighting behaviour when accumulating covariance. Use this
+#'   default adaptive weighting behavior when accumulating covariance. Use this
 #'   to inject custom spatial reliabilities or to reuse a precomputed weighting
 #'   recipe produced by [dkge_weights()].
 #' @param effect_weights Optional [dkge_effect_weights()] specification for

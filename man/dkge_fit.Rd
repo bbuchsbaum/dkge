@@ -31,26 +31,28 @@ dkge_fit(
 )
 }
 \arguments{
-\item{data}{`dkge_data` bundle (preferred) or a list of subject beta matrices.}
+\item{data}{\code{dkge_data} bundle (preferred) or a list of subject beta matrices.}
 
-\item{designs}{Per-subject design matrices (ignored when `data` already carries
-them). Columns must align with the effects encoded by `K`.}
+\item{designs}{Per-subject design matrices (ignored when \code{data} already carries
+them). Columns must align with the effects encoded by \code{K}.}
 
 \item{K}{qxq design kernel in effect space. Supply either a raw matrix or the
-list returned by [design_kernel()].}
+list returned by \code{\link[=design_kernel]{design_kernel()}}.}
 
 \item{Omega_list}{Optional per-subject spatial reliabilities/weights. Each
-element may be `NULL` (no extra weighting), a numeric vector of length
-`P_s` (diagonal weights for clusters/voxels), or a full `P_s x P_s` matrix
+element may be \code{NULL} (no extra weighting), a numeric vector of length
+\code{P_s} (diagonal weights for clusters/voxels), or a full \verb{P_s x P_s} matrix
 specifying custom covariance. These weights are applied both when
 accumulating the compressed covariance and when computing MFA/energy block
-normalisation.}
+normalization.}
 
 \item{w_method}{Subject-level weighting scheme.
-* `"mfa_sigma1"` (default): inverse squared leading singular value of
-  \eqn{K^{1/2} Btil_s \Omega_s^{1/2}} (Multiple Factor Analysis scaling).
-* `"energy"`: inverse Frobenius norm squared of the same block.
-* `"none"`: disable block scaling (all weights = 1).}
+\itemize{
+\item \code{"mfa_sigma1"} (default): inverse squared leading singular value of
+\eqn{K^{1/2} Btil_s \Omega_s^{1/2}} (Multiple Factor Analysis scaling).
+\item \code{"energy"}: inverse Frobenius norm squared of the same block.
+\item \code{"none"}: disable block scaling (all weights = 1).
+}}
 
 \item{w_tau}{Shrinkage parameter (0..1) toward equal weights. 0 keeps the raw
 weights, 1 forces equal weighting.}
@@ -59,34 +61,34 @@ weights, 1 forces equal weighting.}
 
 \item{rank}{Desired rank for the decomposition. If NULL, uses full rank.}
 
-\item{keep_X}{Logical; when `TRUE`, store the concatenated training matrix
+\item{keep_X}{Logical; when \code{TRUE}, store the concatenated training matrix
 used to build the multiblock projection (can be large). Only available
-when the fit is an exact `block_biprojector`; q-space moments have no
+when the fit is an exact \code{block_biprojector}; q-space moments have no
 matching subject-by-voxel factor.}
 
 \item{cpca_blocks}{Optional integer vector specifying which effect rows span
-the CPCA design subspace. Ignored when `cpca_part = "none"` or when
-`cpca_T` is provided.}
+the CPCA design subspace. Ignored when \code{cpca_part = "none"} or when
+\code{cpca_T} is provided.}
 
 \item{cpca_T}{Optional qxq0 matrix giving the CPCA design basis explicitly.
-When supplied it overrides `cpca_blocks`.}
+When supplied it overrides \code{cpca_blocks}.}
 
-\item{cpca_part}{Which CPCA-filtered component to estimate: `"none"` (default)
-performs the standard DKGE fit; `"design"` uses only the CPCA design part;
-`"resid"` uses the residual part; `"both"` fits the design part but also
+\item{cpca_part}{Which CPCA-filtered component to estimate: \code{"none"} (default)
+performs the standard DKGE fit; \code{"design"} uses only the CPCA design part;
+\code{"resid"} uses the residual part; \code{"both"} fits the design part but also
 stores the residual basis for inspection.}
 
 \item{cpca_ridge}{Optional ridge added to the CPCA-filtered matrices before
 eigen-decomposition.}
 
-\item{weights}{Either `NULL` (default) to apply the weighting scheme specified
-by `w_method`, or a [`dkge_weights()`] specification controlling additional
+\item{weights}{Either \code{NULL} (default) to apply the weighting scheme specified
+by \code{w_method}, or a \code{\link[=dkge_weights]{dkge_weights()}} specification controlling additional
 voxel/anchor-level weighting. When supplied, it must inherit from
-`dkge_weights` and is resolved via [dkge_weights()].}
+\code{dkge_weights} and is resolved via \code{\link[=dkge_weights]{dkge_weights()}}.}
 
-\item{solver}{Solver used for the q-space problem. `"pooled"` keeps the
-original eigen-decomposition; `"jd"` performs joint diagonalisation using
-[dkge_jd_control()] settings.}
+\item{solver}{Solver used for the q-space problem. \code{"pooled"} keeps the
+original eigen-decomposition; \code{"jd"} performs joint diagonalisation using
+\code{\link[=dkge_jd_control]{dkge_jd_control()}} settings.}
 
 \item{jd_control}{Control parameters for the JD solver.}
 
@@ -98,54 +100,54 @@ recycled across subjects.}
 the whitened \eqn{K^{1/2}} metric (qxq matrix).}
 
 \item{effect_scaling}{Effect-space scaling applied before accumulating the
-compressed covariance. `"pooled_design"` (default) multiplies each subject
+compressed covariance. \code{"pooled_design"} (default) multiplies each subject
 beta/effect matrix by the pooled design Cholesky factor, preserving the
-original GLM-beta behaviour. `"none"` leaves rows on their input scale and
+original GLM-beta behavior. \code{"none"} leaves rows on their input scale and
 uses an identity contrast ruler, which is appropriate when rows already have
 a common absolute interpretation such as AUC minus chance.}
 
-\item{effect_weights}{Optional [dkge_effect_weights()] specification. Count,
-explicit precision, or DerSimonian-Laird `"random_effects"` weighting is
+\item{effect_weights}{Optional \code{\link[=dkge_effect_weights]{dkge_effect_weights()}} specification. Count,
+explicit precision, or DerSimonian-Laird \code{"random_effects"} weighting is
 applied to raw q-space effect moments before the pooled ruler and design
 kernel mix effect rows. Random-effects fits are q-space-only.}
 
-\item{debias}{Finite-trial noise treatment. `"none"` preserves the observed
-second moment. `"analytic"` subtracts
-`noise_trace * effect_noise_cov` for each subject before pooling; these
-sufficient statistics are produced by [dkge_trial_subject()].
-`"split_half"` uses the symmetrized cross-product of two independently
-estimated trial halves and requires `dkge_trial_subject(split = ...)`.}
+\item{debias}{Finite-trial noise treatment. \code{"none"} preserves the observed
+second moment. \code{"analytic"} subtracts
+\code{noise_trace * effect_noise_cov} for each subject before pooling; these
+sufficient statistics are produced by \code{\link[=dkge_trial_subject]{dkge_trial_subject()}}.
+\code{"split_half"} uses the symmetrized cross-product of two independently
+estimated trial halves and requires \code{dkge_trial_subject(split = ...)}.}
 
 \item{missingness}{Partial-effect coverage policy used when subjects do not
-all observe the same effect rows. `"none"` keeps the raw zero-filled union
-accumulation, `"rescale"` divides entries by observed pair counts,
-`"mask"` zeros under-covered entries, and `"shrink"` blends rescaled entries
+all observe the same effect rows. \code{"none"} keeps the raw zero-filled union
+accumulation, \code{"rescale"} divides entries by observed pair counts,
+\code{"mask"} zeros under-covered entries, and \code{"shrink"} blends rescaled entries
 toward the diagonal according to coverage. These policies operate on raw
 q-space effect moments before the pooled ruler and design kernel mix rows.
-When `effect_weights` is active, `"none"`/`"mask"` scale the
+When \code{effect_weights} is active, \code{"none"}/\code{"mask"} scale the
 precision-weighted per-pair mean by observed subject mass
 \eqn{\sum_s a_s w_s 1[\mathrm{obs}_s]} (equal to the full cohort mass
-only under complete coverage), `"rescale"` returns that per-pair mean,
-and `"mask"`/`"shrink"` threshold on the effective pair count `$pair_ess`
-instead of the raw `$pair_counts`. Under unit precision, equal subject
-weights, **and full coverage** these coincide with the unweighted
+only under complete coverage), \code{"rescale"} returns that per-pair mean,
+and \code{"mask"}/\code{"shrink"} threshold on the effective pair count \verb{$pair_ess}
+instead of the raw \verb{$pair_counts}. Under unit precision, equal subject
+weights, \strong{and full coverage} these coincide with the unweighted
 policies; under partial coverage they keep the effect-weighted mean on
 the observed-mass scale rather than mean-imputing absent subjects.}
 
-\item{miss_args}{List of arguments for `missingness`. Known fields are
-`min_pairs` (used by `"mask"` and `"shrink"`) and `gamma` (used by
-`"shrink"`). Unknown names are an error.}
+\item{miss_args}{List of arguments for \code{missingness}. Known fields are
+\code{min_pairs} (used by \code{"mask"} and \code{"shrink"}) and \code{gamma} (used by
+\code{"shrink"}). Unknown names are an error.}
 }
 \value{
-A fitted `dkge` object. Exact unregularized pooled moments
-  additionally inherit from `multiblock_biprojector` and advertise physical
-  block loadings `$v`. Pair-normalized, missingness-transformed, debiased,
-  ridged, CPCA, and JD fits inherit from `dkge_qspace` instead, set `$v`
-  and `$X_concat` to `NULL`, and expose only the coherent q-space
-  eigensystem. `$representation` records which contract applies.
-  The object also records `$effect_moment`, `$pair_weight`, `$pair_ess`, and
-  `$moment_diagnostics` for auditing reliability weighting and any negative
-  spectral mass introduced by debiasing.
+A fitted \code{dkge} object. Exact unregularized pooled moments
+additionally inherit from \code{multiblock_biprojector} and advertise physical
+block loadings \verb{$v}. Pair-normalized, missingness-transformed, debiased,
+ridged, CPCA, and JD fits inherit from \code{dkge_qspace} instead, set \verb{$v}
+and \verb{$X_concat} to \code{NULL}, and expose only the coherent q-space
+eigensystem. \verb{$representation} records which contract applies.
+The object also records \verb{$effect_moment}, \verb{$pair_weight}, \verb{$pair_ess}, and
+\verb{$moment_diagnostics} for auditing reliability weighting and any negative
+spectral mass introduced by debiasing.
 }
 \description{
 Fit a Design-Kernel Group Embedding (DKGE) model

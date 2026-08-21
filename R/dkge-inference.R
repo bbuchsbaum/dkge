@@ -470,7 +470,7 @@ as.data.frame.dkge_inference <- function(x, row.names = NULL, optional = FALSE, 
 #' to obtain a group statistic (e.g., max-|t| over medoid clusters). It requires the caller
 #' to provide three adapter functions (or rely on 'fmrireg'/'neuroim2'):
 #'   - fit_glm(Y_s, X_s, X0_s) -> list(beta = qxP, beta0 = q0xP, resid = TxP)
-#'   - resample_resid(resid_s) -> resid_s* (TxP)  [permute or phase-randomize per run]
+#'   - resample_resid(resid_s) -> resid_s* (TxP)  (permute or phase-randomize per run)
 #'   - transport_and_stat(B_list, X_list, K, c) -> scalar (e.g., max-|t|)
 #'
 #' @param Y_list list of neuroim2 BrainVectors (or TxP matrices) per subject

@@ -19,26 +19,26 @@ dkge_input_anchor(
 \item{K_item_list}{List of subject item kernels (n_s x n_s PSD).}
 
 \item{folds}{Optional fold structure passed to
-[dkge_build_anchor_kernels()].}
+\code{\link[=dkge_build_anchor_kernels]{dkge_build_anchor_kernels()}}.}
 
 \item{anchors}{Optional list overriding anchor selection defaults (see
-[dkge_anchor_fit()]).}
+\code{\link[=dkge_anchor_fit]{dkge_anchor_fit()}}).}
 
 \item{design_kernel}{Optional design kernel supplied to
-[dkge_fit_from_kernels()]. Defaults to the identity in effect space.}
+\code{\link[=dkge_fit_from_kernels]{dkge_fit_from_kernels()}}. Defaults to the identity in effect space.}
 
 \item{dkge_args}{Optional list of arguments forwarded to the DKGE fitter
-after anchor kernels are constructed (e.g. `w_method`, `cpca_part`).}
+after anchor kernels are constructed (e.g. \code{w_method}, \code{cpca_part}).}
 }
 \value{
-Object of class `dkge_input_anchor` (inherits from `dkge_input`).
+Object of class \code{dkge_input_anchor} (inherits from \code{dkge_input}).
 }
 \description{
 Builds an input specification that projects subject item kernels onto a
 shared anchor basis before fitting DKGE. Use this object with
-[dkge_fit_from_input()] or supply it to [dkge_pipeline()] via the `input`
+\code{\link[=dkge_fit_from_input]{dkge_fit_from_input()}} or supply it to \code{\link[=dkge_pipeline]{dkge_pipeline()}} via the \code{input}
 argument. The descriptor is immutable; downstream calls may extend its
-`dkge_args` field with additional DKGE fitting options.
+\code{dkge_args} field with additional DKGE fitting options.
 }
 \examples{
 set.seed(1)
