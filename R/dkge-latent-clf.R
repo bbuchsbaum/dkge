@@ -69,6 +69,7 @@ dkge_cv_train_latent_classifier <- function(fit, y,
     folds <- dkge_define_folds(fit, type = "subject", k = folds)
   }
   stopifnot(inherits(folds, "dkge_folds"), length(folds$assignments) == folds$k)
+  .dkge_require_unique_assessments(folds, "DKGE latent classification")
 
   beta_by_subject <- vector("list", S)
   models_by_fold <- vector("list", folds$k)

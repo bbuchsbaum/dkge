@@ -78,6 +78,27 @@ test_that("dkge_classify supports logit backend", {
   expect_true(all(df$metric %in% cls$metric))
 })
 
+test_that("dkge_classify rejects repeated assessment folds", {
+  fixture <- make_classification_fit(S = 4, seed = 31)
+  folds <- dkge_define_folds(
+    fixture$fit,
+    type = "custom",
+    assignments = list(c(1L, 2L), c(2L, 3L, 4L)),
+    partition = "repeated"
+  )
+
+  expect_error(
+    dkge_classify(
+      fixture$fit,
+      targets = ~ A,
+      folds = folds,
+      n_perm = 0
+    ),
+    "DKGE classification does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
+})
+
 test_that("dkge_classify lambda control grid works", {
   fixture <- make_classification_fit()
   fit <- fixture$fit

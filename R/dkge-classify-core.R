@@ -418,7 +418,7 @@ dkge_classify <- function(fit,
 }
 
 .dkge_prepare_folds <- function(fit, folds) {
-  .dkge_normalize_folds(folds, fit)
+  .dkge_normalize_folds(folds, fit, consumer = "DKGE classification")
 }
 
 #' Print DKGE classification results

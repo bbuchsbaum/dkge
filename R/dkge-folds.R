@@ -354,8 +354,27 @@
   )
 }
 
+#' Reject repeated assessments for consumers returning one value per subject
+#'
+#' @keywords internal
 #' @noRd
-.dkge_normalize_folds <- function(folds, fit) {
+.dkge_require_unique_assessments <- function(fold_obj, consumer) {
+  assignments <- fold_obj$assignments %||% list()
+  assessment_ids <- unlist(assignments, use.names = FALSE)
+  if (anyDuplicated(assessment_ids)) {
+    .dkge_abort(
+      sprintf(
+        "%s does not support repeated assessment sets; use nonoverlapping folds until an explicit aggregation policy is available.",
+        consumer
+      ),
+      "dkge_fold_partition_error"
+    )
+  }
+  invisible(fold_obj)
+}
+
+#' @noRd
+.dkge_normalize_folds <- function(folds, fit, consumer = "This operation") {
   S <- length(fit$Btil)
   if (is.null(folds)) {
     return(list(assignments = lapply(seq_len(S), function(s) s), folds = NULL))
@@ -370,6 +389,7 @@
       stop("folds must be an integer k or convertible via as_dkge_folds().", call. = FALSE)
     }
   }
+  .dkge_require_unique_assessments(fold_obj, consumer)
   list(assignments = fold_obj$assignments, folds = fold_obj)
 }
 

@@ -34,7 +34,10 @@ dkge_define_folds(
 requires a nonoverlapping partition covering every subject. `"repeated"`
 permits subjects in more than one assessment set but still requires full
 coverage. `"partial"` permits incomplete coverage but remains
-nonoverlapping.}
+nonoverlapping. Defining repeated folds does not imply that every consumer
+can aggregate repeated assessments: subject-collapsing contrast and
+classification routines reject them rather than silently overwriting or
+unequally weighting subjects.}
 
 \item{...}{Additional arguments for specific fold types}
 }

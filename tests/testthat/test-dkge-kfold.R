@@ -216,3 +216,26 @@ test_that(".dkge_contrast_kfold: permuting B_s columns only permutes that subjec
     expect_lt(rel_err(alt$values$c1[[s]], base$values$c1[[s]]), 1e-12)
   }
 })
+
+test_that(".dkge_contrast_kfold rejects repeated assessment folds", {
+  fit <- .make_fit(seed = 81, q = 6, r = 2, S = 4, P = 7)
+  folds <- dkge_define_folds(
+    fit,
+    type = "custom",
+    assignments = list(c(1L, 2L), c(2L, 3L, 4L)),
+    partition = "repeated"
+  )
+
+  expect_error(
+    .dkge_contrast_kfold(
+      fit,
+      list(c1 = rep(1, nrow(fit$U))),
+      folds = folds,
+      ridge = 0,
+      parallel = FALSE,
+      verbose = FALSE
+    ),
+    "K-fold contrasts does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
+})

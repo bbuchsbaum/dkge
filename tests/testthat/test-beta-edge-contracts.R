@@ -48,6 +48,44 @@ test_that("custom folds are an exact partition unless advanced mode is explicit"
   )
   expect_true(repeated$metadata$overlap)
   expect_identical(repeated$metadata$partition, "repeated")
+  expect_error(
+    .dkge_normalize_folds(repeated, fit, consumer = "K-fold contrasts"),
+    "K-fold contrasts does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
+  expect_error(
+    .dkge_prepare_folds(fit, repeated),
+    "DKGE classification does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
+  repeated_reversed <- repeated
+  repeated_reversed$assignments <- rev(repeated$assignments)
+  expect_error(
+    .dkge_normalize_folds(
+      repeated_reversed,
+      fit,
+      consumer = "K-fold contrasts"
+    ),
+    "K-fold contrasts does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
+
+  latent_fit <- fit
+  latent_fit$U <- matrix(1, nrow = 1L, ncol = 1L)
+  latent_features <- replicate(
+    length(latent_fit$Btil), matrix(0, nrow = 1L, ncol = 1L),
+    simplify = FALSE
+  )
+  expect_error(
+    dkge_cv_train_latent_classifier(
+      latent_fit,
+      factor(c("a", "b", "a", "b")),
+      Z_by_subject = latent_features,
+      folds = repeated
+    ),
+    "DKGE latent classification does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
 
   partial <- dkge_define_folds(
     fit, type = "custom",
