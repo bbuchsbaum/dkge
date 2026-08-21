@@ -354,11 +354,12 @@
   )
 }
 
-#' Reject repeated assessments for consumers returning one value per subject
+#' Require one assessment for every subject in subject-level consumers
 #'
 #' @keywords internal
 #' @noRd
-.dkge_require_unique_assessments <- function(fold_obj, consumer) {
+.dkge_require_unique_assessments <- function(fold_obj, consumer,
+                                             n_subjects = NULL) {
   assignments <- fold_obj$assignments %||% list()
   assessment_ids <- unlist(assignments, use.names = FALSE)
   if (anyDuplicated(assessment_ids)) {
@@ -369,6 +370,19 @@
       ),
       "dkge_fold_partition_error"
     )
+  }
+  n_subjects <- n_subjects %||% fold_obj$metadata$n_subjects
+  if (!is.null(n_subjects)) {
+    covered <- sort(unique(as.integer(assessment_ids)))
+    if (!identical(covered, seq_len(n_subjects))) {
+      .dkge_abort(
+        sprintf(
+          "%s does not support incomplete assessment sets; the supplied folds cover %d of %d subjects. Use a complete nonoverlapping partition until an explicit subset-labeling policy is available.",
+          consumer, length(covered), n_subjects
+        ),
+        "dkge_fold_partition_error"
+      )
+    }
   }
   invisible(fold_obj)
 }
@@ -389,7 +403,7 @@
       stop("folds must be an integer k or convertible via as_dkge_folds().", call. = FALSE)
     }
   }
-  .dkge_require_unique_assessments(fold_obj, consumer)
+  .dkge_require_unique_assessments(fold_obj, consumer, n_subjects = S)
   list(assignments = fold_obj$assignments, folds = fold_obj)
 }
 

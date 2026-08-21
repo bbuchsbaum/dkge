@@ -94,6 +94,26 @@ test_that("custom folds are an exact partition unless advanced mode is explicit"
   )
   expect_equal(partial$metadata$coverage, 3L)
   expect_identical(partial$metadata$partition, "partial")
+  expect_error(
+    .dkge_normalize_folds(partial, fit, consumer = "K-fold contrasts"),
+    "K-fold contrasts does not support incomplete assessment sets.*3 of 4",
+    class = "dkge_fold_partition_error"
+  )
+  expect_error(
+    .dkge_prepare_folds(fit, partial),
+    "DKGE classification does not support incomplete assessment sets.*3 of 4",
+    class = "dkge_fold_partition_error"
+  )
+  expect_error(
+    dkge_cv_train_latent_classifier(
+      latent_fit,
+      factor(c("a", "b", "a", "b")),
+      Z_by_subject = latent_features,
+      folds = partial
+    ),
+    "DKGE latent classification does not support incomplete assessment sets.*3 of 4",
+    class = "dkge_fold_partition_error"
+  )
 
   expect_error(
     dkge_define_folds(

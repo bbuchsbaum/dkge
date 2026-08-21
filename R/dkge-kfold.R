@@ -17,10 +17,9 @@
 #'   requires a nonoverlapping partition covering every subject. `"repeated"`
 #'   permits subjects in more than one assessment set but still requires full
 #'   coverage. `"partial"` permits incomplete coverage but remains
-#'   nonoverlapping. Defining repeated folds does not imply that every consumer
-#'   can aggregate repeated assessments: subject-collapsing contrast and
-#'   classification routines reject them rather than silently overwriting or
-#'   unequally weighting subjects.
+#'   nonoverlapping. Defining repeated or partial folds does not imply that every
+#'   consumer can aggregate or label their outputs: subject-collapsing contrast
+#'   and classification routines require exactly one assessment per subject.
 #' @param ... Additional arguments for specific fold types
 #'
 #' @return A `dkge_folds` object containing:
