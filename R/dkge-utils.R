@@ -113,7 +113,6 @@ NULL
     integer_result = TRUE
   )
 }
-
 #' Validate optional design-kernel metadata
 #'
 #' @param info Optional metadata associated with a design kernel.

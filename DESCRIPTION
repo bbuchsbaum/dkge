@@ -28,6 +28,7 @@ Imports:
     ggplot2,
     glmnet
 Suggests:
+    albersdown,
     fmriAR,
     future,
     microbenchmark,
@@ -36,11 +37,13 @@ Suggests:
     testthat,
     knitr,
     rmarkdown,
+    ragg,
     patchwork,
     ggrepel,
     tidyr,
     purrr,
-    withr
+    withr,
+    systemfonts
 Enhances:
     neuralign
 LinkingTo:
@@ -54,3 +57,4 @@ URL: https://bbuchsbaum.github.io/dkge/, https://github.com/bbuchsbaum/dkge
 BugReports: https://github.com/bbuchsbaum/dkge/issues
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/Needs/website: albersdown

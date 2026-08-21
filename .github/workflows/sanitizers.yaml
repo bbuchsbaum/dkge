@@ -20,6 +20,7 @@ jobs:
       _R_CHECK_FORCE_SUGGESTS_: false
       TBB_INC: /usr/include
       TBB_LIB: /usr/lib/x86_64-linux-gnu
+      LDFLAGS: -L/usr/lib/x86_64-linux-gnu/hdf5/serial
     steps:
       - uses: actions/checkout@v4
       - name: Install sanitizer system dependencies

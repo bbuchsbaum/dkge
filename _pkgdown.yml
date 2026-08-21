@@ -1,6 +1,7 @@
 url: https://bbuchsbaum.github.io/dkge/
 template:
   bootstrap: 5
+  package: albersdown
 figures:
   dev: grDevices::png
   dpi: 96
