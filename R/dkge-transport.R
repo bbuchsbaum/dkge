@@ -459,9 +459,11 @@ dkge_clear_sinkhorn_cache <- function() {
       }
       diagnostics$reused_operator <- TRUE
     } else if (s == medoid) {
-      operator <- diag(1, Q)
       medoid_mass <- .dkge_normalize_weights(size_ref, Q)
       plan <- diag(medoid_mass, Q)
+      operator <- .dkge_transport_operator(
+        plan, medoid_mass, medoid_mass, value_type
+      )
       diagnostics <- list(converged = TRUE, iterations = 0L,
                           marginal_error = 0, cache_hit = FALSE,
                           identity = TRUE)

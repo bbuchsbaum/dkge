@@ -214,7 +214,7 @@ dkge_infer <- function(fit, contrasts,
     transport$provenance %||% .dkge_data_derived_loading_provenance()
   }
 
-  .dkge_validate_inference_compatibility(
+  transport_provenance <- .dkge_validate_inference_compatibility(
     inference = inference,
     correction = correction,
     has_transport = !is.null(transport),
@@ -357,12 +357,12 @@ dkge_infer <- function(fit, contrasts,
         "dkge_transport_inference_error"
       )
     }
-    .dkge_validate_transport_inference_provenance(
+    transport_provenance <- .dkge_validate_transport_inference_provenance(
       transport_provenance,
       randomization_recompute = transport_recompute
     )
   }
-  invisible(TRUE)
+  invisible(transport_provenance)
 }
 
 #' Sign-flip inference helper

@@ -57,6 +57,12 @@ test_that("public transport provenance classes have explicit exactness", {
       .dkge_validate_transport_inference_provenance(provenance)
     )
   }
+  shorthand <- .dkge_validate_transport_inference_provenance("geometry_only")
+  expect_s3_class(shorthand, "dkge_transport_provenance")
+  expect_identical(shorthand$class, "geometry_only")
+  expect_identical(
+    shorthand$exactness, "randomization_exact_sign_invariant_operator"
+  )
 
   recomputed <- dkge_transport_provenance("fully_recomputed")
   expect_silent(

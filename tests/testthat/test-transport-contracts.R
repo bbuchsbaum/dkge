@@ -48,19 +48,23 @@ test_that("public medoid transport carries zero-mass support end to end", {
 
   extensive <- dkge_transport_to_medoid_sinkhorn(
     list(c(5, 0), c(2, 3)), A_list, centroids,
-    sizes = list(c(1, 0), c(1, 1)), medoid = 2,
+    sizes = list(c(1, 0), c(1, 0)), medoid = 2,
     value_type = "extensive", warm_start = FALSE
   )
   expect_equal(extensive$operators[[1]][2, ], c(0, 0), tolerance = 0)
+  expect_equal(extensive$operators[[2]], diag(c(1, 0)), tolerance = 0)
   expect_equal(sum(extensive$subj_values[1, ]), 5, tolerance = 1e-12)
+  expect_equal(extensive$subj_values[2, ], c(2, 0), tolerance = 0)
 
   intensive <- dkge_transport_to_medoid_sinkhorn(
-    list(rep(7, 2), c(7, 0)), A_list, centroids,
+    list(rep(7, 2), c(7, 9)), A_list, centroids,
     sizes = list(c(1, 1), c(1, 0)), medoid = 2,
     value_type = "intensive", warm_start = FALSE
   )
   expect_equal(intensive$operators[[1]][, 2], c(0, 0), tolerance = 0)
+  expect_equal(intensive$operators[[2]], diag(c(1, 0)), tolerance = 0)
   expect_equal(intensive$subj_values[1, ], c(7, 0), tolerance = 1e-12)
+  expect_equal(intensive$subj_values[2, ], c(7, 0), tolerance = 0)
 })
 
 test_that("medoid transport preserves constants or total mass end to end", {

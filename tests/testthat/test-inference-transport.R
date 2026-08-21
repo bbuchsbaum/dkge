@@ -27,7 +27,7 @@ test_that("dkge_infer applies mapper-based transports", {
       warm_start = FALSE
     ),
     betas = data$betas,
-    provenance = dkge_transport_provenance("geometry_only")
+    provenance = "geometry_only"
   )
 
   res <- suppressWarnings(dkge_infer(fit, c(1, -1, 0), method = "loso",
