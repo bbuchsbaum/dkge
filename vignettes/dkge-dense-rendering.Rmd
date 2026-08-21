@@ -60,9 +60,23 @@ cat(sprintf(
 ```
 
 
-The dense rendering stack provides a mechanism for converting subject-specific cluster values into a shared anchor space, with the option to interpolate these values back to full voxel grids. This capability enables spatial visualization and analysis of group-level patterns. In this vignette, we demonstrate how to assemble rendering pipelines and interpret the associated diagnostic outputs.
+DKGE components and contrasts initially live on each subject's own clusters.
+You cannot average those vectors merely because they have similar lengths:
+cluster indices are not anatomical correspondences. Dense rendering makes the
+spatial assumption explicit by mapping every subject through shared anchors
+and, optionally, decoding the anchor field onto a voxel grid.
 
-## Toy Dataset with Centroids
+```text
+subject cluster values -> fitted subject-to-anchor maps -> shared anchor field -> voxel interpolation
+```
+
+This page shows that object flow and the diagnostics attached to it. The toy
+coordinates are deliberately geometry-only, so the final picture demonstrates
+rendering mechanics rather than an anatomical result. Read
+`vignette("dkge-workflow")` first if you do not yet have a component or
+contrast field to render.
+
+## What spatial information is required?
 
 We begin by constructing a synthetic dataset that includes both beta coefficients and spatial centroids for each subject. This setup will allow us to demonstrate the rendering pipeline with concrete spatial coordinates.
 
@@ -81,7 +95,7 @@ fit <- dkge(bundle, K = diag(q), rank = 2)
 fit$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 ```
 
-## Building an Anchor Renderer
+## How is the shared anchor representation built?
 
 The next step involves constructing a renderer object that will handle the mapping between subject-specific cluster coordinates and a shared anchor space. This process requires defining a target voxel grid and specifying the transport parameters.
 

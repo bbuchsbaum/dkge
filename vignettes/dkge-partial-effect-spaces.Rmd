@@ -54,6 +54,15 @@ cells or estimate the same cells with very different trial counts. The output
 is still a common q-dimensional group basis, but three distinct problems must
 be handled separately:
 
+This page is for the case where the usual rectangular data picture is false.
+Perhaps controls and patients occupy different rows of a global grid, or every
+subject attempted the same factorial design but some cells have many more
+trials than others. If every subject has every effect with comparable
+precision, you do not need these controls; use `vignette("dkge-workflow")`.
+
+The guiding rule is simple: **absence, imprecision, and estimation noise are
+not synonyms**. The rest of the vignette shows where each enters the fit.
+
 | Problem | What changes | DKGE mechanism |
 |---|---|---|
 | A cell is absent for a subject | Whether an effect pair is observed | `observed_rows` and `missingness` |
@@ -74,6 +83,14 @@ The key contract is:
   `provenance$obs_mask`, and `provenance$pair_counts`.
 - `dkge_fit(missingness = ...)` controls how the partial coverage is handled
   when the q-space covariance is accumulated.
+
+```text
+local observed rows -> global labelled grid -> coverage-aware raw moment -> precision/debiasing -> kernel transform
+```
+
+The first example isolates missing cells. The larger trialwise example then
+adds unequal precision and debiasing. Keeping those examples separate prevents
+one mechanism from appearing to solve all three problems.
 
 ## How do you declare a partial global grid?
 
@@ -154,6 +171,29 @@ dat$provenance$pair_counts
 
 Controls observe rows 1-4 and patients observe rows 5-8. Cross-group row pairs
 have zero pair counts.
+
+```{r coverage-map, echo=FALSE, fig.width=7.2, fig.height=3.2, fig.alt="Binary heatmap showing that control subjects observe the first four global effect cells and patient subjects observe the last four."}
+coverage_matrix <- do.call(rbind, dat$provenance$obs_mask)
+colnames(coverage_matrix) <- sub(":", "\n", dat$effects)
+image(
+  seq_len(ncol(coverage_matrix)), seq_len(nrow(coverage_matrix)),
+  t(coverage_matrix[nrow(coverage_matrix):1, , drop = FALSE]),
+  col = c("#edf0f2", "#b33b2e"), zlim = c(0, 1), axes = FALSE,
+  xlab = "Global effect cell", ylab = "Subject",
+  main = "Observed rows before zero-filled alignment"
+)
+axis(1, at = seq_len(ncol(coverage_matrix)), labels = colnames(coverage_matrix),
+     las = 2, cex.axis = 0.75)
+axis(2, at = seq_len(nrow(coverage_matrix)), labels = rev(rownames(coverage_matrix)),
+     las = 1)
+box()
+legend("top", inset = c(0, -0.18), xpd = TRUE, horiz = TRUE, bty = "n",
+       legend = c("absent", "observed"), fill = c("#edf0f2", "#b33b2e"))
+```
+
+The empty half of each row is structural absence, not a measured beta of zero.
+The observation mask preserves that distinction after the aligned matrices are
+expanded to eight rows.
 
 ## How should partial coverage enter the fit?
 
@@ -314,6 +354,23 @@ rownames(count_table) <- paste0("s", seq_len(nrow(count_table)))
 
 ```{r trial-counts, echo = FALSE}
 knitr::kable(count_table, digits = 1)
+```
+
+```{r trial-counts-plot, echo=FALSE, fig.width=7, fig.height=3.8, fig.alt="Boxplots and points showing unequal trial counts across sixty cells for five subjects."}
+trial_count_long <- do.call(rbind, lapply(seq_along(trial_subjects), function(i) {
+  data.frame(subject = paste0("s", i), trials = trial_subjects[[i]]$effect_n)
+}))
+ggplot2::ggplot(trial_count_long, ggplot2::aes(subject, trials, colour = subject)) +
+  ggplot2::geom_boxplot(outlier.shape = NA, width = 0.55, alpha = 0.15) +
+  ggplot2::geom_jitter(width = 0.16, height = 0, alpha = 0.35, size = 1.2) +
+  ggplot2::scale_y_continuous(breaks = 3:10) +
+  ggplot2::labs(
+    title = "Observed does not mean equally precise",
+    subtitle = "Each point is one condition × delay × response cell",
+    x = "Subject", y = "Trials in cell"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "none")
 ```
 
 Each subject contributes a different count profile, but all are aligned to the

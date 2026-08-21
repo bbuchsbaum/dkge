@@ -126,7 +126,7 @@ classifier workflow that precedes those attribution methods.
 
 ### Scree
 
-```{r scree, fig.width=5, fig.height=4}
+```{r scree, fig.width=5, fig.height=4, fig.alt="Scree plot of fitted variation with the illustrative rank-three selection marked."}
 # For illustrative purposes we annotate the scree at component 3.
 # In a real analysis you would obtain this optimal rank from dkge_cv_rank_loso()
 # or dkge_cv_kernel_rank() cross-validation procedures.
@@ -136,7 +136,7 @@ dkge_plot_scree(fit, one_se_pick = one_se_pick)
 
 ### Effect-space loadings
 
-```{r loadings, fig.width=5, fig.height=4}
+```{r loadings, fig.width=5, fig.height=4, fig.alt="Heatmap of standardized effect-space saliences for three DKGE components."}
 dkge_plot_effect_loadings(fit, comps = 1:3, zscore = TRUE)
 ```
 
@@ -152,7 +152,7 @@ energy-based weighting actually used in the eigensolve. The heatmap on the
 right shows how much norm ("energy") each subject contributes to the selected
 components after those weights have been applied.
 
-```{r contrib, fig.width=9, fig.height=3}
+```{r contrib, fig.width=9, fig.height=3, fig.alt="Linked bar and heatmap panels showing subject fitting weights and component contribution energy."}
 contrib <- dkge_plot_subject_contrib(fit, comps = 1:3)
 contrib$weights + contrib$energy + patchwork::plot_layout(widths = c(1, 2))
 ```
@@ -165,13 +165,13 @@ metric. Smaller angles mean that a base reproduces the consensus component more
 closely, so parallel lines near zero indicate a stable subspace, whereas large
 excursions highlight folds or components that deviate materially.
 
-```{r stability, fig.width=5, fig.height=4}
+```{r stability, fig.width=5, fig.height=4, fig.alt="Principal-angle stability curves comparing four perturbed bases with the consensus basis."}
 dkge_plot_subspace_stability(bases, K = fit[['K']], labels = base_labels)
 ```
 
 ## Combine the fit diagnostics
 
-```{r suite, fig.width=8, fig.height=8}
+```{r suite, fig.width=8, fig.height=8, fig.alt="Dashboard combining scree, effect saliences, subject contributions, and subspace stability diagnostics."}
 dkge_plot_suite(fit,
                 one_se_pick = one_se_pick,
                 comps = 1:3,

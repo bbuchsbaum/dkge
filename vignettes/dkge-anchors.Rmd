@@ -46,11 +46,23 @@ cat(sprintf(
 ))
 ```
 
-## Overview
+## Why use feature anchors?
 
-This vignette describes how to run DKGE when each subject is observed on a different set of stimuli but every item carries a feature vector in a shared space (e.g., a 100-dimensional embedding). The feature-anchored workflow replaces discrete-cell completion with a common anchor basis derived directly from the feature space.
+The ordinary DKGE workflow assumes that subjects' effect rows can be named on
+one discrete grid. That assumption fails when each subject saw a different set
+of stimuli. If every item instead carries a comparable feature vector—such as
+an embedding—you can align subjects through representative locations in that
+feature space.
 
-We will:
+Feature anchors solve the *item alignment* problem. They do not solve spatial
+alignment of voxels or prove that the feature representation is scientifically
+adequate.
+
+```text
+different item sets + shared item features -> pooled feature anchors -> aligned item kernels -> DKGE basis
+```
+
+This page will:
 
 1. build an anchor descriptor from subject-specific features and item kernels,
 2. fit DKGE through the shared `dkge_input` interface, and

@@ -56,11 +56,25 @@ returns a coefficient map and a resampling test for each model term. The
 features may be component scores, transported parcels, or any common-space
 subject-by-feature matrix.
 
+This layer exists because within-subject and between-subject questions are not
+interchangeable. A task contrast asks how conditions differ *inside* a
+subject. A group or trait model asks why a common brain representation differs
+*across* subjects. Treating group as if every subject observed both group
+levels would use the wrong experimental unit.
+
 The workflow has three steps:
 
 1. build a subject-by-feature target with `dkge_make_target()`
 2. build a second-level design with `dkge_subject_model()`
 3. fit and test a reduced-rank model with `dkge_between_rrr()` and `dkge_between_permute()`
+
+```text
+one common-space row per subject (Y) + subject metadata (X) -> distributed coefficient map (B) -> term-level resampling test
+```
+
+The first example is the shortest path. The residual-rotation and calibration
+sections explain when its p-values are defensible; they are reference material
+you can return to after the object flow is clear.
 
 ## What does the second-level model estimate?
 
@@ -101,8 +115,34 @@ fit_between <- dkge_between_rrr(target, design, rank = 1)
 You can inspect the fitted term map directly.
 
 ```{r quick-term-map}
-round(dkge_term_map(fit_between, "grouppatient:trait"), 2)
+interaction_map <- dkge_term_map(fit_between, "grouppatient:trait")
+round(interaction_map, 2)
 ```
+
+```{r quick-term-map-plot, echo=FALSE, fig.height=3.6, fig.alt="Bar chart comparing the planted and estimated group-by-trait coefficient across six features."}
+term_map_plot <- rbind(
+  data.frame(feature = colnames(beta), value = beta["grouppatient:trait", ], source = "Planted"),
+  data.frame(feature = colnames(beta), value = as.numeric(interaction_map), source = "Estimated")
+)
+ggplot2::ggplot(
+  term_map_plot,
+  ggplot2::aes(feature, value, fill = source)
+) +
+  ggplot2::geom_col(position = "dodge", width = 0.72) +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey70") +
+  ggplot2::labs(
+    title = "The model recovers a distributed interaction pattern",
+    x = NULL, y = "Coefficient", fill = NULL
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+The alternating positive and negative coefficients are the result to
+interpret. Rank one does not mean “one significant feature”; it means the
+multivariate coefficient matrix is constrained to one shared response
+direction. The term-level resampling test below asks whether restoring this
+whole distributed pattern improves fit beyond the reduced model.
 
 For an unweighted, single-block model with a scientifically defensible
 Gaussian row-sphericity assumption, request a residual-space rotation test.
@@ -121,6 +161,20 @@ perm_between <- dkge_between_permute(
 )
 
 perm_between$summary[, c("term", "statistic", "p", "p_adjusted")]
+```
+
+```{r quick-permutation-plot, echo=FALSE, fig.height=3.5, fig.alt="Point plot of adjusted resampling p-values for group, trait, and group-by-trait terms."}
+perm_plot <- perm_between$summary
+ggplot2::ggplot(perm_plot, ggplot2::aes(term, p_adjusted)) +
+  ggplot2::geom_hline(yintercept = 0.05, linetype = 2, colour = "#b33b2e") +
+  ggplot2::geom_point(size = 3, colour = "#315f8c") +
+  ggplot2::scale_y_continuous(limits = c(0, 1)) +
+  ggplot2::labs(
+    title = "Term-level evidence for the distributed response",
+    subtitle = "Dashed line marks 0.05; coarse here because B = 99",
+    x = NULL, y = "Adjusted resampling p-value"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
 ```
 
 The global statistic is the reduction in residual sum of squares when the

@@ -61,15 +61,31 @@ cat(sprintf(
 ))
 ```
 
-CPCA filtering in DKGE provides a principled framework for decomposing task-related variance into interpretable subcomponents before fitting latent bases. When your experimental design includes multiple types of effects—such as main effects versus interactions, experimental conditions versus control baselines, or different cognitive domains—CPCA allows you to analyze these effect types separately while maintaining their mathematical relationships.
+Use CPCA filtering when you have already decided that one prespecified span of
+effects should be studied separately from its complement. A common example is
+to ask for components aligned with main effects while keeping interaction and
+control directions in a residual subspace. Without that split, the leading
+DKGE component may mix all of them simply because they covary strongly.
 
-The method operates directly in the effect space defined by the design kernel \(K\), ensuring that the resulting bases remain \(K\)-orthogonal and preserve the interpretability of your experimental design structure. This vignette demonstrates what CPCA filtering accomplishes, provides guidance on when it proves most valuable, and walks through practical implementation strategies.
+CPCA does **not** discover which scientific partition is correct. You supply
+the partition; DKGE projects the compressed moment into design-aligned and
+residual parts before fitting their bases. The two parts are
+\(K\)-orthogonal, which is a geometric statement, not evidence that the
+underlying cognitive processes are independent.
 
-## When and Why to Use CPCA Filtering
+```text
+mixed compressed moment -> declared effect span + K-orthogonal complement -> separate latent bases
+```
+
+This page first shows the default mixed fit, then applies one transparent split
+and visualizes what moved. Custom bases, kernel sensitivity, and ridge
+stabilization follow as advanced branches.
+
+## When is the split scientifically useful?
 
 CPCA filtering becomes valuable when your experimental design naturally contains multiple types of task effects that warrant separate analysis. Rather than analyzing all effects together in a single latent space, CPCA allows you to focus your analysis on specific effect types while cleanly separating others.
 
-**Common scenarios where CPCA proves beneficial:**
+Common reasons to declare a split include:
 
 **Factorial designs**: Separate main effects from interaction terms to understand how basic experimental manipulations differ from their combined effects. For example, in a 2×2 design studying attention and working memory, you might isolate the main effects of each factor from their interaction.
 
@@ -79,7 +95,7 @@ CPCA filtering becomes valuable when your experimental design naturally contains
 
 **Planned versus exploratory contrasts**: Isolate your primary hypotheses from exploratory or secondary analyses, ensuring that your main effects of interest receive focused statistical attention.
 
-## How CPCA Filtering Works
+## Where does filtering enter the fit?
 
 The compressed covariance \(\hat C\) that DKGE analyzes contains variance from all experimental effects mixed together. CPCA filtering mathematically separates this total variance into distinct subcomponents before eigendecomposition. The process involves several key steps that preserve the mathematical relationships defined by your design kernel \(K\).
 
@@ -147,6 +163,26 @@ fit_cpca <- dkge(bundle,
 fit_cpca$cpca$part
 round(fit_cpca$cpca$evals_design[1:3], 3)
 round(fit_cpca$cpca$evals_resid[1:3], 3)
+```
+
+```{r cpca-spectrum, echo=FALSE, fig.height=3.8, fig.alt="Grouped bar chart comparing the first three eigenvalues in the design-aligned and residual CPCA subspaces."}
+cpca_spectrum <- rbind(
+  data.frame(component = 1:3, subspace = "Design aligned",
+             eigenvalue = fit_cpca$cpca$evals_design[1:3]),
+  data.frame(component = 1:3, subspace = "Residual",
+             eigenvalue = fit_cpca$cpca$evals_resid[1:3])
+)
+ggplot2::ggplot(
+  cpca_spectrum,
+  ggplot2::aes(factor(component), eigenvalue, fill = subspace)
+) +
+  ggplot2::geom_col(position = "dodge", width = 0.7) +
+  ggplot2::labs(
+    title = "The declared split reorganizes the fitted covariance",
+    x = "Component within subspace", y = "Eigenvalue", fill = NULL
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
 ```
 
 The two eigenvalue sequences summarize the covariance retained by the chosen

@@ -156,6 +156,16 @@ head(fit_adaptive$voxel_weights)
 dkge_diagnostics(fit_adaptive)$voxel_weights
 ```
 
+```{r adaptive-weight-distribution, echo=FALSE, fig.height=3.6, fig.alt="Histogram of adaptive voxel weights centered near one after shrinkage."}
+hist(
+  fit_adaptive$voxel_weights, breaks = 14,
+  col = "#d9e1e8", border = "white",
+  main = "Shrinkage keeps adaptive weights controlled",
+  xlab = "Voxel weight"
+)
+abline(v = 1, lty = 2, lwd = 2, col = "#b33b2e")
+```
+
 You should observe modest deviations from 1.0 rather than extreme spikes in the weight values. This well-behaved pattern is
 exactly what the shrinkage parameters are designed to enforce, preventing any single voxel from dominating the analysis.
 
@@ -192,6 +202,21 @@ prior_check <- data.frame(
 stats::cor(prior_check$reliability, prior_check$final_weight,
            method = "spearman")
 ```
+
+```{r prior-weight-plot, echo=FALSE, fig.height=3.8, fig.alt="Scatter plot showing the relationship between external reliability values and final mixed adaptive weights."}
+plot(
+  prior_check$reliability, prior_check$final_weight,
+  pch = 19, col = grDevices::adjustcolor("#315f8c", alpha.f = 0.65),
+  xlab = "External reliability", ylab = "Final mixed weight",
+  main = "Did the prior influence the weights as intended?"
+)
+lines(stats::lowess(prior_check$reliability, prior_check$final_weight),
+      col = "#b33b2e", lwd = 2)
+```
+
+The upward trend confirms that the prior still affects the final ordering,
+while the scatter shows that the adaptive statistic and shrinkage also matter.
+That is more informative than printing the correlation alone.
 
 ```{r prior-diagnostics-checks, include=FALSE}
 stopifnot(all(reliability_weight > 0))

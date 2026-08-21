@@ -60,7 +60,21 @@ cat(sprintf(
 ```
 
 
-This vignette provides guidance on selecting between kNN and Sinkhorn mappers based on your analysis needs, demonstrates how to implement custom transport methods, and shows how to leverage warm starts to improve computational performance.
+Spatial mapping can dominate runtime when it is repeatedly refit for many
+contrasts or resamples. The first performance decision is therefore not simply
+“which mapper is fastest?” but “which stage can be fitted once and safely
+reused?”
+
+This page separates mapper **fit** cost from **apply** cost, then explains when
+kNN, Sinkhorn, warm starts, or a custom mapper are appropriate. It assumes you
+already understand why transport is needed; see
+`vignette("dkge-dense-rendering")` for that workflow.
+
+| Need | Start with | Tradeoff |
+|---|---|---|
+| Fast local interpolation | kNN | no global mass-matching constraint |
+| Mass-preserving global coupling | Sinkhorn | more expensive fit and tuning |
+| Many fields on unchanged geometry | either fitted mapper | reuse the operator; do not resolve |
 
 ## Mapper Factory Recap
 
@@ -87,17 +101,17 @@ knn_mapper <- dkge_mapper("knn", k = 12, sigx = 5)
 sink_mapper <- dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1,
                            warm_start = FALSE)
 
-time_fit <- function(mapper, reps = 3L) {
-  median(replicate(reps, system.time(
-    fit_mapper(mapper, centroids, anchors)
-  )[["elapsed"]]))
+time_fit <- function(mapper, reps = 10L) {
+  system.time(replicate(
+    reps, fit_mapper(mapper, centroids, anchors), simplify = FALSE
+  ))[["elapsed"]] / reps
 }
 knn_fit_seconds <- time_fit(knn_mapper)
 sink_fit_seconds <- time_fit(sink_mapper)
 knn_fit <- fit_mapper(knn_mapper, centroids, anchors)
 sink_fit <- fit_mapper(sink_mapper, centroids, anchors)
 
-time_apply <- function(fitted, reps = 100L) {
+time_apply <- function(fitted, reps = 2000L) {
   system.time(replicate(reps, apply_mapper(fitted, values)))[["elapsed"]] / reps
 }
 performance <- data.frame(
@@ -112,6 +126,20 @@ stopifnot(all(is.finite(performance$seconds_per_call)),
 
 ```{r performance}
 knitr::kable(performance, digits = 5)
+```
+
+```{r performance-plot, echo=FALSE, fig.height=3.8, fig.alt="Log-scale bar chart comparing mapper fit and apply time for k-nearest-neighbour and Sinkhorn mappings."}
+performance$seconds_for_plot <- pmax(performance$seconds_per_call, .Machine$double.eps)
+ggplot(performance, aes(mapper, seconds_for_plot, fill = mapper)) +
+  geom_col(width = 0.65) +
+  facet_wrap(~ stage, scales = "free_y") +
+  scale_y_log10() +
+  labs(
+    title = "Fit and apply are different performance questions",
+    x = NULL, y = "Seconds per call (log scale)"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "none")
 ```
 
 The table separates the solve from application. kNN fitting constructs local

@@ -65,6 +65,15 @@ This vignette asks how a fitted component is expressed in effect space and on
 a shared toy cluster grid. It then shows rotation and projection without
 treating those descriptive operations as inferential results.
 
+Why devote a page to interpretation? A component number has no intrinsic
+scientific meaning. You need to connect three views of the same fitted
+direction: the effects that define it, the spatial units on which subjects
+express it, and any target used to rotate or label it.
+
+```text
+effect saliences (what) -> subject cluster scores (where, within support) -> rotation or new-data projection (reuse)
+```
+
 ## Example Fit
 
 ```{r fit}
@@ -114,14 +123,28 @@ fit_jd <- dkge(bundle,
 Both solvers return the same object structure (`fit$U`, `fit$Chat`, projections, etc.), so the
 subsequent workflow in this vignette applies unchanged regardless of the solver choice.
 
-## Inspect Loadings and Scores
+## Which effects define each component?
 
 ```{r loadings}
-round(fit$U, 3)         # effect-space loadings
-lapply(fit$Btil, function(Bts) round(Bts[, 1:3, drop = FALSE], 2))[1]
+c(effects = nrow(fit$U), components = ncol(fit$U), subjects = length(fit$Btil))
 ```
 
-The columns of `fit$U` represent the loadings for each component in the effect space. These loadings define how the original design effects combine to form the extracted components. The `Btil` element stores the subject-specific beta matrices after row-standardization, which ensures comparable scaling across subjects. To obtain cluster scores for each component, these standardized betas are multiplied with the corresponding columns of `fit$U`.
+The compact summary establishes the object shapes without printing internal
+matrices. The interpretable effect-space quantity is the design-weighted
+salience (K U):
+
+```{r loading-heatmap, fig.height=4, fig.alt="Heatmap showing how five design effects contribute to the first three DKGE components."}
+dkge_plot_effect_loadings(fit, comps = 1:3)
+```
+
+Read each column as a relative pattern. Effects with opposite colours pull the
+component in opposite directions; a column dominated by one row is closer to a
+single-effect axis. Component signs are arbitrary, so the within-column pattern
+matters more than whether red or blue is positive.
+
+`fit$Btil` stores the row-standardized subject beta blocks. Multiplying those
+blocks by the component directions produces spatial-unit scores, which answer
+the next question.
 
 ## Projecting Subjects into Component Space
 

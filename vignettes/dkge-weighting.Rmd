@@ -65,6 +65,15 @@ subjects, and spatial transport. Each changes a different estimand. This
 vignette shows where the controls enter the computation and what must be
 reported when they are used.
 
+Weighting is needed when “one unit, one vote” is scientifically wrong—for
+example, when parcels have unequal area or some measurements are demonstrably
+less reliable. It is not a generic way to make a result cleaner. Every weight
+answers two questions: *what is the unit being reweighted, and at what stage?*
+
+```text
+subject beta block --spatial weights--> subject moment --subject weights--> group basis --transport masses--> common map
+```
+
 ### Adaptive voxel weighting (preview)
 
 DKGE can also rescale locations adaptively before fold bases are constructed.
@@ -75,17 +84,20 @@ or improved sensitivity. The [Adaptive Voxel Weighting vignette](dkge-adaptive-w
 shows the specification, structural checks, and post-hoc updates with
 `dkge_update_weights()`.
 
-## Weighting Landscape
+## Which weighting control changes which object?
 
-DKGE operates with three distinct yet complementary weighting layers that work together to provide fine-grained control over the analysis:
+| Layer | Unit receiving weight | Argument | Enters before | Typical rationale |
+|---|---|---|---|---|
+| Spatial | parcel, cluster, or voxel within subject | `Omega_list` / `omega` | subject moment | area, precision, or a declared spatial metric |
+| Subject | entire subject block | `w_method`, `w_tau`, or `weights` | pooled eigensolve | prevent one high-energy block from dominating, or apply external subject mass |
+| Transport | source and target spatial mass | `sizes` | common-map summary | preserve parcel area or voxel density during alignment |
 
-The first layer consists of **spatial weights (`omega`)**, which operate within each individual subject block before the compressed covariance is accumulated across subjects. You can supply either vectors (which implement diagonal weights) or positive semi-definite matrices (which capture full covariances) when constructing subjects or calling the main `dkge()` function.
+Effect-by-subject precision weights for unequal trial counts are a fourth,
+separate layer covered in `vignette("dkge-partial-effect-spaces")`. Adaptive
+training-fold weights are covered in `vignette("dkge-adaptive-weighting")`.
 
-The second layer involves **subject weights (`w_method`, `w_tau`)**, which rescale entire subject blocks based on their energy measured in the K-metric. This layer offers Multiple Factor Analysis style scaling (`"mfa_sigma1"`) and Frobenius-based energy scaling (`"energy"`). Pass a numeric `weights` vector only when you already have subject-level masses from outside this fit.
-
-The third layer comprises **transport weights (`sizes`)**, which shape the optimal-transport alignment process when producing consensus maps. This allows you to respect important spatial characteristics such as cluster surface areas or voxel densities during the mapping procedure.
-
-The following sections systematically walk through each weighting layer using a carefully constructed simulated dataset.
+The example below changes one layer at a time so that a changed output can be
+attributed to a named assumption.
 
 ## Example Dataset
 
@@ -187,6 +199,24 @@ leverage_comparison <- rbind(
 round(leverage_comparison, 1)
 ```
 
+```{r reliability-leverage-plot, echo=FALSE, fig.height=3.8, fig.alt="Grouped bar chart showing how size-only and size-times-reliability weighting change each subject's contribution scale."}
+leverage_long <- rbind(
+  data.frame(subject = paste0("Subject ", seq_len(S)),
+             scheme = "Size only", value = leverage_comparison["size", ]),
+  data.frame(subject = paste0("Subject ", seq_len(S)),
+             scheme = "Size × reliability",
+             value = leverage_comparison["size_x_reliability", ])
+)
+ggplot(leverage_long, aes(subject, value, fill = scheme)) +
+  geom_col(position = "dodge", width = 0.72) +
+  labs(
+    title = "Inspect contribution, not the scalar subject weight alone",
+    x = NULL, y = "Contribution scale entering Chat", fill = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "top")
+```
+
 The two visible rows are deliberately different. Subject 2 has the lowest
 reliability scores. Its scalar MFA weight increases because inverse-leading-
 singular-value scaling partly compensates for a lower-energy block; the scalar
@@ -203,7 +233,13 @@ stopifnot(leverage_comparison["size_x_reliability", 2] <
             leverage_comparison["size", 2])
 ```
 
-In real-world applications, reliability vectors can be derived from several methodologically sound sources. First, you can use per-cluster GLM uncertainty measures, such as inverse residual variance or `1 / se^2` values obtained from first-level statistical fits. Second, split-half or test-retest variance estimates provide another approach by down-weighting parcels that show poor temporal stability. Third, motion and quality control summaries can identify and flag clusters that were acquired under conditions of excessive artifact contamination. Fourth, bootstrap or jackknife stability scores can be converted into positive weight values that reflect resampling-based reliability. Finally, you can create combinations of the above approaches, often multiplying them by parcel sizes and rescaling the results so that the subject-level mean weight equals one.
+In real data, a reliability vector might come from inverse first-level
+variance, split-half or test-retest stability, a prespecified quality-control
+measure, or resampling stability. The source matters: a weight estimated from
+the same held-out outcome can leak information, while an external or
+training-fold estimate has a clearer interpretation. When combining area and
+reliability, multiply only when the resulting estimand is intended, then
+rescale to a transparent reference such as mean one.
 
 An important technical consideration is to always maintain positive weight values and add a small ridge term (such as `+ 1e-6`) when your weight construction procedure might potentially produce zero values.
 
