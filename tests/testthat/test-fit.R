@@ -614,6 +614,21 @@ test_that("dkge_fit defaults to full rank when rank is NULL", {
   expect_equal(fit$rank, 12)
 })
 
+test_that("dkge_fit rejects invalid requested ranks before fitting", {
+  fixture <- make_fit_fixture()
+
+  for (invalid_rank in list(0, -1, 1.5, c(1, 2))) {
+    expect_error(
+      dkge_fit(
+        fixture$betas, fixture$designs, K = fixture$K,
+        rank = invalid_rank, w_method = "none"
+      ),
+      "`rank`.*strictly positive integer",
+      class = "dkge_validation_error"
+    )
+  }
+})
+
 test_that("dkge_fit honours ridge and Omega weighting", {
   fixture <- make_fit_fixture()
   Omega <- lapply(fixture$betas, function(B) runif(ncol(B)))

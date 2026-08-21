@@ -403,7 +403,11 @@
   }
   K <- .dkge_validate_kernel(K)
 
-  rank_requested <- if (is.null(rank)) q else rank
+  rank_requested <- if (is.null(rank)) {
+    q
+  } else {
+    .dkge_validate_positive_integer(rank, "rank")
+  }
 
   if (is.null(Omega_list)) {
     Omega_list <- vector("list", S)
@@ -430,7 +434,7 @@
       "dkge_zero_rank_error"
     )
   }
-  rank <- min(as.integer(rank_requested), q, kernels$rank)
+  rank <- min(rank_requested, q, kernels$rank)
   weight_spec <- if (is.null(weights)) dkge_weights(adapt = "none") else weights
   stopifnot(inherits(weight_spec, "dkge_weights"))
   effect_weight_spec <- effect_weights %||% dkge_effect_weights("none")
