@@ -25,16 +25,19 @@ test_that("core dependency metadata is immutable and beta-resolvable", {
       lock$package,
       c(
         "delarr", "fmriAR", "fmridesign", "fmridataset", "fmrigds",
-        "fmrihrf", "fmrilss", "fmrireg", "neuralign"
+        "fmrihrf", "fmrilss", "fmrireg", "hdf5r", "neuralign"
       )
     )
     expect_true(all(grepl("^[0-9a-f]{40}$", lock$sha)))
     expect_identical(lock$role[lock$package %in% c("fmridesign", "fmrireg")],
                      c("Import", "Import"))
     expect_true(all(
-      lock$role[!lock$package %in% c("fmridesign", "fmrireg", "neuralign")] ==
+      lock$role[!lock$package %in%
+                  c("fmridesign", "fmrireg", "hdf5r", "neuralign")] ==
         "TransitiveImport"
     ))
+    expect_identical(lock$role[lock$package == "hdf5r"],
+                     "SanitizerCompatibility")
     expect_identical(lock$role[lock$package == "neuralign"], "Enhances")
   }
 })
@@ -78,6 +81,8 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml, "pandoc libicu-dev libhdf5-dev")
   expect_match(sanitizer_yaml, "TBB_INC")
   expect_match(sanitizer_yaml, "TBB_LIB")
+  expect_match(sanitizer_yaml,
+               "310f7206ce149c1a186ed59e473ce5a8d50637af")
 
   makevars_win <- file.path(root, "src", "Makevars.win")
   expect_true(file.exists(makevars_win))
