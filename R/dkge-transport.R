@@ -351,7 +351,9 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
 
 # Convert a joint coupling into the linear operator appropriate for the value
 # being transported. Intensive fields are target-conditional expectations;
-# extensive values distribute each source total across targets.
+# extensive values distribute each source total across targets. Conditional
+# operators are defined as zero off the positive-mass support, matching the
+# zero rows and columns produced by .dkge_sinkhorn_plan().
 .dkge_transport_operator <- function(plan, mu, nu,
                                      value_type = c("intensive", "extensive")) {
   value_type <- match.arg(value_type)
@@ -360,16 +362,26 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
   }
   if (value_type == "intensive") {
     target_mass <- colSums(plan)
-    if (any(!is.finite(target_mass)) || any(target_mass <= 0)) {
-      stop("The transport plan has an empty or invalid target marginal.", call. = FALSE)
+    if (any(!is.finite(target_mass)) || any(target_mass < 0)) {
+      stop("The transport plan has an invalid target marginal.", call. = FALSE)
     }
-    return(sweep(plan, 2L, target_mass, "/"))
+    operator <- matrix(0, nrow(plan), ncol(plan), dimnames = dimnames(plan))
+    positive <- target_mass > 0
+    operator[, positive] <- sweep(
+      plan[, positive, drop = FALSE], 2L, target_mass[positive], "/"
+    )
+    return(operator)
   }
   source_mass <- rowSums(plan)
-  if (any(!is.finite(source_mass)) || any(source_mass <= 0)) {
-    stop("The transport plan has an empty or invalid source marginal.", call. = FALSE)
+  if (any(!is.finite(source_mass)) || any(source_mass < 0)) {
+    stop("The transport plan has an invalid source marginal.", call. = FALSE)
   }
-  sweep(plan, 1L, source_mass, "/")
+  operator <- matrix(0, nrow(plan), ncol(plan), dimnames = dimnames(plan))
+  positive <- source_mass > 0
+  operator[positive, ] <- sweep(
+    plan[positive, , drop = FALSE], 1L, source_mass[positive], "/"
+  )
+  operator
 }
 
 #' Clear cached dual variables for Sinkhorn warm-starts
@@ -676,8 +688,10 @@ dkge_prepare_transport <- function(fit,
 #' @param sigma_mm Spatial rescaling (millimetres).
 #' @param epsilon,max_iter,tol Sinkhorn parameters.
 #' @param value_type Value semantics. `"intensive"` transports field values as
-#'   target-conditional averages and preserves constants; `"extensive"`
-#'   distributes source totals and preserves their sum.
+#'   target-conditional averages and preserves constants on positive-mass
+#'   targets; `"extensive"` distributes source totals and preserves their sum
+#'   over positive-mass sources. Null-mass target columns (intensive) and source
+#'   rows (extensive) are represented by zeros in the application operator.
 #' @param warm_start Logical; reuse converged dual variables for an identical
 #'   cost-and-mass problem.
 #' @param transport_cache Optional cache returned by [dkge_prepare_transport()].

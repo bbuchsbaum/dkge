@@ -58,8 +58,10 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 \item{epsilon, max_iter, tol}{Sinkhorn parameters.}
 
 \item{value_type}{Value semantics. `"intensive"` transports field values as
-target-conditional averages and preserves constants; `"extensive"`
-distributes source totals and preserves their sum.}
+target-conditional averages and preserves constants on positive-mass
+targets; `"extensive"` distributes source totals and preserves their sum
+over positive-mass sources. Null-mass target columns (intensive) and source
+rows (extensive) are represented by zeros in the application operator.}
 
 \item{warm_start}{Logical; reuse converged dual variables for an identical
 cost-and-mass problem.}
