@@ -7,12 +7,12 @@
 
 Design-Kernel Group Embedding (DKGE) turns subject-level GLM outputs into a shared, design-aware latent space. It preserves the structure of experimental designs, supports cross-validated contrasts, and provides transport utilities for mapping parcellated fields onto common anchor or voxel representations.
 
-## Key capabilities
-- **Flexible design kernels** – encode factorial structure, smoothness, and interactions to control how effects align across subjects.
-- **Robust contrasts and inference** – LOSO/K-fold cross-fitting, analytic approximations, and bootstrap utilities for medoid or voxel maps.
-- **Transport & rendering** – barycentric kNN and C++-accelerated Sinkhorn mappers with warm starts, anchor graph smoothing, and voxel decoders.
-- **Classifier localisation** – cross-fitted latent classifiers with decoder, Haufe, and LOCO maps for bias-aware whole-brain interpretation.
-- **Component interpretability** – convenience helpers for projecting new data, rotating components, and summarising variance explained.
+## What it does
+- **Design kernels** encode factorial structure, smoothness, and interactions, which control how effects align across subjects.
+- **Contrasts and inference** use leave-one-subject-out (LOSO) or K-fold cross-fitting, analytic approximations, and bootstrap utilities for medoid or voxel maps.
+- **Transport and rendering** map parcellated fields to a common space with barycentric kNN or C++-accelerated Sinkhorn mappers, anchor graph smoothing, and voxel decoders. The *medoid* is the reference subject whose parcellation the others are mapped onto; it is an index you supply, defaulting to subject 1.
+- **Classifier localization** cross-fits latent classifiers and returns decoder, Haufe, and LOCO maps.
+- **Component interpretation** projects new data, rotates components, and summarizes variance explained.
 
 ## Installation
 ```r
@@ -37,15 +37,19 @@ fit <- dkge(betas, designs, kernel = diag(4), rank = 2)
 scores <- dkge_project_btil(fit, fit$Btil)
 str(scores, max.level = 1)
 ```
-See the vignettes for full workflows:
+Start with `vignette("dkge")`, then `vignette("dkge-workflow")`. The full set:
 
-- `vignette("dkge-workflow")`
-- `vignette("dkge-design-kernels")`
-- `vignette("dkge-contrasts-inference")`
-- `vignette("dkge-dense-rendering")`
-- `vignette("dkge-components")`
-- `vignette("dkge-performance")`
-- `vignette("dkge-weighting")`
+**Start here** — `vignette("dkge")`, `vignette("dkge-workflow")`, `vignette("dkge-concepts")`
+
+**Core analysis** — `vignette("dkge-design-kernels")`, `vignette("dkge-contrasts-inference")`, `vignette("dkge-components")`, `vignette("dkge-classification")`
+
+**Study designs** — `vignette("dkge-partial-effect-spaces")`, `vignette("dkge-unbalanced-trialwise")`, `vignette("dkge-between-subjects")`
+
+**Weighting** — `vignette("dkge-weighting")`, `vignette("dkge-adaptive-weighting")`
+
+**Spatial mapping** — `vignette("dkge-dense-rendering")`, `vignette("dkge-anchors")`, `vignette("dkge-performance")`
+
+**Extras** — `vignette("dkge-plotting")`, `vignette("dkge-cpca")`, `vignette("dkge-vs-pls")`
 
 ## Helper constructors
 
@@ -86,17 +90,9 @@ pred <- dkge_predict_subjects(fit, betas = new_subjects, contrasts = my_contrast
 Project home and documentation: <https://github.com/bbuchsbaum/dkge>. Issues and feature requests are welcome on the [GitHub tracker](https://github.com/bbuchsbaum/dkge/issues).
 
 ## Development
-- Pull requests are encouraged; please accompany user-facing changes with tests and documentation.
-- For large feature work, open an issue to discuss design choices before implementation.
-- `Authors@R` is the canonical author/maintainer record; legacy `Author` and
-  `Maintainer` fields are intentionally omitted.
-- `Remotes` is retained because several development dependencies are sourced
-  from the bbuchsbaum GitHub/R-universe ecosystem. This repository is not
-  currently claiming a CRAN-ready dependency graph.
-- The supported local package gate sets `_R_CHECK_FORCE_SUGGESTS_=false` when
-  optional `T4transport` is unavailable. Core checks must still pass; the
-  independent Sinkhorn comparison is an additional gate run in environments
-  where `T4transport` is installed.
+
+Pull requests are encouraged. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+packaging conventions, the architecture map, and how to propose changes to it.
 
 ## License
 MIT License. See `LICENSE` for details.

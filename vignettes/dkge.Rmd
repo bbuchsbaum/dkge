@@ -1,5 +1,8 @@
 ---
 title: Getting Started with DKGE
+description: >
+  Fit a first DKGE model from per-subject GLM betas, read its components,
+  and find the page that answers your next question.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -139,8 +142,8 @@ The same values are easier to scan as a heatmap:
 dkge_plot_effect_loadings(fit, comps = 1:2)
 ```
 
-Read down a column. Effects with similar colour and magnitude move together in
-that component; effects with opposite colours define a contrast-like pattern.
+Read down a column. Effects with similar color and magnitude move together in
+that component; effects with opposite colors define a contrast-like pattern.
 The heatmap tells you *what the component combines*. It does not yet tell you
 where that pattern lies in the brain or whether it is reliable in a population.
 
@@ -208,8 +211,8 @@ subjects <- Map(
   function(beta, design, id) dkge_subject(beta, design = design, id = id),
   toy$B_list, toy$X_list, toy$subject_ids
 )
-data_bundle <- dkge_data(subjects)
-c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+bundle <- dkge_data(subjects)
+c(subjects = length(bundle$subject_ids), effects = bundle$q)
 ```
 
 For unequal trial counts or missing design cells, continue with

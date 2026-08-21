@@ -8,10 +8,6 @@
   result axes carry stable subject, feature, and permutation labels.
 * The partial-effect-space article is restored and now executes coverage,
   pair-ESS, weighted chunked-debiasing, and estimability-warning contracts.
-  The frozen 8,100-result between-subject rotation calibration was also rerun
-  from exact clean snapshot `5b185e9f`; replicate and summary artifacts were
-  byte-identical to the historical run, whose missing dirty-tree digest is now
-  explicitly labeled non-certifying on its own.
 * **Partial effect spaces.** Subjects may observe only a subset of the design
   effects (`observed_rows` on `dkge_subject()`; `dkge_effect_grid()` for a
   canonical cell grid). Coverage provenance (`obs_mask`, `pair_counts`) flows
@@ -77,8 +73,8 @@
   In particular, equal cell/effect dimensions are no longer treated as proof
   that cell metadata indexes effect rows.
 * Analytic LOSO now reports structural fallback causes before numerical ones.
-  Pair-normalized effect/missingness pooling is again labelled
-  `pair_normalized_pooling`, covariance-aware moments are labelled
+  Pair-normalized effect/missingness pooling is again labeled
+  `pair_normalized_pooling`, covariance-aware moments are labeled
   `covariance_aware_moment`, and a later large perturbation cannot mask either
   primary cause.
 * `dkge_procrustes_K()` returned the transpose of the optimal rotation; the
@@ -88,9 +84,9 @@
 * `design_kernel()`: the RBF length-scale was read as `f$l`, which partially
   matched `f$levels`, breaking ordinal/circular/continuous factors carrying
   level labels.
-* Duplicate subject IDs are now rejected in `dkge_data()`.
-* Duplicated effect labels are rejected on `dkge_subject()`, `dkge_data()`,
-  and the union-alignment path instead of dropping a beta row.
+* `dkge_data()` now rejects duplicate subject IDs.
+* `dkge_subject()`, `dkge_data()`, and the union-alignment path now reject
+  duplicated effect labels instead of dropping a beta row.
 * `dkge_aggregate_permute()` evaluates the statistic on the unaligned null
   refit (alignment is diagnostic only). `dkge_aggregate_bootstrap()` gains
   `interval = c("percentile", "basic")` and returns `excludes_zero = NA` for
@@ -117,11 +113,11 @@
 * `dkge_update_weights()` refits now preserve `effect_scaling`,
   `effect_weights`, `debias`, `missingness`, and `miss_args`.
 
-## Breaking / behaviour changes
+## Breaking / behavior changes
 
-* A one-factor `design_kernel(terms = NULL)` now contains its main-effect term
+* `design_kernel(terms = NULL)` on a one-factor design now contains its main-effect term
   once. Previously the identical main effect and full interaction were both
-  added, which doubled an unnormalised cell kernel and duplicated the
+  added, which doubled an unnormalized cell kernel and duplicated the
   effect-basis block and labels. Multi-factor defaults are unchanged; callers
   that intentionally need the old cell-kernel scale can set the sole term's
   `rho` to 2 explicitly.
@@ -145,7 +141,7 @@
 * `dkge_fit()`: a design kernel whose labels cannot be reconciled with the
   data's effect names (duplicated labels) now warns; a kernel with
   `rownames != colnames` is an error.
-* Adaptive/prior voxel weighting (`dkge_weights()`) now errors when subjects
+* `dkge_weights()` now errors when subjects
   have different numbers of voxels/clusters instead of silently recycling one
   subject's weights onto another.
 * Roxygen markdown mode is enabled package-wide (documentation now renders

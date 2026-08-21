@@ -1,5 +1,8 @@
 ---
 title: CPCA Filtering
+description: >
+  Split the compressed covariance into design-aligned and residual parts
+  before eigendecomposition.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -83,7 +86,7 @@ stabilization follow as advanced branches.
 
 ## When is the split scientifically useful?
 
-CPCA filtering becomes valuable when your experimental design naturally contains multiple types of task effects that warrant separate analysis. Rather than analyzing all effects together in a single latent space, CPCA allows you to focus your analysis on specific effect types while cleanly separating others.
+Use CPCA filtering when a design carries several kinds of task effect that you want analyzed separately. Rather than analyzing all effects together in a single latent space, CPCA allows you to focus your analysis on specific effect types while cleanly separating others.
 
 Common reasons to declare a split include:
 
@@ -95,6 +98,10 @@ Common reasons to declare a split include:
 
 **Planned versus exploratory contrasts**: Isolate your primary hypotheses from exploratory or secondary analyses, ensuring that your main effects of interest receive focused statistical attention.
 
+**Comparative studies**: Apply the same declared effect spans across datasets,
+which makes the fitted targets easier to compare. Reliability still has to be
+measured rather than inferred from the decomposition.
+
 ## Where does filtering enter the fit?
 
 The compressed covariance \(\hat C\) that DKGE analyzes contains variance from all experimental effects mixed together. CPCA filtering mathematically separates this total variance into distinct subcomponents before eigendecomposition. The process involves several key steps that preserve the mathematical relationships defined by your design kernel \(K\).
@@ -105,7 +112,11 @@ You can specify the design-aligned subspace either by naming specific effects th
 
 ## Simulated Experiment: Attention-Working Memory Study
 
-To demonstrate CPCA filtering with realistic neuroimaging scenarios, we simulate data from a factorial attention-working memory experiment. Our design includes two main effects (attention cue validity and working memory load), their interaction, plus additional control conditions. This structure naturally lends itself to CPCA analysis, where we might want to isolate the main experimental effects from their interaction and control conditions.
+We simulate a factorial attention-working memory experiment: two main effects
+(attention cue validity and working memory load), their interaction, and
+additional control conditions. That structure suits CPCA, where the goal is to
+isolate the main experimental effects from their interaction and the control
+conditions.
 
 The simulated dataset contains strong signals in the primary experimental manipulations (attention and working memory main effects) and weaker but meaningful variance in the interaction term and control conditions. This mirrors real neuroimaging studies where primary effects of interest typically show stronger and more consistent patterns than secondary effects.
 
@@ -138,20 +149,23 @@ subjects <- Map(function(b, X, id) dkge_subject(b, X, id = id),
 bundle <- dkge_data(subjects)
 ```
 
-When we fit the standard DKGE model without CPCA filtering, all task-related variance is compressed into a single latent basis. The leading eigenvalues reflect the combined influence of both our primary experimental effects and secondary conditions, making it difficult to isolate the specific patterns we want to study.
+When we fit the standard DKGE model without CPCA filtering, all task-related variance is compressed into a single latent basis. The leading eigenvalues reflect the combined influence of both the primary experimental effects and secondary conditions, making it difficult to isolate the specific patterns we want to study.
 
 ```{r fit-standard}
 fit_plain <- dkge(bundle, K = diag(q), rank = 3)
 round(fit_plain$evals[1:4], 3)
 ```
 
-These eigenvalues represent the mixed signal from all experimental conditions. While this standard approach captures the dominant patterns in the data, it doesn't allow us to focus specifically on our primary experimental manipulations versus their interactions and control conditions.
+These eigenvalues represent the mixed signal from all experimental conditions.
+The standard fit captures the dominant patterns but does not separate the
+primary experimental manipulations from their interactions and the control
+conditions.
 
 ## Isolating Primary Experimental Effects
 
-Now we apply CPCA filtering to separate our primary experimental effects (attention and working memory main effects) from the secondary effects (interaction and control conditions). We achieve this by identifying the first two effects in our design as the "design-aligned" subspace through `cpca_blocks = 1:2`.
+CPCA filtering separates the primary experimental effects (attention and working memory main effects) from the secondary effects (interaction and control conditions). We achieve this by identifying the first two effects in the design as the "design-aligned" subspace through `cpca_blocks = 1:2`.
 
-Setting `cpca_part = "both"` instructs DKGE to return both the design-aligned basis (focused on our primary effects) and the residual basis (containing the secondary effects). The two returned bases are orthogonal under the chosen \(K\) metric; this geometric property does not imply statistical independence.
+Setting `cpca_part = "both"` instructs DKGE to return both the design-aligned basis (focused on the primary effects) and the residual basis (containing the secondary effects). The two returned bases are orthogonal under the chosen \(K\) metric; this geometric property does not imply statistical independence.
 
 ```{r fit-cpca}
 fit_cpca <- dkge(bundle,
@@ -202,7 +216,7 @@ round(max(abs(t(Ud) %*% fit_cpca$K %*% Ur)), 6)
 ### Influence of the Design Kernel
 
 The split is metric-aware: changing `kernel` alters which directions count as
-"design-aligned." A smooth kernel diffuses the projector across neighbouring
+"design-aligned." A smooth kernel diffuses the projector across neighboring
 rows, so design energy leaks into adjacent effects.
 
 ```{r kernel-effect}
@@ -240,7 +254,7 @@ max(abs(fit_cpca$Chat - fit_cpca$cpca$Chat_design))
 
 ## Using Custom Effect Combinations
 
-Sometimes your effects of interest don't correspond to simple subsets of experimental conditions. In such cases, you can provide a custom basis matrix through `cpca_T` to specify exactly which combinations of effects should be treated as "design-aligned."
+Sometimes the effects of interest do not correspond to simple subsets of experimental conditions. In such cases, you can provide a custom basis matrix through `cpca_T` to specify exactly which combinations of effects should be treated as "design-aligned."
 
 The columns of your custom basis matrix span the linear combinations of effects you want to analyze together. For example, you might want to combine specific experimental conditions or weight certain effects more heavily than others. Here we demonstrate by creating a custom basis that combines multiple conditions with differential weighting:
 
@@ -287,24 +301,25 @@ fit_wrapper <- dkge_cpca_fit(bundle,
 identical(round(fit_wrapper$U, 6), round(fit_cpca$U, 6))
 ```
 
-## Summary: Strategic Applications of CPCA Filtering
+## What this page showed
 
-CPCA filtering proves most valuable when your research questions naturally call for decomposing task-related variance into distinct components. The method excels in several key scenarios:
+The split is a modelling choice, not a discovery. You declare which effects are
+design-aligned — by name through `cpca_blocks` or as an explicit basis through
+`cpca_T` — and `dkge_projector_K()` builds the projector in the \(K\) metric.
+`dkge_cpca_split_chat()` applies it, and DKGE fits a basis for each requested
+part, \(K\)-orthogonal to the other.
 
-**Factorial experimental designs** benefit from CPCA when you need to separate main effects from their interactions, allowing for cleaner interpretation of basic experimental manipulations versus their combined effects.
+The returned bases are ordinary DKGE components: contrast testing, bootstrap
+inference and the plotting helpers all work on them unchanged.
 
-**Multi-domain cognitive studies** can use CPCA to organize effects such as
-working memory and attention into prespecified \(K\)-orthogonal subspaces. Any
-claim that the cognitive systems are independent requires separate evidence.
+Whether the split improves power is design- and data-dependent, and should be
+checked against an unfiltered fit rather than assumed.
 
-**Hypothesis-driven analyses** can focus estimation on a prespecified effect
-span. Whether that improves power is design- and data-dependent and should be
-evaluated with simulation or held-out data.
+## Where to go next
 
-**Comparative studies** can apply the same declared effect spans across datasets,
-which makes the fitted targets easier to compare. Reliability must still be
-measured rather than inferred from the decomposition.
-
-The mathematical foundation of CPCA filtering ensures that this decomposition preserves interpretability while maintaining compatibility with all other DKGE tools. Whether you proceed with contrast testing, bootstrap inference, or visualization, the \(K\)-orthogonal components can be analyzed using the full DKGE toolkit without modification.
-
-By directing the eigendecomposition toward your specific research questions, CPCA filtering transforms a general-purpose dimension reduction into a targeted analytical tool that respects both your experimental design and your theoretical hypotheses.
+- `vignette("dkge-design-kernels")` — the kernel that defines which directions
+  count as design-aligned, and therefore what CPCA is splitting.
+- `vignette("dkge-components")` — how to read the components that come back
+  from either side of the split.
+- `vignette("dkge-concepts")` — why a \(K\)-orthogonal split is a statement
+  about coordinates and not about independent processes.

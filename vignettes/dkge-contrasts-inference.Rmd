@@ -1,5 +1,8 @@
 ---
-title: Contrasts, Inference, and Bootstraps
+title: Contrasts and Inference
+description: >
+  Build a prespecified contrast, evaluate it out of sample with LOSO, and choose
+  between the analytic and bootstrap routes to inference.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -17,7 +20,7 @@ resource_files:
 - fonts
 
 vignette: |
-  %\VignetteIndexEntry{Contrasts, Inference, and Bootstraps}
+  %\VignetteIndexEntry{Contrasts and Inference}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -59,6 +62,11 @@ cat(sprintf(
 ))
 ```
 
+
+“Run inference on the DKGE fit” is not a complete instruction. A component
+statistic, a named effect contrast, and a featurewise transported map have
+different sampling units and answer different questions, so the first decision
+is which quantity you are making a claim about.
 
 This vignette follows one estimand from construction to interpretation: the
 subject-level effect-1 minus effect-2 contrast on a shared simulated spatial
@@ -287,7 +295,7 @@ deviations, z ratios, intervals, and (optionally) the draws used above. When the
 estimand lives in q-space instead, `dkge_bootstrap_qspace()` performs multiplier
 resampling there and can reuse a declared transport cache.
 
-## Practical Recommendations
+## What to check before reporting
 
 Choose the inferential target before choosing a procedure. The component table
 tests transported component loadings; the projected bootstrap above summarizes
@@ -300,3 +308,13 @@ Before reporting results, state the contrast, analysis space, aggregation rule,
 resampling unit, mapper, medoid, and multiplicity correction. Inspect
 subject-level values as a diagnostic, but do not remove unusual subjects without
 a prespecified rule and sensitivity analysis.
+
+## Where to go next
+
+- `vignette("dkge-components")` reads the fitted
+  components themselves, where this page reads a prespecified contrast.
+- `vignette("dkge-between-subjects")` is the
+  confirmatory route for between and mixed effects, which LOSO contrasts do not
+  test.
+- `vignette("dkge-dense-rendering")` maps a contrast
+  field into a shared space once you have one worth mapping.

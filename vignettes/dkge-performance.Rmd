@@ -1,5 +1,8 @@
 ---
-title: Mapper Customisation and Performance
+title: Mapper Customization and Performance
+description: >
+  Choose and cache a spatial mapper, or add your own, when transport
+  dominates runtime.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -17,7 +20,7 @@ resource_files:
 - fonts
 
 vignette: |
-  %\VignetteIndexEntry{Mapper Customisation and Performance}
+  %\VignetteIndexEntry{Mapper Customization and Performance}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -206,9 +209,17 @@ inputs and return one value per anchor, as this example does.
 
 The choice between mapping methods should be guided by your specific analysis requirements and data characteristics. For quick exploratory analyses or situations where subject clusters already show good anatomical alignment, kNN mapping provides an efficient and straightforward solution.
 
-However, when dealing with substantial anatomical shifts between subjects or when latent features should guide the matching process, Sinkhorn mapping becomes the preferred choice. In these cases, you can tune the `epsilon` parameter upward to achieve faster convergence and smoother transport plans, though this comes with a trade-off in matching precision.
+Prefer Sinkhorn mapping when anatomical shifts between subjects are substantial, or when latent features should guide the matching. In these cases, you can tune the `epsilon` parameter upward to achieve faster convergence and smoother transport plans, though this comes with a trade-off in matching precision.
 
 For repeated maps, reuse renderer or fitted-mapper objects so the already-solved
 plans and application operators are retained. Warm-start caching is most useful
-when an identical fit is requested again; check `stats$diagnostics` instead of
+when an identical fit is requested again; check `warm_fit$stats$diagnostics` on the fitted mapper instead of
 assuming that a cache was used.
+
+
+## Where to go next
+
+- `vignette("dkge-dense-rendering")` — what the mappers benchmarked here are
+  actually for, if you arrived at this page from a search.
+- `vignette("dkge-anchors")` — anchor construction, which sets the problem size
+  the mappers are solving.

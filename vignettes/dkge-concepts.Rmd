@@ -1,5 +1,8 @@
 ---
 title: 'DKGE Concepts: What Is Estimated and What Can Be Claimed?'
+description: >
+  Separate what DKGE estimates from what you may claim about it, and decide
+  the estimand before fitting.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -123,7 +126,7 @@ c(
 ```
 
 The three matrices below make the transformation concrete. Each panel has its
-own colour scale because the scientific question is the pattern within a
+own color scale because the scientific question is the pattern within a
 matrix, not equality of raw numerical ranges across stages.
 
 ```{r moment-panels, echo=FALSE, fig.width=8, fig.height=3.1, fig.alt="Three heatmaps showing the pooled raw effect moment, the design kernel, and the transformed moment used for the eigendecomposition."}
@@ -244,7 +247,8 @@ uses those masks when pooling. Policies such as `missingness = "rescale"` or
 `"shrink"` change the estimand; they must be chosen and reported, not used as
 silent repairs.
 
-See `vignette("dkge-partial-effect-spaces")` for the runnable workflow and
+See `vignette("dkge-partial-effect-spaces")` for the coverage contract,
+`vignette("dkge-unbalanced-trialwise")` for the runnable workflow, and
 `vignette("dkge-weighting")` for the distinction among effect, subject,
 spatial, and transport weights.
 
@@ -274,6 +278,24 @@ answer different questions; use the branch that matches the estimand.
 Likewise, a contrast can describe a controlled model comparison in
 observational data without identifying a causal effect. Causal language
 requires design and identification assumptions outside DKGE itself.
+
+## How the pieces fit together
+
+A DKGE analysis moves through four stages, and each one has a public entry
+point:
+
+1. **Harmonize** subject data with `dkge_subject()` and `dkge_data()`, so every
+   subject's beta rows carry the same effect labels.
+2. **Fit** a group embedding with `dkge()`, which compresses to effect space and
+   solves for the shared basis under the design kernel.
+3. **Cross-fit** a prespecified contrast with `dkge_contrast()`, so no subject's
+   own data shapes the basis used to score it.
+4. **Align** the resulting fields onto common locations with
+   `dkge_prepare_transport()` and `dkge_transport_contrasts_to_medoid()`.
+
+`dkge_pipeline()` runs all four in one call. `CONTRIBUTING.md` in the package
+repository carries the implementation map for contributors: which source file
+owns each stage, and the rules for changing them.
 
 ## What should you decide before fitting?
 

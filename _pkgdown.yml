@@ -23,6 +23,7 @@ articles:
   navbar: Study designs
   contents:
   - dkge-partial-effect-spaces
+  - dkge-unbalanced-trialwise
   - dkge-between-subjects
 - title: Weighting
   navbar: Weighting
@@ -41,8 +42,11 @@ articles:
   - dkge-plotting
   - dkge-cpca
   - dkge-vs-pls
-  - dkge-architecture
 reference:
+- title: Concepts
+  desc: Definitions for the terms the rest of the documentation uses
+  contents:
+  - dkge-glossary
 - title: Workflow — start here
   desc: Primary functions for fitting, contrasting, classifying, and predicting
   contents:

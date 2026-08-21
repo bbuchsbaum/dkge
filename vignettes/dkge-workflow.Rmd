@@ -1,5 +1,8 @@
 ---
 title: 'DKGE Workflow: From Subject Betas to a Shared Map'
+description: >
+  Take subject beta matrices to a shared map: fit, read components, obtain
+  held-out contrast fields, and transport them to one parcellation.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -118,16 +121,16 @@ matrix. DKGE can pool information along that common dimension without
 pretending that cluster 7 in one subject is cluster 7 in another.
 
 ```{r bundle-workflow-data}
-data_bundle <- dkge_data(
+bundle <- dkge_data(
   toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids
 )
-c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+c(subjects = length(bundle$subject_ids), effects = bundle$q)
 ```
 
 ```{r bundle-workflow-checks, include=FALSE}
-stopifnot(length(data_bundle$subject_ids) == 6L)
-stopifnot(data_bundle$q == nrow(toy$K))
-stopifnot(length(unique(vapply(data_bundle$betas, nrow, integer(1)))) == 1L)
+stopifnot(length(bundle$subject_ids) == 6L)
+stopifnot(bundle$q == nrow(toy$K))
+stopifnot(length(unique(vapply(bundle$betas, nrow, integer(1)))) == 1L)
 ```
 
 **Next operation:** fit a low-rank group basis. If your subjects lack effects
@@ -140,8 +143,8 @@ Start with an identity kernel. It retains the GLM/design scaling but adds no
 kernel-imposed similarity between effects.
 
 ```{r fit-identity, fig.alt="Scree plot for the two-component identity-kernel baseline fit."}
-K_identity <- diag(data_bundle$q)
-fit_identity <- dkge(data_bundle, K = K_identity, rank = 2, w_method = "none")
+K_identity <- diag(bundle$q)
+fit_identity <- dkge(bundle, K = K_identity, rank = 2, w_method = "none")
 dkge_plot_scree(fit_identity)
 ```
 
@@ -151,7 +154,7 @@ their reliability or scientific importance.
 
 ```{r fit-identity-checks, include=FALSE}
 identity_var <- dkge_variance_explained(fit_identity)
-stopifnot(dim(fit_identity$U)[1] == data_bundle$q)
+stopifnot(dim(fit_identity$U)[1] == bundle$q)
 stopifnot(dim(fit_identity$U)[2] == 2L)
 stopifnot(all(is.finite(identity_var$prop_var)))
 stopifnot(sum(identity_var$prop_var) > 0)
@@ -170,7 +173,7 @@ prespecify the included terms. Both fits disable subject block weighting so
 the comparison isolates the kernel change.
 
 ```{r fit-structured}
-fit_structured <- dkge(data_bundle, K = toy$K, rank = 2, w_method = "none")
+fit_structured <- dkge(bundle, K = toy$K, rank = 2, w_method = "none")
 
 comparison <- data.frame(
   component = 1:2,
@@ -245,7 +248,7 @@ Build the contrast in fitted effect order. Here the simulator identifies the
 coordinate for the planted condition term.
 
 ```{r fit-loso-contrast}
-condition_contrast <- numeric(data_bundle$q)
+condition_contrast <- numeric(bundle$q)
 condition_contrast[toy$active_cols$condition] <- 1
 
 condition_loso <- dkge_contrast(
@@ -263,7 +266,7 @@ nor does it supply group uncertainty by itself.
 
 ```{r fit-loso-checks, include=FALSE}
 loso_values <- condition_loso$values$condition
-stopifnot(length(loso_values) == length(data_bundle$subject_ids))
+stopifnot(length(loso_values) == length(bundle$subject_ids))
 stopifnot(identical(unname(vapply(loso_values, length, integer(1))),
                     unname(vapply(toy$B_list, ncol, integer(1)))))
 stopifnot(all(vapply(loso_values, function(x) all(is.finite(x)), logical(1))))

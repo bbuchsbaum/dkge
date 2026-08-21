@@ -1,5 +1,8 @@
 ---
 title: Between-Subject Multivariate Modeling
+description: >
+  Ask whether group, trait, or covariate effects are distributed across a
+  brain-derived feature vector per subject.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -179,7 +182,7 @@ ggplot2::ggplot(perm_plot, ggplot2::aes(term, p_adjusted)) +
 
 The global statistic is the reduction in residual sum of squares when the
 tested term is restored to the reduced model. Both methods refit at the same
-fitted rank (`object$rank`). Freedman–Lane has an extra caveat: if dropping
+fitted rank (`fit_between$rank`). Freedman–Lane has an extra caveat: if dropping
 the tested term lowers the reduced model's estimable rank below that value,
 the reduced fit is clipped while the full fit is not, so the statistic also
 absorbs that rank difference. Rotation does not clip — the reduced design

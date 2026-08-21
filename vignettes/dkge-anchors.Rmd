@@ -1,5 +1,8 @@
 ---
 title: Feature-Anchored DKGE
+description: >
+  Align subjects whose items differ by using feature anchors instead of a
+  shared discrete effect grid.
 author: dkge team
 output:
   rmarkdown::html_vignette:
@@ -46,13 +49,13 @@ cat(sprintf(
 ))
 ```
 
-## Why use feature anchors?
-
 The ordinary DKGE workflow assumes that subjects' effect rows can be named on
 one discrete grid. That assumption fails when each subject saw a different set
 of stimuli. If every item instead carries a comparable feature vector—such as
 an embedding—you can align subjects through representative locations in that
 feature space.
+
+## Why use feature anchors?
 
 Feature anchors solve the *item alignment* problem. They do not solve spatial
 alignment of voxels or prove that the feature representation is scientifically
@@ -199,7 +202,7 @@ end-to-end generalization performance.
 
 ## Diagnostics and provenance
 
-Anchor coverage, leverage, and bandwidth settings are stored under `fit$provenance$anchors`. These diagnostics are useful for checking whether the median heuristic and chosen number of anchors provide adequate coverage across subjects.
+Anchor coverage, leverage, and bandwidth settings are stored under `fit_anchor$provenance$anchors`. These diagnostics are useful for checking whether the median heuristic and chosen number of anchors provide adequate coverage across subjects.
 
 ```{r diagnostics}
 dkge_anchor_diagnostics(fit_anchor)
@@ -223,7 +226,19 @@ workflow shown here fixes anchors using all subjects.
   representations and should be compared empirically if the choice matters.
 - **Subgroups with identical items.** Subjects with identical feature rows receive
   projections into the same pooled anchor basis. Coverage and leverage diagnostics
-  in `fit$provenance$anchors` help reveal uneven representation; large leverage
+  in `fit_anchor$provenance$anchors` help reveal uneven representation; large leverage
   spikes indicate anchors dominated by a subset and may motivate a smaller `L` or
   tighter bandwidth. These diagnostics do not substitute for nested preprocessing
   when the target is out-of-sample performance.
+
+
+## Where to go next
+
+- `vignette("dkge-dense-rendering")` — the other half
+  of the spatial story: once subjects are aligned through anchors, this is how
+  cluster values become a dense field on a shared support.
+- `vignette("dkge-performance")` — mapper choice
+  and warm starts, which is where anchor count and bandwidth start to cost you
+  runtime.
+- `vignette("dkge-workflow")` — the ordinary discrete-grid path, for
+  contrast with the feature-anchored one.

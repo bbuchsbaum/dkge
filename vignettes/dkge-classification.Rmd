@@ -1,5 +1,8 @@
 ---
 title: Classification with DKGE
+description: >
+  Cross-validate a latent classifier on DKGE components, choose between cell and
+  cell_cross modes, and read the decoding result honestly.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -262,6 +265,9 @@ The `mode` argument controls how the group basis is applied at test time:
 `"auto"` (default) selects `"cell"` for within-subject targets and `"delta"` for
 between-subject targets.
 
+The strict route refits the basis for every held-out subject, so it is shown
+here for syntax rather than run:
+
 ```{r cell-cross, eval=FALSE}
 # Refit the basis without each held-out subject.
 cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
@@ -324,8 +330,10 @@ Labs using `multidesign::hyperdesign()` can supply design kernels and fold assig
 through coercion S3 generics. Any object implementing `as_dkge_kernel()` and
 `as_dkge_folds()` flows through the existing pipeline without altering the core solvers.
 
+The block below is illustrative and does not run here: it needs the
+`multidesign` package and a hyperdesign object you supply yourself.
+
 ```{r hyperdesign, eval=FALSE}
-# Pseudocode — requires multidesign package and a user-defined hyperdesign object
 library(multidesign)
 
 hd     <- make_demo_hyperdesign()                # user-supplied helper

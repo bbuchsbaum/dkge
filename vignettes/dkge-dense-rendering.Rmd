@@ -1,5 +1,8 @@
 ---
 title: Transport and Dense Rendering
+description: >
+  Transport subject-specific cluster values onto a shared anchor space and
+  render them as a dense field.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -78,7 +81,8 @@ contrast field to render.
 
 ## What spatial information is required?
 
-We begin by constructing a synthetic dataset that includes both beta coefficients and spatial centroids for each subject. This setup will allow us to demonstrate the rendering pipeline with concrete spatial coordinates.
+The rendering pipeline needs coordinates, so the example below carries both
+beta coefficients and spatial centroids for each subject.
 
 ```{r data}
 library(dkge)
@@ -97,7 +101,9 @@ fit$centroids <- centroids  # attach for transport helpers; pass explicitly in p
 
 ## How is the shared anchor representation built?
 
-The next step involves constructing a renderer object that will handle the mapping between subject-specific cluster coordinates and a shared anchor space. This process requires defining a target voxel grid and specifying the transport parameters.
+`dkge_build_renderer()` maps subject-specific cluster coordinates onto a
+shared anchor space. It needs a target voxel grid and the transport
+parameters.
 
 ```{r renderer}
 # use 5k anchors sampled from grey-matter-like cube
@@ -115,17 +121,21 @@ renderer <- dkge_build_renderer(
 str(renderer, max.level = 1)
 ```
 
-The resulting renderer object contains several key components that facilitate the rendering process:
+The renderer carries four components:
 
-- `anchors`: The shared anchor coordinates that are automatically derived from the input `vox_xyz` grid and serve as the common reference space.
-- `graph`: An optional k-nearest neighbor graph and associated Laplacian matrix that enables spatial smoothing across anchors.
+- `anchors`: the shared coordinates, derived from the `vox_xyz` grid, that
+  serve as the common reference space.
+- `graph`: an optional k-nearest-neighbor graph and Laplacian, which enables
+  spatial smoothing across anchors.
 - `mapper_fits`: Subject-specific fitted plans and target-conditional application
   operators. Reusing the renderer reuses these solved mappings.
-- `mapper_stats`: Comprehensive transport diagnostics including costs, entropies, and support sizes that help assess the quality of the mapping.
+- `mapper_stats`: transport diagnostics - costs, entropies, and support sizes -
+  for assessing the mapping.
 
 ## Rendering Subject Values
 
-With the renderer in place, we can now transform subject-specific cluster values into the shared anchor space and interpolate them to the full voxel grid. This process applies optimal transport to map values while preserving spatial relationships.
+`dkge_render_subject_values()` transports subject cluster values into the
+shared anchor space, then interpolates them to the full voxel grid.
 
 ```{r render}
 values_list <- lapply(fit$Btil, function(Bts) as.numeric(Bts[1, ]))
@@ -134,13 +144,16 @@ summary(rendered$details$y)
 head(rendered$details$subject_stats)
 ```
 
-The rendering process produces several important outputs that capture different aspects of the spatial transformation:
+The render returns three things:
 
-- `rendered$anchor`: The smoothed group field values defined on the anchor coordinates, representing the primary output of the transport process.
-- `rendered$voxel`: The interpolated voxel map with length equal to `nrow(vox_xyz)`, providing values for the complete target grid.
-- `details$plan_entropy_mean`: The average diffusion of transport plans across subjects, where higher values indicate broader anchor coverage and more diffuse mapping patterns.
+- `rendered$anchor`: the smoothed group field on the anchor coordinates.
+  This is the primary output of the transport.
+- `rendered$voxel`: the interpolated voxel map, with length `nrow(vox_xyz)`.
+- `rendered$details$plan_entropy_mean`: mean diffusion of the transport plans. Higher
+  values mean broader anchor coverage and more diffuse mapping patterns.
 
-To examine the spatial structure of the rendered field, we can visualize how the anchor values vary along a single spatial dimension.
+The anchor values vary along a single spatial dimension, which is the easiest
+way to see the field's structure.
 
 ```{r plot-anchor, fig.height=4, fig.width=5, fig.alt="Scatter plot of anchor x-coordinate versus rendered value."}
 plot(renderer$anchors[, 1], rendered$anchor, pch = 20, col = "steelblue",
@@ -151,7 +164,8 @@ abline(h = 0, col = "grey70", lty = 2)
 
 ## Voxel Map Snapshot
 
-We can further inspect the interpolated results by examining specific slices of the voxel grid. This provides insight into how the anchor-based smoothing affects the final voxel-level representation.
+Slices of the voxel grid show how the anchor-based smooth field is
+interpolated onto the target space.
 
 ```{r plot-vox, fig.height=4, fig.width=5, fig.alt="Scatter plot of voxel slice values for z equals zero."}
 sel <- vox_xyz[, 3] == 0  # slice at z = 0
@@ -159,13 +173,25 @@ plot(vox_xyz[sel, 1], rendered$voxel[sel], pch = 16, col = "tomato",
      xlab = "x", ylab = "value", main = "Voxel slice (z=0)")
 ```
 
-## Practical Considerations
+## What to check before reporting
 
-Several important parameters and features can be adjusted to optimize the rendering process for specific applications:
+Three settings change the result:
 
-- The `lambda` parameter in `dkge_render_subject_values()` controls the trade-off between fidelity to the original data and spatial smoothness. Users should monitor the `plan_entropy_mean` diagnostic to assess whether the current settings lead to excessive or insufficient smoothing.
-- Incorporating additional latent features through the `subject_feats` and `anchor_feats` arguments in `dkge_build_renderer()` allows the transport costs to reflect both spatial proximity and functional similarity, potentially improving the biological relevance of the mappings.
+- `lambda` in `dkge_render_subject_values()` trades fidelity to the original
+  data against spatial smoothness. Watch `plan_entropy_mean` to judge whether a
+  setting smooths too much or too little.
+- `subject_feats` and `anchor_feats` in `dkge_build_renderer()` let the
+  transport use additional latent features.
 - Reuse a renderer for repeated maps: its fitted plans avoid solving the same
   subject-to-anchor mappings again. Separately, DKGE keeps a process-local cache
   of converged Sinkhorn duals for byte-identical fit problems; inspect
   `mapper_fits[[s]]$stats$diagnostics$cache_hit` when diagnosing a repeated fit.
+
+## Where to go next
+
+- `vignette("dkge-anchors")` builds the shared anchor representation this page
+  renders onto, when items rather than coordinates define the alignment.
+- `vignette("dkge-performance")` compares the mappers and shows when warm starts
+  and caching pay for themselves.
+- `vignette("dkge-weighting")` covers the transport weighting layer, which
+  changes what a rendered field means.

@@ -1,5 +1,8 @@
 ---
 title: Design Kernels and Model Tuning
+description: >
+  Choose a design kernel that states a scientific belief, and compare candidates
+  on held-out subjects rather than on fit.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -228,7 +231,7 @@ fit_ridge <- dkge(bundle, K = K_best, rank = best$rank, ridge = 0.2)
 round(fit_ridge$sdev, 3)
 ```
 
-## Summary
+## What to check before choosing a kernel
 
 Use `design_kernel()` to encode effect relationships you can defend. If the
 structure is uncertain, include `diag(q)` as a baseline rather than assuming a
@@ -237,3 +240,12 @@ structured kernel must win. Compare kernels and ranks with
 Refit the selected configuration before running inference,
 and treat ridge as isotropic numerical regularization rather than an
 effect-selection device.
+
+## Where to go next
+
+- `vignette("dkge-workflow")` puts the selected kernel into the full
+  fit-to-map sequence.
+- `vignette("dkge-contrasts-inference")` evaluates a
+  prespecified contrast once the kernel is settled.
+- `vignette("dkge-partial-effect-spaces")` covers the case where
+  subjects do not all observe the same effects.
