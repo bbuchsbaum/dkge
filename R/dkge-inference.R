@@ -116,7 +116,8 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = "mean",
 #'   - `"fdr"`: False discovery rate (Benjamini-Hochberg)
 #'   - `"bonferroni"`: Bonferroni correction
 #'   - `"none"`: No correction
-#' @param n_perm Number of permutations for non-parametric tests
+#' @param n_perm Number of permutations for sign-flip inference; ignored for
+#'   parametric inference.
 #' @param alpha Significance level for corrections
 #' @param center Location statistic for sign-flip inference. Only `"mean"` is
 #'   implemented in the beta API.
@@ -202,7 +203,9 @@ dkge_infer <- function(fit, contrasts,
                 "dkge_inference_compatibility_error")
   }
   correction <- match.arg(correction)
-  n_perm <- .dkge_validate_resample_B(n_perm)
+  if (identical(inference, "signflip")) {
+    n_perm <- .dkge_validate_resample_B(n_perm)
+  }
   alpha <- .dkge_validate_probability(alpha, "alpha")
   transport_recompute <- transport$randomization_recompute %||% NULL
   transport_provenance <- if (is.null(transport)) {

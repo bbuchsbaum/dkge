@@ -346,7 +346,10 @@ test_that("dkge_infer parametric produces valid p-values", {
 
   fit <- dkge_fit(dkge_data(betas, designs = designs), K = diag(q), rank = 2)
 
-  result <- dkge_infer(fit, c(1, -1, 0), inference = "parametric", correction = "fdr")
+  result <- dkge_infer(
+    fit, c(1, -1, 0), inference = "parametric", correction = "fdr",
+    n_perm = 0
+  )
 
   expect_s3_class(result, "dkge_inference")
   expect_equal(result$inference, "parametric")

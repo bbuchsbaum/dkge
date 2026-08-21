@@ -59,6 +59,13 @@ test_that("the inference compatibility table fails closed", {
 
 test_that("dkge_infer rejects unsupported combinations before fitting", {
   expect_error(
+    dkge_infer(
+      list(), 1, inference = "signflip", correction = "none", n_perm = 0
+    ),
+    "strictly positive integer",
+    class = "dkge_validation_error"
+  )
+  expect_error(
     dkge_infer(list(), 1, inference = "parametric", correction = "maxT"),
     "[Pp]arametric.*maxT",
     class = "dkge_inference_compatibility_error"

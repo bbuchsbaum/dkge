@@ -36,7 +36,8 @@ dkge_infer(
 - `"bonferroni"`: Bonferroni correction
 - `"none"`: No correction}
 
-\item{n_perm}{Number of permutations for non-parametric tests}
+\item{n_perm}{Number of permutations for sign-flip inference; ignored for
+parametric inference.}
 
 \item{alpha}{Significance level for corrections}
 
