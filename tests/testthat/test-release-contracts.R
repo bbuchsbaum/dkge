@@ -87,7 +87,7 @@ test_that("release workflows cover checks sanitizers and the independent oracle"
   expect_match(sanitizer_yaml, "TBB_INC")
   expect_match(sanitizer_yaml, "TBB_LIB")
   expect_match(sanitizer_yaml,
-               "LDFLAGS: -L/usr/lib/x86_64-linux-gnu/hdf5/serial",
+               "LIBRARY_PATH: /usr/lib/x86_64-linux-gnu/hdf5/serial",
                fixed = TRUE)
   expect_match(sanitizer_yaml,
                "310f7206ce149c1a186ed59e473ce5a8d50637af")
