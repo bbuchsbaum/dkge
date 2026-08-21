@@ -87,7 +87,8 @@ The between-subject model is a reduced-rank regression:
 Y = X B + E, \qquad \mathrm{rank}(B) \le r
 \]
 
-Here `Y` is a subject-by-feature matrix, `X` is the subject-level design matrix, and `B` contains distributed coefficient maps for your terms of interest.
+`Y` is a subject-by-feature matrix, `X` is the subject-level design, and `B`
+holds the distributed effects the model estimates.
 
 ## How do you fit a direct subject-by-feature matrix?
 
@@ -326,9 +327,11 @@ repair either method's assumptions or recover the unadjusted power gap.
 
 ## How do you build the target from a DKGE fit?
 
-The more DKGE-native path is to let DKGE construct the subject representation first, then model subjects in that common target space.
+The DKGE-native path builds the subject representation first, then models
+subjects in that space rather than in raw feature space.
 
-This example starts from heterogeneous subject maps, fits DKGE, transports one contrast to a medoid subject, and then applies the between-subject model.
+This example starts from heterogeneous subject maps, fits DKGE, transports one
+contrast to a medoid subject, and models the result.
 
 ```{r dkge-fit}
 toy <- dkge_sim_toy(
@@ -416,7 +419,9 @@ There are three outputs worth checking first:
 - `dkge_term_map(fit_transport, "group:trait")` extracts the term-specific map
 - `perm_transport$summary` gives a global multivariate resampling test for each term
 
-If you asked for featurewise inference, `perm_between$feature_tests[["group:trait"]]` adds per-feature statistics and adjusted p-values in the same target space.
+With featurewise inference requested,
+`perm_between$feature_tests[["group:trait"]]` adds per-feature statistics
+alongside the omnibus test.
 
 Report the target construction, fitted rank, tested term, resampling method,
 number of resamples, exchangeability assumptions, and multiplicity adjustment.

@@ -105,9 +105,13 @@ reader was not looking at.
 State the positive claim narrowly enough that a denial is unnecessary.
 
 Keep an explicit denial where a competent reader would otherwise reach the wrong
-reading. Simulation-recovery figures qualify. Most of the fifty-six instances in
-the suite do not, and a denial the reader was never going to need still plants
-the reading it rejects.
+reading. A denial the reader was never going to need still plants the reading it
+rejects.
+
+Apply that test per instance. Do not set a per-article budget: hand-reading
+nineteen instances across three articles converted three and kept sixteen,
+because pages about what you may claim are exactly the pages where denials earn
+their place. `dkge-workflow` kept six of six.
 
 ## Spelling
 

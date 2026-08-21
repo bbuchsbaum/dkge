@@ -67,7 +67,7 @@ procedure can support.
 This page supplies that mental model. For runnable setup and spatial transport,
 start with `vignette("dkge")` and `vignette("dkge-workflow")`.
 
-The decomposition is easiest to understand as a sequence, not as one formula:
+The decomposition is easiest to understand as a sequence:
 
 ```text
 subject beta blocks -> small effect-by-effect moments -> pooled raw moment -> design/kernel geometry -> components
@@ -173,8 +173,9 @@ a prespecified contrast with `dkge_contrast()`.
 
 ## What does the kernel change?
 
-The kernel is a metric, not a fixed set of component directions. It changes
-which effect-space directions count as large or smooth during the eigensolve;
+The kernel sets the metric. Component directions are estimated under it: the
+kernel changes which effect-space directions count as large or smooth during
+the eigensolve;
 the empirical moment still determines the fitted components.
 
 An identity kernel is the essential baseline. It applies no kernel-imposed

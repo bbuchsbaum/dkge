@@ -79,7 +79,7 @@ declare factors and terms -> inspect the resulting similarity matrix -> compare 
 
 If you do not yet have aligned `q` by `P_s` beta matrices, read
 `vignette("dkge-workflow")` first. The goal here is model selection within a
-fixed input contract, not a second introduction to the entire pipeline.
+fixed input contract.
 
 ## What data will the candidates be judged on?
 
