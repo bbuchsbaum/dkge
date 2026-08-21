@@ -100,21 +100,32 @@ dkge_fit_cpca <- function(fit, blocks = NULL, T = NULL,
 
   split <- dkge_cpca_split_chat(fit$Chat, T, fit$K)
   out <- list(P_hat = split$P_hat)
+  roots <- .dkge_psd_roots(fit$K)
 
   if (part %in% c("design", "both")) {
     C1 <- split$Chat_design
     if (ridge > 0) C1 <- C1 + ridge * diag(q)
-    eg1 <- eigen((C1 + t(C1)) / 2, symmetric = TRUE)
-    out$U_design <- fit$Kihalf %*% eg1$vectors[, seq_len(rank), drop = FALSE]
-    out$evals_design <- eg1$values
+    basis1 <- .dkge_select_k_basis(
+      C1, K = fit$K, roots = roots, requested_rank = rank,
+      label = "CPCA design basis"
+    )
+    out$U_design <- basis1$U
+    out$evals_design <- basis1$values
+    out$rank_design <- basis1$rank
+    out$moment_tolerance_design <- basis1$moment_tolerance
   }
 
   if (part %in% c("resid", "both")) {
     C2 <- split$Chat_resid
     if (ridge > 0) C2 <- C2 + ridge * diag(q)
-    eg2 <- eigen((C2 + t(C2)) / 2, symmetric = TRUE)
-    out$U_resid <- fit$Kihalf %*% eg2$vectors[, seq_len(rank), drop = FALSE]
-    out$evals_resid <- eg2$values
+    basis2 <- .dkge_select_k_basis(
+      C2, K = fit$K, roots = roots, requested_rank = rank,
+      label = "CPCA residual basis"
+    )
+    out$U_resid <- basis2$U
+    out$evals_resid <- basis2$values
+    out$rank_resid <- basis2$rank
+    out$moment_tolerance_resid <- basis2$moment_tolerance
   }
 
   out

@@ -33,6 +33,86 @@ NULL
   stop(condition)
 }
 
+#' Validate one scalar against a named numeric domain
+#'
+#' All public scalar validators report the argument, the supplied shape/value,
+#' and the expected domain before any coercion can truncate or recycle input.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_validate_scalar_domain <- function(x, arg, domain, predicate,
+                                         integer_result = FALSE) {
+  supplied <- if (!length(x)) {
+    "<empty>"
+  } else {
+    values <- paste(utils::head(as.character(x), 5L), collapse = ", ")
+    if (length(x) > 5L) paste0(values, ", ...") else values
+  }
+  valid <- is.numeric(x) && length(x) == 1L && is.finite(x) &&
+    isTRUE(predicate(x))
+  if (!valid) {
+    .dkge_abort(
+      sprintf(
+        "`%s` supplied length %d value(s): %s; expected %s.",
+        arg, length(x), supplied, domain
+      ),
+      "dkge_validation_error"
+    )
+  }
+  if (integer_result) as.integer(x) else as.numeric(x)
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_finite_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite numeric scalar", function(value) TRUE
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_positive_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite positive scalar", function(value) value > 0
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_nonnegative_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite non-negative scalar", function(value) value >= 0
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_integer_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite integer-valued scalar",
+    function(value) value == trunc(value), integer_result = TRUE
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_probability <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a probability in the closed interval [0, 1]",
+    function(value) value >= 0 && value <= 1
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_positive_integer <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a strictly positive integer",
+    function(value) value > 0 && value == trunc(value),
+    integer_result = TRUE
+  )
+}
 #' Validate optional design-kernel metadata
 #'
 #' @param info Optional metadata associated with a design kernel.
@@ -175,6 +255,178 @@ NULL
   Ksym
 }
 
+#' Central spectral tolerance contract
+#'
+#' Numerical rank decisions use one scale-equivariant absolute-plus-relative
+#' threshold. The absolute term is deliberately the smallest positive normal
+#' double: it protects the exactly-zero case without changing rank merely
+#' because an otherwise representable matrix is rescaled.
+#'
+#' @param values Numeric spectrum.
+#' @param absolute_tolerance Non-negative absolute tolerance.
+#' @param relative_tolerance Non-negative tolerance relative to spectral scale.
+#' @return Applied tolerance, scale, positive mask, and numerical rank.
+#' @keywords internal
+#' @noRd
+.dkge_spectral_contract <- function(
+    values,
+    absolute_tolerance = .Machine$double.xmin,
+    relative_tolerance = 1e-8) {
+  if (!is.numeric(values) || any(!is.finite(values))) {
+    .dkge_abort("A finite numeric spectrum is required for rank selection.",
+                "dkge_spectral_error")
+  }
+  if (!is.numeric(absolute_tolerance) || length(absolute_tolerance) != 1L ||
+      !is.finite(absolute_tolerance) || absolute_tolerance < 0 ||
+      !is.numeric(relative_tolerance) || length(relative_tolerance) != 1L ||
+      !is.finite(relative_tolerance) || relative_tolerance < 0) {
+    .dkge_abort(
+      "Spectral absolute and relative tolerances must be finite non-negative scalars.",
+      "dkge_spectral_error"
+    )
+  }
+  scale <- if (length(values)) max(abs(values)) else 0
+  tolerance <- absolute_tolerance + relative_tolerance * scale
+  positive <- values > tolerance
+  list(
+    absolute_tolerance = absolute_tolerance,
+    relative_tolerance = relative_tolerance,
+    scale = scale,
+    tolerance = tolerance,
+    positive = positive,
+    rank = sum(positive)
+  )
+}
+
+#' PSD square root and Moore-Penrose inverse square root
+#'
+#' Null directions remain exactly null. No ridge or jitter is introduced.
+#'
+#' @param K Validated positive-semidefinite kernel.
+#' @inheritParams .dkge_spectral_contract
+#' @return Kernel roots and the applied range-space diagnostics.
+#' @keywords internal
+#' @noRd
+.dkge_psd_roots <- function(
+    K,
+    absolute_tolerance = .Machine$double.xmin,
+    relative_tolerance = 1e-8) {
+  K <- .dkge_validate_kernel(K)
+  ee <- eigen(K, symmetric = TRUE)
+  raw_values <- ee$values
+  values <- pmax(raw_values, 0)
+  spectral <- .dkge_spectral_contract(
+    values,
+    absolute_tolerance = absolute_tolerance,
+    relative_tolerance = relative_tolerance
+  )
+  retained <- spectral$positive
+  sqrt_values <- numeric(length(values))
+  inverse_sqrt_values <- numeric(length(values))
+  sqrt_values[retained] <- sqrt(values[retained])
+  inverse_sqrt_values[retained] <- 1 / sqrt_values[retained]
+  V <- ee$vectors
+  n <- length(values)
+  Khalf <- V %*% diag(sqrt_values, n) %*% t(V)
+  Kihalf <- V %*% diag(inverse_sqrt_values, n) %*% t(V)
+  dimnames(Khalf) <- dimnames(K)
+  dimnames(Kihalf) <- dimnames(K)
+  list(
+    Khalf = Khalf,
+    Kihalf = Kihalf,
+    evals = values,
+    raw_evals = raw_values,
+    evecs = V,
+    rank = spectral$rank,
+    nullity = n - spectral$rank,
+    retained = retained,
+    absolute_tolerance = spectral$absolute_tolerance,
+    relative_tolerance = spectral$relative_tolerance,
+    tolerance = spectral$tolerance,
+    spectral_scale = spectral$scale,
+    n_clamped = sum(!retained)
+  )
+}
+
+#' Select and verify a K-orthonormal basis from a transformed moment
+#'
+#' @param moment Symmetric transformed q-space moment.
+#' @param K Stored design kernel.
+#' @param roots Output from [.dkge_psd_roots()].
+#' @param requested_rank Requested component count.
+#' @param vectors Optional precomputed orthogonal candidate vectors.
+#' @param values Optional associated component values.
+#' @param label Diagnostic label used in errors.
+#' @inheritParams .dkge_spectral_contract
+#' @return Basis, spectrum, ranks, and tolerance diagnostics.
+#' @keywords internal
+#' @noRd
+.dkge_select_k_basis <- function(
+    moment,
+    K,
+    roots,
+    requested_rank,
+    vectors = NULL,
+    values = NULL,
+    label = "transformed moment",
+    absolute_tolerance = roots$absolute_tolerance,
+    relative_tolerance = roots$relative_tolerance) {
+  moment <- (moment + t(moment)) / 2
+  if (is.null(vectors) || is.null(values)) {
+    decomposition <- eigen(moment, symmetric = TRUE)
+    vectors <- decomposition$vectors
+    values <- decomposition$values
+  } else {
+    decomposition <- list(vectors = vectors, values = values)
+  }
+  spectral <- .dkge_spectral_contract(
+    values,
+    absolute_tolerance = absolute_tolerance,
+    relative_tolerance = relative_tolerance
+  )
+  moment_rank <- spectral$rank
+  effective_rank <- min(roots$rank, moment_rank, ncol(vectors))
+  rank <- min(as.integer(requested_rank), effective_rank)
+
+  if (rank == 0L) {
+    U_hat <- matrix(0, nrow = nrow(K), ncol = 0L)
+    U <- matrix(0, nrow = nrow(K), ncol = 0L)
+    kept_values <- numeric(0)
+  } else {
+    keep <- which(spectral$positive)[seq_len(rank)]
+    U_hat_candidate <- vectors[, keep, drop = FALSE]
+    kept_values <- values[keep]
+    U <- roots$Kihalf %*% U_hat_candidate
+    gram <- crossprod(U, K %*% U)
+    gram_error <- max(abs(gram - diag(rank)))
+    if (!is.finite(gram_error) || gram_error > 1e-7) {
+      .dkge_abort(
+        sprintf(
+          "%s basis failed the K-orthonormal postcondition (maximum Gram error %.3e).",
+          label, gram_error
+        ),
+        "dkge_kernel_geometry_error"
+      )
+    }
+    U_hat <- roots$Khalf %*% U
+  }
+
+  list(
+    decomposition = decomposition,
+    vectors = vectors,
+    values = values,
+    kept_values = kept_values,
+    U_hat = U_hat,
+    U = U,
+    rank = rank,
+    moment_rank = moment_rank,
+    effective_rank = effective_rank,
+    rank_reduced = rank < requested_rank,
+    moment_tolerance = spectral$tolerance,
+    moment_scale = spectral$scale
+  )
+}
+
 #' Check matrix rank for design and/or beta matrices
 #'
 #' Detects rank deficiency and emits informative warnings identifying the
@@ -305,11 +557,7 @@ NULL
 #' @keywords internal
 #' @noRd
 .dkge_validate_resample_B <- function(B) {
-  B <- suppressWarnings(as.integer(B))
-  if (length(B) != 1L || is.na(B) || B < 1L) {
-    stop("`B` must be a positive integer.", call. = FALSE)
-  }
-  B
+  .dkge_validate_positive_integer(B, "B")
 }
 
 #' Enter a seeded RNG scope

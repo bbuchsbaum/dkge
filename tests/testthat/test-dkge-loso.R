@@ -110,10 +110,17 @@ test_that("LOSO: matches manual pipeline; basis is K-orthonormal; depends on R (
   A_s <- t(Bts) %*% fit$K %*% Uminus
   v_manual <- as.numeric(A_s %*% alpha)
 
-  # Numerical agreement
+  # Numerical agreement. Eigenvector coordinates are sign-indeterminate, so
+  # compare the K-metric subspace and reconstructed contrast action rather than
+  # raw basis/coordinate matrices.
   expect_lt(rel_err(out$v, v_manual), 1e-12)
-  expect_lt(max_abs(out$basis - Uminus), 1e-10)
-  expect_lt(rel_err(out$alpha, alpha), 1e-12)
+  projector_out <- out$basis %*% t(out$basis) %*% fit$K
+  projector_manual <- Uminus %*% t(Uminus) %*% fit$K
+  expect_lt(rel_err(projector_out, projector_manual), 1e-10)
+  expect_lt(
+    rel_err(out$basis %*% out$alpha, Uminus %*% alpha),
+    1e-12
+  )
 
   # K-orthonormality: Uminus^T K Uminus = I_r
   G <- t(out$basis) %*% fit$K %*% out$basis

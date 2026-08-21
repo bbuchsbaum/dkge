@@ -19,7 +19,11 @@
 #' @param design_kernel Optional design kernel passed to [dkge_fit()]. Defaults
 #'   to the \eqn{q \times q} identity matrix, which matches the whitened anchor
 #'   setup.
-#' @param sqrt_tol Eigenvalue tolerance used when extracting square roots.
+#' @param sqrt_tol Deprecated absolute eigenvalue truncation threshold. When
+#'   supplied it overrides `sqrt_absolute_tolerance`.
+#' @param sqrt_absolute_tolerance Non-negative absolute eigenvalue tolerance.
+#' @param sqrt_relative_tolerance Non-negative tolerance relative to each
+#'   subject kernel's largest eigenvalue.
 #' @param ... Additional arguments forwarded to [dkge_fit()].
 #'
 #' @return A `dkge` object identical to one obtained from [dkge_fit()], with
@@ -42,7 +46,9 @@ dkge_fit_from_kernels <- function(K_list,
                                   effect_ids,
                                   subject_ids = NULL,
                                   design_kernel = NULL,
-                                  sqrt_tol = 1e-10,
+                                  sqrt_tol = NULL,
+                                  sqrt_absolute_tolerance = .Machine$double.xmin,
+                                  sqrt_relative_tolerance = 1e-8,
                                   ...) {
   stopifnot(is.list(K_list), length(K_list) >= 1L)
   effect_ids <- as.character(effect_ids)
@@ -113,7 +119,16 @@ dkge_fit_from_kernels <- function(K_list,
   sqrt_psd <- function(M) {
     eg <- eigen(M, symmetric = TRUE)
     vals <- pmax(eg$values, 0)
-    keep <- vals > sqrt_tol
+    absolute_tolerance <- sqrt_absolute_tolerance
+    if (!is.null(sqrt_tol)) {
+      absolute_tolerance <- sqrt_tol
+    }
+    spectral <- .dkge_spectral_contract(
+      vals,
+      absolute_tolerance = absolute_tolerance,
+      relative_tolerance = sqrt_relative_tolerance
+    )
+    keep <- spectral$positive
     if (!any(keep)) {
       matrix(0, q, 0)
     } else {

@@ -442,6 +442,12 @@ predict.dkge_between_rrr <- function(object,
          scores = Xnew %*% object$loadings_design)
 }
 
+#' Print a between-subject reduced-rank regression fit
+#'
+#' @param x A `dkge_between_rrr` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_between_rrr
 #' @export
 print.dkge_between_rrr <- function(x, ...) {
   cat("<dkge_between_rrr>", "\n", sep = "")

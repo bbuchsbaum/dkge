@@ -54,8 +54,12 @@ test_that("dkge_infer applies mapper-based transport", {
   transport_cfg <- list(
     centroids = data$centroids,
     medoid = 1L,
-    mapper = dkge_mapper_spec("ridge", lambda = 1e-2),
-    betas = data$betas
+    mapper = dkge_mapper_spec(
+      "sinkhorn", epsilon = 0.2, lambda_emb = 0, lambda_spa = 1,
+      warm_start = FALSE
+    ),
+    betas = data$betas,
+    provenance = dkge_transport_provenance("geometry_only")
   )
 
   res <- suppressWarnings(dkge_infer(fit, c(1, -1, 0), transport = transport_cfg))

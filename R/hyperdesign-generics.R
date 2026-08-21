@@ -64,22 +64,28 @@ as_dkge_folds.dkge_folds <- function(x, fit_or_data = NULL, ...) {
 }
 
 #' @export
-as_dkge_folds.default <- function(x, fit_or_data = NULL, ...) {
+as_dkge_folds.default <- function(
+    x, fit_or_data = NULL,
+    partition = c("exact", "repeated", "partial"), ...) {
+  partition <- match.arg(partition)
   subject_ids <- .dkge_resolve_subject_ids(fit_or_data)
 
   assignments <- .dkge_fold_assignments_from_input(x, subject_ids)
-  n_subjects <- if (is.null(subject_ids)) NA_integer_ else length(subject_ids)
+  n_subjects <- if (is.null(subject_ids)) {
+    max(unlist(assignments, use.names = FALSE))
+  } else {
+    length(subject_ids)
+  }
+  validated <- .validate_custom_folds(assignments, n_subjects, partition)
 
   structure(
     list(
       type = "custom",
-      k = length(assignments),
-      assignments = assignments,
+      k = validated$k,
+      assignments = validated$assignments,
       subject_ids = subject_ids,
-      metadata = list(
-        n_subjects = n_subjects,
-        coverage = length(unique(unlist(assignments))),
-        source = class(x)
+      metadata = utils::modifyList(
+        validated$metadata, list(source = class(x))
       ),
       align = FALSE
     ),
@@ -99,22 +105,11 @@ as_dkge_folds.default <- function(x, fit_or_data = NULL, ...) {
   NULL
 }
 
-.dkge_validate_assignments <- function(assignments, n_subjects = NULL) {
-  stopifnot(is.list(assignments), length(assignments) >= 2)
-  all_idx <- unlist(assignments, use.names = FALSE)
-  stopifnot(length(all_idx) > 0)
-  if (!is.null(n_subjects)) {
-    stopifnot(all(all_idx >= 1L), all(all_idx <= n_subjects))
-  }
-  assignments
-}
-
 .dkge_fold_assignments_from_input <- function(x, subject_ids) {
   n_subjects <- if (is.null(subject_ids)) NULL else length(subject_ids)
 
   if (is.list(x) && all(vapply(x, is.numeric, logical(1)))) {
-    assignments <- lapply(x, as.integer)
-    return(.dkge_validate_assignments(assignments, n_subjects = n_subjects))
+    return(x)
   }
 
   if (is.data.frame(x) && all(c("subject", "fold") %in% names(x))) {

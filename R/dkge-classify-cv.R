@@ -26,6 +26,7 @@
   control <- control %||% list()
   lambda_grid <- control$lambda_grid %||% NULL
   lambda_fun <- control$lambda_fun %||% NULL
+  randomization_recompute <- control$randomization_recompute %||% NULL
 
   supported_metrics <- c("accuracy", "balanced_accuracy", "logloss", "brier")
   unsupported <- setdiff(metric, supported_metrics)
@@ -255,9 +256,37 @@
                                           scope = scope_use,
                                           subjects = row_data$subject_idx,
                                           blocks = if (!is.null(blocks)) row_data$block else NULL)
-      perm_res <- run_cv(perm_labels, record = FALSE, lambda_value = lambda_selected)
+      perm_res <- if (is.function(randomization_recompute)) {
+        randomization_recompute(
+          labels = perm_labels,
+          row_data = row_data,
+          target = target,
+          fit = fit,
+          fold_assignments = fold_info$assignments,
+          method = method,
+          mode = mode,
+          lambda = lambda_selected,
+          metric = metric_eval,
+          class_weights = class_weights,
+          standardize_within_fold = standardize_within_fold
+        )
+      } else {
+        .dkge_abort(
+          "Cell classification randomization reached a frozen representation; full-pipeline recomputation is required.",
+          "dkge_classification_inference_error"
+        )
+      }
+      if (is.numeric(perm_res)) perm_res <- list(metrics = perm_res)
+      if (!is.list(perm_res) || !is.numeric(perm_res$metrics) ||
+          !all(metric_eval %in% names(perm_res$metrics)) ||
+          any(!is.finite(perm_res$metrics[metric_eval]))) {
+        .dkge_abort(
+          "`control$randomization_recompute` must return finite named metrics for every requested metric.",
+          "dkge_classification_inference_error"
+        )
+      }
       if (length(metric_eval)) {
-        perm_matrix[b, metric_eval] <- perm_res$metrics
+        perm_matrix[b, metric_eval] <- perm_res$metrics[metric_eval]
       }
     }
   }
@@ -292,6 +321,21 @@
     probabilities = observed$prob,
     row_data = row_data,
     lambda = lambda_selected,
+    claim_scope = if (identical(mode, "cell")) {
+      "transductive_within_cohort"
+    } else {
+      "prospective_heldout_subject"
+    },
+    representation_scope = if (identical(mode, "cell")) {
+      "global_basis_includes_heldout_subject"
+    } else {
+      "basis_cross_fitted_without_heldout_subject"
+    },
+    randomization_exactness = if (n_perm > 0L) {
+      "full_pipeline_recomputed"
+    } else {
+      "not_requested"
+    },
     diagnostics = diagnostics
   )
 }
@@ -512,6 +556,8 @@
     positive_class = positive_class,
     subject_labels = y_factor,
     lambda = lambda_dir,
+    claim_scope = "prospective_heldout_subject",
+    representation_scope = "basis_cross_fitted_without_heldout_subject",
     permutation_scope = "signflip",
     n_perm_requested = n_perm,
     n_perm_performed = if (n_perm > 0 && !is.null(y_factor)) n_perm else 0L,

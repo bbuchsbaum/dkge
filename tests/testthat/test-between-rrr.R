@@ -352,6 +352,7 @@ test_that("transported map targets integrate with between-subject RRR and permut
   perm <- dkge_between_permute(
     between,
     terms = c("group", "trait", "group:trait"),
+    method = "freedman_lane",
     B = 9,
     seed = 77
   )
@@ -385,6 +386,7 @@ test_that("dkge_between_permute returns formula-aware term tests", {
 
   perm <- dkge_between_permute(fit,
                                terms = c("group", "trait", "group:trait"),
+                               method = "freedman_lane",
                                B = 25,
                                seed = 99,
                                adjust = "fdr")
@@ -416,6 +418,7 @@ test_that("dkge_between_permute returns featurewise maxT inference and term maps
   perm <- dkge_between_permute(
     fit,
     terms = "group:trait",
+    method = "freedman_lane",
     B = 19,
     seed = 321,
     scope = "both",
@@ -440,8 +443,10 @@ test_that("dkge_between_permute is reproducible with a seed", {
   target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
   fit <- dkge_between_rrr(target, design, rank = 1)
 
-  a <- dkge_between_permute(fit, terms = "x", B = 20, seed = 123)
-  b <- dkge_between_permute(fit, terms = "x", B = 20, seed = 123)
+  a <- dkge_between_permute(fit, terms = "x", method = "freedman_lane",
+                            B = 20, seed = 123)
+  b <- dkge_between_permute(fit, terms = "x", method = "freedman_lane",
+                            B = 20, seed = 123)
 
   expect_equal(a$tests$x$null, b$tests$x$null)
   expect_equal(a$summary$p, b$summary$p)
@@ -460,7 +465,9 @@ test_that("dkge_between_permute restores caller RNG state after seeded run", {
   set.seed(999)
   expected <- runif(4)
   set.seed(999)
-  invisible(dkge_between_permute(fit, terms = "x", B = 5, seed = 123))
+  invisible(dkge_between_permute(
+    fit, terms = "x", method = "freedman_lane", B = 5, seed = 123
+  ))
   observed <- runif(4)
 
   expect_equal(observed, expected)
@@ -478,6 +485,7 @@ test_that("singleton exchangeability blocks make Freedman-Lane null deterministi
 
   perm <- dkge_between_permute(fit,
                                terms = "x",
+                               method = "freedman_lane",
                                B = 6,
                                blocks = seq_len(nrow(Y)),
                                seed = 42)
@@ -506,8 +514,15 @@ test_that("dkge_between_permute finds the shared resampling helpers", {
   target <- dkge_make_target(Y = Y, subject_ids = dat$subject_id)
   fit <- dkge_between_rrr(target, design, rank = 1, tol = 1e-6)
 
-  expect_error(dkge_between_permute(fit, terms = "x", B = 0), "positive integer")
-  perm <- dkge_between_permute(fit, terms = "x", B = 4, seed = 11)
+  expect_error(
+    dkge_between_permute(
+      fit, terms = "x", method = "freedman_lane", B = 0
+    ),
+    "positive integer"
+  )
+  perm <- dkge_between_permute(
+    fit, terms = "x", method = "freedman_lane", B = 4, seed = 11
+  )
   expect_s3_class(perm, "dkge_between_permutation")
   expect_equal(perm$B, 4L)
 })

@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
   fig.height = 4,
   out.width = "90%"
 )
-options(digits = 3)
+withr::local_options(list(digits = 3))
 set.seed(2024)
 ```
 
@@ -249,6 +249,15 @@ Use this sequence:
 7. **Transport only with defensible features.** Record coordinates, masses,
    mapper diagnostics, and reference choice.
 
-The next practical pages are `vignette("dkge-design-kernels")` for kernel
-construction, `vignette("dkge-contrasts-inference")` for contrast uncertainty,
-and `vignette("dkge-between-subjects")` for subject-level associations.
+## See also
+
+- `vignette("dkge-workflow")` — end-to-end pipeline
+- `vignette("dkge-design-kernels")` — kernel construction and CV-based
+  selection
+- `vignette("dkge-contrasts-inference")` — LOSO, analytic, and bootstrap
+  inference details
+- `vignette("dkge-components")` — component interpretation and rotation
+- `vignette("dkge-vs-pls")` — detailed comparison with classical PLSC
+- `vignette("dkge-between-subjects")` — subject-level RRR and permutation tests
+- `vignette("dkge-partial-effect-spaces")` — partial cell coverage,
+  effect-precision weighting, and trialwise debiasing

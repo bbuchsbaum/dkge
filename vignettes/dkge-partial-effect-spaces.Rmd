@@ -435,12 +435,18 @@ knitr::kable(chunked_check, digits = 12)
 ```
 
 ```{r chunked-trace-checks, include = FALSE}
-expected_trace <- sum(omega_chunk * dense_subjects[[1]]$residual_variance)
+dense_trace <- dkge:::.dkge_noise_trace(
+  dense_subjects[[1]], Omega = omega_chunk
+)
+chunked_trace <- dkge:::.dkge_noise_trace(
+  chunked_subjects[[1]], Omega = omega_chunk
+)
 stopifnot(isTRUE(all.equal(
-  chunked_check$weighted_noise_trace,
-  expected_trace,
+  dense_trace,
+  sum(omega_chunk * dense_subjects[[1]]$residual_variance),
   tolerance = 1e-12
 )))
+stopifnot(isTRUE(all.equal(chunked_trace, dense_trace, tolerance = 1e-12)))
 stopifnot(max(abs(fit_dense$Chat - fit_chunked$Chat)) < 1e-12)
 ```
 

@@ -67,6 +67,7 @@ dkge_diagnostics <- function(fit) {
     rank = fit$rank,
     q = nrow(fit$U),
     n_subjects = length(fit$Btil),
+    spectral = fit$spectral_diagnostics,
     voxel_weights = voxel_stats,
     weight_spec = fit$weight_spec
   )
@@ -153,15 +154,20 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                   w_method = w_method, w_tau = w_tau,
                   ridge = ridge, rank = max(ranks))
   Khalf <- base$Khalf
+  roots <- .dkge_psd_roots(base$K)
 
   rows <- vector("list", S * length(ranks))
   row_id <- 1L
   for (s in seq_len(S)) {
     train_ids <- setdiff(seq_len(S), s)
     ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
-    eg <- eigen(ctx$Chat, symmetric = TRUE)
     for (r in ranks) {
-      Uminus <- base$Kihalf %*% eg$vectors[, seq_len(r), drop = FALSE]
+      basis <- .dkge_select_k_basis(
+        ctx$Chat, K = base$K, roots = roots,
+        requested_rank = r,
+        label = sprintf("LOSO rank-CV training basis for subject %d", s)
+      )
+      Uminus <- basis$U
       score <- {
         Bts <- base$Btil[[s]]
         loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
@@ -171,7 +177,9 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
         Xhat <- V %*% (t(Uminus) %*% base$K %*% Bw)
         sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
       }
-      rows[[row_id]] <- data.frame(subject = s, rank = r, score = score)
+      rows[[row_id]] <- data.frame(subject = s, rank = r,
+                                   effective_rank = basis$rank,
+                                   score = score)
       row_id <- row_id + 1L
     }
   }
@@ -214,13 +222,18 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
                     w_method = w_method, w_tau = w_tau,
                     ridge = ridge, rank = rank)
     Khalf <- base$Khalf
+    roots <- .dkge_psd_roots(base$K)
     S <- length(B_list)
 
     for (s in seq_len(S)) {
       train_ids <- setdiff(seq_len(S), s)
       ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
-      eg <- eigen(ctx$Chat, symmetric = TRUE)
-      Uminus <- base$Kihalf %*% eg$vectors[, seq_len(rank), drop = FALSE]
+      basis <- .dkge_select_k_basis(
+        ctx$Chat, K = base$K, roots = roots,
+        requested_rank = rank,
+        label = sprintf("LOSO kernel-CV training basis for subject %d", s)
+      )
+      Uminus <- basis$U
 
       Bts <- base$Btil[[s]]
       loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
@@ -229,7 +242,9 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
       Xs <- Khalf %*% Bw
       Xhat <- V %*% (t(Uminus) %*% base$K %*% Bw)
       ev <- sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
-      rows[[length(rows) + 1L]] <- data.frame(kernel = nm, subject = s, score = ev)
+      rows[[length(rows) + 1L]] <- data.frame(
+        kernel = nm, subject = s, effective_rank = basis$rank, score = ev
+      )
     }
   }
 

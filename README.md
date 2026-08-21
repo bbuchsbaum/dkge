@@ -90,13 +90,16 @@ Project home and documentation: <https://github.com/bbuchsbaum/dkge>. Issues and
 - For large feature work, open an issue to discuss design choices before implementation.
 - `Authors@R` is the canonical author/maintainer record; legacy `Author` and
   `Maintainer` fields are intentionally omitted.
-- `Remotes` is retained because several development dependencies are sourced
-  from the bbuchsbaum GitHub/R-universe ecosystem. This repository is not
-  currently claiming a CRAN-ready dependency graph.
-- The supported local package gate sets `_R_CHECK_FORCE_SUGGESTS_=false` when
-  optional `T4transport` is unavailable. Core checks must still pass; the
-  independent Sinkhorn comparison is an additional gate run in environments
-  where `T4transport` is installed.
+- Core metadata has no mutable `Remotes` field. The two direct non-CRAN imports
+  are resolvable from the bbuchsbaum R-universe, while release workflows pin
+  the complete hard non-CRAN dependency closure to the exact Git SHAs recorded
+  in `tools/release/noncran-lock.csv`.
+- The optional `neuralign` integration is declared under `Enhances` and tested
+  in a separate pinned workflow; it is not part of core installation or check
+  resolution.
+- The independent Sinkhorn oracle is a deterministic dense R implementation in
+  the test suite, so the numerical gate does not disappear when an experimental
+  transport package is unavailable.
 
 ## License
 MIT License. See `LICENSE` for details.

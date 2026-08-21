@@ -103,6 +103,12 @@ dkge_weights <- function(prior = NULL,
   ), class = "dkge_weights")
 }
 
+#' Print a DKGE weight specification
+#'
+#' @param x A `dkge_weights` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_weights
 #' @export
 print.dkge_weights <- function(x, ...) {
   cat("dkge weight specification\n")

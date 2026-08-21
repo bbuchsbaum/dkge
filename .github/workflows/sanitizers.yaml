@@ -1,0 +1,38 @@
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+name: sanitizers
+
+permissions: read-all
+
+jobs:
+  asan-ubsan:
+    runs-on: ubuntu-latest
+    container: rocker/r-devel-san:latest
+    env:
+      ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      GITHUB_PAT: ${{ github.token }}
+      USE_BUNDLED_LIBUV: 1
+      _R_CHECK_FORCE_SUGGESTS_: false
+      TBB_INC: /usr/include
+      TBB_LIB: /usr/lib/x86_64-linux-gnu
+      LIBRARY_PATH: /usr/lib/x86_64-linux-gnu/hdf5/serial
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install sanitizer system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            cmake make libuv1-dev libtbb-dev libcurl4-openssl-dev libssl-dev \
+            pandoc libicu-dev libhdf5-dev
+      - name: Install pinned dependencies under sanitizer R
+        run: |
+          RDscript -e 'install.packages("pak", repos = "https://cloud.r-project.org")'
+          RDscript -e 'pak::pkg_install(c("testthat", "pkgload", "FNN", "adjoin", "multivarious", "deluciaatgfz/hdf5r@310f7206ce149c1a186ed59e473ce5a8d50637af", "bbuchsbaum/delarr@e8bdf22462897049230202a5287e6f1ef88b524a", "bbuchsbaum/fmriAR@0c3d04f8d4a7133032b4b07ffe228f8d2e32dd33", "bbuchsbaum/fmridesign@e627d4d1861e5cc4aea5a5668d6052e394429b92", "bbuchsbaum/fmridataset@1d1204c2edda2a8b004df88eaeb09bac09f6210d", "bbuchsbaum/fmrigds@f015b7c7fa5008e2435d269aeb1882a9aa24eaf0", "bbuchsbaum/fmrihrf@d366e79fce8db7c5c46e883291e73732b20c545c", "bbuchsbaum/fmrilss@f851fb0632f90da12512212af5b80c9623c93fde", "bbuchsbaum/fmrireg@20c9f07a225f21c4eea1732ea31418ccedd1c056"), dependencies = c("Depends", "Imports", "LinkingTo"))'
+      - name: Exercise compiled Sinkhorn code under ASAN and UBSAN
+        run: |
+          RDscript -e 'testthat::test_local(".", filter = "^(transport-sinkhorn|sinkhorn-convergence|beta-edge-contracts)$", stop_on_failure = TRUE, reporter = "summary")'

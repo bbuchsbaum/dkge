@@ -7,7 +7,7 @@
 dkge_between_permute(
   object,
   terms = NULL,
-  method = c("freedman_lane", "rotation"),
+  method = NULL,
   B = 999L,
   blocks = NULL,
   seed = NULL,
@@ -25,9 +25,10 @@ dkge_between_permute(
 `NULL`, all non-intercept formula terms except those listed in
 `object$design$nuisance` are tested.}
 
-\item{method}{Resampling method. `"rotation"` uses Haar rotations in the
+\item{method}{Required resampling method. `"rotation"` uses Haar rotations in the
 orthogonal complement of the reduced design; `"freedman_lane"` permutes
-reduced-model residual rows.}
+reduced-model residual rows. There is deliberately no default in the beta
+API because neither method is universally certified.}
 
 \item{B}{Number of rotations or permutations.}
 
@@ -59,7 +60,12 @@ Performs term-specific global tests for a fitted [dkge_between_rrr()] model.
 Residual-space rotation fixes the nuisance-design column space and rotates
 its orthogonal complement before comparing the reduced and full reduced-rank
 residual sums of squares. Freedman-Lane residual permutation remains
-available as a legacy approximate method.
+available as a legacy approximate method. The beta API requires an explicit
+method because the frozen audit both found material size inflation for the
+legacy method and failed its predeclared promotion rule for rotation.
+Rotation is exact only under its documented matrix-normal, homoscedastic,
+unweighted, single-block scope; other error laws require cautious
+interpretation.
 }
 \details{
 For `method = "rotation"`, let `Q0` span the reduced design and `Qe` span
@@ -104,8 +110,11 @@ result missed the frozen promotion ceiling by one rejection, and rotation's
 strong-interaction power was 0.430 versus 0.580 for Freedman-Lane. That raw
 gap is mostly Freedman-Lane size inflation (matched-condition sizes 0.050
 versus 0.086; size-matched Freedman-Lane power about 0.49). The predeclared
-gates are not relaxed, so rotation remains opt-in. Its frozen plan, 8,100
-results, and decision report are shipped as
+gates are not relaxed: the missed nuisance-interaction ceiling and the power
+trade-off prevent default promotion. The beta API therefore requires an
+explicit choice instead of silently selecting either the demonstrably
+size-inflated legacy method or a rotation method that missed its frozen
+promotion rule. Its frozen plan, 8,100 results, and decision report are shipped as
 `data-raw/dkge-between-rotation-*` and
 `inst/extdata/dkge-between-rotation-*`.
 }

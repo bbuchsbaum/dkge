@@ -32,11 +32,9 @@ Suggests:
     fmriAR,
     future,
     microbenchmark,
-    neuralign,
     pkgdown,
     remotes,
     testthat,
-    T4transport,
     knitr,
     rmarkdown,
     ragg,
@@ -46,17 +44,12 @@ Suggests:
     purrr,
     withr,
     systemfonts
+Enhances:
+    neuralign
 LinkingTo:
     Rcpp,
     RcppArmadillo
-Remotes:
-    bbuchsbaum/albersdown,
-    bbuchsbaum/neuralign,
-    bbuchsbaum/neuroim2,
-    bbuchsbaum/fmridesign,
-    bbuchsbaum/fmriAR,
-    bbuchsbaum/fmrireg,
-    bbuchsbaum/adjoin
+Additional_repositories: https://bbuchsbaum.r-universe.dev
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3

@@ -7,8 +7,9 @@
 dkge_signflip_maxT(
   Y,
   B = 2000,
-  center = c("mean", "median"),
-  tail = c("two.sided", "greater", "less")
+  center = "mean",
+  tail = c("two.sided", "greater", "less"),
+  flips = NULL
 )
 }
 \arguments{
@@ -16,9 +17,14 @@ dkge_signflip_maxT(
 
 \item{B}{number of sign-flip permutations}
 
-\item{center}{"mean" or "median" for the location statistic (t uses mean)}
+\item{center}{Location statistic. The beta API supports only `"mean"`,
+matching the one-sample t statistic used for observed and randomized data.}
 
 \item{tail}{"two.sided" | "greater" | "less"}
+
+\item{flips}{Optional precomputed S-by-B matrix of -1/+1 signs. This is an
+advanced reproducibility hook used to make serial and parallel execution
+consume exactly the same randomization descriptors.}
 }
 \value{
 A list with fields: `stat` (Q-vector of observed t-statistics), `p`

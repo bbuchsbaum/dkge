@@ -50,8 +50,9 @@ accepted. Other coercible inputs are routed through [as_dkge_folds()].}
 \item{metric}{Evaluation metric(s); defaults to c("accuracy", "logloss").}
 
 \item{mode}{Decoding mode: "auto" (default), "cell", "cell_cross", or
-"delta". Cell-cross trains on held-in subjects and tests generalisation to
-the held-out subject.}
+"delta". `"cell"` uses the full-cohort global basis and supports only a
+transductive within-cohort claim. `"cell_cross"` rebuilds the representation
+without held-out subjects and supports prospective held-out-subject claims.}
 
 \item{standardize_within_fold}{Logical indicating whether to z-score features
 using training data inside each fold. When `NULL` (default), standardisation
@@ -75,7 +76,13 @@ is enabled automatically for `mode = "cell_cross"` and disabled otherwise.}
 entries: `lambda_grid` (numeric vector of candidate penalties) and
 `lambda_fun` (function returning a lambda per target/fold with signature
 `function(target, fold, method, default)`). Defaults to `NULL`, leaving the
-standard `lambda` behaviour unchanged.}
+standard `lambda` behaviour unchanged. These data-dependent selectors are
+descriptive-only in the beta API. When `n_perm > 0`, supply one externally
+preselected positive scalar `lambda`; grids and callbacks are rejected so
+selection cannot be frozen after seeing the observed labels.
+Cell and cell-cross permutations additionally require
+`randomization_recompute`, a callback that rebuilds the complete
+representation and returns named metrics for each randomized label vector.}
 
 \item{blocks}{Optional vector identifying within-subject blocks (e.g., runs or
 sessions) used to constrain permutations. Length must match the number of

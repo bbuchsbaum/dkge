@@ -3,21 +3,23 @@
 
 #' Define folds for K-fold cross-validation
 #'
-#' Create fold assignments for subjects or time points in DKGE analysis.
-#' Supports multiple strategies including random subject-level folds, time-based
-#' splits, run-based partitions, and custom user-defined assignments.
+#' Create subject-level random folds or validated custom held-out sets.
 #'
 #' @param fit A `dkge` object or `dkge_data` bundle
 #' @param type Type of fold definition:
 #'   - `"subject"`: Random assignment of subjects to folds (default)
-#'   - `"time"`: Split each subject's time series into temporal blocks
-#'   - `"run"`: Use experimental runs as natural folds
 #'   - `"custom"`: User provides fold assignments directly
 #' @param k Number of folds (ignored for type="custom")
-#' @param runs For type="run", a list of run indicators per subject
 #' @param assignments For type="custom", a list of fold assignments
 #' @param seed Random seed for reproducible fold assignment
 #' @param align Logical; if TRUE (default) compute Procrustes alignment/consensus when folds are evaluated.
+#' @param partition Contract for custom assessment sets. `"exact"` (default)
+#'   requires a nonoverlapping partition covering every subject. `"repeated"`
+#'   permits subjects in more than one assessment set but still requires full
+#'   coverage. `"partial"` permits incomplete coverage but remains
+#'   nonoverlapping. Defining repeated or partial folds does not imply that every
+#'   consumer can aggregate or label their outputs: subject-collapsing contrast
+#'   and classification routines require exactly one assessment per subject.
 #' @param ... Additional arguments for specific fold types
 #'
 #' @return A `dkge_folds` object containing:
@@ -27,21 +29,13 @@
 #'   - `metadata`: Additional information about fold creation
 #'
 #' @details
-#' Different fold types serve different purposes:
-#'
 #' **Subject-level folds** (`type = "subject"`): Assigns entire subjects to folds.
 #' This maintains subject independence and is appropriate when subjects are
 #' exchangeable. Each fold will have approximately S/k subjects.
 #'
-#' **Time-based folds** (`type = "time"`): Splits each subject's time series into
-#' k temporal blocks. Useful for assessing temporal stability or when early vs
-#' late responses differ. Requires access to original time series dimensions.
-#'
-#' **Run-based folds** (`type = "run"`): Uses experimental runs as natural folds.
-#' Common in fMRI where runs provide natural breaks. Requires run indicators.
-#'
 #' **Custom folds** (`type = "custom"`): Full control over fold assignments.
-#' Supply a list where each element specifies indices for that fold.
+#' Supply a list where each element specifies held-out subject indices. The
+#' default exact-partition contract prevents accidental overlap or omission.
 #'
 #' @examples
 #' \donttest{
@@ -64,10 +58,13 @@
 #' }
 #'
 #' @export
-dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
-                             k = 5, runs = NULL, assignments = NULL,
-                             seed = NULL, align = FALSE, ...) {
+dkge_define_folds <- function(fit, type = c("subject", "custom"),
+                             k = 5, assignments = NULL,
+                             seed = NULL, align = FALSE,
+                             partition = c("exact", "repeated", "partial"),
+                             ...) {
   type <- match.arg(type)
+  partition <- match.arg(partition)
 
   # Extract data info
   if (inherits(fit, "dkge")) {
@@ -80,13 +77,15 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
     stop("fit must be a dkge or dkge_data object")
   }
 
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    seed <- .dkge_validate_integer_scalar(seed, "seed")
+  }
+  seed_state <- .dkge_seed_enter(seed)
+  on.exit(.dkge_seed_exit(seed_state), add = TRUE)
 
   folds <- switch(type,
     subject = .define_subject_folds(n_subjects, k, subject_ids, seed = seed),
-    time = .define_time_folds(fit, k, ...),
-    run = .define_run_folds(fit, runs, ...),
-    custom = .validate_custom_folds(assignments, n_subjects)
+    custom = .validate_custom_folds(assignments, n_subjects, partition)
   )
   if (is.null(folds$metadata)) folds$metadata <- list()
   folds$metadata$seed <- seed
@@ -99,7 +98,14 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 #' @keywords internal
 #' @noRd
 .define_subject_folds <- function(n_subjects, k, subject_ids = NULL, seed = NULL) {
-  stopifnot(k >= 2, k <= n_subjects)
+  k <- .dkge_validate_positive_integer(k, "k")
+  if (k < 2L || k > n_subjects) {
+    .dkge_abort(
+      sprintf("`k` supplied value %d; expected an integer from 2 through %d.",
+              k, n_subjects),
+      "dkge_fold_partition_error"
+    )
+  }
 
   # Random permutation then split
   perm <- sample(n_subjects)
@@ -131,39 +137,55 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
   )
 }
 
-#' Time-based fold definition (placeholder)
-#' @keywords internal
-#' @noRd
-.define_time_folds <- function(fit, k, ...) {
-  # This requires access to time series length per subject
-  # Will be fully implemented when we have streaming/time-series integration
-  stop("Time-based folds require access to original time series. Coming soon.")
-}
-
-#' Run-based fold definition
-#' @keywords internal
-#' @noRd
-.define_run_folds <- function(fit, runs, ...) {
-  stop("Run-level folds require per-run DKGE contributions; not yet supported.")
-}
-
 #' Validate custom fold assignments
 #' @keywords internal
 #' @noRd
-.validate_custom_folds <- function(assignments, n_subjects) {
+.validate_custom_folds <- function(assignments, n_subjects,
+                                   partition = c("exact", "repeated", "partial")) {
+  partition <- match.arg(partition)
+  abort <- function(message) {
+    .dkge_abort(message, "dkge_fold_partition_error")
+  }
   if (is.null(assignments)) {
-    stop("assignments required for type='custom'")
+    abort("`assignments` is required for `type = \"custom\"`.")
+  }
+  if (!is.list(assignments) || length(assignments) < 2L) {
+    abort("Custom folds require a list containing at least two assessment sets.")
   }
 
-  stopifnot(is.list(assignments), length(assignments) >= 2)
+  assignment_names <- names(assignments)
+  assignments <- lapply(seq_along(assignments), function(i) {
+    idx <- assignments[[i]]
+    if (!is.numeric(idx) || !length(idx) || any(!is.finite(idx)) ||
+        any(idx != trunc(idx))) {
+      abort(sprintf("Custom fold %d must contain finite integer subject indices.", i))
+    }
+    idx <- as.integer(idx)
+    if (anyDuplicated(idx)) {
+      abort(sprintf("Custom fold %d repeats a subject within one assessment set.", i))
+    }
+    if (any(idx < 1L) || any(idx > n_subjects)) {
+      abort(sprintf("Custom fold %d contains indices outside 1 through %d.",
+                    i, n_subjects))
+    }
+    sort(idx)
+  })
+  if (!is.null(assignment_names)) names(assignments) <- assignment_names
 
-  # Check all indices are valid
-  all_idx <- unlist(assignments)
-  stopifnot(all(all_idx >= 1), all(all_idx <= n_subjects))
+  all_idx <- unlist(assignments, use.names = FALSE)
+  has_overlap <- anyDuplicated(all_idx) > 0L
+  covered <- sort(unique(all_idx))
+  full_coverage <- identical(covered, seq_len(n_subjects))
 
-  # Warn about overlap
-  if (length(all_idx) != length(unique(all_idx))) {
-    warning("Some subjects appear in multiple folds")
+  if (partition != "repeated" && has_overlap) {
+    abort(
+      "Custom folds must form a nonoverlapping partition; use `partition = \"repeated\"` to allow repeated assessment."
+    )
+  }
+  if (partition != "partial" && !full_coverage) {
+    abort(
+      "Custom folds must cover every subject; use `partition = \"partial\"` for incomplete assessment."
+    )
   }
 
   list(
@@ -172,7 +194,9 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
     assignments = assignments,
     metadata = list(
       n_subjects = n_subjects,
-      coverage = length(unique(all_idx))
+      coverage = length(covered),
+      partition = partition,
+      overlap = has_overlap
     )
   )
 }
@@ -199,7 +223,9 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
                                 miss_args = list(), ...) {
   # Prepare folds
   missingness <- match.arg(missingness)
-  fold_info_raw <- .dkge_normalize_folds(folds, fit)
+  fold_info_raw <- .dkge_normalize_folds(
+    folds, fit, consumer = "K-fold contrasts"
+  )
   folds <- fold_info_raw$folds
 
   S <- length(fit$Btil)
@@ -300,6 +326,8 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
 #'
 #' @param x A dkge_folds object
 #' @param ... Additional arguments (unused)
+#' @return `x`, invisibly.
+#' @method print dkge_folds
 #' @export
 print.dkge_folds <- function(x, ...) {
   cat("DKGE Fold Definition\n")

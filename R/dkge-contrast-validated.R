@@ -203,6 +203,12 @@ dkge_contrast_validated <- function(fit,
   )
 }
 
+#' Print validated DKGE contrasts
+#'
+#' @param x A `dkge_contrast_validated` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_contrast_validated
 #' @export
 print.dkge_contrast_validated <- function(x, ...) {
   cat("DKGE Validated Contrasts\n")

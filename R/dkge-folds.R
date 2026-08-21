@@ -5,11 +5,28 @@
   if (is.null(loader_weights) || length(loader_weights) == 0L) {
     return(NULL)
   }
-  w_s <- as.numeric(loader_weights)
-  if (length(w_s) != ncol(Bts)) {
-    w_s <- rep(w_s, length.out = ncol(Bts))
+  if (!is.numeric(loader_weights) || any(!is.finite(loader_weights)) ||
+      any(loader_weights < 0)) {
+    .dkge_abort(
+      "Subject loader weights must be finite non-negative numeric values.",
+      "dkge_weight_domain_error"
+    )
   }
-  w_s
+  w_s <- as.numeric(loader_weights)
+  if (length(w_s) == ncol(Bts)) {
+    return(w_s)
+  }
+  if (length(w_s) >= 1L && all(is.finite(w_s)) &&
+      all(w_s == w_s[[1L]])) {
+    return(rep(w_s[[1L]], ncol(Bts)))
+  }
+  .dkge_abort(
+    sprintf(
+      "Subject loader weights have length %d but the subject block has %d columns (parcels); only an exactly matching vector or a constant profile may be re-expanded.",
+      length(w_s), ncol(Bts)
+    ),
+    "dkge_weight_dimension_error"
+  )
 }
 
 #' Build held-out fold bases and loaders
@@ -60,12 +77,19 @@
   subject_ids <- fit$subject_ids %||% seq_len(S)
 
   assignments <- lapply(assignments, function(idx) {
-    idx <- sort(unique(as.integer(idx)))
-    if (length(idx) == 0L) {
-      stop("Each fold must hold out at least one subject.")
+    if (!is.numeric(idx) || !length(idx) || any(!is.finite(idx)) ||
+        any(idx != trunc(idx))) {
+      .dkge_abort(
+        "Each fold must contain finite integer subject indices before coercion.",
+        "dkge_fold_partition_error"
+      )
     }
+    idx <- sort(unique(as.integer(idx)))
     if (any(idx < 1L) || any(idx > S)) {
-      stop("Fold assignments contain invalid subject indices.")
+      .dkge_abort(
+        sprintf("Fold assignments must contain subject indices from 1 through %d.", S),
+        "dkge_fold_partition_error"
+      )
     }
     idx
   })
@@ -80,7 +104,9 @@
   fold_loaders <- vector("list", n_folds)
   fold_weight_info <- vector("list", n_folds)
   fold_pair_counts <- vector("list", n_folds)
-  recycled_subjects <- character(0)
+  fold_training_rank <- integer(n_folds)
+  fold_moment_tolerance <- numeric(n_folds)
+  roots <- .dkge_psd_roots(fit$K)
 
   for (fold_idx in seq_len(n_folds)) {
     holdout <- assignments[[fold_idx]]
@@ -101,43 +127,17 @@
     Chat_minus <- ctx$Chat
     weight_eval <- ctx$weights
 
-    eig_fold <- eigen(Chat_minus, symmetric = TRUE)
-    U_fold <- fit$Kihalf %*% eig_fold$vectors[, seq_len(r), drop = FALSE]
-
-    fold_bases[[fold_idx]] <- U_fold
-    fold_evals[[fold_idx]] <- eig_fold$values
-
-    loader_weights <- weight_eval$total
-
-    subject_scope <- if (loader_scope == "all") seq_len(S) else holdout
-    loader_list <- vector("list", length(subject_scope))
-    names(loader_list) <- as.character(subject_scope)
-
-    for (j in seq_along(subject_scope)) {
-      s <- subject_scope[[j]]
-      Bts <- fit$Btil[[s]]
-      w_s <- .dkge_subject_loader_weights(loader_weights, Bts)
-      if (!is.null(loader_weights) && length(loader_weights) != ncol(Bts)) {
-        if (length(loader_weights) > 1L) {
-          recycled_subjects <- unique(c(recycled_subjects, subject_ids[s]))
-        }
-      }
-      Bw <- if (is.null(w_s) || length(w_s) == 0L) {
-        Bts
-      } else {
-        sweep(Bts, 2L, sqrt(pmax(w_s, 0)), "*")
-      }
-      A_s <- t(Bw) %*% fit$K %*% U_fold
-      Y_s <- Bw %*% A_s
-      loader_list[[j]] <- list(
-        subject = s,
-        A = A_s,
-        Y = Y_s,
-        n_cluster = ncol(Bts)
-      )
-    }
-
-    fold_loaders[[fold_idx]] <- loader_list
+    basis <- .dkge_select_k_basis(
+      Chat_minus,
+      K = fit$K,
+      roots = roots,
+      requested_rank = r,
+      label = sprintf("Fold %d training", fold_idx)
+    )
+    fold_bases[[fold_idx]] <- basis$U
+    fold_evals[[fold_idx]] <- basis$values
+    fold_training_rank[[fold_idx]] <- basis$effective_rank
+    fold_moment_tolerance[[fold_idx]] <- basis$moment_tolerance
     fold_weight_info[[fold_idx]] <- list(
       prior = weight_eval$prior,
       adapt = weight_eval$adapt,
@@ -159,12 +159,70 @@
     fold_pair_counts[fold_idx] <- list(ctx$pair_counts)
   }
 
+  # Cross-fitted consumers need one component dimension. Use the rank shared by
+  # every training fold, never the rank of the full-data fit.
+  common_rank <- if (n_folds) {
+    min(vapply(fold_bases, ncol, integer(1)))
+  } else {
+    0L
+  }
+  if (common_rank < r) {
+    message(sprintf(
+      "Fold training rank caps the cross-fitted basis at %d component(s) (full-data rank %d).",
+      common_rank, r
+    ))
+  }
+
+  for (fold_idx in seq_len(n_folds)) {
+    U_fold <- fold_bases[[fold_idx]][, seq_len(common_rank), drop = FALSE]
+    fold_bases[[fold_idx]] <- U_fold
+    if (common_rank > 0L) {
+      gram_error <- max(abs(crossprod(U_fold, fit$K %*% U_fold) -
+                              diag(common_rank)))
+      if (!is.finite(gram_error) || gram_error > 1e-7) {
+        .dkge_abort(
+          sprintf(
+            "Fold %d basis failed the K-orthonormal postcondition (maximum Gram error %.3e).",
+            fold_idx, gram_error
+          ),
+          "dkge_kernel_geometry_error"
+        )
+      }
+    }
+
+    holdout <- assignments[[fold_idx]]
+    loader_weights <- fold_weight_info[[fold_idx]]$total
+    subject_scope <- if (loader_scope == "all") seq_len(S) else holdout
+    loader_list <- vector("list", length(subject_scope))
+    names(loader_list) <- as.character(subject_scope)
+
+    for (j in seq_along(subject_scope)) {
+      s <- subject_scope[[j]]
+      Bts <- fit$Btil[[s]]
+      w_s <- .dkge_subject_loader_weights(loader_weights, Bts)
+      Bw <- if (is.null(w_s) || length(w_s) == 0L) {
+        Bts
+      } else {
+        sweep(Bts, 2L, sqrt(pmax(w_s, 0)), "*")
+      }
+      A_s <- t(Bw) %*% fit$K %*% U_fold
+      Y_s <- Bw %*% A_s
+      loader_list[[j]] <- list(
+        subject = s,
+        A = A_s,
+        Y = Y_s,
+        n_cluster = ncol(Bts)
+      )
+    }
+    fold_loaders[[fold_idx]] <- loader_list
+  }
+
   aligned_bases <- fold_bases
   rotations <- vector("list", n_folds)
   consensus <- NULL
   alignment <- NULL
 
-  if (align && n_folds > 0) {
+  if (align && n_folds > 0 && common_rank > 0L) {
     align_obj <- dkge_align_bases_K(fold_bases, fit$K, allow_reflection = TRUE)
     aligned_bases <- align_obj$U_aligned
     rotations <- align_obj$R
@@ -193,6 +251,9 @@
       U_minus = fold_bases[[fold_idx]],
       D_minus = fold_evals[[fold_idx]],
       pair_counts = fold_pair_counts[[fold_idx]],
+      training_rank = fold_training_rank[[fold_idx]],
+      effective_rank = common_rank,
+      moment_tolerance = fold_moment_tolerance[[fold_idx]],
       missingness = missingness,
       miss_args = miss_args
     )
@@ -204,17 +265,13 @@
     align = align,
     consensus = consensus,
     alignment = alignment,
+    effective_rank = common_rank,
     loader_scope = loader_scope,
     weight_spec = weight_spec,
     missingness = missingness,
     miss_args = miss_args
   ) -> result
 
-  if (length(recycled_subjects)) {
-    warning(sprintf("Per-subject voxel weights recycled for: %s",
-                    paste(recycled_subjects, collapse = ", ")))
-    attr(result, "recycled_weights_subjects") <- recycled_subjects
-  }
   result
 }
 
@@ -252,7 +309,21 @@
 
   folds <- vector("list", n_folds)
   for (fold_idx in seq_len(n_folds)) {
-    holdout <- sort(unique(as.integer(assignments[[fold_idx]])))
+    holdout <- assignments[[fold_idx]]
+    if (!is.numeric(holdout) || !length(holdout) ||
+        any(!is.finite(holdout)) || any(holdout != trunc(holdout))) {
+      .dkge_abort(
+        "Each fold must contain finite integer subject indices before coercion.",
+        "dkge_fold_partition_error"
+      )
+    }
+    holdout <- sort(unique(as.integer(holdout)))
+    if (any(holdout < 1L) || any(holdout > S)) {
+      .dkge_abort(
+        sprintf("Fold assignments must contain subject indices from 1 through %d.", S),
+        "dkge_fold_partition_error"
+      )
+    }
     folds[[fold_idx]] <- list(
       index = fold_idx,
       subjects = holdout,
@@ -283,8 +354,41 @@
   )
 }
 
+#' Require one assessment for every subject in subject-level consumers
+#'
+#' @keywords internal
 #' @noRd
-.dkge_normalize_folds <- function(folds, fit) {
+.dkge_require_unique_assessments <- function(fold_obj, consumer,
+                                             n_subjects = NULL) {
+  assignments <- fold_obj$assignments %||% list()
+  assessment_ids <- unlist(assignments, use.names = FALSE)
+  if (anyDuplicated(assessment_ids)) {
+    .dkge_abort(
+      sprintf(
+        "%s does not support repeated assessment sets; use nonoverlapping folds until an explicit aggregation policy is available.",
+        consumer
+      ),
+      "dkge_fold_partition_error"
+    )
+  }
+  n_subjects <- n_subjects %||% fold_obj$metadata$n_subjects
+  if (!is.null(n_subjects)) {
+    covered <- sort(unique(as.integer(assessment_ids)))
+    if (!identical(covered, seq_len(n_subjects))) {
+      .dkge_abort(
+        sprintf(
+          "%s does not support incomplete assessment sets; the supplied folds cover %d of %d subjects. Use a complete nonoverlapping partition until an explicit subset-labeling policy is available.",
+          consumer, length(covered), n_subjects
+        ),
+        "dkge_fold_partition_error"
+      )
+    }
+  }
+  invisible(fold_obj)
+}
+
+#' @noRd
+.dkge_normalize_folds <- function(folds, fit, consumer = "This operation") {
   S <- length(fit$Btil)
   if (is.null(folds)) {
     return(list(assignments = lapply(seq_len(S), function(s) s), folds = NULL))
@@ -299,6 +403,7 @@
       stop("folds must be an integer k or convertible via as_dkge_folds().", call. = FALSE)
     }
   }
+  .dkge_require_unique_assessments(fold_obj, consumer, n_subjects = S)
   list(assignments = fold_obj$assignments, folds = fold_obj)
 }
 

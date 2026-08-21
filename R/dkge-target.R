@@ -258,7 +258,8 @@ dkge_make_target <- function(fit = NULL,
                    sigma_mm = transport$sigma_mm,
                    lambda_size = transport$lambda_size,
                    value_type = transport$value_type,
-                   warm_start = transport$warm_start))
+                   warm_start = transport$warm_start,
+                   provenance = transport$provenance))
   } else {
     dots <- list(...)
   }
@@ -352,6 +353,12 @@ dkge_make_target <- function(fit = NULL,
   x
 }
 
+#' Print a DKGE target
+#'
+#' @param x A `dkge_target` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_target
 #' @export
 print.dkge_target <- function(x, ...) {
   cat("<dkge_target>", "\n", sep = "")

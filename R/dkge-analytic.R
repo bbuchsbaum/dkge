@@ -234,6 +234,18 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
 
   U_minus <- fit$Kihalf %*% V_ortho
   KU_minus <- fit$K %*% U_minus
+  if (r > 0L) {
+    gram_error <- max(abs(crossprod(U_minus, KU_minus) - diag(r)))
+    if (!is.finite(gram_error) || gram_error > 1e-7) {
+      .dkge_abort(
+        sprintf(
+          "Analytic LOSO basis failed the K-orthonormal postcondition (maximum Gram error %.3e).",
+          gram_error
+        ),
+        "dkge_kernel_geometry_error"
+      )
+    }
+  }
 
   c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(U_minus) %*% fit$K %*% c_tilde

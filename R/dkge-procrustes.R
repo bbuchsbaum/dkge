@@ -1,15 +1,21 @@
 # dkge-procrustes.R (robust K-Procrustes utilities)
 # Provides numerically stable alignment/consensus helpers for DKGE bases.
 
-# Internal helper: kernel roots with jitter (exported via design-kernel)
-.dkge_kernel_roots <- function(K, jitter = 1e-10) {
-  Ksym <- .dkge_validate_kernel(K)
-  ee <- eigen(Ksym, symmetric = TRUE)
-  vals <- pmax(ee$values, jitter)
-  V <- ee$vectors
-  Khalf  <- V %*% diag(sqrt(vals),  length(vals)) %*% t(V)
-  Kihalf <- V %*% diag(1/sqrt(vals), length(vals)) %*% t(V)
-  list(Khalf = Khalf, Kihalf = Kihalf, evals = vals)
+# Internal range-space kernel roots (exported wrapper lives in design-kernel).
+.dkge_kernel_roots <- function(
+    K,
+    absolute_tolerance = .Machine$double.xmin,
+    relative_tolerance = 1e-8) {
+  roots <- .dkge_psd_roots(
+    K,
+    absolute_tolerance = absolute_tolerance,
+    relative_tolerance = relative_tolerance
+  )
+  # Internally these are transformed q-space operators, not effect-labelled
+  # matrices. Keeping them unnamed preserves the fit/project dimname contract.
+  dimnames(roots$Khalf) <- NULL
+  dimnames(roots$Kihalf) <- NULL
+  roots
 }
 
 #' Robust K-orthonormalization

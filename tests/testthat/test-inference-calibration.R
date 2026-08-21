@@ -167,7 +167,12 @@ test_that("dkge_contrast parallel matches sequential within tolerance", {
   on.exit(future::plan(old_plan), add = TRUE)
   future::plan(future::multisession, workers = 2)
 
-  result_par <- dkge_contrast(fit, contrast_vec, method = "loso", parallel = TRUE)
+  # Some locally installed future binaries report only the R build-version
+  # mismatch when their namespace is loaded. That environment warning is not
+  # part of the DKGE warning contract exercised here.
+  result_par <- suppressWarnings(
+    dkge_contrast(fit, contrast_vec, method = "loso", parallel = TRUE)
+  )
   Y_par <- as.matrix(result_par, contrast = 1)
 
   future::plan(future::sequential)
@@ -211,8 +216,10 @@ test_that("dkge_infer statistics match between sequential and parallel", {
   on.exit(future::plan(old_plan), add = TRUE)
   future::plan(future::multisession, workers = 2)
 
-  result_par <- dkge_infer(fit, contrast_vec, inference = "parametric",
-                           correction = "none", parallel = TRUE)
+  result_par <- suppressWarnings(
+    dkge_infer(fit, contrast_vec, inference = "parametric",
+               correction = "none", parallel = TRUE)
+  )
 
   future::plan(future::sequential)
 
@@ -294,8 +301,12 @@ test_that("inference with transport works on mismatched clusters", {
   transport_cfg <- list(
     centroids = data$centroids,
     medoid = 1L,
-    mapper = dkge_mapper_spec("ridge", lambda = 1e-2),
-    betas = data$betas
+    mapper = dkge_mapper_spec(
+      "sinkhorn", epsilon = 0.2, lambda_emb = 0, lambda_spa = 1,
+      warm_start = FALSE
+    ),
+    betas = data$betas,
+    provenance = dkge_transport_provenance("geometry_only")
   )
 
   # Should complete without error when transport is configured
@@ -335,7 +346,10 @@ test_that("dkge_infer parametric produces valid p-values", {
 
   fit <- dkge_fit(dkge_data(betas, designs = designs), K = diag(q), rank = 2)
 
-  result <- dkge_infer(fit, c(1, -1, 0), inference = "parametric", correction = "fdr")
+  result <- dkge_infer(
+    fit, c(1, -1, 0), inference = "parametric", correction = "fdr",
+    n_perm = 0
+  )
 
   expect_s3_class(result, "dkge_inference")
   expect_equal(result$inference, "parametric")

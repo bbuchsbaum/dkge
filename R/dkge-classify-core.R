@@ -24,8 +24,9 @@
 #' @param lambda Optional ridge parameter passed to the classifier backend.
 #' @param metric Evaluation metric(s); defaults to c("accuracy", "logloss").
 #' @param mode Decoding mode: "auto" (default), "cell", "cell_cross", or
-#'   "delta". Cell-cross trains on held-in subjects and tests generalisation to
-#'   the held-out subject.
+#'   "delta". `"cell"` uses the full-cohort global basis and supports only a
+#'   transductive within-cohort claim. `"cell_cross"` rebuilds the representation
+#'   without held-out subjects and supports prospective held-out-subject claims.
 #' @param residualize Forwarded to [dkge_targets()].
 #' @param collapse Forwarded to [dkge_targets()] for factor collapsing.
 #' @param restrict_factors Optional factor subset for `spec = "fullcell"`.
@@ -37,7 +38,13 @@
 #'   entries: `lambda_grid` (numeric vector of candidate penalties) and
 #'   `lambda_fun` (function returning a lambda per target/fold with signature
 #'   `function(target, fold, method, default)`). Defaults to `NULL`, leaving the
-#'   standard `lambda` behaviour unchanged.
+#'   standard `lambda` behaviour unchanged. These data-dependent selectors are
+#'   descriptive-only in the beta API. When `n_perm > 0`, supply one externally
+#'   preselected positive scalar `lambda`; grids and callbacks are rejected so
+#'   selection cannot be frozen after seeing the observed labels.
+#'   Cell and cell-cross permutations additionally require
+#'   `randomization_recompute`, a callback that rebuilds the complete
+#'   representation and returns named metrics for each randomized label vector.
 #' @param blocks Optional vector identifying within-subject blocks (e.g., runs or
 #'   sessions) used to constrain permutations. Length must match the number of
 #'   subjects in `fit` when supplied.
@@ -92,7 +99,6 @@ dkge_classify <- function(fit,
   metric <- unique(metric)
   mode <- match.arg(mode)
   class_weights <- match.arg(class_weights)
-  if (!is.null(seed)) set.seed(seed)
 
   control <- control %||% list()
   if (!is.list(control)) {
@@ -100,15 +106,38 @@ dkge_classify <- function(fit,
   }
   lambda_grid <- control$lambda_grid %||% NULL
   if (!is.null(lambda_grid)) {
-    if (!is.numeric(lambda_grid) || any(lambda_grid <= 0)) {
+    if (!is.numeric(lambda_grid) || !length(lambda_grid) ||
+        any(!is.finite(lambda_grid)) || any(lambda_grid <= 0)) {
       stop("`control$lambda_grid` must contain positive numeric values")
     }
     lambda_grid <- sort(unique(lambda_grid))
   }
   lambda_fun <- control$lambda_fun %||% NULL
+  if (!is.null(lambda_fun) && !is.function(lambda_fun)) {
+    stop("`control$lambda_fun` must be a function or NULL.")
+  }
   if (!is.null(lambda_grid) && !is.null(lambda_fun)) {
     stop("Specify at most one of `control$lambda_grid` or `control$lambda_fun`.")
   }
+  randomization_recompute <- control$randomization_recompute %||% NULL
+  if (!is.null(randomization_recompute) &&
+      !is.function(randomization_recompute)) {
+    stop("`control$randomization_recompute` must be a function or NULL.")
+  }
+  lambda <- .dkge_validate_classification_selection(
+    n_perm = n_perm,
+    lambda = lambda,
+    lambda_grid = lambda_grid,
+    lambda_fun = lambda_fun
+  )
+  n_perm <- .dkge_validate_scalar_domain(
+    n_perm, "n_perm", "a non-negative integer",
+    function(value) value >= 0 && value == trunc(value),
+    integer_result = TRUE
+  )
+  if (!is.null(seed)) seed <- .dkge_validate_integer_scalar(seed, "seed")
+  seed_state <- .dkge_seed_enter(seed)
+  on.exit(.dkge_seed_exit(seed_state), add = TRUE)
 
   if (!is.null(blocks)) {
     if (length(blocks) != length(fit$Btil)) {
@@ -196,6 +225,13 @@ dkge_classify <- function(fit,
   }, character(1))
   needs_cell   <- any(resolved_modes == "cell")
   needs_cross  <- any(resolved_modes %in% c("cell_cross", "delta"))
+  if (n_perm > 0L && any(resolved_modes %in% c("cell", "cell_cross")) &&
+      !is.function(randomization_recompute)) {
+    .dkge_abort(
+      "Cell classification permutations require `control$randomization_recompute` to rebuild the complete data-dependent representation inside every randomization.",
+      "dkge_classification_inference_error"
+    )
+  }
 
   fold_info_cell <- if (needs_cell) {
     .dkge_build_global_fold_loaders(fit, assignments = fold_bundle$assignments)
@@ -236,7 +272,11 @@ dkge_classify <- function(fit,
                                         class_weights = class_weights,
                                         n_perm = n_perm,
                                         scope = target_scope,
-                                        control = list(lambda_grid = lambda_grid, lambda_fun = lambda_fun),
+                                        control = list(
+                                          lambda_grid = lambda_grid,
+                                          lambda_fun = lambda_fun,
+                                          randomization_recompute = randomization_recompute
+                                        ),
                                         blocks = blocks,
                                         parallel = parallel,
                                         verbose = verbose,
@@ -270,9 +310,48 @@ dkge_classify <- function(fit,
     folds = fold_bundle$folds,
     n_perm = n_perm,
     class_weights = class_weights,
+    claim_scope = stats::setNames(
+      lapply(results, function(result) result$claim_scope %||% NA_character_),
+      names(results)
+    ),
+    lambda_selection = if (n_perm > 0L) "preselected_external" else
+      if (!is.null(lambda_grid) || !is.null(lambda_fun)) "observed_descriptive" else
+        "fixed_or_backend_default",
+    randomization_exactness = if (n_perm > 0L &&
+      any(resolved_modes %in% c("cell", "cell_cross"))) {
+      "full_pipeline_recomputed"
+    } else if (n_perm > 0L) {
+      "cross_fitted_signflip"
+    } else {
+      "not_requested"
+    },
     control = control_out,
     blocks = blocks
   ), class = "dkge_classification")
+}
+
+#' Validate classification selection under permutation inference
+#' @keywords internal
+#' @noRd
+.dkge_validate_classification_selection <- function(
+    n_perm, lambda, lambda_grid = NULL, lambda_fun = NULL) {
+  n_perm <- .dkge_validate_scalar_domain(
+    n_perm, "n_perm", "a non-negative integer",
+    function(value) value >= 0 && value == trunc(value),
+    integer_result = TRUE
+  )
+  if (!is.null(lambda)) {
+    lambda <- .dkge_validate_positive_scalar(lambda, "lambda")
+  }
+  if (n_perm > 0L) {
+    if (is.null(lambda) || !is.null(lambda_grid) || !is.null(lambda_fun)) {
+      .dkge_abort(
+        "Permutation classification requires one externally preselected scalar `lambda`; `control$lambda_grid` and `control$lambda_fun` are not inferentially supported in the beta API.",
+        "dkge_classification_inference_error"
+      )
+    }
+  }
+  lambda
 }
 
 .dkge_choose_target_mode <- function(target) {
@@ -339,9 +418,15 @@ dkge_classify <- function(fit,
 }
 
 .dkge_prepare_folds <- function(fit, folds) {
-  .dkge_normalize_folds(folds, fit)
+  .dkge_normalize_folds(folds, fit, consumer = "DKGE classification")
 }
 
+#' Print DKGE classification results
+#'
+#' @param x A `dkge_classification` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_classification
 #' @export
 print.dkge_classification <- function(x, ...) {
   cat("DKGE Classification\n")

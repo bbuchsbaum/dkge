@@ -403,8 +403,11 @@
   }
   K <- .dkge_validate_kernel(K)
 
-  rank_requested <- if (is.null(rank)) q else rank
-  rank <- max(1L, min(rank_requested, q))
+  rank_requested <- if (is.null(rank)) {
+    q
+  } else {
+    .dkge_validate_positive_integer(rank, "rank")
+  }
 
   if (is.null(Omega_list)) {
     Omega_list <- vector("list", S)
@@ -425,6 +428,13 @@
     Btil <- betas
   }
   kernels <- .dkge_kernel_roots(K)
+  if (kernels$rank == 0L) {
+    .dkge_abort(
+      "Kernel `K` has numerical rank zero; no DKGE component is estimable.",
+      "dkge_zero_rank_error"
+    )
+  }
+  rank <- min(rank_requested, q, kernels$rank)
   weight_spec <- if (is.null(weights)) dkge_weights(adapt = "none") else weights
   stopifnot(inherits(weight_spec, "dkge_weights"))
   effect_weight_spec <- effect_weights %||% dkge_effect_weights("none")
@@ -643,40 +653,29 @@
   Chat <- (Chat + t(Chat)) / 2
 
   if (solver == "pooled") {
-    eigChat <- eigen(Chat, symmetric = TRUE)
-    eig_vectors_full <- eigChat$vectors
-    eig_values_full <- eigChat$values
+    basis <- .dkge_select_k_basis(
+      Chat,
+      K = prepped$K,
+      roots = prepped$kernels,
+      requested_rank = rank,
+      label = "Full-data DKGE"
+    )
+    eigChat <- basis$decomposition
+    eig_vectors_full <- basis$vectors
+    eig_values_full <- basis$values
+    effective_rank <- basis$effective_rank
+    rank_reduced <- basis$rank_reduced
 
-    # Scale-relative positivity tolerance: an absolute 1e-12 spuriously collapses
-    # the rank when betas are small-magnitude (Chat eigenvalues scale as beta^2).
-    # Never looser than 1e-12 so well-scaled fits keep their existing behavior.
-    eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
-    effective_rank <- sum(eig_values_full > eig_tol)
-    rank_reduced <- FALSE
-
-    # Warn if requested rank exceeds effective rank
-    if (rank > effective_rank) {
-      warning(sprintf(
+    if (rank > basis$rank) {
+      message(sprintf(
         "Requested rank %d exceeds effective rank %d. Reducing to %d components.",
-        rank, effective_rank, effective_rank
-      ), call. = FALSE)
-      rank <- effective_rank
-      rank_reduced <- TRUE
+        rank, effective_rank, basis$rank
+      ))
     }
-
-    eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
-    eig_values <- eig_values_full[seq_len(rank)]
-    pos_idx <- eig_values > eig_tol
-    if (!all(pos_idx)) {
-      eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
-      eig_values <- eig_values[pos_idx]
-      rank <- length(eig_values)
-      rank_reduced <- TRUE
-    }
-
-    sdev <- sqrt(pmax(eig_values, 0))
-    U_hat <- eig_vectors
-    U <- prepped$kernels$Kihalf %*% U_hat
+    rank <- basis$rank
+    sdev <- sqrt(pmax(basis$kept_values, 0))
+    U_hat <- basis$U_hat
+    U <- basis$U
 
     if (!is.null(cpca_info)) {
       if (cpca_part %in% c("design", "both")) {
@@ -687,10 +686,15 @@
         cpca_info$U_resid <- U
         cpca_info$evals_resid <- eigChat$values
       } else if (cpca_part == "both") {
-        eg_resid <- eigen(cpca_info$Chat_resid, symmetric = TRUE)
-        cpca_info$evals_resid <- eg_resid$values
-        cpca_info$U_resid <- prepped$kernels$Kihalf %*%
-          eg_resid$vectors[, seq_len(rank), drop = FALSE]
+        residual_basis <- .dkge_select_k_basis(
+          cpca_info$Chat_resid,
+          K = prepped$K,
+          roots = prepped$kernels,
+          requested_rank = rank,
+          label = "Residual CPCA"
+        )
+        cpca_info$evals_resid <- residual_basis$values
+        cpca_info$U_resid <- residual_basis$U
       }
     }
 
@@ -703,8 +707,10 @@
       U = U,
       sdev = sdev,
       rank = rank,
+      moment_rank = basis$moment_rank,
       effective_rank = effective_rank,
       rank_reduced = rank_reduced,
+      moment_tolerance = basis$moment_tolerance,
       cpca_info = cpca_info,
       solver = solver,
       jd = NULL
@@ -752,37 +758,30 @@
     control = jd_control
   )
 
-  eig_vectors_full <- jd_res$Q
-  eig_values_full <- jd_res$diag_vals
+  basis <- .dkge_select_k_basis(
+    Chat,
+    K = prepped$K,
+    roots = prepped$kernels,
+    requested_rank = rank,
+    vectors = jd_res$Q,
+    values = jd_res$diag_vals,
+    label = "Full-data DKGE joint-diagonalization"
+  )
+  eig_vectors_full <- basis$vectors
+  eig_values_full <- basis$values
+  effective_rank <- basis$effective_rank
+  rank_reduced <- basis$rank_reduced
 
-  # Scale-relative positivity tolerance (see the pooled branch above).
-  eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
-  effective_rank <- sum(eig_values_full > eig_tol)
-  rank_reduced <- FALSE
-
-  # Warn if requested rank exceeds effective rank
-  if (rank > effective_rank) {
-    warning(sprintf(
+  if (rank > basis$rank) {
+    message(sprintf(
       "Requested rank %d exceeds effective rank %d. Reducing to %d components.",
-      rank, effective_rank, effective_rank
-    ), call. = FALSE)
-    rank <- effective_rank
-    rank_reduced <- TRUE
+      rank, effective_rank, basis$rank
+    ))
   }
-
-  eig_vectors <- eig_vectors_full[, seq_len(rank), drop = FALSE]
-  eig_values <- eig_values_full[seq_len(rank)]
-  pos_idx <- eig_values > eig_tol
-  if (!all(pos_idx)) {
-    eig_vectors <- eig_vectors[, pos_idx, drop = FALSE]
-    eig_values <- eig_values[pos_idx]
-    rank <- length(eig_values)
-    rank_reduced <- TRUE
-  }
-
-  sdev <- sqrt(pmax(eig_values, 0))
-  U_hat <- eig_vectors
-  U <- prepped$kernels$Kihalf %*% U_hat
+  rank <- basis$rank
+  sdev <- sqrt(pmax(basis$kept_values, 0))
+  U_hat <- basis$U_hat
+  U <- basis$U
 
   if (!is.null(cpca_info)) {
     if (cpca_part %in% c("design", "both")) {
@@ -831,8 +830,10 @@
     U = U,
     sdev = sdev,
     rank = rank,
+    moment_rank = basis$moment_rank,
     effective_rank = effective_rank,
     rank_reduced = rank_reduced,
+    moment_tolerance = basis$moment_tolerance,
     cpca_info = cpca_info,
     solver = solver,
     jd = jd_res
@@ -1217,14 +1218,39 @@
     miss_args = miss_args,
     ridge_input = ridge,
     rank_requested = prepped$rank_requested,
+    kernel_rank = kernels$rank,
+    kernel_nullity = kernels$nullity,
+    moment_rank = solved$moment_rank,
     effective_rank = solved$effective_rank,
-    rank_reduced = solved$rank_reduced
+    rank_reduced = rank < prepped$rank_requested,
+    spectral_diagnostics = list(
+      absolute_tolerance = kernels$absolute_tolerance,
+      relative_tolerance = kernels$relative_tolerance,
+      kernel_tolerance = kernels$tolerance,
+      moment_tolerance = solved$moment_tolerance,
+      kernel_rank = kernels$rank,
+      kernel_nullity = kernels$nullity,
+      moment_rank = solved$moment_rank,
+      effective_rank = solved$effective_rank
+    )
   )
 
   fit$representation <- representation$kind
   fit$representation_reasons <- representation$reasons
   fit$Chat_sym <- accum$Chat_sym
   fit$KU <- fit$K %*% fit$U
+  if (fit$rank > 0L) {
+    gram_error <- max(abs(crossprod(fit$U, fit$KU) - diag(fit$rank)))
+    if (!is.finite(gram_error) || gram_error > 1e-7) {
+      .dkge_abort(
+        sprintf(
+          "Full-data DKGE basis failed the K-orthonormal postcondition (maximum Gram error %.3e).",
+          gram_error
+        ),
+        "dkge_kernel_geometry_error"
+      )
+    }
+  }
   fit$scores_matrix <- fit$s
   .dkge_validate_block_factor(fit, X_concat)
 

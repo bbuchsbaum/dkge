@@ -11,6 +11,9 @@
 
 \item{...}{Additional arguments (unused)}
 }
+\value{
+`x`, invisibly.
+}
 \description{
 Print method for dkge_inference
 }

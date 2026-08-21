@@ -14,6 +14,7 @@ dkge_transport_loadings_to_medoid(
   mapper = NULL,
   method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
   transport_cache = NULL,
+  provenance = NULL,
   ...
 )
 }
@@ -40,6 +41,9 @@ legacy `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.}
 
 \item{transport_cache}{Optional cache from [dkge_prepare_transport()]. When
 supplied, cached operators are reused for all components.}
+
+\item{provenance}{Optional transport provenance declaration. Descriptive
+loading-derived transport is recorded when omitted.}
 
 \item{...}{Additional parameters passed when building the default mapper
 specification (e.g. `epsilon`, `lambda_emb`).}

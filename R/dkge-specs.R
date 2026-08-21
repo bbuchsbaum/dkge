@@ -23,6 +23,9 @@
 #' @param value_type Semantics of transported values: `"intensive"` preserves
 #'   constant fields; `"extensive"` preserves the sum of source totals.
 #' @param warm_start Reuse converged Sinkhorn duals for identical problems.
+#' @param provenance Optional [dkge_transport_provenance()] declaration. When
+#'   omitted, loading-derived transport is marked descriptive and
+#'   [dkge_infer()] will reject it rather than assume inferential validity.
 #' @param ... Additional fields stored on the spec (e.g., precomputed loadings
 #'   or betas).
 #' @return Object with class `dkge_transport_spec`.
@@ -43,6 +46,7 @@ dkge_transport_spec <- function(centroids,
                                 lambda_size = 0,
                                 value_type = c("intensive", "extensive"),
                                 warm_start = TRUE,
+                                provenance = NULL,
                                 ...) {
   method <- match.arg(method)
   if (identical(method, "sinkhorn_cpp")) {
@@ -55,12 +59,17 @@ dkge_transport_spec <- function(centroids,
   if (!is.null(sizes)) {
     stopifnot(is.list(sizes), length(sizes) == length(centroids))
   }
-  medoid <- as.integer(medoid)
+  medoid <- .dkge_validate_positive_integer(medoid, "medoid")
   if (medoid < 1L || medoid > length(centroids)) {
     stop("`medoid` must index one of the provided centroid lists")
   }
-  stopifnot(epsilon > 0, max_iter > 0, tol > 0, lambda_emb >= 0,
-            lambda_spa >= 0, sigma_mm > 0, lambda_size >= 0)
+  epsilon <- .dkge_validate_positive_scalar(epsilon, "epsilon")
+  max_iter <- .dkge_validate_positive_integer(max_iter, "max_iter")
+  tol <- .dkge_validate_positive_scalar(tol, "tol")
+  lambda_emb <- .dkge_validate_nonnegative_scalar(lambda_emb, "lambda_emb")
+  lambda_spa <- .dkge_validate_nonnegative_scalar(lambda_spa, "lambda_spa")
+  sigma_mm <- .dkge_validate_positive_scalar(sigma_mm, "sigma_mm")
+  lambda_size <- .dkge_validate_nonnegative_scalar(lambda_size, "lambda_size")
 
   spec <- list(
     centroids = centroids,
@@ -69,14 +78,15 @@ dkge_transport_spec <- function(centroids,
     method = method,
     mapper = mapper,
     epsilon = epsilon,
-    max_iter = as.integer(max_iter),
+    max_iter = max_iter,
     tol = tol,
     lambda_emb = lambda_emb,
     lambda_spa = lambda_spa,
     sigma_mm = sigma_mm,
     lambda_size = lambda_size,
     value_type = value_type,
-    warm_start = isTRUE(warm_start)
+    warm_start = isTRUE(warm_start),
+    provenance = provenance %||% .dkge_data_derived_loading_provenance()
   )
   extra <- list(...)
   if (length(extra)) spec <- c(spec, extra)
@@ -88,18 +98,23 @@ dkge_transport_spec <- function(centroids,
 #'
 #' @param B Number of permutations for sign-flip inference.
 #' @param tail Tail of the test: "two.sided", "greater", or "less".
-#' @param center Centering method for permutations: "mean", "median", or "none".
+#' @param center Location statistic for permutations. Only `"mean"` is
+#'   implemented by the beta inference service.
 #' @return Object with class `dkge_inference_spec`.
 #' @export
 #' @examples
 #' infer <- dkge_inference_spec(B = 1000, tail = "two.sided")
 dkge_inference_spec <- function(B = 2000L,
                                 tail = c("two.sided", "greater", "less"),
-                                center = c("mean", "median", "none")) {
-  stopifnot(B > 0)
+                                center = "mean") {
+  B <- .dkge_validate_resample_B(B)
   tail <- match.arg(tail)
-  center <- match.arg(center)
-  structure(list(B = as.integer(B), tail = tail, center = center),
+  .dkge_validate_inference_compatibility(
+    inference = "signflip", correction = "maxT",
+    has_transport = FALSE, center = center,
+    n_targets = NA_integer_, parallel = FALSE
+  )
+  structure(list(B = B, tail = tail, center = center),
             class = c("dkge_inference_spec", "list"))
 }
 
@@ -111,8 +126,9 @@ dkge_inference_spec <- function(B = 2000L,
 #' @param lambda Optional ridge parameter.
 #' @param metric Classification metrics to report.
 #' @param mode Decoding mode passed to [dkge_classify()]: "auto" selects
-#'   automatically, "cell" uses per-cell embeddings, "cell_cross" uses
-#'   cross-validated per-cell embeddings, and "delta" uses pairwise deltas.
+#'   automatically, "cell" uses a transductive global-basis embedding,
+#'   "cell_cross" uses prospective cross-fitted per-cell embeddings, and
+#'   "delta" uses pairwise deltas.
 #' @param ... Additional fields stored on the spec (e.g., `n_perm`, `scope`).
 #' @return Object with class `dkge_classification_spec`.
 #' @export
@@ -142,6 +158,12 @@ dkge_classification_spec <- function(targets,
   spec
 }
 
+#' Print a transport specification
+#'
+#' @param x A `dkge_transport_spec` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_transport_spec
 #' @export
 print.dkge_transport_spec <- function(x, ...) {
   cat("<dkge_transport_spec>", "\n", sep = "")
@@ -152,6 +174,12 @@ print.dkge_transport_spec <- function(x, ...) {
   invisible(x)
 }
 
+#' Print an inference specification
+#'
+#' @param x A `dkge_inference_spec` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_inference_spec
 #' @export
 print.dkge_inference_spec <- function(x, ...) {
   cat("<dkge_inference_spec>", "\n", sep = "")
@@ -161,6 +189,12 @@ print.dkge_inference_spec <- function(x, ...) {
   invisible(x)
 }
 
+#' Print a classification specification
+#'
+#' @param x A `dkge_classification_spec` object.
+#' @param ... Unused; present for S3 method compatibility.
+#' @return `x`, invisibly.
+#' @method print dkge_classification_spec
 #' @export
 print.dkge_classification_spec <- function(x, ...) {
   cat("<dkge_classification_spec>", "\n", sep = "")

@@ -92,6 +92,16 @@ test_that("cell and cell_cross produce different row-level feature values", {
   # Modes should be recorded correctly
   expect_equal(res_cell$mode,  "cell")
   expect_equal(res_cross$mode, "cell_cross")
+  expect_identical(res_cell$claim_scope, "transductive_within_cohort")
+  expect_identical(
+    res_cell$representation_scope,
+    "global_basis_includes_heldout_subject"
+  )
+  expect_identical(res_cross$claim_scope, "prospective_heldout_subject")
+  expect_identical(
+    res_cross$representation_scope,
+    "basis_cross_fitted_without_heldout_subject"
+  )
 
   # Feature matrices differ → predictions or probabilities differ for at least
   # one subject (this is nearly certain when bases differ)

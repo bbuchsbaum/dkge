@@ -37,11 +37,11 @@ knitr::opts_chunk$set(
   fig.height = 4,
   out.width = "90%"
 )
-options(
+withr::local_options(list(
   tibble.print_min = 4,
   tibble.print_max = 4,
   digits = 3
-)
+))
 set.seed(2024)
 theme_set(theme_dkge())
 ```

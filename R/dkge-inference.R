@@ -11,8 +11,12 @@
 #'
 #' @param Y SxQ matrix of subject values on the medoid parcellation (rows=subjects, cols=clusters)
 #' @param B number of sign-flip permutations
-#' @param center "mean" or "median" for the location statistic (t uses mean)
+#' @param center Location statistic. The beta API supports only `"mean"`,
+#'   matching the one-sample t statistic used for observed and randomized data.
 #' @param tail "two.sided" | "greater" | "less"
+#' @param flips Optional precomputed S-by-B matrix of -1/+1 signs. This is an
+#'   advanced reproducibility hook used to make serial and parallel execution
+#'   consume exactly the same randomization descriptors.
 #' @return A list with fields: `stat` (Q-vector of observed t-statistics), `p`
 #'   (Q-vector of max-T family-wise-error adjusted p-values), `p_unadj`
 #'   (Q-vector of per-column unadjusted permutation p-values), `maxnull`
@@ -21,9 +25,18 @@
 #'   `feature*` defaults); flip rows follow `rownames(Y)` (or `subject*`
 #'   defaults).
 #' @export
-dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
-                               tail = c("two.sided","greater","less")) {
-  center <- match.arg(center); tail <- match.arg(tail)
+dkge_signflip_maxT <- function(Y, B = 2000, center = "mean",
+                               tail = c("two.sided","greater","less"),
+                               flips = NULL) {
+  if (!is.character(center) || length(center) != 1L ||
+      !identical(center, "mean")) {
+    .dkge_abort(
+      "`center` must be \"mean\"; median-centered sign-flip inference is not implemented.",
+      "dkge_inference_compatibility_error"
+    )
+  }
+  B <- .dkge_validate_resample_B(B)
+  tail <- match.arg(tail)
   Y <- as.matrix(Y); S <- nrow(Y); Q <- ncol(Y)
   stopifnot(S >= 5, B >= 100)
   subject_ids <- rownames(Y) %||% paste0("subject", seq_len(S))
@@ -36,9 +49,19 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
   t_obs <- mu / (sdv / sqrt(S) + 1e-12)
 
   # generate random sign matrix (SxB)
-  flips <- matrix(sample(c(-1,1), S*B, replace=TRUE), S, B)
+  if (is.null(flips)) {
+    flips <- matrix(sample(c(-1,1), S*B, replace=TRUE), S, B)
+  } else {
+    flips <- as.matrix(flips)
+    if (!identical(dim(flips), c(S, as.integer(B))) ||
+        any(!flips %in% c(-1, 1))) {
+      .dkge_abort(
+        sprintf("`flips` must be a %d-by-%d matrix containing only -1 and 1.", S, B),
+        "dkge_inference_compatibility_error"
+      )
+    }
+  }
   dimnames(flips) <- list(subject_ids, permutation_ids)
-  # center data if using "median" just for display; t uses mean in any case
   Yc <- Y
 
   # Observed statistic on the tested side.
@@ -87,21 +110,31 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
 #' @param method Cross-fitting method: "loso", "kfold", or "analytic"
 #' @param inference Inference type:
 #'   - `"signflip"`: Sign-flip permutation test (default)
-#'   - `"freedman-lane"`: Freedman-Lane permutation (requires adapters)
 #'   - `"parametric"`: Parametric t-test (assumes normality)
 #' @param correction Multiple testing correction:
 #'   - `"maxT"`: Family-wise error rate via max-T (default)
 #'   - `"fdr"`: False discovery rate (Benjamini-Hochberg)
 #'   - `"bonferroni"`: Bonferroni correction
 #'   - `"none"`: No correction
-#' @param n_perm Number of permutations for non-parametric tests
+#' @param n_perm Number of permutations for sign-flip inference; ignored for
+#'   parametric inference.
 #' @param alpha Significance level for corrections
+#' @param center Location statistic for sign-flip inference. Only `"mean"` is
+#'   implemented in the beta API.
+#' @param parallel Logical; compute target-level inference through the parallel
+#'   apply backend. Randomization descriptors are generated serially first, so
+#'   serial and parallel results are identical for the same caller RNG state.
 #' @param transported Logical; retained for backwards compatibility. Deprecated.
 #' @param transport Optional list describing how to map subject clusters to a
 #'   shared reference before inference. Provide `centroids`, `medoid`, and an
 #'   optional mapper specification created via [dkge_mapper_spec()]. Additional
 #'   parameters (e.g. `epsilon`, `lambda_emb`) are forwarded when constructing
-#'   the default Sinkhorn mapper.
+#'   the default Sinkhorn mapper. Transported inference also requires an
+#'   explicit `provenance` from [dkge_transport_provenance()]. A
+#'   `fully_recomputed` declaration must provide
+#'   `randomization_recompute(signs, target_index, target_name,
+#'   contrast_results, observed_values)`, returning the randomized transported
+#'   subject-by-feature matrix after rebuilding every data-dependent step.
 #' @param ... Additional arguments passed to [dkge_contrast()] and inference functions
 #'
 #' @return An object of class `dkge_inference` containing:
@@ -129,7 +162,7 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
 #'
 #' The workflow is:
 #' 1. Compute contrast values via cross-fitting (LOSO/K-fold/analytic)
-#' 2. Apply inference procedure (sign-flip/Freedman-Lane/parametric)
+#' 2. Apply an implemented inference procedure (sign-flip or parametric)
 #' 3. Apply multiple testing correction (maxT/FDR/Bonferroni)
 #'
 #' For sign-flip inference, the max-T correction provides strong FWER control.
@@ -149,27 +182,67 @@ dkge_signflip_maxT <- function(Y, B = 2000, center = c("mean","median"),
 #' results
 #' }
 #'
-#' @seealso [dkge_contrast()], [dkge_signflip_maxT()], [dkge_freedman_lane()]
+#' @seealso [dkge_contrast()], [dkge_signflip_maxT()]
 #' @export
 dkge_infer <- function(fit, contrasts,
                       method = c("loso", "kfold", "analytic"),
-                      inference = c("signflip", "freedman-lane", "parametric"),
+                      inference = c("signflip", "parametric"),
                       correction = c("maxT", "fdr", "bonferroni", "none"),
                       n_perm = 2000,
                       alpha = 0.05,
+                      center = "mean",
+                      parallel = FALSE,
                       transported = FALSE,
                       transport = NULL,
                       ...) {
   method <- match.arg(method)
-  inference <- match.arg(inference)
+  if (missing(inference)) {
+    inference <- "signflip"
+  } else if (!is.character(inference) || length(inference) != 1L) {
+    .dkge_abort("`inference` must name one inference method.",
+                "dkge_inference_compatibility_error")
+  }
   correction <- match.arg(correction)
+  if (identical(inference, "signflip")) {
+    n_perm <- .dkge_validate_resample_B(n_perm)
+  }
+  alpha <- .dkge_validate_probability(alpha, "alpha")
+  transport_recompute <- transport$randomization_recompute %||% NULL
+  transport_provenance <- if (is.null(transport)) {
+    NULL
+  } else {
+    transport$provenance %||% .dkge_data_derived_loading_provenance()
+  }
+
+  transport_provenance <- .dkge_validate_inference_compatibility(
+    inference = inference,
+    correction = correction,
+    has_transport = !is.null(transport),
+    transport_provenance = transport_provenance,
+    transport_recompute = transport_recompute,
+    center = center,
+    n_targets = NA_integer_,
+    parallel = parallel
+  )
 
   if (!is.null(transported) && transported) {
     warning("`transported` argument is deprecated; supply transported matrices directly to inference helpers if needed.",
             call. = FALSE)
   }
 
-  contrast_results <- dkge_contrast(fit, contrasts, method = method, ...)
+  contrast_results <- dkge_contrast(
+    fit, contrasts, method = method, parallel = parallel, ...
+  )
+  .dkge_validate_inference_compatibility(
+    inference = inference,
+    correction = correction,
+    has_transport = !is.null(transport),
+    transport_provenance = transport_provenance,
+    transport_recompute = transport_recompute,
+    center = center,
+    n_targets = length(contrast_results$contrasts),
+    parallel = parallel
+  )
 
   mapped_values <- NULL
   transport_results <- NULL
@@ -191,7 +264,9 @@ dkge_infer <- function(fit, contrasts,
       betas = transport$betas,
       sizes = transport$sizes,
       mapper = mapper_spec,
-      method = method_arg
+      method = method_arg,
+      transport_cache = transport$transport_cache,
+      provenance = transport_provenance
     )
     args <- c(args, mapper_args)
     args <- args[!vapply(args, is.null, logical(1))]
@@ -201,8 +276,12 @@ dkge_infer <- function(fit, contrasts,
 
   # Step 2: Apply inference procedure
   infer_results <- switch(inference,
-    signflip = .infer_signflip(contrast_results, n_perm, correction, mapped_values),
-    `freedman-lane` = .infer_freedman_lane(contrast_results, n_perm, correction, ...),
+    signflip = .infer_signflip(
+      contrast_results, n_perm, correction, mapped_values,
+      center = center, parallel = parallel,
+      transport_recompute = transport_recompute,
+      transport_provenance = transport_provenance
+    ),
     parametric = .infer_parametric(contrast_results, correction)
   )
 
@@ -222,53 +301,198 @@ dkge_infer <- function(fit, contrasts,
   structure(infer_results, class = "dkge_inference")
 }
 
+#' Validate the complete dkge_infer compatibility contract
+#' @keywords internal
+#' @noRd
+.dkge_validate_inference_compatibility <- function(
+    inference,
+    correction,
+    has_transport,
+    transport_provenance = NULL,
+    transport_recompute = NULL,
+    center,
+    n_targets,
+    parallel) {
+  abort <- function(message) {
+    .dkge_abort(message, "dkge_inference_compatibility_error")
+  }
+  if (!is.character(inference) || length(inference) != 1L ||
+      !inference %in% c("signflip", "parametric", "freedman-lane")) {
+    abort("`inference` must be \"signflip\" or \"parametric\".")
+  }
+  if (identical(inference, "freedman-lane")) {
+    abort("Freedman-Lane is not implemented by `dkge_infer()` and is not a supported beta choice.")
+  }
+  if (!is.character(correction) || length(correction) != 1L ||
+      !correction %in% c("maxT", "fdr", "bonferroni", "none")) {
+    abort("`correction` must be one of maxT, fdr, bonferroni, or none.")
+  }
+  if (!is.logical(has_transport) || length(has_transport) != 1L ||
+      is.na(has_transport)) {
+    abort("`has_transport` must be one TRUE/FALSE value.")
+  }
+  if (!is.logical(parallel) || length(parallel) != 1L || is.na(parallel)) {
+    abort("`parallel` must be one TRUE/FALSE value.")
+  }
+  if (!is.character(center) || length(center) != 1L ||
+      !identical(center, "mean")) {
+    abort("`center` must be \"mean\"; no other sign-flip location statistic is implemented.")
+  }
+  if (identical(inference, "parametric") && identical(correction, "maxT")) {
+    abort("Parametric inference does not implement maxT correction; use fdr, bonferroni, or none.")
+  }
+  if (identical(inference, "parametric") && has_transport) {
+    abort("Parametric inference with transport is unsupported; use signflip or omit transport.")
+  }
+  if (length(n_targets) != 1L ||
+      (!is.na(n_targets) &&
+       (!is.numeric(n_targets) || !is.finite(n_targets) ||
+        n_targets < 1 || n_targets != as.integer(n_targets)))) {
+    abort("`n_targets` must be a positive integer when known.")
+  }
+  if (has_transport) {
+    if (is.null(transport_provenance)) {
+      .dkge_abort(
+        "Transported inference requires explicit transport provenance; descriptive loading-derived transport is not inferentially valid by default.",
+        "dkge_transport_inference_error"
+      )
+    }
+    transport_provenance <- .dkge_validate_transport_inference_provenance(
+      transport_provenance,
+      randomization_recompute = transport_recompute
+    )
+  }
+  invisible(transport_provenance)
+}
+
 #' Sign-flip inference helper
 #' @keywords internal
 #' @noRd
-.infer_signflip <- function(contrast_results, n_perm, correction, mapped_values = NULL) {
+.infer_signflip <- function(contrast_results, n_perm, correction,
+                            mapped_values = NULL, center = "mean",
+                            parallel = FALSE,
+                            transport_recompute = NULL,
+                            transport_provenance = NULL) {
   n_contrasts <- length(contrast_results$contrasts)
-
-  stats <- vector("list", n_contrasts)
-  p_values <- vector("list", n_contrasts)
-  p_adjusted <- vector("list", n_contrasts)
-
-  for (i in seq_len(n_contrasts)) {
+  target_names <- names(contrast_results$contrasts)
+  if (is.null(target_names) || any(!nzchar(target_names))) {
+    target_names <- paste0("target", seq_len(n_contrasts))
+  }
+  Y_list <- lapply(seq_len(n_contrasts), function(i) {
     Y <- if (!is.null(mapped_values)) {
       mapped_values[[i]]
     } else {
       as.matrix(contrast_results, contrast = i)
     }
+    Y <- as.matrix(Y)
+    if (is.null(colnames(Y))) {
+      colnames(Y) <- paste0("feature", seq_len(ncol(Y)))
+    }
+    Y
+  })
+  names(Y_list) <- target_names
+
+  # Draw all randomization descriptors before selecting an execution backend.
+  flip_list <- lapply(Y_list, function(Y) {
+    matrix(sample(c(-1, 1), nrow(Y) * n_perm, replace = TRUE),
+           nrow(Y), n_perm)
+  })
+
+  one_target <- function(i) {
+    Y <- Y_list[[i]]
     n_subjects <- nrow(Y)
 
+    randomized_values <- function(b) {
+      signs <- flip_list[[i]][, b]
+      if (is.null(transport_recompute)) {
+        return(signs * Y)
+      }
+      Y_randomized <- transport_recompute(
+        signs = signs,
+        target_index = i,
+        target_name = target_names[[i]],
+        contrast_results = contrast_results,
+        observed_values = Y
+      )
+      Y_randomized <- as.matrix(Y_randomized)
+      if (!is.numeric(Y_randomized) || any(!is.finite(Y_randomized)) ||
+          !identical(dim(Y_randomized), dim(Y))) {
+        .dkge_abort(
+          sprintf(
+            "Transport recomputation for target '%s' must return a finite numeric %d-by-%d matrix.",
+            target_names[[i]], nrow(Y), ncol(Y)
+          ),
+          "dkge_transport_inference_error"
+        )
+      }
+      dimnames(Y_randomized) <- dimnames(Y)
+      Y_randomized
+    }
+
     if (correction == "maxT") {
-      result <- dkge_signflip_maxT(Y, B = n_perm)
-      stats[[i]] <- result$stat
-      # Report the uncorrected p in p_value and the max-T FWER p in p_adjusted,
-      # instead of duplicating the adjusted value into both.
-      p_values[[i]] <- result$p_unadj %||% result$p
-      p_adjusted[[i]] <- result$p
-      next
+      if (is.null(transport_recompute)) {
+        result <- dkge_signflip_maxT(
+          Y, B = n_perm, center = center, flips = flip_list[[i]]
+        )
+      } else {
+        mu <- colMeans(Y)
+        se <- apply(Y, 2, stats::sd) / sqrt(pmax(n_subjects, 1))
+        statistic <- mu / (se + 1e-12)
+        names(statistic) <- colnames(Y)
+        null_stats <- vapply(seq_len(n_perm), function(b) {
+          Yb <- randomized_values(b)
+          colMeans(Yb) /
+            (apply(Yb, 2, stats::sd) / sqrt(pmax(n_subjects, 1)) + 1e-12)
+        }, numeric(ncol(Y)))
+        if (is.null(dim(null_stats))) {
+          null_stats <- matrix(null_stats, nrow = ncol(Y))
+        }
+        maxnull <- apply(abs(null_stats), 2, max)
+        p_unadj <- vapply(seq_along(statistic), function(j) {
+          (1 + sum(abs(null_stats[j, ]) >= abs(statistic[j]))) / (n_perm + 1)
+        }, numeric(1))
+        p_adjusted <- vapply(abs(statistic), function(value) {
+          (1 + sum(maxnull >= value)) / (n_perm + 1)
+        }, numeric(1))
+        names(p_unadj) <- names(statistic)
+        names(p_adjusted) <- names(statistic)
+        result <- list(stat = statistic, p_unadj = p_unadj, p = p_adjusted)
+      }
+      return(list(
+        statistic = result$stat,
+        p_value = result$p_unadj %||% result$p,
+        p_adjusted = result$p
+      ))
     }
 
     mu <- colMeans(Y)
     se <- apply(Y, 2, stats::sd) / sqrt(pmax(n_subjects, 1))
-    stats[[i]] <- mu / (se + 1e-12)
+    statistic <- mu / (se + 1e-12)
+    names(statistic) <- colnames(Y)
 
-    flips <- matrix(sample(c(-1, 1), n_subjects * n_perm, replace = TRUE),
-                    n_subjects, n_perm)
-    null_stats <- apply(flips, 2, function(s) {
-      Y_flip <- s * Y
+    null_stats <- vapply(seq_len(n_perm), function(b) {
+      Y_flip <- randomized_values(b)
       mu_flip <- colMeans(Y_flip)
       se_flip <- apply(Y_flip, 2, stats::sd) / sqrt(pmax(n_subjects, 1))
       mu_flip / (se_flip + 1e-12)
-    })
+    }, numeric(ncol(Y)))
+    if (is.null(dim(null_stats))) {
+      null_stats <- matrix(null_stats, nrow = ncol(Y))
+    }
 
-    p_values[[i]] <- vapply(seq_along(stats[[i]]), function(j) {
-      (1 + sum(abs(null_stats[j, ]) >= abs(stats[[i]][j]))) / (n_perm + 1)
+    p_value <- vapply(seq_along(statistic), function(j) {
+      (1 + sum(abs(null_stats[j, ]) >= abs(statistic[j]))) / (n_perm + 1)
     }, numeric(1))
-
-    p_adjusted[[i]] <- p_values[[i]]
+    names(p_value) <- names(statistic)
+    list(statistic = statistic, p_value = p_value, p_adjusted = p_value)
   }
+
+  target_results <- .dkge_apply(
+    seq_len(n_contrasts), one_target, parallel = parallel
+  )
+  stats <- setNames(lapply(target_results, `[[`, "statistic"), target_names)
+  p_values <- setNames(lapply(target_results, `[[`, "p_value"), target_names)
+  p_adjusted <- setNames(lapply(target_results, `[[`, "p_adjusted"), target_names)
 
   list(
     contrasts = contrast_results,
@@ -278,7 +502,13 @@ dkge_infer <- function(fit, contrasts,
     method = contrast_results$method,
     inference = "signflip",
     correction = correction,
-    metadata = list(n_perm = n_perm)
+    exactness = transport_provenance$exactness %||% "conditional_exact",
+    metadata = list(
+      n_perm = n_perm,
+      center = center,
+      parallel = parallel,
+      transport_provenance = transport_provenance
+    )
   )
 }
 
@@ -287,6 +517,10 @@ dkge_infer <- function(fit, contrasts,
 #' @noRd
 .infer_parametric <- function(contrast_results, correction) {
   n_contrasts <- length(contrast_results$contrasts)
+  target_names <- names(contrast_results$contrasts)
+  if (is.null(target_names) || any(!nzchar(target_names))) {
+    target_names <- paste0("target", seq_len(n_contrasts))
+  }
 
   stats <- vector("list", n_contrasts)
   p_values <- vector("list", n_contrasts)
@@ -299,10 +533,15 @@ dkge_infer <- function(fit, contrasts,
     mu <- colMeans(Y)
     se <- apply(Y, 2, stats::sd) / sqrt(n_subjects)
     t_stats <- mu / (se + 1e-12)
+    feature_names <- colnames(Y) %||% paste0("feature", seq_len(ncol(Y)))
+    names(t_stats) <- feature_names
 
     stats[[i]] <- t_stats
     p_values[[i]] <- 2 * pt(-abs(t_stats), df_vec[i])
+    names(p_values[[i]]) <- feature_names
   }
+  names(stats) <- target_names
+  names(p_values) <- target_names
 
   list(
     contrasts = contrast_results,
@@ -312,6 +551,7 @@ dkge_infer <- function(fit, contrasts,
     method = contrast_results$method,
     inference = "parametric",
     correction = correction,
+    exactness = "asymptotic",
     metadata = list(df = df_vec)
   )
 }
@@ -351,6 +591,8 @@ dkge_infer <- function(fit, contrasts,
 #'
 #' @param x A dkge_inference object
 #' @param ... Additional arguments (unused)
+#' @return `x`, invisibly.
+#' @method print dkge_inference
 #' @export
 print.dkge_inference <- function(x, ...) {
   cat("DKGE Inference Results\n")

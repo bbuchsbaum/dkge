@@ -7,7 +7,7 @@
 dkge_inference_spec(
   B = 2000L,
   tail = c("two.sided", "greater", "less"),
-  center = c("mean", "median", "none")
+  center = "mean"
 )
 }
 \arguments{
@@ -15,7 +15,8 @@ dkge_inference_spec(
 
 \item{tail}{Tail of the test: "two.sided", "greater", or "less".}
 
-\item{center}{Centering method for permutations: "mean", "median", or "none".}
+\item{center}{Location statistic for permutations. Only `"mean"` is
+implemented by the beta inference service.}
 }
 \value{
 Object with class `dkge_inference_spec`.

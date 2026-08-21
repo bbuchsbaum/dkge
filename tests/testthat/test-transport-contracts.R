@@ -20,6 +20,53 @@ test_that("joint plans and application operators obey distinct conservation laws
   expect_equal(sum(t(extensive) %*% c(2, 5)), 7, tolerance = 1e-14)
 })
 
+test_that("application operators extend zero-mass support with zeros", {
+  source_null <- rbind(c(0.3, 0.7), c(0, 0))
+  extensive <- dkge:::.dkge_transport_operator(
+    source_null, c(1, 0), c(0.3, 0.7), "extensive"
+  )
+  expect_equal(extensive[2, ], c(0, 0), tolerance = 0)
+  expect_equal(rowSums(extensive), c(1, 0), tolerance = 1e-15)
+  expect_equal(sum(t(extensive) %*% c(5, 0)), 5, tolerance = 1e-15)
+
+  target_null <- rbind(c(0.4, 0), c(0.6, 0))
+  intensive <- dkge:::.dkge_transport_operator(
+    target_null, c(0.4, 0.6), c(1, 0), "intensive"
+  )
+  expect_equal(intensive[, 2], c(0, 0), tolerance = 0)
+  expect_equal(colSums(intensive), c(1, 0), tolerance = 1e-15)
+  expect_equal(as.numeric(t(intensive) %*% rep(7, 2)), c(7, 0),
+               tolerance = 1e-15)
+})
+
+test_that("public medoid transport carries zero-mass support end to end", {
+  A_list <- list(diag(2), diag(2))
+  centroids <- list(
+    rbind(c(0, 0, 0), c(1, 0, 0)),
+    rbind(c(0, 0, 0), c(1, 0, 0))
+  )
+
+  extensive <- dkge_transport_to_medoid_sinkhorn(
+    list(c(5, 0), c(2, 3)), A_list, centroids,
+    sizes = list(c(1, 0), c(1, 0)), medoid = 2,
+    value_type = "extensive", warm_start = FALSE
+  )
+  expect_equal(extensive$operators[[1]][2, ], c(0, 0), tolerance = 0)
+  expect_equal(extensive$operators[[2]], diag(c(1, 0)), tolerance = 0)
+  expect_equal(sum(extensive$subj_values[1, ]), 5, tolerance = 1e-12)
+  expect_equal(extensive$subj_values[2, ], c(2, 0), tolerance = 0)
+
+  intensive <- dkge_transport_to_medoid_sinkhorn(
+    list(rep(7, 2), c(7, 9)), A_list, centroids,
+    sizes = list(c(1, 1), c(1, 0)), medoid = 2,
+    value_type = "intensive", warm_start = FALSE
+  )
+  expect_equal(intensive$operators[[1]][, 2], c(0, 0), tolerance = 0)
+  expect_equal(intensive$operators[[2]], diag(c(1, 0)), tolerance = 0)
+  expect_equal(intensive$subj_values[1, ], c(7, 0), tolerance = 1e-12)
+  expect_equal(intensive$subj_values[2, ], c(7, 0), tolerance = 0)
+})
+
 test_that("medoid transport preserves constants or total mass end to end", {
   A_list <- list(
     diag(2),

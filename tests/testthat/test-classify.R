@@ -58,15 +58,15 @@ test_that("dkge_targets rematches both named map axes and rejects ambiguity", {
   )
 })
 
-test_that("dkge_classify returns metrics", {
+test_that("dkge_classify returns descriptive metrics", {
   fixture <- make_classification_fit()
   fit <- fixture$fit
-  cls <- dkge_classify(fit, targets = ~ A + B, n_perm = 5, seed = 11)
+  cls <- dkge_classify(fit, targets = ~ A + B, n_perm = 0, seed = 11)
   expect_s3_class(cls, "dkge_classification")
   df <- as.data.frame(cls)
   expect_s3_class(df, "data.frame")
   expect_true(all(df$metric %in% cls$metric))
-  expect_true(all(df$n_perm == 5))
+  expect_true(all(df$n_perm == 0))
 })
 
 test_that("dkge_classify supports logit backend", {
@@ -76,6 +76,27 @@ test_that("dkge_classify supports logit backend", {
   expect_s3_class(cls, "dkge_classification")
   df <- as.data.frame(cls)
   expect_true(all(df$metric %in% cls$metric))
+})
+
+test_that("dkge_classify rejects repeated assessment folds", {
+  fixture <- make_classification_fit(S = 4, seed = 31)
+  folds <- dkge_define_folds(
+    fixture$fit,
+    type = "custom",
+    assignments = list(c(1L, 2L), c(2L, 3L, 4L)),
+    partition = "repeated"
+  )
+
+  expect_error(
+    dkge_classify(
+      fixture$fit,
+      targets = ~ A,
+      folds = folds,
+      n_perm = 0
+    ),
+    "DKGE classification does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
 })
 
 test_that("dkge_classify lambda control grid works", {
@@ -95,6 +116,61 @@ test_that("dkge_classify lambda control function works", {
   )
 })
 
+test_that("cell permutations invoke full-pipeline recomputation", {
+  fixture <- make_classification_fit(S = 4)
+  calls <- 0L
+  recompute <- function(labels, row_data, target, fit, fold_assignments,
+                        method, mode, lambda, metric, class_weights,
+                        standardize_within_fold) {
+    calls <<- calls + 1L
+    list(metrics = stats::setNames(0.5, metric))
+  }
+  cls <- dkge_classify(
+    fixture$fit,
+    targets = ~ A,
+    mode = "cell_cross",
+    lambda = 1e-3,
+    metric = "accuracy",
+    n_perm = 3,
+    seed = 91,
+    control = list(randomization_recompute = recompute)
+  )
+  expect_equal(calls, 3L)
+  expect_identical(cls$randomization_exactness,
+                   "full_pipeline_recomputed")
+  expect_identical(cls$results$A$randomization_exactness,
+                   "full_pipeline_recomputed")
+})
+
+test_that("cell recomputation aligns permutation metrics by name", {
+  fixture <- make_classification_fit(S = 4, seed = 52)
+  recompute <- function(...) {
+    list(metrics = c(extra = 99, brier = 0.3, logloss = 0.2,
+                     accuracy = 0.1))
+  }
+  metrics <- c("accuracy", "logloss", "brier")
+
+  expect_no_warning(
+    cls <- dkge_classify(
+      fixture$fit,
+      targets = ~ A,
+      mode = "cell_cross",
+      lambda = 1e-3,
+      metric = metrics,
+      n_perm = 2,
+      seed = 73,
+      control = list(randomization_recompute = recompute)
+    )
+  )
+
+  expected <- matrix(
+    rep(c(0.1, 0.2, 0.3), each = 2L),
+    nrow = 2L,
+    dimnames = list(NULL, metrics)
+  )
+  expect_equal(cls$results$A$permutations[, metrics, drop = FALSE], expected)
+})
+
 test_that("dkge_classify delta mode handles rank-1 targets", {
   fixture <- make_classification_fit(S = 5)  # S > rank to avoid singular covariance
   fit <- fixture$fit
@@ -111,8 +187,13 @@ test_that("dkge_classify delta mode handles rank-1 targets", {
     scope = "within_subject"
   )
   class(target) <- c("dkge_target", "list")
-  cls <- dkge_classify(fit, targets = list(target), mode = "delta", n_perm = 10,
-                       scope = "signflip", seed = 5)
+  expect_warning(
+    cls <- dkge_classify(
+      fit, targets = list(target), mode = "delta", lambda = 1e-3,
+      n_perm = 10, scope = "signflip", seed = 5
+    ),
+    "requires subject labels"
+  )
   expect_s3_class(cls, "dkge_classification")
   expect_true(all(names(cls$results[[1]]$metrics) == cls$metric))
 })
@@ -220,7 +301,7 @@ test_that("dkge_pipeline integrates classification", {
   contrast[1] <- 1
   pipeline <- dkge_pipeline(fit = fit,
                             contrasts = contrast,
-                            classification = list(targets = ~ A, n_perm = 3, seed = 2),
+                            classification = list(targets = ~ A, n_perm = 0),
                             inference = NULL)
   expect_true("classification" %in% names(pipeline))
   expect_s3_class(pipeline$classification, "dkge_classification")
