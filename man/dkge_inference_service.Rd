@@ -7,12 +7,12 @@
 dkge_inference_service(spec = NULL, ...)
 }
 \arguments{
-\item{spec}{Inference specification (list or `dkge_inference_spec`).}
+\item{spec}{Inference specification (list or \code{dkge_inference_spec}).}
 
 \item{...}{Additional parameters merged into the specification.}
 }
 \value{
-Object of class `dkge_inference_service`.
+Object of class \code{dkge_inference_service}.
 }
 \description{
 Construct an inference service

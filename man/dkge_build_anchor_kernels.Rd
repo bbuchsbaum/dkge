@@ -22,30 +22,30 @@ dkge_build_anchor_kernels(
 )
 }
 \arguments{
-\item{features_list}{List of length `S`; element `s` is an `n_s x d` feature
-matrix for subject `s`.}
+\item{features_list}{List of length \code{S}; element \code{s} is an \verb{n_s x d} feature
+matrix for subject \code{s}.}
 
-\item{K_item_list}{List of length `S`; element `s` is an `n_s x n_s` PSD item
-kernel aligned with `features_list[[s]]`.}
+\item{K_item_list}{List of length \code{S}; element \code{s} is an \verb{n_s x n_s} PSD item
+kernel aligned with \code{features_list[[s]]}.}
 
-\item{folds}{Optional fold specification. Accepts `NULL` (single context), a
-list of held-out subject indices, or a `dkge_folds` object.}
+\item{folds}{Optional fold specification. Accepts \code{NULL} (single context), a
+list of held-out subject indices, or a \code{dkge_folds} object.}
 
 \item{L}{Number of anchors.}
 
-\item{method}{Anchor selection strategy (`"kcenter"`, `"kmeanspp"`,
-`"random"`, or `"dkpp"`).}
+\item{method}{Anchor selection strategy (\code{"kcenter"}, \code{"kmeanspp"},
+\code{"random"}, or \code{"dkpp"}).}
 
 \item{seed}{Integer seed applied per fold (incremented by fold index).}
 
-\item{sigma}{Optional bandwidth; when `NULL`, fold-specific heuristics are
+\item{sigma}{Optional bandwidth; when \code{NULL}, fold-specific heuristics are
 used.}
 
-\item{rho}{Fraction used by the DPP stage when `method = "dkpp"`.}
+\item{rho}{Fraction used by the DPP stage when \code{method = "dkpp"}.}
 
-\item{fill}{Completion strategy for `method = "dkpp"`.}
+\item{fill}{Completion strategy for \code{method = "dkpp"}.}
 
-\item{center}{Logical; when `TRUE`, subtract column means of the feature
+\item{center}{Logical; when \code{TRUE}, subtract column means of the feature
 response matrix before forming the projection.}
 
 \item{whiten}{Logical; apply whitening with the anchor Gram inverse square
@@ -53,20 +53,20 @@ root.}
 
 \item{eps}{Diagonal jitter used during whitening.}
 
-\item{unit_trace}{Logical; trace-normalise each subject kernel to maintain
+\item{unit_trace}{Logical; trace-normalize each subject kernel to maintain
 comparable scale.}
 
 \item{item_weights}{Optional list of numeric vectors providing per-item
-weights (`length == n_s`).}
+weights (\code{length == n_s}).}
 }
 \value{
 A list indexed by folds; each element contains the anchors, bandwidth,
-  aligned kernels, anchor identifiers, and the fold's train/test indices.
+aligned kernels, anchor identifiers, and the fold's train/test indices.
 }
 \description{
 Projects per-subject item kernels onto a shared anchor basis derived from a
 pooled training feature set inside each cross-validation fold. The resulting
-aligned kernels all have dimension `L x L` with identical ordering.
+aligned kernels all have dimension \verb{L x L} with identical ordering.
 }
 \examples{
 set.seed(1)

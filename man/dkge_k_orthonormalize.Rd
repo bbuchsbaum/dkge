@@ -13,14 +13,14 @@ dkge_k_orthonormalize(W, K, Kroots = NULL)
 
 \item{Kroots}{Optional precomputed kernel roots retained for API
 compatibility. Orthonormalization is computed from the exact Gram matrix
-`t(W) %*% K %*% W`, so null directions of a PSD kernel are not jittered
+\code{t(W) \%*\% K \%*\% W}, so null directions of a PSD kernel are not jittered
 into artificial metric dimensions.}
 }
 \value{
 qxr matrix with K-orthonormal columns
 }
 \description{
-Ensures the columns of `W` are orthonormal with respect to the
+Ensures the columns of \code{W} are orthonormal with respect to the
 design kernel metric: U^T K U = I.
 }
 \examples{

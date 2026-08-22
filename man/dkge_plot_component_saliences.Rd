@@ -12,16 +12,16 @@ dkge_plot_component_saliences(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{comps}{Components to include (defaults to first min(rank, 6)).}
 
-\item{scale}{Optional within-component display scaling. `"raw"` leaves
-saliences on their original scale, `"unit"` rescales each component to unit
-K-norm of the underlying latent vector (see Details), and `"zscore"`
+\item{scale}{Optional within-component display scaling. \code{"raw"} leaves
+saliences on their original scale, \code{"unit"} rescales each component to unit
+K-norm of the underlying latent vector (see Details), and \code{"zscore"}
 z-scores each component across effects.}
 
-\item{type}{Plot type. `"heatmap"` is the most general view; `"profile"`
+\item{type}{Plot type. \code{"heatmap"} is the most general view; \code{"profile"}
 draws one line per component across ordered effect rows.}
 }
 \value{

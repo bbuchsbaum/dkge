@@ -7,18 +7,18 @@
 dkge_variance_explained(fit, relative_to = c("kept", "total"))
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 
 \item{relative_to}{Compute variance proportions relative to "kept" (default,
 only the retained components) or "total" (all possible components).}
 }
 \value{
-Data frame with columns `component`, `sdev`, `variance`,
-  `prop_var`, and `cum_prop_var`.
+Data frame with columns \code{component}, \code{sdev}, \code{variance},
+\code{prop_var}, and \code{cum_prop_var}.
 }
 \description{
 Returns the standard deviation, variance, and cumulative variance explained
-by the DKGE components extracted in [dkge_fit()].
+by the DKGE components extracted in \code{\link[=dkge_fit]{dkge_fit()}}.
 }
 \examples{
 toy <- dkge_sim_toy(

@@ -7,29 +7,29 @@
 dkge_mapper(type = c("knn", "sinkhorn", "ridge", "gw"), ...)
 }
 \arguments{
-\item{type}{Mapper backend identifier: `"knn"` (barycentric kNN),
-`"sinkhorn"` (OT over point clouds), `"ridge"`, `"gw"`, or a custom
-identifier whose `fit_mapper.dkge_mapper_<type>()` method is supplied by
+\item{type}{Mapper backend identifier: \code{"knn"} (barycentric kNN),
+\code{"sinkhorn"} (OT over point clouds), \code{"ridge"}, \code{"gw"}, or a custom
+identifier whose \verb{fit_mapper.dkge_mapper_<type>()} method is supplied by
 an extension. The ridge and Gromov-Wasserstein backends require plugins.}
 
 \item{...}{Backend-specific parameters stored within the mapper object
-(e.g. `k`, `sigx`, `sigz` for kNN; `epsilon` for Sinkhorn).}
+(e.g. \code{k}, \code{sigx}, \code{sigz} for kNN; \code{epsilon} for Sinkhorn).}
 }
 \value{
-A `dkge_mapper` S3 descriptor consumed by [fit_mapper()] and
-  [apply_mapper()].
+A \code{dkge_mapper} S3 descriptor consumed by \code{\link[=fit_mapper]{fit_mapper()}} and
+\code{\link[=apply_mapper]{apply_mapper()}}.
 }
 \description{
-Constructs a mapper descriptor for the **dense rendering / anchor pipeline**
+Constructs a mapper descriptor for the \strong{dense rendering / anchor pipeline}
 — used when projecting subject-space voxel/parcel values onto a set of 3-D
 spatial anchor points (e.g., medoid centroids).  Pass the result to
-[dkge_build_renderer()], [dkge_render_subject_values()], or directly to
-[fit_mapper()] together with `subj_points` / `anchor_points` matrices.
+\code{\link[=dkge_build_renderer]{dkge_build_renderer()}}, \code{\link[=dkge_render_subject_values]{dkge_render_subject_values()}}, or directly to
+\code{\link[=fit_mapper]{fit_mapper()}} together with \code{subj_points} / \code{anchor_points} matrices.
 
-Use [dkge_mapper_spec()] instead when you need a **transport pipeline
-mapper** that operates in an abstract feature space (ridge regression,
-Sinkhorn OT over embeddings) for functions such as [dkge_prepare_transport()]
-or [dkge_transport_spec()].
+Use \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}} instead when you need a \strong{transport pipeline
+mapper} that operates in an abstract feature space (ridge regression,
+Sinkhorn OT over embeddings) for functions such as \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}
+or \code{\link[=dkge_transport_spec]{dkge_transport_spec()}}.
 }
 \examples{
 spec <- dkge_mapper(type = "knn", k = 3, sigx = 1)

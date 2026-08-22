@@ -15,30 +15,30 @@ dkge_plot_subject_component_projections(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{groups}{Optional vector of group labels, or a data frame with subject
 and group columns. Named vectors are matched by subject name and must cover
 every subject; unnamed vectors are matched positionally.}
 
-\item{mode}{`"loso"` for held-out supplementary projections or `"pooled"` for
+\item{mode}{\code{"loso"} for held-out supplementary projections or \code{"pooled"} for
 descriptive projections on the pooled fit.}
 
 \item{comps}{Components to include.}
 
 \item{align}{Rotate each LOSO fold basis onto the pooled component axes
-(`fit$U`) by K-Procrustes before scoring.}
+(\code{fit$U}) by K-Procrustes before scoring.}
 
 \item{ridge}{Ridge passed to the LOSO fold basis builder.}
 
 \item{projections}{Optional data frame previously returned by
-[dkge_subject_component_projections()]. Supplying it skips recomputation,
-which matters for `mode = "loso"` because that path refits one basis per
-subject. It must contain `subject`, `group`, `component`, and a numeric
-`projection`. When supplied, `fit`, `groups`, `comps`, `align`, `ridge`,
-and `mode` are all ignored: the panel label is read from the frame's own
-`mode` column, and a frame without one (or mixing modes) is left
-unlabelled rather than being captioned with the `mode` default.}
+\code{\link[=dkge_subject_component_projections]{dkge_subject_component_projections()}}. Supplying it skips recomputation,
+which matters for \code{mode = "loso"} because that path refits one basis per
+subject. It must contain \code{subject}, \code{group}, \code{component}, and a numeric
+\code{projection}. When supplied, \code{fit}, \code{groups}, \code{comps}, \code{align}, \code{ridge},
+and \code{mode} are all ignored: the panel label is read from the frame's own
+\code{mode} column, and a frame without one (or mixing modes) is left
+unlabeled rather than being captioned with the \code{mode} default.}
 }
 \value{
 A ggplot object.

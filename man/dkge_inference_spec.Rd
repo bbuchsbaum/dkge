@@ -18,7 +18,7 @@ dkge_inference_spec(
 \item{center}{Centering method for permutations: "mean", "median", or "none".}
 }
 \value{
-Object with class `dkge_inference_spec`.
+Object with class \code{dkge_inference_spec}.
 }
 \description{
 Inference specification helper

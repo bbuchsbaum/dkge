@@ -7,22 +7,22 @@
 dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 8, sigma = NULL)
 }
 \arguments{
-\item{anchors}{Anchor coordinate matrix (`Q x 3`).}
+\item{anchors}{Anchor coordinate matrix (\verb{Q x 3}).}
 
-\item{vox_xyz}{Voxel coordinate matrix (`V x 3`).}
+\item{vox_xyz}{Voxel coordinate matrix (\verb{V x 3}).}
 
 \item{k}{Number of anchors per voxel (default 8).}
 
-\item{sigma}{Optional Gaussian length-scale. If `NULL`, it is set to the
+\item{sigma}{Optional Gaussian length-scale. If \code{NULL}, it is set to the
 square root of the median squared distance between voxels and their
 nearest anchors.}
 }
 \value{
-A decoder object storing neighbour indices, weights, and a sparse
-  matrix implementing the transformation.
+A decoder object storing neighbor indices, weights, and a sparse
+matrix implementing the transformation.
 }
 \description{
-Each voxel is represented as a convex combination of its `k` nearest
+Each voxel is represented as a convex combination of its \code{k} nearest
 anchors using Gaussian weights. The result can be reused to decode
 any anchor-level map.
 }

@@ -7,9 +7,9 @@
 dkge_cluster_ts(bv, labels, ids = NULL, chunker = NULL)
 }
 \arguments{
-\item{bv}{A `neuroim2::NeuroVec` object (4D time-series data, TxXxYxZ).}
+\item{bv}{A \code{neuroim2::NeuroVec} object (4D time-series data, TxXxYxZ).}
 
-\item{labels}{A `neuroim2::NeuroVol` with integer cluster identifiers
+\item{labels}{A \code{neuroim2::NeuroVol} with integer cluster identifiers
 (0 indicates background).}
 
 \item{ids}{Optional subset of cluster IDs to retain.}

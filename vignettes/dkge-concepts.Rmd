@@ -1,5 +1,8 @@
 ---
 title: 'DKGE Concepts: What Is Estimated and What Can Be Claimed?'
+description: >
+  Separate what DKGE estimates from what you may claim about it, and decide
+  the estimand before fitting.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -64,7 +67,23 @@ procedure can support.
 This page supplies that mental model. For runnable setup and spatial transport,
 start with `vignette("dkge")` and `vignette("dkge-workflow")`.
 
+The decomposition is easiest to understand as a sequence:
+
+```text
+subject beta blocks -> small effect-by-effect moments -> pooled raw moment -> design/kernel geometry -> components
+```
+
+The first arrow summarizes spatial covariation within each subject. The middle
+step combines subjects. Only then does the design kernel say which directions
+in effect space should count as nearby or important. This ordering is why
+missingness and precision must be handled before the kernel transform.
+
 ## What enters the decomposition?
+
+Terms used throughout this page and the rest of the suite are defined in
+`?dkge-glossary`: effect space, design kernel, salience, cross-fitting, medoid,
+transport, and the estimand each analysis targets.
+
 
 For subject \(s\), let \(B_s\) be the `q` by `P_s` beta matrix. In the simplest
 unweighted case, its raw effect-space moment is
@@ -89,6 +108,11 @@ eigendecomposes \(\widehat C\), then maps its retained eigenvectors back through
 \(K^{-1/2}\) to obtain the group basis \(U\). The columns of \(U\) are
 K-orthonormal: \(U^\top K U = I\).
 
+In plain language, (M) records which effects tend to have large spatial
+patterns together. (R) puts subjects' design estimates on a common ruler.
+(K) defines the scientific geometry among effect directions. The eigensolve
+then finds a small set of directions that summarize the transformed moment.
+
 You can inspect each stage on a fitted object:
 
 ```{r inspect-moment-stages}
@@ -105,6 +129,36 @@ c(
   retained_components = ncol(fit$U)
 )
 ```
+
+The three matrices below make the transformation concrete. Each panel has its
+own color scale because the scientific question is the pattern within a
+matrix, not equality of raw numerical ranges across stages.
+
+```{r moment-panels, echo=FALSE, fig.width=8, fig.height=3.1, fig.alt="Three heatmaps showing the pooled raw effect moment, the design kernel, and the transformed moment used for the eigendecomposition."}
+plot_matrix <- function(x, title) {
+  z <- x
+  z <- z / max(abs(z))
+  graphics::image(
+    seq_len(nrow(z)), seq_len(ncol(z)), t(z[nrow(z):1, , drop = FALSE]),
+    col = grDevices::hcl.colors(41, "Blue-Red 3", rev = TRUE),
+    zlim = c(-1, 1), axes = FALSE, xlab = "effect", ylab = "effect",
+    main = title
+  )
+  graphics::axis(1, at = seq_len(ncol(z)), labels = seq_len(ncol(z)), cex.axis = 0.8)
+  graphics::axis(2, at = seq_len(nrow(z)), labels = rev(seq_len(nrow(z))), cex.axis = 0.8)
+  graphics::box()
+}
+old_par <- graphics::par(mfrow = c(1, 3), mar = c(3.2, 3.2, 2.5, 0.6))
+plot_matrix(fit$effect_moment, "Raw pooled moment M")
+plot_matrix(fit$K, "Design kernel K")
+plot_matrix(fit$Chat, "Transformed moment C-hat")
+graphics::par(old_par)
+```
+
+The left panel comes from the data; the middle panel encodes the chosen design
+geometry; the right panel is the matrix actually decomposed. A strong pattern
+in the right panel is therefore a joint consequence of empirical covariance
+and modeling choices, not a feature discovered independently of the kernel.
 
 ```{r inspect-moment-checks, include=FALSE}
 stopifnot(all(dim(fit$effect_moment) == dim(toy$K)))
@@ -124,8 +178,9 @@ a prespecified contrast with `dkge_contrast()`.
 
 ## What does the kernel change?
 
-The kernel is a metric, not a fixed set of component directions. It changes
-which effect-space directions count as large or smooth during the eigensolve;
+The kernel sets the metric. Component directions are estimated under it: the
+kernel changes which effect-space directions count as large or smooth during
+the eigensolve;
 the empirical moment still determines the fitted components.
 
 An identity kernel is the essential baseline. It applies no kernel-imposed
@@ -198,7 +253,8 @@ uses those masks when pooling. Policies such as `missingness = "rescale"` or
 `"shrink"` change the estimand; they must be chosen and reported, not used as
 silent repairs.
 
-See `vignette("dkge-partial-effect-spaces")` for the runnable workflow and
+See `vignette("dkge-partial-effect-spaces")` for the coverage contract,
+`vignette("dkge-unbalanced-trialwise")` for the runnable workflow, and
 `vignette("dkge-weighting")` for the distinction among effect, subject,
 spatial, and transport weights.
 
@@ -228,6 +284,24 @@ answer different questions; use the branch that matches the estimand.
 Likewise, a contrast can describe a controlled model comparison in
 observational data without identifying a causal effect. Causal language
 requires design and identification assumptions outside DKGE itself.
+
+## How the pieces fit together
+
+A DKGE analysis moves through four stages, and each one has a public entry
+point:
+
+1. **Harmonize** subject data with `dkge_subject()` and `dkge_data()`, so every
+   subject's beta rows carry the same effect labels.
+2. **Fit** a group embedding with `dkge()`, which compresses to effect space and
+   solves for the shared basis under the design kernel.
+3. **Cross-fit** a prespecified contrast with `dkge_contrast()`, so no subject's
+   own data shapes the basis used to score it.
+4. **Align** the resulting fields onto common locations with
+   `dkge_prepare_transport()` and `dkge_transport_contrasts_to_medoid()`.
+
+`dkge_pipeline()` runs all four in one call. `CONTRIBUTING.md` in the package
+repository carries the implementation map for contributors: which source file
+owns each stage, and the rules for changing them.
 
 ## What should you decide before fitting?
 

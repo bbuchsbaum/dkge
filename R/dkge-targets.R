@@ -17,7 +17,7 @@
 #' @param collapse Optional named list describing how to collapse factors that do
 #'   not appear in a target. Each entry may be `"mean"`,
 #'   `list(method = "mean", window = 3:8)`, or a numeric vector of length equal
-#'   to the number of levels providing custom weights (automatically normalised).
+#'   to the number of levels providing custom weights (automatically normalized).
 #' @param scope Permutation/exchangeability scope stored with each target
 #'   (default "within_subject").
 #' @param restrict_factors Optional character vector restricting the factors used

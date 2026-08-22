@@ -7,7 +7,7 @@
 dkge_weights_auto()
 }
 \value{
-`dkge_weights()` object with k-energy precision combination.
+\code{dkge_weights()} object with k-energy precision combination.
 }
 \description{
 Default DKGE weight specification

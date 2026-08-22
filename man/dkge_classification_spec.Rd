@@ -15,7 +15,7 @@ dkge_classification_spec(
 )
 }
 \arguments{
-\item{targets}{Target specification accepted by [dkge_classify()].}
+\item{targets}{Target specification accepted by \code{\link[=dkge_classify]{dkge_classify()}}.}
 
 \item{method}{Classifier backend ("lda" or "logit").}
 
@@ -25,14 +25,14 @@ dkge_classification_spec(
 
 \item{metric}{Classification metrics to report.}
 
-\item{mode}{Decoding mode passed to [dkge_classify()]: "auto" selects
+\item{mode}{Decoding mode passed to \code{\link[=dkge_classify]{dkge_classify()}}: "auto" selects
 automatically, "cell" uses per-cell embeddings, "cell_cross" uses
 cross-validated per-cell embeddings, and "delta" uses pairwise deltas.}
 
-\item{...}{Additional fields stored on the spec (e.g., `n_perm`, `scope`).}
+\item{...}{Additional fields stored on the spec (e.g., \code{n_perm}, \code{scope}).}
 }
 \value{
-Object with class `dkge_classification_spec`.
+Object with class \code{dkge_classification_spec}.
 }
 \description{
 Classification specification helper

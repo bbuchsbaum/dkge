@@ -62,7 +62,7 @@
 #'
 #' `split = "within_cell"` and `split = "alternate"` only create deterministic
 #' partitions; they do not establish independence. A split cross-moment is
-#' labelled independent only for run-disjoint halves or when
+#' labeled independent only for run-disjoint halves or when
 #' `split_independent = TRUE` is explicitly justified by the caller.
 #' @export
 #' @examples

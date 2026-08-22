@@ -32,7 +32,7 @@
 #'   \item{`"prefer_prior"`}{Prior weight is used wherever it is finite and
 #'     positive; falls back to adaptive otherwise. Prior takes priority.}
 #' }
-#' @param mix Numeric in [0,1] controlling the relative influence of the adaptive
+#' @param mix Numeric in `[0, 1]` controlling the relative influence of the adaptive
 #'   component. Interpreted in log-space for `combine = "product"`.
 #' @param shrink List with fields `alpha` (shrink towards uniform), `winsor`
 #'   (upper quantile cap), `normalize` (`"mean"` or `"sum"`), and optional

@@ -23,26 +23,26 @@ dkge_trial_subject(
 )
 }
 \arguments{
-\item{y}{Numeric `T x P` matrix of trialwise beta maps.}
+\item{y}{Numeric \verb{T x P} matrix of trialwise beta maps.}
 
-\item{design}{Numeric `T x q` second-stage design matrix. This may be a
+\item{design}{Numeric \verb{T x q} second-stage design matrix. This may be a
 one-hot cell design or a general full-rank basis design.}
 
 \item{id}{Optional subject identifier.}
 
-\item{omega}{Optional voxel/parcel weighting passed to [dkge_subject()].}
+\item{omega}{Optional voxel/parcel weighting passed to \code{\link[=dkge_subject]{dkge_subject()}}.}
 
 \item{effect_precision}{Optional direct q-vector of effect precisions, or
-`"split_half"` to derive bounded effect precision from the stored halves
-with [dkge_split_effect_precision()].}
+\code{"split_half"} to derive bounded effect precision from the stored halves
+with \code{\link[=dkge_split_effect_precision]{dkge_split_effect_precision()}}.}
 
-\item{trial_covariance}{Optional symmetric positive-definite `T x T` relative
-covariance of trial errors. Mutually exclusive with `trial_precision`.}
+\item{trial_covariance}{Optional symmetric positive-definite \verb{T x T} relative
+covariance of trial errors. Mutually exclusive with \code{trial_precision}.}
 
-\item{trial_precision}{Optional symmetric positive-definite `T x T` trial
-precision, or a function mapping a `T x k` matrix to its precision-weighted
+\item{trial_precision}{Optional symmetric positive-definite \verb{T x T} trial
+precision, or a function mapping a \verb{T x k} matrix to its precision-weighted
 counterpart. A function is materialised only in trial space for validation;
-no `P x P` matrix is formed.}
+no \verb{P x P} matrix is formed.}
 
 \item{effect_noise_cov}{Optional directly supplied q-by-q covariance
 multiplier for the estimated effects. When supplied it overrides the
@@ -53,19 +53,19 @@ variances. The default is the (weighted for GLS) residual sum of squares
 divided by the residual degrees of freedom.}
 
 \item{noise_trace}{Optional externally supplied unweighted spatial noise
-trace. By default this is `sum(residual_variance)` when estimable.
+trace. By default this is \code{sum(residual_variance)} when estimable.
 A supplied value is used by analytic debiasing when no extra spatial
 weights are applied.}
 
-\item{split}{Optional split-half sufficient statistic. `"within_cell"`
-deterministically balances trials within each one-hot cell; `"alternate"`
-alternates all trial rows; `"run"` assigns whole runs to halves; and
-`"explicit"` uses `split_labels`. Both half-designs must remain full rank.}
+\item{split}{Optional split-half sufficient statistic. \code{"within_cell"}
+deterministically balances trials within each one-hot cell; \code{"alternate"}
+alternates all trial rows; \code{"run"} assigns whole runs to halves; and
+\code{"explicit"} uses \code{split_labels}. Both half-designs must remain full rank.}
 
 \item{split_labels}{Optional length-T vector containing exactly two explicit
-half labels. Supplying it selects `split = "explicit"`.}
+half labels. Supplying it selects \code{split = "explicit"}.}
 
-\item{run_labels}{Optional length-T run labels. With `split = "run"`, whole
+\item{run_labels}{Optional length-T run labels. With \code{split = "run"}, whole
 runs are assigned deterministically to halves. With another split mode,
 these labels are used to audit whether the halves are run-disjoint.}
 
@@ -76,31 +76,31 @@ split moments are recorded as exploratory and a warning is emitted.}
 \item{tol}{Numerical tolerance used for rank and one-hot checks.}
 }
 \value{
-A `dkge_subject` carrying second-stage sufficient statistics.
+A \code{dkge_subject} carrying second-stage sufficient statistics.
 }
 \description{
-Fits the second-stage model `Y = X B + E` without constructing any
+Fits the second-stage model \verb{Y = X B + E} without constructing any
 voxel-by-voxel covariance. By default the estimator is IID OLS. Supplying a
-trial covariance or precision uses GLS and stores `(X' W X)^-1` as the
+trial covariance or precision uses GLS and stores \verb{(X' W X)^-1} as the
 unit-spatial-variance covariance of the effect estimates. The returned
-subject retains q-space sufficient statistics and the shared `T x q`
-design, but never the trialwise `y`. Use [dkge_trial_subject_chunks()] when
-`T x P` itself is too large to materialize.
+subject retains q-space sufficient statistics and the shared \verb{T x q}
+design, but never the trialwise \code{y}. Use \code{\link[=dkge_trial_subject_chunks]{dkge_trial_subject_chunks()}} when
+\verb{T x P} itself is too large to materialize.
 }
 \details{
 The analytic noise correction assumes a common trial-dependence matrix
 across spatial columns and a separable error covariance: the effect
-covariance is `(X' W X)^-1`, scaled by each spatial column's residual
+covariance is \verb{(X' W X)^-1}, scaled by each spatial column's residual
 variance. Trialwise beta maps from overlapping or temporally correlated
 first-level estimates generally violate IID errors; supply
-`trial_covariance` or `trial_precision` in that case. Using the IID default
+\code{trial_covariance} or \code{trial_precision} in that case. Using the IID default
 when trial errors are correlated mis-scales both the analytic subtraction
 and any precision derived from it.
 
-`split = "within_cell"` and `split = "alternate"` only create deterministic
+\code{split = "within_cell"} and \code{split = "alternate"} only create deterministic
 partitions; they do not establish independence. A split cross-moment is
-labelled independent only for run-disjoint halves or when
-`split_independent = TRUE` is explicitly justified by the caller.
+labeled independent only for run-disjoint halves or when
+\code{split_independent = TRUE} is explicitly justified by the caller.
 }
 \examples{
 set.seed(1)

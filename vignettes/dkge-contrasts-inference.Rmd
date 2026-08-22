@@ -1,5 +1,8 @@
 ---
-title: Contrasts, Inference, and Bootstraps
+title: Contrasts and Inference
+description: >
+  Build a prespecified contrast, evaluate it out of sample with LOSO, and choose
+  between the analytic and bootstrap routes to inference.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -17,7 +20,7 @@ resource_files:
 - fonts
 
 vignette: |
-  %\VignetteIndexEntry{Contrasts, Inference, and Bootstraps}
+  %\VignetteIndexEntry{Contrasts and Inference}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -60,13 +63,30 @@ cat(sprintf(
 ```
 
 
+“Run inference on the DKGE fit” is not a complete instruction. A component
+statistic, a named effect contrast, and a featurewise transported map have
+different sampling units and answer different questions, so the first decision
+is which quantity you are making a claim about.
+
 This vignette follows one estimand from construction to interpretation: the
 subject-level effect-1 minus effect-2 contrast on a shared simulated spatial
 support. It then distinguishes that contrast estimand from component-level
 inference and shows how a subject bootstrap quantifies sampling variation
 conditional on the fitted basis and transport operators.
 
-## Demo Dataset
+Why start from the estimand? Because “run inference on the DKGE fit” is not a
+complete instruction. A component statistic, a named effect contrast, and a
+featurewise transported map have different sampling units and answer different
+questions. Here the object journey is explicit:
+
+```text
+named effect contrast -> held-out subject fields -> one shared spatial support -> subject resampling
+```
+
+The component-level procedure appears afterward as a deliberate contrast: it
+is a different branch, not another test of the same quantity.
+
+## What signal should the contrast recover?
 
 The first two effect rows contain opposite halves of a smooth spatial signal, so
 their raw contrast equals `planted`. The remaining effects contain noise. Every
@@ -128,14 +148,11 @@ transported <- dkge_transport_contrasts_to_medoid(
 str(loso$values, max.level = 1)
 ```
 
-The resulting data structure contains several important components that capture different
-stages of the contrast computation process. The `loso$values` component stores the raw
-subject-level contrast vectors before any spatial transport has been applied. After transport
-to the medoid space, `transported[[1]]$value` contains the contrast values that have been
-aligned to the medoid parcellation and combined by the coordinate-wise median
-across subjects. Additionally,
-`transported[[1]]$subj_values` preserves the individual-subject contributions after transport,
-which can be useful for detecting outliers or understanding between-subject variability.
+Keep the three representations distinct. `loso$values` contains raw
+subject-level fields on the original subject supports.
+`transported[[1]]$subj_values` is the subject-by-reference-cluster matrix after
+alignment. `transported[[1]]$value` is only the coordinate-wise median of that
+matrix. Inference needs the subject rows, not just the median curve.
 
 We summarize the region where the planted raw contrast is largest. DKGE
 projection and transport change the numerical scale, so agreement in direction
@@ -171,14 +188,28 @@ stopifnot(all(transport_ok),
           max(abs(transported[[1]]$value - transport_median)) < 1e-12)
 ```
 
-We can visualize the LOSO medoid map to quickly inspect the spatial pattern of contrast values.
+Plot the subject fields as well as their summary. Agreement in shape is more
+informative than a polished median with its heterogeneity hidden.
 
-```{r loso-plot, fig.width=5, fig.height=4, fig.alt="Lollipop plot of LOSO contrast values on medoid clusters."}
+```{r loso-plot, fig.width=6.5, fig.height=4, fig.alt="Transported LOSO contrast profiles for eight subjects with their coordinate-wise median highlighted."}
 loso_medoid <- transported[[1]]$value
-plot(loso_medoid, type = "h", lwd = 2, main = "LOSO contrast on medoid clusters",
-     xlab = "Medoid cluster", ylab = "Contrast value")
-abline(h = 0, col = "grey60", lty = 2)
+subject_fields <- transported[[1]]$subj_values
+matplot(
+  t(subject_fields), type = "l", lty = 1, lwd = 0.8,
+  col = grDevices::adjustcolor("grey45", alpha.f = 0.35),
+  xlab = "Reference cluster", ylab = "Transported contrast",
+  main = "Held-out subject fields on one support"
+)
+abline(h = 0, col = "grey70", lty = 2)
+lines(loso_medoid, col = "#b33b2e", lwd = 2.4)
+legend("topright", legend = c("subjects", "median"),
+       col = c("grey55", "#b33b2e"), lwd = c(1, 2.4), bty = "n")
 ```
+
+The median follows the planted positive and negative regions, while the grey
+lines show the uncertainty and subject heterogeneity that the next stage must
+respect. This figure is a recovery diagnostic for the simulation, not a
+multiple-comparison-corrected spatial result.
 
 ## Analytic Inference on Components
 
@@ -238,6 +269,21 @@ bootstrap_summary <- data.frame(
 bootstrap_summary
 ```
 
+```{r bootstrap-distribution, echo=FALSE, fig.width=5.5, fig.height=3.8, fig.alt="Histogram of bootstrap means for the transported contrast in the planted positive region, with the percentile interval marked."}
+hist(
+  active_boot, breaks = 18, col = "#d9e1e8", border = "white",
+  main = "Sampling variation of the declared summary",
+  xlab = "Mean contrast in planted-positive region"
+)
+abline(v = bootstrap_summary$bootstrap_mean, col = "#b33b2e", lwd = 2)
+abline(v = c(bootstrap_summary$lower_95, bootstrap_summary$upper_95),
+       col = "#315f8c", lwd = 2, lty = 2)
+legend(
+  "topright", legend = c("bootstrap mean", "95% percentile limits"),
+  col = c("#b33b2e", "#315f8c"), lwd = 2, lty = c(1, 2), bty = "n"
+)
+```
+
 The resulting conditional 95% percentile interval is
 [`r round(bootstrap_summary$lower_95, 3)`,
 `r round(bootstrap_summary$upper_95, 3)`]. Because the earlier basis and
@@ -249,7 +295,7 @@ deviations, z ratios, intervals, and (optionally) the draws used above. When the
 estimand lives in q-space instead, `dkge_bootstrap_qspace()` performs multiplier
 resampling there and can reuse a declared transport cache.
 
-## Practical Recommendations
+## What to check before reporting
 
 Choose the inferential target before choosing a procedure. The component table
 tests transported component loadings; the projected bootstrap above summarizes
@@ -262,3 +308,13 @@ Before reporting results, state the contrast, analysis space, aggregation rule,
 resampling unit, mapper, medoid, and multiplicity correction. Inspect
 subject-level values as a diagnostic, but do not remove unusual subjects without
 a prespecified rule and sensitivity analysis.
+
+## Where to go next
+
+- `vignette("dkge-components")` reads the fitted
+  components themselves, where this page reads a prespecified contrast.
+- `vignette("dkge-between-subjects")` is the
+  confirmatory route for between and mixed effects, which LOSO contrasts do not
+  test.
+- `vignette("dkge-dense-rendering")` maps a contrast
+  field into a shared space once you have one worth mapping.

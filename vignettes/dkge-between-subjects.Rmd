@@ -1,5 +1,8 @@
 ---
 title: Between-Subject Multivariate Modeling
+description: >
+  Ask whether group, trait, or covariate effects are distributed across a
+  brain-derived feature vector per subject.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -56,11 +59,26 @@ returns a coefficient map and a resampling test for each model term. The
 features may be component scores, transported parcels, or any common-space
 subject-by-feature matrix.
 
+This layer exists because within-subject and between-subject questions are not
+interchangeable. A task contrast asks how conditions differ *inside* a
+subject. A group or trait model asks why a common brain representation differs
+*across* subjects. Treating group as if every subject observed both group
+levels would use the wrong experimental unit.
+
 The workflow has three steps:
 
 1. build a subject-by-feature target with `dkge_make_target()`
 2. build a second-level design with `dkge_subject_model()`
-3. fit and test a reduced-rank model with `dkge_between_rrr()` and `dkge_between_permute()`
+3. fit and test a reduced-rank model with `dkge_between_rrr()` and
+   `dkge_between_permute()`
+
+```text
+one common-space row per subject (Y) + subject metadata (X) -> distributed coefficient map (B) -> term-level resampling test
+```
+
+The first example is the shortest path. The residual-rotation and calibration
+sections explain when its p-values are defensible; they are reference material
+you can return to after the object flow is clear.
 
 ## What does the second-level model estimate?
 
@@ -70,7 +88,8 @@ The between-subject model is a reduced-rank regression:
 Y = X B + E, \qquad \mathrm{rank}(B) \le r
 \]
 
-Here `Y` is a subject-by-feature matrix, `X` is the subject-level design matrix, and `B` contains distributed coefficient maps for your terms of interest.
+`Y` is a subject-by-feature matrix, `X` is the subject-level design, and `B`
+holds the distributed effects the model estimates.
 
 ## How do you fit a direct subject-by-feature matrix?
 
@@ -101,8 +120,34 @@ fit_between <- dkge_between_rrr(target, design, rank = 1)
 You can inspect the fitted term map directly.
 
 ```{r quick-term-map}
-round(dkge_term_map(fit_between, "grouppatient:trait"), 2)
+interaction_map <- dkge_term_map(fit_between, "grouppatient:trait")
+round(interaction_map, 2)
 ```
+
+```{r quick-term-map-plot, echo=FALSE, fig.height=3.6, fig.alt="Bar chart comparing the planted and estimated group-by-trait coefficient across six features."}
+term_map_plot <- rbind(
+  data.frame(feature = colnames(beta), value = beta["grouppatient:trait", ], source = "Planted"),
+  data.frame(feature = colnames(beta), value = as.numeric(interaction_map), source = "Estimated")
+)
+ggplot2::ggplot(
+  term_map_plot,
+  ggplot2::aes(feature, value, fill = source)
+) +
+  ggplot2::geom_col(position = "dodge", width = 0.72) +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey70") +
+  ggplot2::labs(
+    title = "The model recovers a distributed interaction pattern",
+    x = NULL, y = "Coefficient", fill = NULL
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
+```
+
+The alternating positive and negative coefficients are the result to
+interpret. Rank one does not mean “one significant feature”; it means the
+multivariate coefficient matrix is constrained to one shared response
+direction. The term-level resampling test below asks whether restoring this
+whole distributed pattern improves fit beyond the reduced model.
 
 For an unweighted, single-block model with a scientifically defensible
 Gaussian row-sphericity assumption, request a residual-space rotation test.
@@ -123,9 +168,23 @@ perm_between <- dkge_between_permute(
 perm_between$summary[, c("term", "statistic", "p", "p_adjusted")]
 ```
 
+```{r quick-permutation-plot, echo=FALSE, fig.height=3.5, fig.alt="Point plot of adjusted resampling p-values for group, trait, and group-by-trait terms."}
+perm_plot <- perm_between$summary
+ggplot2::ggplot(perm_plot, ggplot2::aes(term, p_adjusted)) +
+  ggplot2::geom_hline(yintercept = 0.05, linetype = 2, colour = "#b33b2e") +
+  ggplot2::geom_point(size = 3, colour = "#315f8c") +
+  ggplot2::scale_y_continuous(limits = c(0, 1)) +
+  ggplot2::labs(
+    title = "Term-level evidence for the distributed response",
+    subtitle = "Dashed line marks 0.05; coarse here because B = 99",
+    x = NULL, y = "Adjusted resampling p-value"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
 The global statistic is the reduction in residual sum of squares when the
 tested term is restored to the reduced model. Both methods refit at the same
-fitted rank (`object$rank`). Freedman–Lane has an extra caveat: if dropping
+fitted rank (`fit_between$rank`). Freedman–Lane has an extra caveat: if dropping
 the tested term lowers the reduced model's estimable rank below that value,
 the reduced fit is clipped while the full fit is not, so the statistic also
 absorbs that rank difference. Rotation does not clip — the reduced design
@@ -269,9 +328,11 @@ repair either method's assumptions or recover the unadjusted power gap.
 
 ## How do you build the target from a DKGE fit?
 
-The more DKGE-native path is to let DKGE construct the subject representation first, then model subjects in that common target space.
+The DKGE-native path builds the subject representation first, then models
+subjects in that space rather than in raw feature space.
 
-This example starts from heterogeneous subject maps, fits DKGE, transports one contrast to a medoid subject, and then applies the between-subject model.
+This example starts from heterogeneous subject maps, fits DKGE, transports one
+contrast to a medoid subject, and models the result.
 
 ```{r dkge-fit}
 toy <- dkge_sim_toy(
@@ -359,7 +420,9 @@ There are three outputs worth checking first:
 - `dkge_term_map(fit_transport, "group:trait")` extracts the term-specific map
 - `perm_transport$summary` gives a global multivariate resampling test for each term
 
-If you asked for featurewise inference, `perm_between$feature_tests[["group:trait"]]` adds per-feature statistics and adjusted p-values in the same target space.
+With featurewise inference requested,
+`perm_between$feature_tests[["group:trait"]]` adds per-feature statistics
+alongside the omnibus test.
 
 Report the target construction, fitted rank, tested term, resampling method,
 number of resamples, exchangeability assumptions, and multiplicity adjustment.
@@ -370,7 +433,8 @@ is individually significant.
 
 Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
 latent target, and use `type = "transported_maps"` when spatial interpretation
-in a common map space matters. See `vignette("dkge-contrasts-inference")` for within-subject contrast inference.
+in a common map space matters. See `vignette("dkge-contrasts-inference")` for
+within-subject contrast inference.
 For cohorts with partial or unbalanced effect grids, first see
 `vignette("dkge-partial-effect-spaces")` for the coverage, precision-weighting,
 and estimability contracts that precede this between-subject layer.

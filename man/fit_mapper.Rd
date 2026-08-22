@@ -7,8 +7,8 @@
 fit_mapper(spec, ...)
 }
 \arguments{
-\item{spec}{Mapper specification created with [dkge_mapper_spec()] or
-[dkge_mapper()].}
+\item{spec}{Mapper specification created with \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}} or
+\code{\link[=dkge_mapper]{dkge_mapper()}}.}
 
 \item{...}{Strategy-specific arguments (e.g. feature matrices, spatial
 coordinates, weights).}

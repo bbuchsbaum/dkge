@@ -7,7 +7,7 @@
 dkge_plot_scree(fit, one_se_pick = NULL)
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{one_se_pick}{Optional integer component chosen by one-SE rule.}
 }

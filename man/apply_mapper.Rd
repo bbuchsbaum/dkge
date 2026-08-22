@@ -7,7 +7,7 @@
 apply_mapper(fitted_mapper, values, ...)
 }
 \arguments{
-\item{fitted_mapper}{Mapping object returned by [fit_mapper()].}
+\item{fitted_mapper}{Mapping object returned by \code{\link[=fit_mapper]{fit_mapper()}}.}
 
 \item{values}{Numeric vector or matrix of source-space values.}
 
@@ -17,16 +17,16 @@ apply_mapper(fitted_mapper, values, ...)
 Numeric vector or matrix of mapped values.
 }
 \description{
-Alias to [predict_mapper()] that mirrors the terminology used by the
+Alias to \code{\link[=predict_mapper]{predict_mapper()}} that mirrors the terminology used by the
 dense rendering helpers.
 }
 \details{
-For a fitted Sinkhorn dense mapper, the default treats `values` as an
+For a fitted Sinkhorn dense mapper, the default treats \code{values} as an
 intensive field and applies the target-conditional operator, so a constant
 source field remains constant. Reliability supplied while fitting defines
 the source mass and is not multiplied into values a second time. Supplying
-`reliab` explicitly here requests an additional post-fit reweighting.
-Setting `normalize_by_reliab = FALSE` in that method returns the raw joint
+\code{reliab} explicitly here requests an additional post-fit reweighting.
+Setting \code{normalize_by_reliab = FALSE} in that method returns the raw joint
 plan action rather than a target-conditional field.
 }
 \examples{

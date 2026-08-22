@@ -11,16 +11,20 @@ articles:
   contents:
   - dkge
   - dkge-workflow
+  - dkge-concepts
 - title: Core analysis
   navbar: Core analysis
   contents:
   - dkge-design-kernels
   - dkge-contrasts-inference
-  - dkge-classification
   - dkge-components
-  - dkge-between-subjects
+  - dkge-classification
+- title: Study design extensions
+  navbar: Study designs
+  contents:
   - dkge-partial-effect-spaces
-  - dkge-concepts
+  - dkge-unbalanced-trialwise
+  - dkge-between-subjects
 - title: Weighting
   navbar: Weighting
   contents:
@@ -38,8 +42,11 @@ articles:
   - dkge-plotting
   - dkge-cpca
   - dkge-vs-pls
-  - dkge-architecture
 reference:
+- title: Concepts
+  desc: Definitions for the terms the rest of the documentation uses
+  contents:
+  - dkge-glossary
 - title: Workflow — start here
   desc: Primary functions for fitting, contrasting, classifying, and predicting
   contents:

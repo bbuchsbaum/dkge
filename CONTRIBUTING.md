@@ -1,60 +1,33 @@
----
-title: DKGE Architecture Guide
-output:
-  rmarkdown::html_vignette:
-    toc: yes
-    toc_depth: 2.0
-    css: albers.css
-    includes:
-      in_header: albers-header.html
-params:
-  family: red
-  preset: interaction
-resource_files:
-- albers.css
-- albers.js
-- albers-header.html
-- fonts
+# Contributing to dkge
 
-vignette: |
-  %\VignetteIndexEntry{DKGE Architecture Guide}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
+Pull requests are encouraged. Accompany user-facing changes with tests and
+documentation. For large feature work, open an issue to discuss design choices
+before implementation.
 
-```{r setup, include=FALSE}
-if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
-library(dkge)
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  message = FALSE,
-  warning = FALSE,
-  fig.show = "hide"
-)
-```
+## Packaging conventions
 
-```{r albers-classes, echo=FALSE, results='asis'}
-cat(sprintf(
-  paste0(
-    '<script>document.addEventListener("DOMContentLoaded",function(){',
-    'document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");',
-    'document.body.classList.add("palette-%s","preset-%s");',
-    '});</script>'
-  ),
-  params$family,
-  params$preset
-))
-```
+- `Authors@R` is the canonical author and maintainer record. The legacy
+  `Author` and `Maintainer` fields are intentionally omitted.
+- `Remotes` is retained because several development dependencies come from the
+  bbuchsbaum GitHub and R-universe ecosystem. This repository is not currently
+  claiming a CRAN-ready dependency graph.
+- The supported local package gate sets `_R_CHECK_FORCE_SUGGESTS_=false` when
+  the optional `T4transport` package is unavailable. Core checks must still
+  pass; the independent Sinkhorn comparison is an additional gate run where
+  `T4transport` is installed.
 
-This guide describes the current DKGE implementation for contributors. The
-fit lifecycle is already split into internal stages, and public constructors
-already exist for pipeline specifications and services. The important boundary
-is therefore not “old monolith versus future refactor,” but which interfaces
-are public, which stages are internal, and which service objects the pipeline
-actually consumes today.
+## Documentation conventions
+
+`VIGNETTE-STYLE.md` in the repository records the conventions the vignette
+suite follows, with the measurement behind each one.
+
+`tools/vignette_checks.py` implements them. It runs with no dependencies:
+
+    python3 tools/vignette_checks.py            # whole suite
+    python3 tools/vignette_checks.py vignettes/dkge-workflow.Rmd
+
+Three rules gate (opener shape, bare figures, closing-section link form), two
+warn, and the rest report a number. Neither file ships in the built package.
 
 ## Where are the public entry points?
 
@@ -120,39 +93,6 @@ mix effect rows. The fitted object retains `effect_moment`, `pair_counts`,
 `pair_weight`, `pair_ess`, and `moment_diagnostics` so this step remains
 auditable.
 
-```{r missingness-contract-checks, include=FALSE}
-set.seed(104)
-S_check <- 4L
-q_check <- 2L
-B_check <- replicate(
-  S_check, matrix(rnorm(q_check * 3L), q_check, 3L), simplify = FALSE
-)
-X_check <- replicate(S_check, diag(q_check), simplify = FALSE)
-fit_none_check <- dkge_fit(
-  B_check, X_check, K = diag(q_check), rank = 1L,
-  w_method = "none", missingness = "none"
-)
-fit_rescale_check <- dkge_fit(
-  B_check, X_check, K = diag(q_check), rank = 1L,
-  w_method = "none", missingness = "rescale"
-)
-fit_shrink_check <- dkge_fit(
-  B_check, X_check, K = diag(q_check), rank = 1L,
-  w_method = "none", missingness = "shrink",
-  miss_args = list(min_pairs = 1L, gamma = 1)
-)
-stopifnot(isTRUE(all.equal(
-  fit_none_check$effect_moment,
-  S_check * fit_rescale_check$effect_moment,
-  tolerance = 1e-12
-)))
-stopifnot(isTRUE(all.equal(
-  fit_shrink_check$effect_moment,
-  fit_rescale_check$effect_moment,
-  tolerance = 1e-12
-)))
-```
-
 The hidden check records the complete-coverage boundary: `none` pools a sum,
 whereas `rescale` returns the observed-pair mean; with full coverage and the
 shown settings, `shrink` reduces to that same mean.
@@ -210,20 +150,20 @@ beta list to `dkge_predict()`. It is current API, not a proposed wrapper.
 
 ## What is genuinely unfinished?
 
-Future work should be described narrowly from the current seams:
+Tracked, rather than described here, so the list cannot drift from the code:
 
-- allow callers to inject a contrast service instead of having the pipeline
-  always construct one;
-- decide whether classification needs a service abstraction, then implement
-  and test it before documenting one; and
-- if a general service graph is introduced, define typed inputs and outputs,
-  ordering, cache ownership, and backward compatibility with the present
-  pipeline arguments.
+- `bd-01M0J78QYNDHCSWZ7F2CXK2JE1` — allow callers to inject a contrast service
+  into `dkge_pipeline()` instead of the pipeline always constructing one.
+- `bd-01M0J78R0YP128XZ85F9DESTY1` — decide whether classification needs a
+  service abstraction, then implement and test it before documenting one.
+- `bd-01M0J78R5P1PHT0F3K5MRB6H0M` — if a general service graph is introduced,
+  define typed inputs and outputs, ordering, cache ownership, and backward
+  compatibility with the present `dkge_pipeline()` arguments first.
 
-Streaming accumulators, alternative solvers, or new backends may be reasonable
-experiments, but they are not implied public contracts. Add them only behind
-tests that preserve the raw-moment ordering, K-metric algebra, representation
-classification, and held-out inference boundaries.
+Streaming accumulators, alternative solvers, and new backends may be reasonable
+experiments. They are not implied public contracts. Add them only behind tests
+that preserve the raw-moment ordering, the K-metric algebra, representation
+classification, and the held-out inference boundaries.
 
 ## How should contributors change the architecture?
 

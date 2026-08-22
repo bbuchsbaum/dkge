@@ -7,7 +7,7 @@
 .dkge_verbose(verbose)
 }
 \description{
-Uses the per-call `verbose` flag combined with the global
-`options(dkge.verbose = TRUE)` toggle.
+Uses the per-call \code{verbose} flag combined with the global
+\code{options(dkge.verbose = TRUE)} toggle.
 }
 \keyword{internal}

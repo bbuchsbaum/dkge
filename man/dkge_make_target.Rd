@@ -30,33 +30,33 @@ dkge_make_target(
 )
 }
 \arguments{
-\item{fit}{Optional `dkge` object used to derive DKGE targets.}
+\item{fit}{Optional \code{dkge} object used to derive DKGE targets.}
 
-\item{type}{Target type. `"matrix"` wraps a supplied matrix, `"component_scores"`
-averages subject component expressions, and `"transported_maps"` builds
+\item{type}{Target type. \code{"matrix"} wraps a supplied matrix, \code{"component_scores"}
+averages subject component expressions, and \code{"transported_maps"} builds
 a common-space matrix from contrast values.}
 
 \item{Y}{Optional subject-by-feature matrix.}
 
-\item{contrast}{Optional DKGE contrast used when `type = "transported_maps"`.}
+\item{contrast}{Optional DKGE contrast used when \code{type = "transported_maps"}.}
 
-\item{contrast_obj}{Optional precomputed `dkge_contrasts` object.}
+\item{contrast_obj}{Optional precomputed \code{dkge_contrasts} object.}
 
-\item{transport}{Optional `dkge_transport_spec` used for transported maps.}
+\item{transport}{Optional \code{dkge_transport_spec} used for transported maps.}
 
 \item{values}{Optional subject values. May be a matrix or a list of vectors.}
 
 \item{loadings}{Optional subject loading matrices used by transport.}
 
-\item{centroids, sizes, medoid, mapper}{Transport inputs overriding `transport`.}
+\item{centroids, sizes, medoid, mapper}{Transport inputs overriding \code{transport}.}
 
-\item{crossfit}{Cross-fitting method used when computing `contrast`.}
+\item{crossfit}{Cross-fitting method used when computing \code{contrast}.}
 
 \item{feature_ids, subject_ids}{Optional identifiers.}
 
-\item{coverage}{Optional coverage matrix/vector aligned with `Y`.}
+\item{coverage}{Optional coverage matrix/vector aligned with \code{Y}.}
 
-\item{precision}{Optional precision matrix/vector aligned with `Y`.}
+\item{precision}{Optional precision matrix/vector aligned with \code{Y}.}
 
 \item{subject_weights}{Optional subject reliability weights.}
 
@@ -69,7 +69,7 @@ a common-space matrix from contrast values.}
 \item{...}{Additional arguments forwarded to contrast/transport helpers.}
 }
 \value{
-Object of class `dkge_target`.
+Object of class \code{dkge_target}.
 }
 \description{
 Creates the explicit boundary object between the DKGE representation stage

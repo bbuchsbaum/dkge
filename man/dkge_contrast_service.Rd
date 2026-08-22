@@ -9,19 +9,19 @@ dkge_contrast_service(method = c("loso", "kfold", "analytic"), ridge = 0, ...)
 \arguments{
 \item{method}{Cross-fitting strategy ("loso", "kfold", or "analytic").}
 
-\item{ridge}{Ridge penalty forwarded to [dkge_contrast()].}
+\item{ridge}{Ridge penalty forwarded to \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 
-\item{...}{Additional arguments stored with the service (e.g. `folds`,
-`parallel`).}
+\item{...}{Additional arguments stored with the service (e.g. \code{folds},
+\code{parallel}).}
 }
 \value{
-Object of class `dkge_contrast_service`.
+Object of class \code{dkge_contrast_service}.
 }
 \description{
-Packages the arguments required by [dkge_contrast()] into a reusable service
-object. The service can be passed to [dkge_pipeline()] (via the `service`
+Packages the arguments required by \code{\link[=dkge_contrast]{dkge_contrast()}} into a reusable service
+object. The service can be passed to \code{\link[=dkge_pipeline]{dkge_pipeline()}} (via the \code{service}
 argument when it gains support) or executed manually with
-`.dkge_run_contrast_service()`.
+\code{.dkge_run_contrast_service()}.
 }
 \examples{
 contrast_srv <- dkge_contrast_service(method = "loso", ridge = 0)

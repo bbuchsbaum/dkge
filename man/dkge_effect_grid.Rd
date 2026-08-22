@@ -9,22 +9,22 @@ dkge_effect_grid(factors, scope = NULL, block_factors = NULL, sep = ":")
 \arguments{
 \item{factors}{Named list of factor specifications. Each entry may be a
 design-kernel factor spec, a vector of level labels, or a scalar level
-count. List specs accept `type`, `L`, `levels`, `values`, and `l`
+count. List specs accept \code{type}, \code{L}, \code{levels}, \code{values}, and \code{l}
 (positive finite length-scale for ordinal/circular/continuous factors).}
 
 \item{scope}{Named character vector or list assigning each factor to
-`"within"` or `"between"`. Defaults to `"within"` for all factors.}
+\code{"within"} or \code{"between"}. Defaults to \code{"within"} for all factors.}
 
 \item{block_factors}{Optional factor names that should define independent
-blocks when passed to [design_kernel()].}
+blocks when passed to \code{\link[=design_kernel]{design_kernel()}}.}
 
 \item{sep}{Separator used when constructing cell labels.}
 }
 \value{
-A `dkge_effect_grid` object with factor specs, scopes, cells, labels,
-  and the default kernel terms implied by the factor order. A one-factor
-  grid has one default main-effect term because its full interaction is the
-  same term.
+A \code{dkge_effect_grid} object with factor specs, scopes, cells, labels,
+and the default kernel terms implied by the factor order. A one-factor
+grid has one default main-effect term because its full interaction is the
+same term.
 }
 \description{
 Construct a DKGE global effect grid

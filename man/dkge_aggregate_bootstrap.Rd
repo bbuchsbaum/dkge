@@ -28,10 +28,10 @@ dkge_aggregate_bootstrap(
 \method{print}{dkge_aggregate_bootstrap}(x, ...)
 }
 \arguments{
-\item{target}{A `dkge_aggregate_target`.}
+\item{target}{A \code{dkge_aggregate_target}.}
 
-\item{K}{Optional aggregate-row design kernel. See [dkge_aggregate_fit()] for
-the row-space convention (`q` = number of aggregate rows).}
+\item{K}{Optional aggregate-row design kernel. See \code{\link[=dkge_aggregate_fit]{dkge_aggregate_fit()}} for
+the row-space convention (\code{q} = number of aggregate rows).}
 
 \item{statistic}{Built-in statistic name or function.}
 
@@ -40,27 +40,27 @@ the row-space convention (`q` = number of aggregate rows).}
 \item{strata}{Optional subject-level strata for within-stratum bootstrap:
 either a vector with one entry per source subject, or the name of a column
 in the subject data. Defaults to the interaction of
-`target$group_vars`. Explicit strata **must** nest within `group_vars`
+\code{target$group_vars}. Explicit strata \strong{must} nest within \code{group_vars}
 (each stratum lies inside a single group level) and are rejected up front
 otherwise: a coarser or cross-cutting stratification can draw a resample in
 which an entire group level is absent, which changes the aggregate row set
 and fails against the fixed observed kernel. Every draw is additionally
 checked against the observed row set.}
 
-\item{rank, center}{Passed to [dkge_aggregate_fit()].}
+\item{rank, center}{Passed to \code{\link[=dkge_aggregate_fit]{dkge_aggregate_fit()}}.}
 
-\item{component}{Component index passed to [dkge_aggregate_stat()] for the
-built-in statistics. It is a formal argument rather than part of `...`
-because R's partial matching would otherwise bind a `component =` argument
-to `component_scale`/`component_contrasts`. User-supplied statistic
+\item{component}{Component index passed to \code{\link[=dkge_aggregate_stat]{dkge_aggregate_stat()}} for the
+built-in statistics. It is a formal argument rather than part of \code{...}
+because R's partial matching would otherwise bind a \verb{component =} argument
+to \code{component_scale}/\code{component_contrasts}. User-supplied statistic
 functions do not receive it.}
 
 \item{conf}{Confidence level for the interval. Quantiles use
-`stats::quantile(..., type = 6)` (Weibull plotting positions), which is
+\code{stats::quantile(..., type = 6)} (Weibull plotting positions), which is
 slightly wider than the default type 7 in small samples.}
 
-\item{interval}{`"percentile"` uses the bootstrap quantiles directly.
-`"basic"` is the reflection interval
+\item{interval}{\code{"percentile"} uses the bootstrap quantiles directly.
+\code{"basic"} is the reflection interval
 \eqn{(2\hat\theta - q_{1-\alpha/2},\; 2\hat\theta - q_{\alpha/2})},
 which recentres a biased top singular value around the observed
 statistic.}
@@ -69,45 +69,45 @@ statistic.}
 summarize each aligned component in every bootstrap draw.}
 
 \item{component_scale}{Whether component contrasts are applied to
-singular-value-scaled cell scores (`"score"`) or raw saliences
-(`"salience"`).}
+singular-value-scaled cell scores (\code{"score"}) or raw saliences
+(\code{"salience"}).}
 
-\item{return_features}{Logical; if `TRUE`, accumulate aligned
+\item{return_features}{Logical; if \code{TRUE}, accumulate aligned
 feature-space component maps across bootstrap draws and return streaming
-mean, SD, and bootstrap-ratio z maps (`observed / bootstrap SD`, the
+mean, SD, and bootstrap-ratio z maps (\verb{observed / bootstrap SD}, the
 standard PLS bootstrap ratio).}
 
-\item{parallel}{Logical; if `TRUE`, evaluate draws with
-`future.apply::future_lapply()`. Bootstrap indices are drawn up front in
+\item{parallel}{Logical; if \code{TRUE}, evaluate draws with
+\code{future.apply::future_lapply()}. Bootstrap indices are drawn up front in
 the calling RNG stream, so results are identical for either setting of
-`parallel` given the same `seed`.}
+\code{parallel} given the same \code{seed}.}
 
 \item{seed}{Optional random seed.}
 
-\item{...}{Additional arguments passed to [dkge_aggregate_stat()]. Every
-other setting is a named formal, so a misspelled argument (`sed = 1` for
-`seed = 1`) lands here and is reported as an error whenever `statistic` is
-one of the built-ins; `...` reaches only user-supplied statistic functions.}
+\item{...}{Additional arguments passed to \code{\link[=dkge_aggregate_stat]{dkge_aggregate_stat()}}. Every
+other setting is a named formal, so a misspelled argument (\code{sed = 1} for
+\code{seed = 1}) lands here and is reported as an error whenever \code{statistic} is
+one of the built-ins; \code{...} reaches only user-supplied statistic functions.}
 
-\item{x}{A `dkge_aggregate_bootstrap` object to print.}
+\item{x}{A \code{dkge_aggregate_bootstrap} object to print.}
 }
 \value{
-Object of class `dkge_aggregate_bootstrap`. `observed` and
-  `statistics` are signed. `interval` is the requested bootstrap interval
-  of the signed statistic. `excludes_zero` reports whether that interval
-  excludes zero, or `NA` for the non-negative `"singular_value"` statistic
-  (the comparison is uninformative there).
+Object of class \code{dkge_aggregate_bootstrap}. \code{observed} and
+\code{statistics} are signed. \code{interval} is the requested bootstrap interval
+of the signed statistic. \code{excludes_zero} reports whether that interval
+excludes zero, or \code{NA} for the non-negative \code{"singular_value"} statistic
+(the comparison is uninformative there).
 }
 \description{
 Resamples subjects with replacement, recomputes aggregate rows, refits the
 aggregate decomposition, aligns components, and evaluates the statistic.
 }
 \details{
-Resampling is **stratified by default**: when `strata` is `NULL` and the
-target has subject-level `group_vars`, subjects are resampled with
-replacement *within* `interaction(subject_data[target$group_vars])`, so every
+Resampling is \strong{stratified by default}: when \code{strata} is \code{NULL} and the
+target has subject-level \code{group_vars}, subjects are resampled with
+replacement \emph{within} \code{interaction(subject_data[target$group_vars])}, so every
 draw preserves the observed group sizes and the aggregate row set. Pass
-`strata` explicitly (a vector, or the name of a column in the subject data)
+\code{strata} explicitly (a vector, or the name of a column in the subject data)
 to stratify differently; a stratum with a single subject contributes that
 subject to every draw, which is reported with a warning.
 }

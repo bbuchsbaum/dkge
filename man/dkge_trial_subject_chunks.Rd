@@ -22,43 +22,43 @@ dkge_trial_subject_chunks(
 )
 }
 \arguments{
-\item{chunks}{Either a list of numeric `T x P_block` matrices or a function
-called as `chunks(i)` that returns the next matrix and returns `NULL` after
+\item{chunks}{Either a list of numeric \verb{T x P_block} matrices or a function
+called as \code{chunks(i)} that returns the next matrix and returns \code{NULL} after
 the last block. A function source is the memory-bounded path.}
 
-\item{design}{Numeric `T x q` second-stage design matrix. This may be a
+\item{design}{Numeric \verb{T x q} second-stage design matrix. This may be a
 one-hot cell design or a general full-rank basis design.}
 
 \item{id}{Optional subject identifier.}
 
-\item{omega}{Optional final voxel/parcel weighting of length total `P`, or a
-total-`P` square matrix. It is applied only after all chunks are reduced.}
+\item{omega}{Optional final voxel/parcel weighting of length total \code{P}, or a
+total-\code{P} square matrix. It is applied only after all chunks are reduced.}
 
 \item{effect_precision}{Optional direct q-vector of effect precisions, or
-`"split_half"` to derive bounded effect precision from the stored halves
-with [dkge_split_effect_precision()].}
+\code{"split_half"} to derive bounded effect precision from the stored halves
+with \code{\link[=dkge_split_effect_precision]{dkge_split_effect_precision()}}.}
 
-\item{trial_covariance}{Optional symmetric positive-definite `T x T` relative
-covariance of trial errors. Mutually exclusive with `trial_precision`.}
+\item{trial_covariance}{Optional symmetric positive-definite \verb{T x T} relative
+covariance of trial errors. Mutually exclusive with \code{trial_precision}.}
 
-\item{trial_precision}{Optional symmetric positive-definite `T x T` trial
-precision, or a function mapping a `T x k` matrix to its precision-weighted
+\item{trial_precision}{Optional symmetric positive-definite \verb{T x T} trial
+precision, or a function mapping a \verb{T x k} matrix to its precision-weighted
 counterpart. A function is materialised only in trial space for validation;
-no `P x P` matrix is formed.}
+no \verb{P x P} matrix is formed.}
 
 \item{effect_noise_cov}{Optional directly supplied q-by-q covariance
 multiplier for the estimated effects. When supplied it overrides the
 covariance implied by the OLS or GLS information matrix.}
 
-\item{split}{Optional split-half sufficient statistic. `"within_cell"`
-deterministically balances trials within each one-hot cell; `"alternate"`
-alternates all trial rows; `"run"` assigns whole runs to halves; and
-`"explicit"` uses `split_labels`. Both half-designs must remain full rank.}
+\item{split}{Optional split-half sufficient statistic. \code{"within_cell"}
+deterministically balances trials within each one-hot cell; \code{"alternate"}
+alternates all trial rows; \code{"run"} assigns whole runs to halves; and
+\code{"explicit"} uses \code{split_labels}. Both half-designs must remain full rank.}
 
 \item{split_labels}{Optional length-T vector containing exactly two explicit
-half labels. Supplying it selects `split = "explicit"`.}
+half labels. Supplying it selects \code{split = "explicit"}.}
 
-\item{run_labels}{Optional length-T run labels. With `split = "run"`, whole
+\item{run_labels}{Optional length-T run labels. With \code{split = "run"}, whole
 runs are assigned deterministically to halves. With another split mode,
 these labels are used to audit whether the halves are run-disjoint.}
 
@@ -71,16 +71,16 @@ split moments are recorded as exploratory and a warning is emitted.}
 \item{max_chunks}{Safety limit for function sources that fail to terminate.}
 }
 \value{
-A `dkge_subject` with the sufficient statistics needed by fitting.
-  The full trialwise response and the reconstructible q-by-P effect score
-  (`effect_information %*% beta`) are not stored.
+A \code{dkge_subject} with the sufficient statistics needed by fitting.
+The full trialwise response and the reconstructible q-by-P effect score
+(\code{effect_information \%*\% beta}) are not stored.
 }
 \description{
-Reduces successive `T x P_block` trialwise matrices without retaining a full
-`T x P` response matrix. The shared trial design and error model are applied
+Reduces successive \verb{T x P_block} trialwise matrices without retaining a full
+\verb{T x P} response matrix. The shared trial design and error model are applied
 to every block, and the resulting q-space coefficients and per-feature
-residual statistics are concatenated into one [dkge_subject()] record. The
-returned object retains one `T x q` design and one `q x P` beta matrix.
+residual statistics are concatenated into one \code{\link[=dkge_subject]{dkge_subject()}} record. The
+returned object retains one \verb{T x q} design and one \verb{q x P} beta matrix.
 }
 \examples{
 set.seed(1)

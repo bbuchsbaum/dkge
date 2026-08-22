@@ -7,14 +7,14 @@
 dkge_cosines_K(U, V, K)
 }
 \arguments{
-\item{U}{Matrix with `q` rows.}
+\item{U}{Matrix with \code{q} rows.}
 
-\item{V}{Matrix with `q` rows.}
+\item{V}{Matrix with \code{q} rows.}
 
 \item{K}{Symmetric positive (semi-)definite matrix defining the metric.}
 }
 \value{
-Numeric vector of singular values in [0, 1].
+Numeric vector of singular values in \verb{[0, 1]}.
 }
 \description{
 Principal-angle cosines in the K-metric

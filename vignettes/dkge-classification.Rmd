@@ -1,5 +1,8 @@
 ---
 title: Classification with DKGE
+description: >
+  Cross-validate a latent classifier on DKGE components, choose between cell and
+  cell_cross modes, and read the decoding result honestly.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -47,10 +50,20 @@ library(dkge)
 set.seed(12)
 ```
 
-The DKGE classification helpers decode experimental conditions from
-subject-level effect patterns. This vignette follows one complete path: define
-the effect space, fit DKGE, specify the classes, and estimate held-out-subject
-performance.
+Use classification when the scientific question is predictive: can a condition
+label be recovered from a subject's effect pattern when that subject was not
+used to train the decoder? This is different from asking whether a component
+explains much variation or whether a contrast is non-zero.
+
+This page follows one complete path:
+
+```text
+factor definition -> DKGE representation -> class weight matrix -> held-out predictions -> accuracy and confusion
+```
+
+The weight matrix is the conceptual bridge. It says how named beta rows become
+the class patterns that the classifier sees; the decoder never infers that
+mapping from effect names by magic.
 
 There are two distinct cross-validation contracts. The default `mode = "auto"`
 uses subject-level folds but selects the faster `"cell"` path for
@@ -59,10 +72,10 @@ DKGE basis has seen every subject. Use `mode = "cell_cross"` when the basis
 itself must also be re-estimated without each held-out subject. The primary
 example below uses that stricter end-to-end path.
 
-## Setup
+## What is being classified?
 
-We define two experimental factors — condition (A vs B) and time (4 time points) — and
-construct a design kernel that encodes their structure:
+We define two experimental factors—condition (A versus B) and four time
+points—and construct a design kernel that encodes their effect structure:
 
 ```{r design-kernel}
 factors <- list(cond = list(L = 2), time = list(L = 4))
@@ -71,8 +84,10 @@ q       <- nrow(kern$K)   # number of effect-coded columns
 q
 ```
 
-We simulate 10 subjects, each with `q` design effects and 60 voxels. A detectable signal
-distinguishing the two conditions is embedded in the condition contrast:
+We simulate 10 subjects, each with `q` design effects and 60 voxels. A
+detectable condition signal is planted only in voxels 1–10. That artificial
+localization gives the example a visible ground truth; the remaining voxels are
+noise.
 
 ```{r simulate}
 n_subjects <- 10L
@@ -93,6 +108,21 @@ make_subject <- function(id) {
 
 subjects <- lapply(seq_len(n_subjects), make_subject)
 ```
+
+```{r planted-signal, echo=FALSE, fig.height=3.2, fig.alt="Line plot showing a positive planted condition signal in voxels one through ten and zero signal elsewhere."}
+planted_voxel_signal <- c(rep(0.5, 10), rep(0, v - 10))
+plot(
+  seq_len(v), planted_voxel_signal, type = "h", lwd = 3,
+  col = ifelse(seq_len(v) <= 10, "#b33b2e", "grey75"),
+  xlab = "Voxel", ylab = "Planted condition effect",
+  main = "What the classifier has a chance to recover"
+)
+abline(h = 0, col = "grey60")
+```
+
+The signal plot describes the simulation, not the model output. The honest
+performance question remains whether a decoder trained without one subject can
+classify that held-out subject's A and B patterns.
 
 Fit the DKGE model using the design kernel. `design_kernel()` returns a list with `$K`
 (the q×q kernel matrix) and `$info` (factor metadata used by `dkge_targets()`):
@@ -155,6 +185,32 @@ An accuracy of 1 means every held-out condition row was classified correctly in
 this deliberately strong toy example. It is not an estimate of performance on
 an external dataset.
 
+Accuracy is easier to interpret alongside the errors it summarizes:
+
+```{r confusion-plot, echo=FALSE, fig.height=4, fig.width=4.8, fig.alt="Confusion-matrix heatmap for held-out condition predictions."}
+conf_mat <- dkge_confusion(cls, target = "cond")
+image(
+  seq_len(ncol(conf_mat)), seq_len(nrow(conf_mat)),
+  t(conf_mat[nrow(conf_mat):1, , drop = FALSE]),
+  col = grDevices::hcl.colors(12, "Blues 3"), axes = FALSE,
+  xlab = "Predicted class", ylab = "Observed class",
+  main = "Held-out predictions"
+)
+axis(1, at = seq_len(ncol(conf_mat)), labels = colnames(conf_mat))
+axis(2, at = seq_len(nrow(conf_mat)), labels = rev(rownames(conf_mat)))
+for (i in seq_len(nrow(conf_mat))) {
+  for (j in seq_len(ncol(conf_mat))) {
+    text(j, nrow(conf_mat) - i + 1, labels = conf_mat[i, j], font = 2)
+  }
+}
+box()
+```
+
+Rows are observed classes and columns are predictions. A strong diagonal means
+the held-out labels were recovered; off-diagonal counts reveal which classes
+are confused. For imbalanced classes, always pair this display with class
+counts and a metric such as balanced accuracy or log-loss.
+
 Convert to a tidy data frame for plotting or downstream analysis:
 
 ```{r tidy}
@@ -208,6 +264,9 @@ The `mode` argument controls how the group basis is applied at test time:
 
 `"auto"` (default) selects `"cell"` for within-subject targets and `"delta"` for
 between-subject targets.
+
+The strict route refits the basis for every held-out subject, so it is shown
+here for syntax rather than run:
 
 ```{r cell-cross, eval=FALSE}
 # Refit the basis without each held-out subject.
@@ -271,8 +330,10 @@ Labs using `multidesign::hyperdesign()` can supply design kernels and fold assig
 through coercion S3 generics. Any object implementing `as_dkge_kernel()` and
 `as_dkge_folds()` flows through the existing pipeline without altering the core solvers.
 
+The block below is illustrative and does not run here: it needs the
+`multidesign` package and a hyperdesign object you supply yourself.
+
 ```{r hyperdesign, eval=FALSE}
-# Pseudocode — requires multidesign package and a user-defined hyperdesign object
 library(multidesign)
 
 hd     <- make_demo_hyperdesign()                # user-supplied helper

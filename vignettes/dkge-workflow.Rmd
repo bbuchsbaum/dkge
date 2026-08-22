@@ -1,5 +1,8 @@
 ---
 title: 'DKGE Workflow: From Subject Betas to a Shared Map'
+description: >
+  Take subject beta matrices to a shared map: fit, read components, obtain
+  held-out contrast fields, and transport them to one parcellation.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -65,6 +68,17 @@ self-contained; replace the beta matrices, design matrices, and centroids with
 your own. If `q by P_s` and “design kernel” are not yet familiar, begin with
 `vignette("dkge")`.
 
+The workflow has two coordinate systems. The fit and contrast are defined in
+the shared **effect space**; the final map is defined in a shared **spatial
+space**. Keeping those stages separate is the central organizing idea:
+
+```text
+validate inputs -> fit in effect space -> name a contrast -> cross-fit subject fields -> transport to one map
+```
+
+Each section below ends by naming the object you now have and the operation
+that becomes valid next.
+
 ## What are the inputs?
 
 We use a 2 by 3 factorial design with a planted condition and load signal. Six
@@ -84,17 +98,39 @@ The output confirms a common number of effect rows and subject-specific
 cluster counts. In real data, beta-row names must match design-column names.
 `dkge_data()` validates that contract and preserves subject IDs.
 
+```{r input-shapes, echo=FALSE, fig.height=3.4, fig.alt="Bar chart showing that all six subjects share five effects but have different numbers of clusters."}
+input_shapes <- data.frame(
+  subject = toy$subject_ids,
+  clusters = vapply(toy$B_list, ncol, integer(1))
+)
+ggplot2::ggplot(input_shapes, ggplot2::aes(subject, clusters)) +
+  ggplot2::geom_col(fill = "#b33b2e", width = 0.72) +
+  ggplot2::geom_hline(yintercept = nrow(toy$K), linetype = 3, colour = "grey45") +
+  ggplot2::annotate("text", x = 5.7, y = nrow(toy$K) + 0.7,
+                    label = "5 shared effects", hjust = 1, size = 3.4) +
+  ggplot2::labs(
+    title = "The common dimension is effects, not clusters",
+    x = NULL, y = "Subject-specific clusters"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+The bars differ because each subject has a different spatial partition. The
+dashed line marks the five-row effect dimension that is common to every beta
+matrix. DKGE can pool information along that common dimension without
+pretending that cluster 7 in one subject is cluster 7 in another.
+
 ```{r bundle-workflow-data}
-data_bundle <- dkge_data(
+bundle <- dkge_data(
   toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids
 )
-c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+c(subjects = length(bundle$subject_ids), effects = bundle$q)
 ```
 
 ```{r bundle-workflow-checks, include=FALSE}
-stopifnot(length(data_bundle$subject_ids) == 6L)
-stopifnot(data_bundle$q == nrow(toy$K))
-stopifnot(length(unique(vapply(data_bundle$betas, nrow, integer(1)))) == 1L)
+stopifnot(length(bundle$subject_ids) == 6L)
+stopifnot(bundle$q == nrow(toy$K))
+stopifnot(length(unique(vapply(bundle$betas, nrow, integer(1)))) == 1L)
 ```
 
 **Next operation:** fit a low-rank group basis. If your subjects lack effects
@@ -106,9 +142,9 @@ or have very unequal cell precision, stop here and read
 Start with an identity kernel. It retains the GLM/design scaling but adds no
 kernel-imposed similarity between effects.
 
-```{r fit-identity}
-K_identity <- diag(data_bundle$q)
-fit_identity <- dkge(data_bundle, K = K_identity, rank = 2, w_method = "none")
+```{r fit-identity, fig.alt="Scree plot for the two-component identity-kernel baseline fit."}
+K_identity <- diag(bundle$q)
+fit_identity <- dkge(bundle, K = K_identity, rank = 2, w_method = "none")
 dkge_plot_scree(fit_identity)
 ```
 
@@ -118,7 +154,7 @@ their reliability or scientific importance.
 
 ```{r fit-identity-checks, include=FALSE}
 identity_var <- dkge_variance_explained(fit_identity)
-stopifnot(dim(fit_identity$U)[1] == data_bundle$q)
+stopifnot(dim(fit_identity$U)[1] == bundle$q)
 stopifnot(dim(fit_identity$U)[2] == 2L)
 stopifnot(all(is.finite(identity_var$prop_var)))
 stopifnot(sum(identity_var$prop_var) > 0)
@@ -137,7 +173,7 @@ prespecify the included terms. Both fits disable subject block weighting so
 the comparison isolates the kernel change.
 
 ```{r fit-structured}
-fit_structured <- dkge(data_bundle, K = toy$K, rank = 2, w_method = "none")
+fit_structured <- dkge(bundle, K = toy$K, rank = 2, w_method = "none")
 
 comparison <- data.frame(
   component = 1:2,
@@ -145,6 +181,25 @@ comparison <- data.frame(
   structured = dkge_variance_explained(fit_structured)$prop_var
 )
 round(comparison, 3)
+```
+
+```{r compare-kernel-variance, echo=FALSE, fig.height=3.5, fig.alt="Grouped bar chart comparing variance proportions for identity and structured design-kernel fits."}
+comparison_long <- rbind(
+  data.frame(component = comparison$component, kernel = "Identity", proportion = comparison$identity),
+  data.frame(component = comparison$component, kernel = "Structured", proportion = comparison$structured)
+)
+ggplot2::ggplot(
+  comparison_long,
+  ggplot2::aes(factor(component), proportion, fill = kernel)
+) +
+  ggplot2::geom_col(position = "dodge", width = 0.7) +
+  ggplot2::scale_y_continuous(labels = function(x) paste0(round(100 * x), "%")) +
+  ggplot2::labs(
+    title = "Where the two fits allocate retained variation",
+    x = "Component", y = "Proportion", fill = "Kernel"
+  ) +
+  ggplot2::theme_minimal(base_size = 11) +
+  ggplot2::theme(legend.position = "top")
 ```
 
 Compare the retained subspaces as well as the scree values. Because the bases
@@ -179,7 +234,7 @@ actually want to estimate.
 
 ## Which effect directions define the components?
 
-```{r show-effect-loadings}
+```{r show-effect-loadings, fig.alt="Heatmap of effect-space saliences for the first two components under the structured design kernel."}
 dkge_plot_effect_loadings(fit_structured, comps = 1:2)
 ```
 
@@ -193,7 +248,7 @@ Build the contrast in fitted effect order. Here the simulator identifies the
 coordinate for the planted condition term.
 
 ```{r fit-loso-contrast}
-condition_contrast <- numeric(data_bundle$q)
+condition_contrast <- numeric(bundle$q)
 condition_contrast[toy$active_cols$condition] <- 1
 
 condition_loso <- dkge_contrast(
@@ -211,7 +266,7 @@ nor does it supply group uncertainty by itself.
 
 ```{r fit-loso-checks, include=FALSE}
 loso_values <- condition_loso$values$condition
-stopifnot(length(loso_values) == length(data_bundle$subject_ids))
+stopifnot(length(loso_values) == length(bundle$subject_ids))
 stopifnot(identical(unname(vapply(loso_values, length, integer(1))),
                     unname(vapply(toy$B_list, ncol, integer(1)))))
 stopifnot(all(vapply(loso_values, function(x) all(is.finite(x)), logical(1))))
@@ -255,8 +310,39 @@ The returned matrix has subjects in rows and reference clusters in columns;
 parcellation. The attached `attr(transported, "cache")` can be reused for
 other contrasts or resampling.
 
-```{r transport-checks, include=FALSE}
+```{r transported-field, echo=FALSE, fig.height=4.2, fig.alt="Six faint subject-level transported contrast profiles with their median highlighted across the reference clusters."}
 transported_matrix <- transported$condition$subj_values
+transport_long <- data.frame(
+  subject = rep(toy$subject_ids, each = ncol(transported_matrix)),
+  cluster = rep(seq_len(ncol(transported_matrix)), times = nrow(transported_matrix)),
+  value = as.vector(t(transported_matrix))
+)
+transport_median <- data.frame(
+  cluster = seq_len(ncol(transported_matrix)),
+  value = apply(transported_matrix, 2, stats::median)
+)
+ggplot2::ggplot(transport_long, ggplot2::aes(cluster, value, group = subject)) +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey75") +
+  ggplot2::geom_line(colour = "#7f8c8d", alpha = 0.42, linewidth = 0.55) +
+  ggplot2::geom_line(
+    data = transport_median,
+    ggplot2::aes(cluster, value),
+    inherit.aes = FALSE, colour = "#b33b2e", linewidth = 1.2
+  ) +
+  ggplot2::labs(
+    title = "Cross-fitted subject fields after transport",
+    subtitle = "Grey: subjects; red: coordinate-wise median on the reference parcellation",
+    x = "Reference cluster", y = "Condition contrast"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+This is the first point at which a feature-by-feature group summary is
+well-defined. The grey profiles preserve the between-subject variation needed
+for inference; the red line is a descriptive center, not a substitute for
+subject-level uncertainty.
+
+```{r transport-checks, include=FALSE}
 stopifnot(nrow(transported_matrix) == length(toy$B_list))
 stopifnot(ncol(transported_matrix) == ncol(toy$B_list[[1]]))
 stopifnot(all(is.finite(transported_matrix)))

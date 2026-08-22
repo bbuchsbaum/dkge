@@ -16,13 +16,15 @@ dkge_define_folds(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object or `dkge_data` bundle}
+\item{fit}{A \code{dkge} object or \code{dkge_data} bundle}
 
 \item{type}{Type of fold definition:
-- `"subject"`: Random assignment of subjects to folds (default)
-- `"time"`: Split each subject's time series into temporal blocks
-- `"run"`: Use experimental runs as natural folds
-- `"custom"`: User provides fold assignments directly}
+\itemize{
+\item \code{"subject"}: Random assignment of subjects to folds (default)
+\item \code{"time"}: Split each subject's time series into temporal blocks
+\item \code{"run"}: Use experimental runs as natural folds
+\item \code{"custom"}: User provides fold assignments directly
+}}
 
 \item{k}{Number of folds (ignored for type="custom")}
 
@@ -37,11 +39,13 @@ dkge_define_folds(
 \item{...}{Additional arguments for specific fold types}
 }
 \value{
-A `dkge_folds` object containing:
-  - `type`: The fold type used
-  - `k`: Number of folds
-  - `assignments`: List specifying which data belongs to each fold
-  - `metadata`: Additional information about fold creation
+A \code{dkge_folds} object containing:
+\itemize{
+\item \code{type}: The fold type used
+\item \code{k}: Number of folds
+\item \code{assignments}: List specifying which data belongs to each fold
+\item \code{metadata}: Additional information about fold creation
+}
 }
 \description{
 Create fold assignments for subjects or time points in DKGE analysis.
@@ -51,18 +55,18 @@ splits, run-based partitions, and custom user-defined assignments.
 \details{
 Different fold types serve different purposes:
 
-**Subject-level folds** (`type = "subject"`): Assigns entire subjects to folds.
+\strong{Subject-level folds} (\code{type = "subject"}): Assigns entire subjects to folds.
 This maintains subject independence and is appropriate when subjects are
 exchangeable. Each fold will have approximately S/k subjects.
 
-**Time-based folds** (`type = "time"`): Splits each subject's time series into
+\strong{Time-based folds} (\code{type = "time"}): Splits each subject's time series into
 k temporal blocks. Useful for assessing temporal stability or when early vs
 late responses differ. Requires access to original time series dimensions.
 
-**Run-based folds** (`type = "run"`): Uses experimental runs as natural folds.
+\strong{Run-based folds} (\code{type = "run"}): Uses experimental runs as natural folds.
 Common in fMRI where runs provide natural breaks. Requires run indicators.
 
-**Custom folds** (`type = "custom"`): Full control over fold assignments.
+\strong{Custom folds} (\code{type = "custom"}): Full control over fold assignments.
 Supply a list where each element specifies indices for that fold.
 }
 \examples{

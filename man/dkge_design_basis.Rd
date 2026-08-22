@@ -13,26 +13,26 @@ dkge_design_basis(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{basis}{Optional custom q-by-m matrix. Row names, when present, are
-matched to `fit$effects`.}
+matched to \code{fit$effects}.}
 
 \item{include_intercept}{Include a grand-mean column for automatically built
 factorial bases.}
 
 \item{coding}{Contrast coding for automatically built factorial bases:
-`"sum"`, `"helmert"`, or `"poly"`.}
+\code{"sum"}, \code{"helmert"}, or \code{"poly"}.}
 
 \item{normalize}{Column scaling applied to automatically built bases,
 including the identity fallback used when the fit carries no design-cell
-metadata: `"unit_K"` (default) gives every column unit K-norm,
-\eqn{\sqrt{c^\top K c} = 1}; `"unit_l2"` gives unit Euclidean norm; and
-`"none"` leaves the coding matrix unscaled. User-supplied `basis` matrices
+metadata: \code{"unit_K"} (default) gives every column unit K-norm,
+\eqn{\sqrt{c^\top K c} = 1}; \code{"unit_l2"} gives unit Euclidean norm; and
+\code{"none"} leaves the coding matrix unscaled. User-supplied \code{basis} matrices
 are never rescaled.}
 }
 \value{
-A numeric matrix with attributes `term` and `source`.
+A numeric matrix with attributes \code{term} and \code{source}.
 }
 \description{
 Returns a q-by-m matrix whose columns define interpretable coordinates for
@@ -45,10 +45,10 @@ unique names; incomplete or ambiguous mappings are errors.
 \details{
 Basis columns are scored against saliences through \eqn{C^\top K U}, so the
 comparability of coordinates across columns is governed by the K metric, not
-by Euclidean length. Normalizing to unit Euclidean norm (`"unit_l2"`) leaves
+by Euclidean length. Normalizing to unit Euclidean norm (\code{"unit_l2"}) leaves
 columns with different K-norms — a grand-mean column is typically inflated
 relative to interaction columns purely by the metric — which is why
-`"unit_K"` is the default.
+\code{"unit_K"} is the default.
 }
 \examples{
 dk <- design_kernel(list(task = list(L = 2), measure = list(L = 3)),

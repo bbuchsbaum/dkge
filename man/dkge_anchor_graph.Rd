@@ -15,21 +15,21 @@ dkge_anchor_graph(
 \arguments{
 \item{anchors}{\eqn{Q \times 3} matrix of anchor coordinates.}
 
-\item{k}{Number of neighbours used in the graph (default 10).}
+\item{k}{Number of neighbors used in the graph (default 10).}
 
-\item{sigma}{Optional Gaussian length-scale (mm). If `NULL`, the
-`adjoin` defaults are used.}
+\item{sigma}{Optional Gaussian length-scale (mm). If \code{NULL}, the
+\code{adjoin} defaults are used.}
 
 \item{weight_mode}{Edge weighting scheme passed to
-[adjoin::graph_weights()]. Defaults to `"heat"`.}
+\code{\link[adjoin:graph_weights]{adjoin::graph_weights()}}. Defaults to \code{"heat"}.}
 
 \item{type}{Graph symmetrisation strategy (see
-[adjoin::graph_weights()]); `"mutual"` helps enforce
+\code{\link[adjoin:graph_weights]{adjoin::graph_weights()}}); \code{"mutual"} helps enforce
 symmetry.}
 }
 \value{
-A list containing the neighbour graph, sparse adjacency `W`,
-  degree matrix `D`, and Laplacian `L`.
+A list containing the neighbor graph, sparse adjacency \code{W},
+degree matrix \code{D}, and Laplacian \code{L}.
 }
 \description{
 Construct a kNN anchor graph and Laplacian

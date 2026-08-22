@@ -7,18 +7,18 @@
 dkge_render_subject_values(renderer, values_list, lambda = 0, to_vox = TRUE)
 }
 \arguments{
-\item{renderer}{Object produced by [dkge_build_renderer()].}
+\item{renderer}{Object produced by \code{\link[=dkge_build_renderer]{dkge_build_renderer()}}.}
 
 \item{values_list}{List of per-subject value vectors (aligned with centroids).}
 
 \item{lambda}{Optional Laplacian smoothing strength applied in anchor space.}
 
-\item{to_vox}{Logical; when `TRUE` (default) and a decoder is available,
+\item{to_vox}{Logical; when \code{TRUE} (default) and a decoder is available,
 voxel maps are produced.}
 }
 \value{
-A list with `anchor` (dense anchor field), optional `voxel` map,
-  the aggregation diagnostics, and the intermediate per-subject anchor maps.
+A list with \code{anchor} (dense anchor field), optional \code{voxel} map,
+the aggregation diagnostics, and the intermediate per-subject anchor maps.
 }
 \description{
 Render per-subject values to anchors and voxels

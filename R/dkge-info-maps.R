@@ -178,20 +178,20 @@ dkge_info_map_haufe <- function(fit,
 
 #' Group-LOCO anchor importance (zeroing proxy)
 #'
-#' Approximates the influence of each anchor by zeroing its neighbourhood in the
+#' Approximates the influence of each anchor by zeroing its neighborhood in the
 #' subject maps derived from classifier weights and accumulating the lost margin
 #' magnitude across subjects.
 #'
 #' @param clf Cross-fitted classifier from [dkge_cv_train_latent_classifier()].
 #' @param neighborhoods Optional list of integer vectors defining anchor
-#'   neighbourhoods. When `NULL`, the function derives them from the renderer's
+#'   neighborhoods. When `NULL`, the function derives them from the renderer's
 #'   anchor graph.
-#' @param k_nn When neighbourhoods are not supplied, limits the automatically
-#'   derived neighbourhood size.
+#' @param k_nn When neighborhoods are not supplied, limits the automatically
+#'   derived neighborhood size.
 #' @param aggregate Aggregation method across subjects: `"mean"` or `"sum"`.
 #' @inheritParams dkge_info_map_from_classifier
 #' @return A list with LOCO scores per anchor, per-subject anchor maps, and the
-#'   neighbourhood definition.
+#'   neighborhood definition.
 #' @export
 dkge_info_map_loco <- function(fit,
                                clf,

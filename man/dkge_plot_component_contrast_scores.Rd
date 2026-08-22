@@ -15,10 +15,10 @@ dkge_plot_component_contrast_scores(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{basis}{Optional custom q-by-m matrix. Row names, when present, are
-matched to `fit$effects`.}
+matched to \code{fit$effects}.}
 
 \item{comps}{Components to include (defaults to first min(rank, 6)).}
 
@@ -26,16 +26,16 @@ matched to `fit$effects`.}
 factorial bases.}
 
 \item{coding}{Contrast coding for automatically built factorial bases:
-`"sum"`, `"helmert"`, or `"poly"`.}
+\code{"sum"}, \code{"helmert"}, or \code{"poly"}.}
 
 \item{normalize}{Column scaling applied to automatically built bases,
 including the identity fallback used when the fit carries no design-cell
-metadata: `"unit_K"` (default) gives every column unit K-norm,
-\eqn{\sqrt{c^\top K c} = 1}; `"unit_l2"` gives unit Euclidean norm; and
-`"none"` leaves the coding matrix unscaled. User-supplied `basis` matrices
+metadata: \code{"unit_K"} (default) gives every column unit K-norm,
+\eqn{\sqrt{c^\top K c} = 1}; \code{"unit_l2"} gives unit Euclidean norm; and
+\code{"none"} leaves the coding matrix unscaled. User-supplied \code{basis} matrices
 are never rescaled.}
 
-\item{type}{Plot type: `"heatmap"` for compact comparison, `"bars"` for a
+\item{type}{Plot type: \code{"heatmap"} for compact comparison, \code{"bars"} for a
 component-by-component coordinate plot.}
 }
 \value{

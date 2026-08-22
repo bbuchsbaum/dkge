@@ -1,5 +1,8 @@
 ---
 title: Feature-Anchored DKGE
+description: >
+  Align subjects whose items differ by using feature anchors instead of a
+  shared discrete effect grid.
 author: dkge team
 output:
   rmarkdown::html_vignette:
@@ -46,11 +49,23 @@ cat(sprintf(
 ))
 ```
 
-## Overview
+The ordinary DKGE workflow assumes that subjects' effect rows can be named on
+one discrete grid. That assumption fails when each subject saw a different set
+of stimuli. If every item instead carries a comparable feature vector—such as
+an embedding—you can align subjects through representative locations in that
+feature space.
 
-This vignette describes how to run DKGE when each subject is observed on a different set of stimuli but every item carries a feature vector in a shared space (e.g., a 100-dimensional embedding). The feature-anchored workflow replaces discrete-cell completion with a common anchor basis derived directly from the feature space.
+## Why use feature anchors?
 
-We will:
+Feature anchors solve the *item alignment* problem. They do not solve spatial
+alignment of voxels or prove that the feature representation is scientifically
+adequate.
+
+```text
+different item sets + shared item features -> pooled feature anchors -> aligned item kernels -> DKGE basis
+```
+
+This page will:
 
 1. build an anchor descriptor from subject-specific features and item kernels,
 2. fit DKGE through the shared `dkge_input` interface, and
@@ -64,7 +79,9 @@ set.seed(1)
 
 ## Simulated feature-aligned data
 
-In this example we simulate three subjects. Each subject has their own set of item features sampled around four latent prototypes. We generate subject-specific beta maps by projecting the item responses through SVD loadings and adding gaussian noise.
+The example simulates three subjects. Each has its own item features, sampled
+around four latent prototypes, and its own clusters, so no two subjects share
+a parcellation.
 
 ```{r simulate-data}
 # Number of latent anchors and feature dimension
@@ -99,7 +116,8 @@ K_item_list  <- lapply(subjects, `[[`, "item_kernel")
 
 ## Build an anchor descriptor
 
-We choose 16 anchors via the default d-kpp selector. The descriptor records both the anchor configuration and the DKGE options to be used after congruence.
+The default d-kpp selector picks 16 anchors. The descriptor records the anchor
+configuration and the per-subject kernels built against it.
 
 ```{r build-descriptor}
 anchor_input <- dkge_input_anchor(
@@ -117,7 +135,9 @@ end-to-end cross-validation of feature preprocessing.
 
 ## Fit DKGE through the shared interface
 
-`dkge_fit_from_input()` converts the descriptor into aligned anchor kernels and calls the standard fitter. The resulting object is a regular `dkge` fit containing the anchor provenance.
+`dkge_fit_from_input()` converts the descriptor into aligned anchor kernels
+and calls the standard fitter, so the anchor path reuses the ordinary fit
+rather than forking it.
 
 ```{r fit-anchor}
 fit_anchor <- dkge_fit_from_input(anchor_input)
@@ -143,7 +163,8 @@ res_contrast$values$anchor1
 
 ## Using the pipeline helper
 
-The same workflow integrates with `dkge_pipeline()` by supplying the descriptor via the new `input` argument. All downstream services (contrasts, classification, inference, transport) operate exactly as with design-level inputs.
+`dkge_pipeline()` takes the same descriptor through its `input` argument, so
+the anchor workflow runs end to end without assembling the stages by hand.
 
 ```{r pipeline}
 pipeline_res <- dkge_pipeline(input = anchor_input,
@@ -187,7 +208,9 @@ end-to-end generalization performance.
 
 ## Diagnostics and provenance
 
-Anchor coverage, leverage, and bandwidth settings are stored under `fit$provenance$anchors`. These diagnostics are useful for checking whether the median heuristic and chosen number of anchors provide adequate coverage across subjects.
+Anchor coverage, leverage, and bandwidth settings are stored under
+`fit_anchor$provenance$anchors`. Read them to see whether a few subjects
+dominate the anchor basis.
 
 ```{r diagnostics}
 dkge_anchor_diagnostics(fit_anchor)
@@ -211,7 +234,19 @@ workflow shown here fixes anchors using all subjects.
   representations and should be compared empirically if the choice matters.
 - **Subgroups with identical items.** Subjects with identical feature rows receive
   projections into the same pooled anchor basis. Coverage and leverage diagnostics
-  in `fit$provenance$anchors` help reveal uneven representation; large leverage
+  in `fit_anchor$provenance$anchors` help reveal uneven representation; large leverage
   spikes indicate anchors dominated by a subset and may motivate a smaller `L` or
   tighter bandwidth. These diagnostics do not substitute for nested preprocessing
   when the target is out-of-sample performance.
+
+
+## Where to go next
+
+- `vignette("dkge-dense-rendering")` — the other half
+  of the spatial story: once subjects are aligned through anchors, this is how
+  cluster values become a dense field on a shared support.
+- `vignette("dkge-performance")` — mapper choice
+  and warm starts, which is where anchor count and bandwidth start to cost you
+  runtime.
+- `vignette("dkge-workflow")` — the ordinary discrete-grid path, for
+  contrast with the feature-anchored one.

@@ -39,7 +39,7 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
   )
 }
 
-#' Summarise DKGE diagnostics
+#' Summarize DKGE diagnostics
 #'
 #' Provides a compact list of variance explained, subject weights, and rank
 #' metadata for quick inspection.

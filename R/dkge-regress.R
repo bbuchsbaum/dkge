@@ -10,7 +10,7 @@
 #'
 #' @param fit A `dkge` object containing an effect-space basis (`fit$U`).
 #' @param Y Numeric matrix of shape `(#effects) x (#outputs)` with row names that
-#'   identify the effects/items to be modelled.
+#'   identify the effects/items to be modeled.
 #' @param effect_ids Optional character vector of effect identifiers to include
 #'   (defaults to `rownames(Y)`).
 #' @param folds Optional list giving held-out effect IDs for each fold. When

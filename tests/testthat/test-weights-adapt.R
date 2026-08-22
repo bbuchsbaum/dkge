@@ -29,6 +29,17 @@ test_that("adaptive weights: kenergy, precision, kenergy_prec", {
   expect_equal(w_kp, exp_kp, tolerance = 1e-6)
 })
 
+test_that("weight API fails closed for unsupported permutation-sensitive extensions", {
+  expect_error(
+    dkge_weights(adapt = "signed_mean"),
+    "should be one of"
+  )
+  expect_error(
+    dkge_weights(adapt = "none", perm_recompute = "always"),
+    "unused argument"
+  )
+})
+
 set.seed(2024)
 
 test_that("adaptive weighting homes in on informative voxels across rules", {

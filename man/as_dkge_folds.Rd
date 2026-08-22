@@ -9,17 +9,17 @@ as_dkge_folds(x, fit_or_data = NULL, ...)
 \arguments{
 \item{x}{Object describing fold assignments}
 
-\item{fit_or_data}{Optional `dkge` or `dkge_data` object used to resolve
+\item{fit_or_data}{Optional \code{dkge} or \code{dkge_data} object used to resolve
 subject identifiers}
 
 \item{...}{Additional arguments passed to methods}
 }
 \value{
-Object with class `dkge_folds`
+Object with class \code{dkge_folds}
 }
 \description{
-Coerce various fold specifications into the `dkge_folds` structure used by
-dkge cross-fitting helpers. Methods may use `fit_or_data` to resolve subject
+Coerce various fold specifications into the \code{dkge_folds} structure used by
+dkge cross-fitting helpers. Methods may use \code{fit_or_data} to resolve subject
 identifiers when necessary.
 }
 \examples{
@@ -27,6 +27,6 @@ folds <- as_dkge_folds(list(fold1 = 1:2, fold2 = 3:4))
 folds$k
 }
 \seealso{
-`vignette("dkge-classification", package = "dkge")` for an example
-  of fold conversion in practice.
+\code{vignette("dkge-classification", package = "dkge")} for an example
+of fold conversion in practice.
 }

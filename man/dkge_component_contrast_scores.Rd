@@ -14,10 +14,10 @@ dkge_component_contrast_scores(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{basis}{Optional custom q-by-m matrix. Row names, when present, are
-matched to `fit$effects`.}
+matched to \code{fit$effects}.}
 
 \item{comps}{Components to include (defaults to first min(rank, 6)).}
 
@@ -25,22 +25,22 @@ matched to `fit$effects`.}
 factorial bases.}
 
 \item{coding}{Contrast coding for automatically built factorial bases:
-`"sum"`, `"helmert"`, or `"poly"`.}
+\code{"sum"}, \code{"helmert"}, or \code{"poly"}.}
 
 \item{normalize}{Column scaling applied to automatically built bases,
 including the identity fallback used when the fit carries no design-cell
-metadata: `"unit_K"` (default) gives every column unit K-norm,
-\eqn{\sqrt{c^\top K c} = 1}; `"unit_l2"` gives unit Euclidean norm; and
-`"none"` leaves the coding matrix unscaled. User-supplied `basis` matrices
+metadata: \code{"unit_K"} (default) gives every column unit K-norm,
+\eqn{\sqrt{c^\top K c} = 1}; \code{"unit_l2"} gives unit Euclidean norm; and
+\code{"none"} leaves the coding matrix unscaled. User-supplied \code{basis} matrices
 are never rescaled.}
 }
 \value{
 Tidy data frame with one row per component and contrast-basis column.
 }
 \description{
-Computes \eqn{C' K U}, where columns of `C` are user-supplied or inferred
+Computes \eqn{C' K U}, where columns of \code{C} are user-supplied or inferred
 design contrasts. This is a coordinate summary of the raw saliences, not a
-replacement for inspecting `K %*% U` directly.
+replacement for inspecting \code{K \%*\% U} directly.
 }
 \examples{
 dk <- design_kernel(list(task = list(L = 2), measure = list(L = 3)),

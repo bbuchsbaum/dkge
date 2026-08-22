@@ -12,11 +12,11 @@ dkge_split_effect_precision(
 )
 }
 \arguments{
-\item{subject}{A `dkge_subject` containing two `split_betas` matrices.}
+\item{subject}{A \code{dkge_subject} containing two \code{split_betas} matrices.}
 
-\item{method}{Reliability transform. `"spearman_brown"` applies the
+\item{method}{Reliability transform. \code{"spearman_brown"} applies the
 Spearman-Brown correction to the non-negative half correlation;
-`"positive_r2"` squares the non-negative correlation.}
+\code{"positive_r2"} squares the non-negative correlation.}
 
 \item{min_features}{Minimum number of spatial units required to estimate a
 correlation.}
@@ -25,12 +25,12 @@ correlation.}
 Zero disables count shrinkage.}
 }
 \value{
-A named numeric effect-precision vector in `[0, 1]`. Diagnostics are
-  stored in the `"diagnostics"` attribute.
+A named numeric effect-precision vector in \verb{[0, 1]}. Diagnostics are
+stored in the \code{"diagnostics"} attribute.
 }
 \description{
 Converts the across-spatial-unit agreement between two stored effect
-estimates into a finite precision in `[0, 1]`. Negative or undefined
+estimates into a finite precision in \verb{[0, 1]}. Negative or undefined
 correlations map to zero. A deterministic count factor shrinks effects with
 few observations in either half.
 }

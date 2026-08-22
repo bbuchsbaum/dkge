@@ -27,3 +27,4 @@
 ^src/.*[.](o|so|dll)$
 ^src/symbols\.rds$
 ^\.rcmdcheck.*\.rds$
+^VIGNETTE-STYLE\.md$

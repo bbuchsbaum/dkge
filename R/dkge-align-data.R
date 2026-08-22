@@ -10,7 +10,7 @@
 #' The union is ordered by first appearance across `subjects`, so it depends on
 #' the order in which subjects are supplied. Pass `effects =` to [dkge_data()]
 #' (for example `dkge_effect_grid()$cell_labels`) when the global order has to
-#' be reproducible or has to agree with a labelled design kernel.
+#' be reproducible or has to agree with a labeled design kernel.
 #'
 #' @param subjects List of `dkge_subject` objects.
 #' @return List with aligned `subjects` and `provenance` (effect IDs, per-subject

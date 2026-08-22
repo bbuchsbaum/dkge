@@ -15,7 +15,7 @@ dkge_transport_to_voxels(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object containing subject loadings and centroids.}
+\item{fit}{A \code{dkge} object containing subject loadings and centroids.}
 
 \item{values}{List of subject value vectors (one per subject, length P_s).}
 
@@ -23,14 +23,14 @@ dkge_transport_to_voxels(
 
 \item{coords}{Optional list of voxel coordinate matrices.}
 
-\item{mapper}{Mapper specification or shorthand (defaults to `"ridge"`).}
+\item{mapper}{Mapper specification or shorthand (defaults to \code{"ridge"}).}
 
 \item{sizes}{Optional list of cluster masses (one vector per subject).}
 
 \item{...}{Additional mapper parameters.}
 }
 \value{
-List with `subj_values` (S x V matrix) and `value` (mean across subjects).
+List with \code{subj_values} (S x V matrix) and \code{value} (mean across subjects).
 }
 \description{
 Transport DKGE quantities directly to voxel space

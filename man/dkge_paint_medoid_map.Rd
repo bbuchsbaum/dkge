@@ -14,7 +14,7 @@ dkge_paint_medoid_map(values, labels, out_file = NULL)
 \item{out_file}{Optional path to save the rendered map.}
 }
 \value{
-A `BrainVolume` or file path, depending on `out_file`.
+A \code{BrainVolume} or file path, depending on \code{out_file}.
 }
 \description{
 Paint medoid cluster values back to a label volume

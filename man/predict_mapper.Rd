@@ -7,7 +7,7 @@
 predict_mapper(mapping, new_source_vals, ...)
 }
 \arguments{
-\item{mapping}{Mapping object returned by [fit_mapper()].}
+\item{mapping}{Mapping object returned by \code{\link[=fit_mapper]{fit_mapper()}}.}
 
 \item{new_source_vals}{Matrix or vector of new source values (P_s x K).}
 

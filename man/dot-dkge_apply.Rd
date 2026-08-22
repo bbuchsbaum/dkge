@@ -11,15 +11,15 @@
 
 \item{FUN}{Function to apply.}
 
-\item{parallel}{Logical; if `TRUE`, uses `future.apply::future_lapply()`.}
+\item{parallel}{Logical; if \code{TRUE}, uses \code{future.apply::future_lapply()}.}
 
 \item{...}{Additional arguments passed to the apply backend.}
 }
 \value{
-List of results matching `lapply()` semantics.
+List of results matching \code{lapply()} semantics.
 }
 \description{
-Wraps `lapply()` with an optional future.apply backend so callers can enable
-`parallel = TRUE` without repeating boilerplate dependency checks.
+Wraps \code{lapply()} with an optional future.apply backend so callers can enable
+\code{parallel = TRUE} without repeating boilerplate dependency checks.
 }
 \keyword{internal}

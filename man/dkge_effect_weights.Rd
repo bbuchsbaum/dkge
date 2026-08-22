@@ -14,23 +14,23 @@ dkge_effect_weights(
 )
 }
 \arguments{
-\item{method}{Effect precision source. `"none"` gives every observed effect
-equal precision, `"count"` uses `effect_n` stored on each subject,
-`"precision"` uses explicitly supplied `effect_precision` values, and
-`"random_effects"` combines within-subject uncertainty with a
+\item{method}{Effect precision source. \code{"none"} gives every observed effect
+equal precision, \code{"count"} uses \code{effect_n} stored on each subject,
+\code{"precision"} uses explicitly supplied \code{effect_precision} values, and
+\code{"random_effects"} combines within-subject uncertainty with a
 DerSimonian-Laird between-subject variance estimate.}
 
-\item{within}{Within-subject variance source for `method = "random_effects"`.
-`"noise"` uses `effect_noise_cov` and residual variances, `"count"` uses
-`1 / effect_n`, and `"auto"` prefers complete noise statistics before
+\item{within}{Within-subject variance source for \code{method = "random_effects"}.
+\code{"noise"} uses \code{effect_noise_cov} and residual variances, \code{"count"} uses
+\code{1 / effect_n}, and \code{"auto"} prefers complete noise statistics before
 falling back to complete counts.}
 
 \item{tau_method}{Between-subject variance estimator. Currently only the
-non-negative DerSimonian-Laird moment estimator (`"DL"`) is supported.}
+non-negative DerSimonian-Laird moment estimator (\code{"DL"}) is supported.}
 
 \item{max_ratio}{Maximum random-effects precision relative to the median
 positive precision for the same effect. This cap prevents a single subject
-from owning an effect geometry; `Inf` disables it.}
+from owning an effect geometry; \code{Inf} disables it.}
 
 \item{variance_floor}{Positive lower bound for within-subject variances.}
 
@@ -38,26 +38,26 @@ from owning an effect geometry; `Inf` disables it.}
 variance.}
 }
 \value{
-An object of class `dkge_effect_weights`, suitable for the
-  `effect_weights` argument of [dkge_fit()]. A precision of zero excludes that
-  subject-effect row. Pairwise reliability is the geometric mean of the two
-  effect precisions.
+An object of class \code{dkge_effect_weights}, suitable for the
+\code{effect_weights} argument of \code{\link[=dkge_fit]{dkge_fit()}}. A precision of zero excludes that
+subject-effect row. Pairwise reliability is the geometric mean of the two
+effect precisions.
 }
 \description{
 Effect weights control how unequally estimated subject-by-effect rows enter
-the pooled second moment. They are distinct from [dkge_weights()], which
-weights voxels or parcels, and from `w_method`, which supplies one scalar per
+the pooled second moment. They are distinct from \code{\link[=dkge_weights]{dkge_weights()}}, which
+weights voxels or parcels, and from \code{w_method}, which supplies one scalar per
 subject.
 }
 \details{
-For random effects, effect `c` uses
-  `p_sc = 1 / (v_sc + tau_c^2)`. The DerSimonian-Laird estimate is
-  `max(tau_floor, (Q - (k - 1)) / C, 0)`, followed by the documented
-  median-relative cap. Because subject parcel spaces need not be aligned,
-  heterogeneity is estimated from each effect row's spatial mean.
+For random effects, effect \code{c} uses
+\code{p_sc = 1 / (v_sc + tau_c^2)}. The DerSimonian-Laird estimate is
+\code{max(tau_floor, (Q - (k - 1)) / C, 0)}, followed by the documented
+median-relative cap. Because subject parcel spaces need not be aligned,
+heterogeneity is estimated from each effect row's spatial mean.
 
-  The package-wide default remains `"none"`. `"random_effects"` is an
-  opt-in policy for materially unbalanced trialwise designs.
+The package-wide default remains \code{"none"}. \code{"random_effects"} is an
+opt-in policy for materially unbalanced trialwise designs.
 }
 \examples{
 dkge_effect_weights("none")

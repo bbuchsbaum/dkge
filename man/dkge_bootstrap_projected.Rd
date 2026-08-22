@@ -15,16 +15,16 @@ dkge_bootstrap_projected(
 )
 }
 \arguments{
-\item{values_medoid}{List of length `S` where each element is a numeric vector
+\item{values_medoid}{List of length \code{S} where each element is a numeric vector
 defined on the medoid parcellation (e.g. LOSO contrast values).}
 
 \item{B}{Number of bootstrap replicates.}
 
 \item{aggregate}{Aggregation function applied to the resampled subjects
-(`"mean"` or `"median"`).}
+(\code{"mean"} or \code{"median"}).}
 
 \item{weights}{Optional subject weights applied when computing the resampled
-mean. Only used when `aggregate = "mean"`.}
+mean. Only used when \code{aggregate = "mean"}.}
 
 \item{seed}{Optional random seed for reproducibility.}
 
@@ -32,12 +32,12 @@ mean. Only used when `aggregate = "mean"`.}
 (columns = voxels). When supplied, summaries in voxel space are also
 returned.}
 
-\item{return_samples}{Logical; when `TRUE` the matrix of bootstrap samples is
+\item{return_samples}{Logical; when \code{TRUE} the matrix of bootstrap samples is
 returned in the output bundle.}
 }
 \value{
-A list containing bootstrap summaries (`mean`, `sd`, `z`, confidence
-  intervals), and optionally the raw bootstrap draws (medoid and voxel space).
+A list containing bootstrap summaries (\code{mean}, \code{sd}, \code{z}, confidence
+intervals), and optionally the raw bootstrap draws (medoid and voxel space).
 }
 \description{
 Resamples transported subject vectors (already aligned in the medoid

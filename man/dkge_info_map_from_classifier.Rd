@@ -14,26 +14,26 @@ dkge_info_map_from_classifier(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
-\item{betas}{Either a numeric vector of length `r` or a list of length `S`
+\item{betas}{Either a numeric vector of length \code{r} or a list of length \code{S}
 (number of subjects) containing one latent weight vector per subject.}
 
-\item{renderer}{Renderer produced by [dkge_build_renderer()].}
+\item{renderer}{Renderer produced by \code{\link[=dkge_build_renderer]{dkge_build_renderer()}}.}
 
 \item{lambda}{Non-negative smoothing parameter applied via
-[dkge_anchor_aggregate()].}
+\code{\link[=dkge_anchor_aggregate]{dkge_anchor_aggregate()}}.}
 
-\item{to_vox}{Logical; when `TRUE` and a decoder is available in `renderer`,
+\item{to_vox}{Logical; when \code{TRUE} and a decoder is available in \code{renderer},
 a dense voxel map is produced.}
 
-\item{inference}{One of `"none"`, `"signflip"`, or `"parametric"` specifying the
+\item{inference}{One of \code{"none"}, \code{"signflip"}, or \code{"parametric"} specifying the
 group inference routine applied to anchor maps.}
 }
 \value{
 A list containing the mean anchor field, optional voxel map,
-  per-subject anchor maps, and inference outputs (t- and p-values when
-  requested).
+per-subject anchor maps, and inference outputs (t- and p-values when
+requested).
 }
 \description{
 Pulls a cross-fitted latent weight vector \eqn{\beta^{(-s)}} back to each

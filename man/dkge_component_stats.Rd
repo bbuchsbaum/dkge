@@ -20,41 +20,43 @@ dkge_component_stats(
 dkge_write_component_stats(fit, file, ...)
 }
 \arguments{
-\item{fit}{A fitted `dkge` object.}
+\item{fit}{A fitted \code{dkge} object.}
 
-\item{mapper}{Mapper strategy (string or [dkge_mapper_spec()]). Defaults to
+\item{mapper}{Mapper strategy (string or \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}). Defaults to
 "sinkhorn".}
 
 \item{centroids}{Optional list of subject centroid matrices; defaults to
-centroids stored in `fit` if available.}
+centroids stored in \code{fit} if available.}
 
 \item{sizes}{Optional list of cluster masses (one vector per subject).}
 
 \item{inference}{One of "signflip" or "parametric", or a list providing
-`type`, `B`, `tail`, and `alpha`.}
+\code{type}, \code{B}, \code{tail}, and \code{alpha}.}
 
 \item{medoid}{Reference subject index (defaults to 1).}
 
 \item{components}{Optional vector of component indices or names; default is
 all components.}
 
-\item{adjust}{Method supplied to [stats::p.adjust()] for multiple testing
+\item{adjust}{Method supplied to \code{\link[stats:p.adjust]{stats::p.adjust()}} for multiple testing
 correction in the tidy summary.}
 
-\item{...}{Additional mapper-specific parameters (e.g. `epsilon`).}
+\item{...}{Additional mapper-specific parameters (e.g. \code{epsilon}).}
 
 \item{file}{Path to the CSV file where component statistics will be written.}
 }
 \value{
 A list with fields:
-  - `summary`: tidy data frame of statistics and p-values.
-  - `statistics`: per-component statistic vectors.
-  - `transport`: per-component transported subject matrices.
+\itemize{
+\item \code{summary}: tidy data frame of statistics and p-values.
+\item \code{statistics}: per-component statistic vectors.
+\item \code{transport}: per-component transported subject matrices.
+}
 }
 \description{
 Transports each subject's component loadings to a reference parcellation,
 computes inference statistics, and returns tidy summaries ready for
-visualisation.
+visualization.
 }
 \examples{
 \donttest{

@@ -232,7 +232,7 @@ dkpp_select_anchors <- function(X_train,
 #' @param whiten Logical; apply whitening with the anchor Gram inverse square
 #'   root.
 #' @param eps Diagonal jitter used during whitening.
-#' @param unit_trace Logical; trace-normalise each subject kernel to maintain
+#' @param unit_trace Logical; trace-normalize each subject kernel to maintain
 #'   comparable scale.
 #' @param item_weights Optional list of numeric vectors providing per-item
 #'   weights (`length == n_s`).

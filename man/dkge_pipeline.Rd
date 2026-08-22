@@ -21,36 +21,36 @@ dkge_pipeline(
 )
 }
 \arguments{
-\item{fit}{Optional pre-computed `dkge` object. If `NULL`, provide `betas`,
-`designs`, and `kernel` to fit inside the pipeline.}
+\item{fit}{Optional pre-computed \code{dkge} object. If \code{NULL}, provide \code{betas},
+\code{designs}, and \code{kernel} to fit inside the pipeline.}
 
 \item{input}{Optional DKGE input descriptor created with
-[dkge_input_anchor()] or future helpers. When supplied (and `fit` is
-`NULL`), `dkge_pipeline()` will build the fit via [dkge_fit_from_input()].}
+\code{\link[=dkge_input_anchor]{dkge_input_anchor()}} or future helpers. When supplied (and \code{fit} is
+\code{NULL}), \code{dkge_pipeline()} will build the fit via \code{\link[=dkge_fit_from_input]{dkge_fit_from_input()}}.}
 
-\item{betas, designs, kernel}{Inputs passed to [dkge()] when neither `fit` nor
-`input` is supplied.}
+\item{betas, designs, kernel}{Inputs passed to \code{\link[=dkge]{dkge()}} when neither \code{fit} nor
+\code{input} is supplied.}
 
-\item{omega}{Optional spatial weights forwarded to [dkge()].}
+\item{omega}{Optional spatial weights forwarded to \code{\link[=dkge]{dkge()}}.}
 
-\item{contrasts}{Contrast specification as accepted by [dkge_contrast()].}
+\item{contrasts}{Contrast specification as accepted by \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 
-\item{transport}{Either a transport specification/service or `NULL`.}
+\item{transport}{Either a transport specification/service or \code{NULL}.}
 
-\item{inference}{Either an inference specification/service or `NULL`.}
+\item{inference}{Either an inference specification/service or \code{NULL}.}
 
-\item{classification}{Optional specification passed to [dkge_classify()].}
+\item{classification}{Optional specification passed to \code{\link[=dkge_classify]{dkge_classify()}}.}
 
 \item{method}{Cross-fitting strategy for contrasts (default "loso").}
 
 \item{ridge}{Optional ridge added during held-out decompositions.}
 
-\item{...}{Additional arguments passed to [dkge()] when fitting inside the
-pipeline, or to [dkge_contrast()].}
+\item{...}{Additional arguments passed to \code{\link[=dkge]{dkge()}} when fitting inside the
+pipeline, or to \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 }
 \value{
 List containing the fit, diagnostics, raw contrast values, transported
-  maps (if requested), and inference results.
+maps (if requested), and inference results.
 }
 \description{
 Fits DKGE (if needed), computes cross-fitted contrasts, optionally transports

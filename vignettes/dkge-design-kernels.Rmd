@@ -1,5 +1,8 @@
 ---
 title: Design Kernels and Model Tuning
+description: >
+  Choose a design kernel that states a scientific belief, and compare candidates
+  on held-out subjects rather than on fit.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -60,9 +63,25 @@ cat(sprintf(
 ```
 
 
-This vignette demonstrates how the design kernel controls and guides DKGE model fits, and provides practical guidance on tuning rank and penalty parameters before conducting large-scale analyses. Understanding how to construct appropriate kernels and select optimal parameters is crucial for achieving robust and interpretable results in cluster-level fMRI analysis.
+Two analysts can fit the same beta matrices and obtain different latent
+representations because they encoded different relationships among effects.
+That choice is the design kernel. It should express a scientific belief you can
+name—for example, that adjacent ordinal levels are similar—not serve as an
+opaque tuning matrix.
 
-## Simulated Working Example
+This page answers three practical questions: what a kernel matrix means, how to
+compare defensible candidates on held-out subjects, and what ridge
+regularization can and cannot repair. The working sequence is:
+
+```text
+declare factors and terms -> inspect the resulting similarity matrix -> compare kernel x rank candidates -> refit once
+```
+
+If you do not yet have aligned `q` by `P_s` beta matrices, read
+`vignette("dkge-workflow")` first. The goal here is model selection within a
+fixed input contract.
+
+## What data will the candidates be judged on?
 
 ```{r data}
 library(dkge)
@@ -82,9 +101,11 @@ subjects <- lapply(seq_len(S), function(s) dkge_subject(betas[[s]], designs[[s]]
 bundle <- dkge_data(subjects)
 ```
 
-The `dkge_data()` function serves an important preprocessing role by aligning effect ordering across subjects and caching common metadata for efficient computation. The design kernel that we specify in subsequent steps determines how strongly different effects are smoothed or grouped together during the embedding process.
+`dkge_data()` aligns effect order across subjects and records the common
+metadata. Every candidate below sees these same beta and design matrices; only
+the effect-space geometry changes.
 
-## Building Kernels with `design_kernel()`
+## What does a design kernel look like?
 
 ```{r kernels}
 factors <- list(
@@ -103,7 +124,30 @@ K_struct <- design_kernel(
 round(K_struct$K, 2)
 ```
 
-The kernel construction process involves several key concepts. Each term in the design introduces a block-similarity component that captures relationships between effects. The `rho` parameter weights the contribution of each term, with a default value of 1, allowing you to control the relative importance of different components. By combining multiple terms, you can encode complex relationships such as interactions or ordered trends within your experimental design. The `design_kernel()` function returns not only the kernel matrix itself but also associated metadata that will be used by the cross-validation helper functions described in the following sections.
+Rows and columns are effect-coded coordinates. Bright off-diagonal cells mean
+that two coordinates are treated as similar by the declared factor terms;
+near-zero cells leave them largely uncoupled.
+
+```{r kernel-heatmap, echo=FALSE, fig.height=4.4, fig.width=5.2, fig.alt="Heatmap of the structured design kernel for the two-by-two factorial example."}
+kernel_df <- as.data.frame(as.table(K_struct$K), stringsAsFactors = FALSE)
+names(kernel_df) <- c("row", "column", "similarity")
+ggplot(kernel_df, aes(column, row, fill = similarity)) +
+  geom_tile(colour = "white", linewidth = 0.35) +
+  scale_fill_gradient2(low = "#315f8c", mid = "white", high = "#b33b2e") +
+  coord_equal() +
+  labs(
+    title = "Similarity implied by the declared design",
+    x = "Effect coordinate", y = "Effect coordinate", fill = "K"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Each term contributes one similarity component. `rho` controls its relative
+strength: here the two main effects receive weight 1 and their interaction
+receives weight 0.4. Those numbers encode a preference, not an empirical
+finding. `design_kernel()` also retains the factor and term metadata needed by
+target and cross-validation helpers.
 
 ## Which rank and kernel predict held-out structure?
 
@@ -143,6 +187,27 @@ the held-out energy. The selector applies its documented one-standard-error
 rule, preferring a lower rank among eligible pairs rather than blindly taking
 the largest observed mean.
 
+The full rank curves reveal more than the final pick:
+
+```{r kernel-cv-plot, echo=FALSE, fig.height=4.2, fig.alt="Cross-validation curves with uncertainty bars showing held-out explained energy by rank for each candidate design kernel."}
+cv_scores <- selection$tables$cv
+ggplot(cv_scores, aes(rank, mean, colour = kernel, group = kernel)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.08, alpha = 0.55) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = sort(unique(cv_scores$rank))) +
+  labs(
+    title = "Held-out energy, not in-sample fit, chooses the model",
+    x = "Retained rank", y = "Mean held-out explained energy", colour = "Kernel"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "right")
+```
+
+Look for a curve that is both high and reasonably stable across folds. A tiny
+advantage at a larger rank may not justify the added complexity; that is why
+the selector applies the one-standard-error rule.
+
 ```{r refit}
 best <- selection$pick
 best
@@ -166,7 +231,7 @@ fit_ridge <- dkge(bundle, K = K_best, rank = best$rank, ridge = 0.2)
 round(fit_ridge$sdev, 3)
 ```
 
-## Summary
+## What to check before choosing a kernel
 
 Use `design_kernel()` to encode effect relationships you can defend. If the
 structure is uncertain, include `diag(q)` as a baseline rather than assuming a
@@ -175,3 +240,12 @@ structured kernel must win. Compare kernels and ranks with
 Refit the selected configuration before running inference,
 and treat ridge as isotropic numerical regularization rather than an
 effect-selection device.
+
+## Where to go next
+
+- `vignette("dkge-workflow")` puts the selected kernel into the full
+  fit-to-map sequence.
+- `vignette("dkge-contrasts-inference")` evaluates a
+  prespecified contrast once the kernel is settled.
+- `vignette("dkge-partial-effect-spaces")` covers the case where
+  subjects do not all observe the same effects.

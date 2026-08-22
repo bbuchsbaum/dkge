@@ -16,30 +16,30 @@ dkge_prepare_transport(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object.}
+\item{fit}{A \code{dkge} object.}
 
 \item{centroids}{List of subject centroid matrices. Defaults to the centroids
-stored on `fit` or `fit$input`.}
+stored on \code{fit} or \code{fit$input}.}
 
-\item{loadings}{Optional list of subject loadings (`P_s x r`). When omitted,
-they are recomputed from `fit$Btil` or the supplied `betas`.}
+\item{loadings}{Optional list of subject loadings (\verb{P_s x r}). When omitted,
+they are recomputed from \code{fit$Btil} or the supplied \code{betas}.}
 
 \item{betas}{Optional list of subject betas used to recompute loadings when
-`loadings` is `NULL`.}
+\code{loadings} is \code{NULL}.}
 
 \item{sizes}{Optional list of cluster masses.}
 
 \item{mapper}{Mapper specification or shorthand passed to
-[dkge_mapper_spec()].}
+\code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}.}
 
 \item{medoid}{Index (1-based) of the reference subject.}
 
-\item{...}{Additional mapper arguments such as `epsilon` or `lambda_spa`.}
+\item{...}{Additional mapper arguments such as \code{epsilon} or \code{lambda_spa}.}
 }
 \value{
-A list containing cached application `operators`, joint transport
-  `plans`, solver `diagnostics`, `mapper_spec`, `feature_list`, `size_list`,
-  `feature_ref`, `size_ref`, `centroids`, and `medoid`.
+A list containing cached application \code{operators}, joint transport
+\code{plans}, solver \code{diagnostics}, \code{mapper_spec}, \code{feature_list}, \code{size_list},
+\code{feature_ref}, \code{size_ref}, \code{centroids}, and \code{medoid}.
 }
 \description{
 Computes and caches subject-to-medoid transport matrices so downstream

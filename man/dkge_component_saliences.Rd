@@ -12,16 +12,16 @@ dkge_component_saliences(
 )
 }
 \arguments{
-\item{fit}{Fitted `dkge` object.}
+\item{fit}{Fitted \code{dkge} object.}
 
 \item{comps}{Components to include (defaults to first min(rank, 6)).}
 
-\item{scale}{Optional within-component display scaling. `"raw"` leaves
-saliences on their original scale, `"unit"` rescales each component to unit
-K-norm of the underlying latent vector (see Details), and `"zscore"`
+\item{scale}{Optional within-component display scaling. \code{"raw"} leaves
+saliences on their original scale, \code{"unit"} rescales each component to unit
+K-norm of the underlying latent vector (see Details), and \code{"zscore"}
 z-scores each component across effects.}
 
-\item{long}{Logical; return a tidy long data frame when `TRUE`, otherwise a
+\item{long}{Logical; return a tidy long data frame when \code{TRUE}, otherwise a
 numeric effects-by-components matrix.}
 }
 \value{
@@ -33,13 +33,13 @@ coordinates most users should inspect first: each row is an effect or design
 cell, each column is a DKGE latent variable.
 }
 \details{
-The salience matrix is exactly \eqn{K U[, comps]}. Because `fit$U` is
+The salience matrix is exactly \eqn{K U[, comps]}. Because \code{fit$U} is
 K-orthonormal (\eqn{U^\top K U = I}), each salience column already has unit
-norm in the metric dual to `K`, i.e.
-\eqn{s_j^\top K^{-1} s_j = u_j^\top K u_j = 1}. `scale = "unit"` therefore
-divides column `j` by \eqn{\sqrt{u_j^\top K u_j}} and is a no-op for a
+norm in the metric dual to \code{K}, i.e.
+\eqn{s_j^\top K^{-1} s_j = u_j^\top K u_j = 1}. \code{scale = "unit"} therefore
+divides column \code{j} by \eqn{\sqrt{u_j^\top K u_j}} and is a no-op for a
 well-formed fit; it is retained so that hand-assembled or perturbed bases are
-put back on a comparable footing. It deliberately does **not** divide by the
+put back on a comparable footing. It deliberately does \strong{not} divide by the
 Euclidean norm, which would distort the K geometry.
 }
 \examples{

@@ -8,23 +8,25 @@ dkge_subject(x, ...)
 }
 \arguments{
 \item{x}{Source object containing subject-level data:
-- matrix: qxP beta coefficients (effects x clusters/voxels)
-- NeuroVec: 4D time-series data (TxXxYxZ), betas computed via GLM
-- ClusteredNeuroVec: Cluster time-series (TxK), betas computed via GLM}
+\itemize{
+\item matrix: qxP beta coefficients (effects x clusters/voxels)
+\item NeuroVec: 4D time-series data (TxXxYxZ), betas computed via GLM
+\item ClusteredNeuroVec: Cluster time-series (TxK), betas computed via GLM
+}}
 
 \item{...}{Additional arguments passed to methods. For the matrix method:
-`design` (Subject design matrix T_s x q), `id` (Optional subject identifier),
-`omega` (Optional cluster weights - numeric vector length P or PxP matrix),
-`observed_rows` (Optional observed effect-row indices in a global effect
-space; defaults to all local rows), `effect_n` (per-effect trial counts),
-`effect_precision` (direct per-effect precision), `effect_noise_cov`
-(q-by-q covariance multiplier such as `(X'X)^-1`), `residual_variance`
-(per-column residual variances), `noise_trace` (optional precomputed spatial
-noise trace), and `split_betas` (two q-by-P half estimates).
+\code{design} (Subject design matrix T_s x q), \code{id} (Optional subject identifier),
+\code{omega} (Optional cluster weights - numeric vector length P or PxP matrix),
+\code{observed_rows} (Optional observed effect-row indices in a global effect
+space; defaults to all local rows), \code{effect_n} (per-effect trial counts),
+\code{effect_precision} (direct per-effect precision), \code{effect_noise_cov}
+(q-by-q covariance multiplier such as \verb{(X'X)^-1}), \code{residual_variance}
+(per-column residual variances), \code{noise_trace} (optional precomputed spatial
+noise trace), and \code{split_betas} (two q-by-P half estimates).
 For ClusteredNeuroVec method: omega defaults to cluster sizes if not provided}
 }
 \value{
-Object of class `dkge_subject`
+Object of class \code{dkge_subject}
 }
 \description{
 Construct a DKGE subject record

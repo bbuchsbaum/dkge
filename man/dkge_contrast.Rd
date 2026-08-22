@@ -18,7 +18,7 @@ dkge_contrast(
 )
 }
 \arguments{
-\item{fit}{A `dkge` object from [dkge_fit()] or [dkge()]}
+\item{fit}{A \code{dkge} object from \code{\link[=dkge_fit]{dkge_fit()}} or \code{\link[=dkge]{dkge()}}}
 
 \item{contrasts}{Either a q-length numeric vector for a single contrast,
 a named list of contrasts, or a qxk matrix where columns are contrasts}
@@ -27,11 +27,11 @@ a named list of contrasts, or a qxk matrix where columns are contrasts}
 "kfold" (K-fold cross-validation), or "analytic" (first-order approximation)}
 
 \item{folds}{For method="kfold", either an integer K for random folds,
-or a list defining custom fold assignments (see [dkge_define_folds()])}
+or a list defining custom fold assignments (see \code{\link[=dkge_define_folds]{dkge_define_folds()}})}
 
 \item{ridge}{Optional ridge parameter added when recomputing held-out basis}
 
-\item{parallel}{Logical; if TRUE uses `future.apply::future_lapply()` for
+\item{parallel}{Logical; if TRUE uses \code{future.apply::future_lapply()} for
 per-subject work (requires the future.apply package)}
 
 \item{verbose}{Logical; print progress messages}
@@ -40,19 +40,21 @@ per-subject work (requires the future.apply package)}
 
 \item{transport}{Optional list describing how to transport subject-level
 contrasts to a shared reference parcellation. Supply either explicit
-transport matrices via `transforms`/`matrices`, or configuration for the
-medoid/atlas transport helpers (e.g., `method`, `centroids`, `medoid`). When
+transport matrices via \code{transforms}/\code{matrices}, or configuration for the
+medoid/atlas transport helpers (e.g., \code{method}, \code{centroids}, \code{medoid}). When
 provided, the resulting transport bundle is stored under
-`metadata$transport` for downstream reuse.}
+\code{metadata$transport} for downstream reuse.}
 
 \item{...}{Additional arguments passed to method-specific functions}
 }
 \value{
-A list with class `dkge_contrasts` containing:
-  - `values`: Named list of contrast values (one P_s vector per subject per contrast)
-  - `method`: Cross-fitting method used
-  - `contrasts`: Input contrast specifications
-  - `metadata`: Method-specific metadata (fold assignments, bases, etc.)
+A list with class \code{dkge_contrasts} containing:
+\itemize{
+\item \code{values}: Named list of contrast values (one P_s vector per subject per contrast)
+\item \code{method}: Cross-fitting method used
+\item \code{contrasts}: Input contrast specifications
+\item \code{metadata}: Method-specific metadata (fold assignments, bases, etc.)
+}
 }
 \description{
 Main entry point for computing design contrasts after DKGE fit, with support
@@ -60,19 +62,18 @@ for multiple cross-fitting strategies to ensure unbiased estimation.
 }
 \details{
 This function provides a unified interface to three cross-fitting strategies:
-
-1. **LOSO** (`method = "loso"`): Recomputes the basis excluding each subject,
-   then projects that subject's data. This is the gold standard for unbiased
-   estimation but requires S eigen-decompositions.
-
-2. **K-fold** (`method = "kfold"`): Splits data into K folds, recomputes basis
-   excluding each fold, projects held-out data. More efficient than LOSO while
-   maintaining good bias properties. Supports time-based, run-based, or custom
-   fold definitions.
-
-3. **Analytic** (`method = "analytic"`): Uses first-order eigenvalue perturbation
-   theory to approximate the LOSO solution without full recomputation. Fast but
-   may be less accurate when subjects have high leverage.
+\enumerate{
+\item \strong{LOSO} (\code{method = "loso"}): Recomputes the basis excluding each subject,
+then projects that subject's data. This is the gold standard for unbiased
+estimation but requires S eigen-decompositions.
+\item \strong{K-fold} (\code{method = "kfold"}): Splits data into K folds, recomputes basis
+excluding each fold, projects held-out data. More efficient than LOSO while
+maintaining good bias properties. Supports time-based, run-based, or custom
+fold definitions.
+\item \strong{Analytic} (\code{method = "analytic"}): Uses first-order eigenvalue perturbation
+theory to approximate the LOSO solution without full recomputation. Fast but
+may be less accurate when subjects have high leverage.
+}
 
 All methods work entirely in the qxq design space and respect the K-metric
 throughout. Multiple contrasts can be evaluated simultaneously for efficiency.
@@ -95,5 +96,5 @@ result_fast <- dkge_contrast(fit, c1, method = "analytic")
 
 }
 \seealso{
-[dkge_loso_contrast()], [dkge_define_folds()], [dkge_infer()]
+\code{\link[=dkge_loso_contrast]{dkge_loso_contrast()}}, \code{\link[=dkge_define_folds]{dkge_define_folds()}}, \code{\link[=dkge_infer]{dkge_infer()}}
 }
