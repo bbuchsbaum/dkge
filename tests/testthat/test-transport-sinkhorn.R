@@ -93,7 +93,7 @@ test_that("dkge_clear_sinkhorn_cache removes cached entries", {
   C <- matrix(c(0, 1, 1, 0.2), 2, 2)
   mu <- rep(0.5, 2)
   nu <- rep(0.5, 2)
-  invisible(dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1, max_iter = 10))
+  invisible(dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = 0.1))
 
   expect_gt(length(setdiff(ls(env, all.names = TRUE), ".order")), 0)
 

@@ -20,7 +20,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgload, any::testthat, any::T4transport, local::.
+          extra-packages: any::pkgload, any::testthat, any::T4transport, bbuchsbaum/fmrihrf, local::.
 
       - name: Run Sinkhorn oracle tests
         run: |
