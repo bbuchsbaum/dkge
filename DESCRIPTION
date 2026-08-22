@@ -51,6 +51,7 @@ LinkingTo:
     RcppArmadillo
 Remotes:
     bbuchsbaum/albersdown,
+    bbuchsbaum/fmrihrf,
     bbuchsbaum/neuralign,
     bbuchsbaum/neuroim2,
     bbuchsbaum/fmridesign,
