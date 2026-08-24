@@ -14,6 +14,7 @@ dkge_contrast(
   verbose = FALSE,
   align = TRUE,
   transport = NULL,
+  collinearity_tol = 0.05,
   ...
 )
 }
@@ -44,6 +45,12 @@ transport matrices via \code{transforms}/\code{matrices}, or configuration for t
 medoid/atlas transport helpers (e.g., \code{method}, \code{centroids}, \code{medoid}). When
 provided, the resulting transport bundle is stored under
 \code{metadata$transport} for downstream reuse.}
+
+\item{collinearity_tol}{Relative angular tolerance used to flag distinct
+input contrasts whose kernel-transformed queries are practically
+proportional. The default \code{0.05} flags absolute query correlations of at
+least \code{0.95}; use \code{NULL} to disable this warning. This is deliberately
+separate from the much smaller null-space tolerance used for estimability.}
 
 \item{...}{Additional arguments passed to method-specific functions}
 }

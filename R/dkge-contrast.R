@@ -24,6 +24,11 @@
 #'   medoid/atlas transport helpers (e.g., `method`, `centroids`, `medoid`). When
 #'   provided, the resulting transport bundle is stored under
 #'   `metadata$transport` for downstream reuse.
+#' @param collinearity_tol Relative angular tolerance used to flag distinct
+#'   input contrasts whose kernel-transformed queries are practically
+#'   proportional. The default `0.05` flags absolute query correlations of at
+#'   least `0.95`; use `NULL` to disable this warning. This is deliberately
+#'   separate from the much smaller null-space tolerance used for estimability.
 #' @param ... Additional arguments passed to method-specific functions
 #'
 #' @return A list with class `dkge_contrasts` containing:
@@ -81,13 +86,16 @@ dkge_contrast <- function(fit, contrasts,
                          verbose = FALSE,
                          align = TRUE,
                          transport = NULL,
+                         collinearity_tol = 0.05,
                          ...) {
   stopifnot(inherits(fit, "dkge"))
   method <- match.arg(method)
 
   # Normalize contrast input
   contrast_list <- .normalize_contrasts(contrasts, fit)
-  kernel_contrast_info <- .dkge_validate_kernel_contrasts(contrast_list, fit)
+  kernel_contrast_info <- .dkge_validate_kernel_contrasts(
+    contrast_list, fit, collinearity_tol = collinearity_tol
+  )
   contrast_info <- .dkge_classify_contrasts(contrast_list, fit)
   .dkge_warn_contrast_inference(contrast_info, method)
 
@@ -104,6 +112,7 @@ dkge_contrast <- function(fit, contrasts,
   result$metadata$contrast_estimability <- contrast_info
   result$metadata$kernel_estimability <- kernel_contrast_info$table
   result$metadata$kernel_query_pairs <- kernel_contrast_info$pairs
+  result$metadata$kernel_query_summary <- kernel_contrast_info$summary
   if (is.null(result$metadata$provenance) && !is.null(fit$provenance)) {
     result$metadata$provenance <- fit$provenance
   }
@@ -232,10 +241,14 @@ dkge_contrast <- function(fit, contrasts,
 #' @param fit A fitted `dkge` object.
 #' @param contrasts A contrast vector, matrix, or list accepted by
 #'   [dkge_contrast()].
-#' @param tol Numerical tolerance for null-space and proportional-query checks.
+#' @param tol Numerical tolerance used only for null-space estimability checks.
+#' @param collinearity_tol Relative angular tolerance used to flag practically
+#'   proportional transformed queries. The default `0.05` corresponds to
+#'   `abs(query_correlation) >= 0.95`; use `NULL` to disable collision flags.
 #' @return A list with `estimability` (support and null fractions per contrast),
-#'   `pairs` (pairwise transformed-query correlations and collision flags), and
-#'   scalar `kernel` rank diagnostics.
+#'   `pairs` (pairwise transformed-query correlations and collision flags), a
+#'   compact `summary` naming the maximally correlated pair, and scalar `kernel`
+#'   rank and spectral-concentration diagnostics.
 #' @export
 #' @examples
 #' toy <- dkge_sim_toy(
@@ -245,19 +258,35 @@ dkge_contrast <- function(fit, contrasts,
 #' fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 #' c_vec <- c(1, -1, rep(0, nrow(fit$U) - 2))
 #' dkge_contrast_diagnostics(fit, c_vec)$estimability
-dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
+dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8,
+                                      collinearity_tol = 0.05) {
   stopifnot(inherits(fit, "dkge"))
   if (!is.numeric(tol) || length(tol) != 1L || !is.finite(tol) ||
       tol <= 0 || tol >= 1) {
     stop("`tol` must be one finite scalar in (0, 1).", call. = FALSE)
   }
+  .dkge_validate_collinearity_tol(collinearity_tol)
   contrast_list <- .normalize_contrasts(contrasts, fit)
-  diagnostics <- .dkge_kernel_contrast_diagnostics(contrast_list, fit, tol = tol)
+  diagnostics <- .dkge_kernel_contrast_diagnostics(
+    contrast_list, fit, tol = tol, collinearity_tol = collinearity_tol
+  )
   list(
     estimability = diagnostics$table,
     pairs = diagnostics$pairs,
+    summary = diagnostics$summary,
     kernel = diagnostics$kernel
   )
+}
+
+.dkge_validate_collinearity_tol <- function(collinearity_tol) {
+  if (is.null(collinearity_tol)) return(invisible(NULL))
+  if (!is.numeric(collinearity_tol) || length(collinearity_tol) != 1L ||
+      !is.finite(collinearity_tol) || collinearity_tol <= 0 ||
+      collinearity_tol >= 1) {
+    stop("`collinearity_tol` must be NULL or one finite scalar in (0, 1).",
+         call. = FALSE)
+  }
+  invisible(NULL)
 }
 
 #' Diagnose contrast estimability in a semidefinite kernel geometry
@@ -269,7 +298,9 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
 #'
 #' @keywords internal
 #' @noRd
-.dkge_kernel_contrast_diagnostics <- function(contrast_list, fit, tol = 1e-8) {
+.dkge_kernel_contrast_diagnostics <- function(contrast_list, fit, tol = 1e-8,
+                                               collinearity_tol = 0.05) {
+  .dkge_validate_collinearity_tol(collinearity_tol)
   geometry <- .dkge_kernel_geometry(fit$K)
   P <- fit$kernel_support_projector %||% geometry$support_projector
   contrast_names <- names(contrast_list) %||%
@@ -319,8 +350,10 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
       raw_cor <- cosine(transformed[[i1]], transformed[[i2]])
       query_defined <- table$status[[i1]] != "null" && table$status[[i2]] != "null"
       if (!query_defined) query_cor <- NA_real_
-      collision <- query_defined && is.finite(query_cor) && is.finite(raw_cor) &&
-        (1 - abs(query_cor)) <= tol && (1 - abs(raw_cor)) > tol
+      collision <- !is.null(collinearity_tol) && query_defined &&
+        is.finite(query_cor) && is.finite(raw_cor) &&
+        (1 - abs(query_cor)) <= collinearity_tol &&
+        (1 - abs(raw_cor)) > collinearity_tol
       data.frame(
         contrast1 = contrast_names[[i1]],
         contrast2 = contrast_names[[i2]],
@@ -341,7 +374,29 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
     )
   }
 
-  list(table = table, pairs = pair_table, queries = queries,
+  finite_pairs <- which(is.finite(pair_table$query_correlation))
+  max_idx <- if (length(finite_pairs)) {
+    finite_pairs[[which.max(abs(pair_table$query_correlation[finite_pairs]))]]
+  } else {
+    NA_integer_
+  }
+  query_summary <- list(
+    n_contrasts = nrow(table),
+    n_pairs = nrow(pair_table),
+    n_collisions = sum(pair_table$collision, na.rm = TRUE),
+    max_abs_query_correlation = if (is.na(max_idx)) NA_real_ else
+      abs(pair_table$query_correlation[[max_idx]]),
+    max_query_correlation = if (is.na(max_idx)) NA_real_ else
+      pair_table$query_correlation[[max_idx]],
+    max_query_pair = if (is.na(max_idx)) character(0) else
+      c(contrast1 = pair_table$contrast1[[max_idx]],
+        contrast2 = pair_table$contrast2[[max_idx]]),
+    min_query_norm = if (nrow(table)) min(table$query_norm) else NA_real_,
+    max_query_norm = if (nrow(table)) max(table$query_norm) else NA_real_,
+    collinearity_tol = collinearity_tol
+  )
+
+  list(table = table, pairs = pair_table, summary = query_summary, queries = queries,
        kernel = .dkge_kernel_diagnostics(geometry))
 }
 
@@ -349,8 +404,11 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
 #'
 #' @keywords internal
 #' @noRd
-.dkge_validate_kernel_contrasts <- function(contrast_list, fit, tol = 1e-8) {
-  diagnostics <- .dkge_kernel_contrast_diagnostics(contrast_list, fit, tol = tol)
+.dkge_validate_kernel_contrasts <- function(contrast_list, fit, tol = 1e-8,
+                                            collinearity_tol = 0.05) {
+  diagnostics <- .dkge_kernel_contrast_diagnostics(
+    contrast_list, fit, tol = tol, collinearity_tol = collinearity_tol
+  )
   null_names <- diagnostics$table$contrast[diagnostics$table$status == "null"]
   if (length(null_names)) {
     .dkge_abort(
@@ -391,8 +449,9 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
     .dkge_warn(
       sprintf(
         paste0(
-          "Distinct contrast pairs collapse to proportional kernel queries: %s. ",
-          "Their DKGE maps can differ only by scale or sign; inspect ",
+          "Distinct contrast pairs produce nearly proportional kernel queries: %s. ",
+          "Their DKGE maps may be practically indistinguishable up to scale or ",
+          "sign; inspect ",
           "`metadata$kernel_query_pairs`."
         ),
         paste(labels, collapse = "; ")

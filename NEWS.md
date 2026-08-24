@@ -4,7 +4,12 @@
 
 * `dkge_contrast_diagnostics()` preflights planned contrasts against the fitted
   kernel support, reporting retained/null fractions and distinct contrasts
-  that collapse to proportional kernel queries.
+  that produce nearly proportional kernel queries. Numerical support tolerance is
+  now separate from practical query collinearity; the returned summary names
+  the maximally correlated query pair and reports the query-norm range.
+* `dkge_component_contrasts()` constructs the component-isolating contrast
+  matrix `R %*% U`. This makes the contrast path distinct from the dual
+  salience/read-out basis `K %*% U`, which must not be fed back as a contrast.
 * `dkge_signflip_maxT()` now explicitly exposes both max-T FWER-adjusted `p`
   and per-location unadjusted `p_unadj`. The latter is the raw value reported
   by `dkge_infer()` in `p_values`, while `p_adjusted` retains max-T control;
@@ -66,6 +71,11 @@
   `kernel_rank_policy = "allow_singular"`; excluded candidates remain in audit
   rows, and score saturation is flagged, preventing a low-rank kernel from
   grading itself only on the directions it kept.
+* Full-rank but spectrally concentrated kernels now expose participation-ratio
+  effective rank, effective-rank fraction, and leading-eigenvalue share in fit,
+  contrast, and CV diagnostics. CV warns—without changing its predictive
+  selection—when the selected kernel is effectively too concentrated for the
+  selected latent rank.
 * Sinkhorn transport now separates joint couplings from value-application
   operators. Intensive fields preserve constants, extensive values preserve
   total mass, fitted reliability is not applied twice, and each solve reports

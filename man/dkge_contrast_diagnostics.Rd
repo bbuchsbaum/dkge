@@ -4,7 +4,7 @@
 \alias{dkge_contrast_diagnostics}
 \title{Diagnose whether a kernel can represent planned contrasts}
 \usage{
-dkge_contrast_diagnostics(fit, contrasts, tol = 1e-08)
+dkge_contrast_diagnostics(fit, contrasts, tol = 1e-08, collinearity_tol = 0.05)
 }
 \arguments{
 \item{fit}{A fitted \code{dkge} object.}
@@ -12,12 +12,17 @@ dkge_contrast_diagnostics(fit, contrasts, tol = 1e-08)
 \item{contrasts}{A contrast vector, matrix, or list accepted by
 \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 
-\item{tol}{Numerical tolerance for null-space and proportional-query checks.}
+\item{tol}{Numerical tolerance used only for null-space estimability checks.}
+
+\item{collinearity_tol}{Relative angular tolerance used to flag practically
+proportional transformed queries. The default \code{0.05} corresponds to
+\code{abs(query_correlation) >= 0.95}; use \code{NULL} to disable collision flags.}
 }
 \value{
 A list with \code{estimability} (support and null fractions per contrast),
-\code{pairs} (pairwise transformed-query correlations and collision flags), and
-scalar \code{kernel} rank diagnostics.
+\code{pairs} (pairwise transformed-query correlations and collision flags), a
+compact \code{summary} naming the maximally correlated pair, and scalar \code{kernel}
+rank and spectral-concentration diagnostics.
 }
 \description{
 Performs a read-only preflight check in the same pooled-design and kernel

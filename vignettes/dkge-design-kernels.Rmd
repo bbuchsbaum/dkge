@@ -230,7 +230,10 @@ A positive-semidefinite kernel may be singular on purpose. Then DKGE works in
 the quotient space `image(K)`: directions in `null(K)` have been declared
 indistinguishable or irrelevant. That is a substantive restriction, not a
 numerical nuisance. `kernel_roots()` reports the numerical rank, nullity, and
-condition number without silently filling null directions.
+condition number without silently filling null directions. It also reports the
+participation-ratio effective rank and leading-eigenvalue share. Those latter
+quantities describe spectral concentration; they do not redefine numerical
+support.
 
 Here a candidate makes the first two effects identical. Its rank is three, not
 four, so a four-component fit does not exist:
@@ -245,7 +248,7 @@ unlist(collapsed_geometry[c("rank", "nullity", "condition", "status")])
 rank_guard <- suppressWarnings(dkge_cv_kernel_grid(
   bundle$betas, bundle$designs,
   K_grid = list(identity = diag(q), collapsed = K_collapsed),
-  rank = q
+  rank = q - 1L
 ))
 rank_guard$table[, c(
   "kernel", "kernel_rank", "kernel_nullity", "rank_requested",
@@ -271,6 +274,44 @@ stopifnot(
 )
 ```
 
+## Full rank can still be effectively low-dimensional
+
+An algebraically full-rank kernel can put almost all of its mass on a few
+directions. The participation ratio
+
+\[
+r_{\mathrm{PR}} = \frac{(\sum_j \lambda_j)^2}{\sum_j \lambda_j^2}
+\]
+
+is scale invariant and ranges from one to the numerical support rank. Here all
+four directions exist, but one dominates:
+
+```{r concentrated-kernel}
+K_concentrated <- diag(c(1, rep(0.01, q - 1)))
+concentrated_geometry <- kernel_roots(K_concentrated)
+unlist(concentrated_geometry[c(
+  "rank", "condition", "effective_rank_pr",
+  "effective_rank_fraction", "leading_eigenvalue_share"
+)])
+```
+
+This is not a failed PSD or rank check. Predictive CV may rationally prefer such
+a kernel when the dominant direction is the most reproducible signal. But that
+objective does not promise that planned effect contrasts remain distinguishable.
+The CV helpers therefore retain the predictive selection while adding these
+spectral fields to their audit tables. They warn when the selected kernel's
+participation-ratio effective rank divided by the selected latent rank is below
+`kernel_concentration_threshold` (default `0.75`; use `NULL` to disable the
+warning). The warning is diagnostic, not a separability penalty.
+
+```{r concentrated-kernel-checks, include=FALSE}
+stopifnot(
+  concentrated_geometry$rank == q,
+  concentrated_geometry$effective_rank_pr < 2,
+  concentrated_geometry$leading_eigenvalue_share > 0.9
+)
+```
+
 ## What does ridge regularization do here?
 
 For a full-rank kernel, `ridge` adds the usual isotropic term to the fitted
@@ -293,11 +334,14 @@ structure is uncertain, include `diag(q)` as a baseline rather than assuming a
 structured kernel must win. Compare kernels and ranks with
 `dkge_cv_kernel_rank()`, verify that all candidates were scored in the same
 `validation` geometry, and inspect `kernel_rank`, `kernel_nullity`,
-`kernel_condition`, and `admissible` in the returned tables. Treat an all-near-1
-saturation warning as evidence that the criterion cannot discriminate the
-candidates. Refit the selected configuration before running inference, preflight
-the planned contrasts with `dkge_contrast_diagnostics()`, and treat ridge as
-within-support numerical regularization rather than an effect-selection device.
+`kernel_condition`, `kernel_effective_rank_pr`,
+`kernel_leading_eigenvalue_share`, and `admissible` in the returned tables.
+Treat an all-near-1 saturation warning as evidence that the criterion cannot
+discriminate the candidates, and a concentration warning as evidence that good
+prediction may coexist with weak contrast separability. Refit the selected
+configuration before running inference, preflight the planned contrasts with
+`dkge_contrast_diagnostics()`, and treat ridge as within-support numerical
+regularization rather than an effect-selection device.
 
 ## Where to go next
 

@@ -400,7 +400,8 @@ helmert_contrasts <- function(Ls) {
 #'   scientifically intended.
 #' @param tol Relative eigentolerance used to define numerical support.
 #' @return List with the exact square root, Moore--Penrose inverse square root,
-#'   eigenstructure, support projectors, and rank diagnostics.
+#'   eigenstructure, support projectors, numerical rank diagnostics,
+#'   participation-ratio effective rank, and leading-eigenvalue share.
 #' @export
 kernel_roots <- function(K, jitter = 0, tol = 1e-10) {
   if (is.null(jitter)) jitter <- 0

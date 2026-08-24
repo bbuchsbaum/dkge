@@ -21,7 +21,8 @@ scientifically intended.}
 }
 \value{
 List with the exact square root, Moore--Penrose inverse square root,
-eigenstructure, support projectors, and rank diagnostics.
+eigenstructure, support projectors, numerical rank diagnostics,
+participation-ratio effective rank, and leading-eigenvalue share.
 }
 \description{
 Positive-semidefinite kernel roots

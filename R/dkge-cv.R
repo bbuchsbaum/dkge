@@ -46,7 +46,8 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
 #'
 #' @param fit A `dkge` object.
 #' @return List with variance table, subject weights, rank info, and scalar
-#'   kernel diagnostics (`rank`, `nullity`, `condition`, and status).
+#'   kernel diagnostics, including numerical rank/nullity, condition, status,
+#'   participation-ratio effective rank, and leading-eigenvalue share.
 #' @examples
 #' toy <- dkge_sim_toy(
 #'   factors = list(A = list(L = 2), B = list(L = 3)),
@@ -233,6 +234,58 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
   saturated
 }
 
+#' Diagnose spectral concentration relative to a selected latent rank
+#'
+#' Predictive CV can legitimately prefer a kernel that concentrates most of its
+#' mass in fewer directions than the selected latent rank. That is not a rank
+#' failure, but it is a separability warning: distinct effect queries may become
+#' nearly proportional even though the kernel is algebraically full rank.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_validate_kernel_concentration_threshold <- function(threshold) {
+  if (!is.null(threshold) &&
+      (!is.numeric(threshold) || length(threshold) != 1L ||
+       !is.finite(threshold) || threshold <= 0 || threshold > 1)) {
+    stop("`kernel_concentration_threshold` must be NULL or one finite scalar in (0, 1].",
+         call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+.dkge_cv_kernel_concentration <- function(geometry, rank, threshold = 0.75,
+                                          kernel = NULL) {
+  .dkge_cv_validate_kernel_concentration_threshold(threshold)
+  rank <- as.integer(rank)[[1L]]
+  ratio <- if (rank > 0L) geometry$effective_rank_pr / rank else NA_real_
+  concentrated <- !is.null(threshold) && rank > 1L && is.finite(ratio) &&
+    ratio < threshold
+  if (concentrated) {
+    label <- if (is.null(kernel)) "Selected kernel" else
+      sprintf("Selected kernel %s", shQuote(kernel))
+    .dkge_warn(
+      sprintf(
+        paste0(
+          "%s has participation-ratio effective rank %.3f for selected latent ",
+          "rank %d (ratio %.3f < warning threshold %.3f). Predictive CV can ",
+          "favor stable common directions without preserving contrast ",
+          "separability; inspect the kernel spectral diagnostics and run ",
+          "`dkge_contrast_diagnostics()` on the planned contrasts."
+        ),
+        label, geometry$effective_rank_pr, rank, ratio, threshold
+      ),
+      "dkge_cv_kernel_concentration_warning"
+    )
+  }
+  list(
+    concentrated = concentrated,
+    effective_rank_pr = geometry$effective_rank_pr,
+    selected_rank = rank,
+    effective_rank_to_selected_rank = ratio,
+    warning_threshold = threshold
+  )
+}
+
 #' LOSO cross-validation for rank selection
 #'
 #' Evaluates candidate ranks by recomputing LOSO bases and measuring explained
@@ -254,6 +307,11 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' @param kernel_rank_policy Kernel-support policy for selection. The default,
 #'   `"full"`, requires `rank(K) = q`. Use `"allow_singular"` only when every
 #'   candidate is intentionally allowed to define a quotient effect space.
+#' @param kernel_concentration_threshold Optional warning threshold for spectral
+#'   concentration. The default `0.75` warns when the selected kernel's
+#'   participation-ratio effective rank divided by the selected latent rank is
+#'   below `0.75`. This does not change the CV score or selection; use `NULL` to
+#'   disable the warning.
 #' @return List containing the one-SE selection (`pick`), the best rank,
 #'   aggregated and per-fold score tables, kernel/validation diagnostics,
 #'   excluded ranks, and a saturation flag.
@@ -271,9 +329,11 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                               Omega_list = NULL, ridge = 0,
                               w_method = "mfa_sigma1", w_tau = 0.3,
                               validation_K = NULL,
-                              kernel_rank_policy = c("full", "allow_singular")) {
+                              kernel_rank_policy = c("full", "allow_singular"),
+                              kernel_concentration_threshold = 0.75) {
   stopifnot(length(B_list) == length(X_list))
   kernel_rank_policy <- match.arg(kernel_rank_policy)
+  .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
   S <- length(B_list)
   q <- nrow(B_list[[1]])
   ranks <- .dkge_cv_ranks(ranks)
@@ -372,6 +432,10 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
   sel <- dkge_one_se(usable, param_col = "rank", metric_col = "score")
   sel$summary$rank_used <- sel$summary$param
   saturated <- .dkge_cv_saturation(sel$summary$mean)
+  concentration <- .dkge_cv_kernel_concentration(
+    kernel_geometry, sel$pick,
+    threshold = kernel_concentration_threshold
+  )
   list(
     pick = sel$pick,
     best = sel$best,
@@ -381,7 +445,8 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
     validation = validation$diagnostics,
     kernel_rank_policy = kernel_rank_policy,
     inadmissible_ranks = sort(unique(c(ranks[kernel_invalid], fold_invalid))),
-    saturated = saturated
+    saturated = saturated,
+    kernel_concentration = concentration
   )
 }
 
@@ -396,8 +461,9 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
 #' @param K_grid Named list of candidate kernels.
 #' @param rank Rank used for evaluation.
 #' @return List with the pick, best kernel, candidate audit table (including
-#'   kernel rank, nullity, condition, admissibility, and exclusion reason), raw
-#'   fold scores, fixed validation diagnostics, and a saturation flag.
+#'   kernel rank, nullity, condition, spectral-concentration metrics,
+#'   admissibility, and exclusion reason), raw fold scores, fixed validation
+#'   diagnostics, saturation flag, and selected-kernel concentration summary.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -414,9 +480,11 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
                                 Omega_list = NULL, ridge = 0,
                                 w_method = "mfa_sigma1", w_tau = 0.3,
                                 validation_K = NULL,
-                                kernel_rank_policy = c("full", "allow_singular")) {
+                                kernel_rank_policy = c("full", "allow_singular"),
+                                kernel_concentration_threshold = 0.75) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
   kernel_rank_policy <- match.arg(kernel_rank_policy)
+  .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
   if (is.null(names(K_grid)) || any(!nzchar(names(K_grid))) || anyDuplicated(names(K_grid))) {
     stop("`K_grid` must have unique, non-empty names.", call. = FALSE)
   }
@@ -426,10 +494,12 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
   validation <- .dkge_cv_validation_geometry(validation_K, q)
   rows <- list()
   summaries <- list()
+  geometries <- list()
 
   for (nm in names(K_grid)) {
     Kc <- K_grid[[nm]]
     geometry <- .dkge_cv_candidate_geometry(Kc, q, sprintf("Kernel %s", shQuote(nm)))
+    geometries[[nm]] <- geometry
     reason <- NA_character_
     if (geometry$rank == 0L) {
       reason <- "kernel rank is zero"
@@ -445,7 +515,12 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
       summaries[[nm]] <- data.frame(
         kernel = nm, mean = NA_real_, se = NA_real_,
         kernel_rank = geometry$rank, kernel_nullity = geometry$nullity,
-        kernel_condition = geometry$condition, rank_requested = rank,
+        kernel_condition = geometry$condition,
+        kernel_effective_rank_pr = geometry$effective_rank_pr,
+        kernel_effective_rank_fraction = geometry$effective_rank_fraction,
+        kernel_leading_eigenvalue_share = geometry$leading_eigenvalue_share,
+        kernel_effective_rank_to_rank = geometry$effective_rank_pr / rank,
+        rank_requested = rank,
         rank_used = min(rank, geometry$rank), admissible = FALSE,
         reason = reason, stringsAsFactors = FALSE
       )
@@ -488,6 +563,10 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
       kernel_rank = geometry$rank,
       kernel_nullity = geometry$nullity,
       kernel_condition = geometry$condition,
+      kernel_effective_rank_pr = geometry$effective_rank_pr,
+      kernel_effective_rank_fraction = geometry$effective_rank_fraction,
+      kernel_leading_eigenvalue_share = geometry$leading_eigenvalue_share,
+      kernel_effective_rank_to_rank = geometry$effective_rank_pr / rank,
       rank_requested = rank,
       rank_used = if (admissible) rank else min(candidate_tab$rank_used),
       admissible = admissible,
@@ -520,15 +599,22 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
   # arbitrary alphabetical tie-break, so select the best-scoring kernel directly.
   pick_idx <- best_idx
   saturated <- .dkge_cv_saturation(eligible$mean)
+  selected_kernel <- eligible$kernel[[pick_idx]]
+  concentration <- .dkge_cv_kernel_concentration(
+    geometries[[selected_kernel]], rank,
+    threshold = kernel_concentration_threshold,
+    kernel = selected_kernel
+  )
 
   list(
-    pick = eligible$kernel[pick_idx],
+    pick = selected_kernel,
     best = eligible$kernel[best_idx],
     table = table,
     raw = tab,
     validation = validation$diagnostics,
     kernel_rank_policy = kernel_rank_policy,
-    saturated = saturated
+    saturated = saturated,
+    kernel_concentration = concentration
   )
 }
 
@@ -626,8 +712,9 @@ dkge_kernel_prescreen <- function(K_grid, C, normalize_k = TRUE, top_k = 3) {
 #' @param ranks Integer vector of ranks to evaluate.
 #' @param top_k Number of kernels to keep after pre-screening.
 #' @return List with the selected `kernel` and `rank`, alignment and CV tables
-#'   carrying kernel-support diagnostics, per-kernel selections, exclusions,
-#'   fixed validation diagnostics, and a saturation flag.
+#'   carrying kernel-support and spectral-concentration diagnostics, per-kernel
+#'   selections, exclusions, fixed validation diagnostics, saturation flag, and
+#'   selected-kernel concentration summary.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -644,9 +731,11 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
                                 Omega_list = NULL, ridge = 0,
                                 w_method = "mfa_sigma1", w_tau = 0.3,
                                 top_k = 3, validation_K = NULL,
-                                kernel_rank_policy = c("full", "allow_singular")) {
+                                kernel_rank_policy = c("full", "allow_singular"),
+                                kernel_concentration_threshold = 0.75) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
   kernel_rank_policy <- match.arg(kernel_rank_policy)
+  .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
   if (is.null(names(K_grid)) || any(!nzchar(names(K_grid))) || anyDuplicated(names(K_grid))) {
     stop("`K_grid` must have unique, non-empty names.", call. = FALSE)
   }
@@ -693,6 +782,15 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
   alignment$kernel_condition <- vapply(alignment$kernel, function(nm) {
     kernel_geometries[[nm]]$condition
   }, numeric(1))
+  alignment$kernel_effective_rank_pr <- vapply(alignment$kernel, function(nm) {
+    kernel_geometries[[nm]]$effective_rank_pr
+  }, numeric(1))
+  alignment$kernel_effective_rank_fraction <- vapply(alignment$kernel, function(nm) {
+    kernel_geometries[[nm]]$effective_rank_fraction
+  }, numeric(1))
+  alignment$kernel_leading_eigenvalue_share <- vapply(alignment$kernel, function(nm) {
+    kernel_geometries[[nm]]$leading_eigenvalue_share
+  }, numeric(1))
   alignment$rank_policy_admissible <- is.na(exclusion_reason[alignment$kernel])
   eligible_screen <- alignment$kernel[alignment$rank_policy_admissible]
   keep <- head(eligible_screen, min(top_k, length(eligible_screen)))
@@ -711,7 +809,8 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
       Omega_list = Omega_list, ridge = ridge,
       w_method = w_method, w_tau = w_tau,
       validation_K = validation_K,
-      kernel_rank_policy = kernel_rank_policy
+      kernel_rank_policy = kernel_rank_policy,
+      kernel_concentration_threshold = NULL
     )
     summary_tbl <- cv$table %||% cv$summary
     stopifnot(!is.null(summary_tbl), all(c("param", "mean", "se") %in% names(summary_tbl)))
@@ -721,7 +820,12 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
                       se = summary_tbl$se,
                       kernel_rank = geometry$rank,
                       kernel_nullity = geometry$nullity,
-                      kernel_condition = geometry$condition)
+                      kernel_condition = geometry$condition,
+                      kernel_effective_rank_pr = geometry$effective_rank_pr,
+                      kernel_effective_rank_fraction = geometry$effective_rank_fraction,
+                      kernel_leading_eigenvalue_share = geometry$leading_eigenvalue_share,
+                      kernel_effective_rank_to_rank = geometry$effective_rank_pr /
+                        summary_tbl$param)
     cv_rows[[nm]] <- tmp
     idx <- tmp$rank == cv$pick
     picks[[nm]] <- data.frame(kernel = nm,
@@ -730,7 +834,12 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
                               se = tmp$se[idx],
                               kernel_rank = geometry$rank,
                               kernel_nullity = geometry$nullity,
-                              kernel_condition = geometry$condition)
+                              kernel_condition = geometry$condition,
+                              kernel_effective_rank_pr = geometry$effective_rank_pr,
+                              kernel_effective_rank_fraction = geometry$effective_rank_fraction,
+                              kernel_leading_eigenvalue_share = geometry$leading_eigenvalue_share,
+                              kernel_effective_rank_to_rank = geometry$effective_rank_pr /
+                                cv$pick)
   }
 
   if (length(excluded)) {
@@ -754,6 +863,11 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
   candidates <- pick_df[pick_df$score >= threshold, , drop = FALSE]
   selected <- candidates[order(candidates$rank, -candidates$score), ][1, ]
   saturated <- .dkge_cv_saturation(pick_df$score)
+  concentration <- .dkge_cv_kernel_concentration(
+    kernel_geometries[[selected$kernel]], selected$rank,
+    threshold = kernel_concentration_threshold,
+    kernel = selected$kernel
+  )
 
   list(
     pick = list(kernel = selected$kernel, rank = selected$rank),
@@ -762,6 +876,7 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
     excluded = excluded,
     validation = validation$diagnostics,
     kernel_rank_policy = kernel_rank_policy,
-    saturated = saturated
+    saturated = saturated,
+    kernel_concentration = concentration
   )
 }

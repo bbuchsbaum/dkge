@@ -242,6 +242,21 @@ NULL
   } else {
     Inf
   }
+  spectral_mass <- sum(vals_support)
+  effective_rank_pr <- if (spectral_mass > 0) {
+    spectral_mass^2 / sum(vals_support^2)
+  } else {
+    0
+  }
+  # Clamp only round-off excursions: the participation ratio is bounded by
+  # the numerical support rank and is invariant to positive kernel rescaling.
+  effective_rank_pr <- pmin(as.numeric(rank), pmax(0, effective_rank_pr))
+  effective_rank_fraction <- if (rank > 0L) effective_rank_pr / rank else 0
+  leading_eigenvalue_share <- if (spectral_mass > 0) {
+    max(vals_support) / spectral_mass
+  } else {
+    NA_real_
+  }
   near_singular <- rank == n && is.finite(condition) && condition >= 1e8
 
   list(
@@ -257,6 +272,9 @@ NULL
     rank = as.integer(rank),
     nullity = as.integer(n - rank),
     condition = as.numeric(condition),
+    effective_rank_pr = as.numeric(effective_rank_pr),
+    effective_rank_fraction = as.numeric(effective_rank_fraction),
+    leading_eigenvalue_share = as.numeric(leading_eigenvalue_share),
     tolerance = as.numeric(abs_tol),
     relative_tolerance = tol,
     full_rank = rank == n,
@@ -273,8 +291,9 @@ NULL
 #' @noRd
 .dkge_kernel_diagnostics <- function(geometry) {
   geometry[c(
-    "rank", "nullity", "condition", "tolerance", "relative_tolerance",
-    "full_rank", "near_singular", "status"
+    "rank", "nullity", "condition", "effective_rank_pr",
+    "effective_rank_fraction", "leading_eigenvalue_share", "tolerance",
+    "relative_tolerance", "full_rank", "near_singular", "status"
   )]
 }
 

@@ -11,7 +11,8 @@ dkge_diagnostics(fit)
 }
 \value{
 List with variance table, subject weights, rank info, and scalar
-kernel diagnostics (\code{rank}, \code{nullity}, \code{condition}, and status).
+kernel diagnostics, including numerical rank/nullity, condition, status,
+participation-ratio effective rank, and leading-eigenvalue share.
 }
 \description{
 Provides a compact list of variance explained, subject weights, rank, and

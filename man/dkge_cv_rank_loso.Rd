@@ -14,7 +14,8 @@ dkge_cv_rank_loso(
   w_method = "mfa_sigma1",
   w_tau = 0.3,
   validation_K = NULL,
-  kernel_rank_policy = c("full", "allow_singular")
+  kernel_rank_policy = c("full", "allow_singular"),
+  kernel_concentration_threshold = 0.75
 )
 }
 \arguments{
@@ -41,6 +42,12 @@ candidate \code{K} still determines the learned training subspace.}
 \item{kernel_rank_policy}{Kernel-support policy for selection. The default,
 \code{"full"}, requires \code{rank(K) = q}. Use \code{"allow_singular"} only when every
 candidate is intentionally allowed to define a quotient effect space.}
+
+\item{kernel_concentration_threshold}{Optional warning threshold for spectral
+concentration. The default \code{0.75} warns when the selected kernel's
+participation-ratio effective rank divided by the selected latent rank is
+below \code{0.75}. This does not change the CV score or selection; use \code{NULL} to
+disable the warning.}
 }
 \value{
 List containing the one-SE selection (\code{pick}), the best rank,

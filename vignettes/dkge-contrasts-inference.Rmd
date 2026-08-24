@@ -134,13 +134,40 @@ Run this preflight before cross-fitting:
 contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
 preflight <- dkge_contrast_diagnostics(fit, contrast_vec)
 preflight$estimability
+preflight$summary
 ```
 
 The identity kernel has full rank, so the planned contrast is estimable. The
 diagnostic table reports the fraction retained in `image(K)` and the fraction
 lost to `null(K)`. For multiple contrasts, `preflight$pairs` also identifies
-distinct inputs that become proportional kernel queries and therefore can
-produce only the same map up to scale or sign.
+distinct inputs that become nearly proportional kernel queries. The compact
+summary reports the maximum absolute query correlation, its contrast pair, and
+the observed query-norm range.
+
+Numerical support and practical collinearity use separate thresholds. `tol`
+remains the small null-space tolerance. `collinearity_tol = 0.05` flags distinct
+queries with absolute correlation at least 0.95; set it more strictly when that
+is scientifically justified, or to `NULL` to disable collision flags. The next
+kernel is full rank, so both single-effect contrasts are estimable, but their
+queries are already almost the same:
+
+```{r near-contrast-collapse}
+K_near <- diag(q)
+K_near[1:2, 1:2] <- matrix(c(1, 0.98, 0.98, 1), 2, 2)
+fit_near <- dkge(bundle, K = K_near, rank = 3)
+
+near_preflight <- dkge_contrast_diagnostics(
+  fit_near,
+  list(effect1 = c(1, 0, 0, 0), effect2 = c(0, 1, 0, 0))
+)
+near_preflight$estimability
+near_preflight$summary
+near_preflight$pairs
+```
+
+This is a practical collision, not a null-space failure. `dkge_contrast()` emits
+the same warning automatically and stores the summary under
+`metadata$kernel_query_summary`.
 
 The following deliberately bad kernel merges effect 1 with effect 2. Each
 single-effect query is only partly represented, their transformed queries are
@@ -174,6 +201,9 @@ null_error <- tryCatch(
 )
 stopifnot(
   identical(preflight$estimability$status, "estimable"),
+  all(near_preflight$estimability$status == "estimable"),
+  near_preflight$pairs$collision,
+  abs(near_preflight$summary$max_abs_query_correlation - 0.98) < 1e-10,
   merged_preflight$estimability$status[3] == "null",
   any(merged_preflight$pairs$collision),
   merged_preflight$kernel$rank == 3L,
@@ -363,11 +393,13 @@ reference distribution but still requires representative, independent subjects
 and enough observations for the empirical distribution to be informative.
 
 Before reporting results, state the contrast, kernel rank and nullity, retained
-support fraction, analysis space, aggregation rule, resampling unit, mapper,
-medoid, and multiplicity correction. Report any transformed-query collision;
-changing the contrast label does not create a distinct estimand after the kernel
-has merged it. Inspect subject-level values as a diagnostic, but do not remove
-unusual subjects without a prespecified rule and sensitivity analysis.
+support fraction, participation-ratio effective rank, maximum planned-query
+correlation, analysis space, aggregation rule, resampling unit, mapper, medoid,
+and multiplicity correction. Report any transformed-query collision; changing
+the contrast label does not create a distinct estimand after the kernel has
+merged or nearly merged it. Inspect subject-level values as a diagnostic, but
+do not remove unusual subjects without a prespecified rule and sensitivity
+analysis.
 
 ## Where to go next
 
