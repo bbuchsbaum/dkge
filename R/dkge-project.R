@@ -99,6 +99,13 @@ dkge_transform_block <- function(fit, B_s, Omega_s = NULL, w_s = NULL,
     )
     Btil <- .dkge_scale_effect_columns(Btil, vw)
   }
+  if (!is.null(fit$spatial) && isTRUE(fit$spatial$active)) {
+    if (is.null(subject) && !isTRUE(fit$spatial$shared)) {
+      stop("This fit carries subject-specific spatial regularization; pass `subject`.",
+           call. = FALSE)
+    }
+    Btil <- .dkge_apply_fit_spatial(fit, Btil, subject = subject)
+  }
   if (!is.null(Omega_s)) {
     if (is.vector(Omega_s)) {
       stopifnot(length(Omega_s) == ncol(Btil))
@@ -175,6 +182,9 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' @description Convenience wrapper for projecting row-standardised betas onto DKGE components.
 #' @param fit A `dkge` object.
 #' @param Btil Either a qxP matrix or a list of such matrices (e.g. `fit$Btil`).
+#' @param subject Optional training-subject index or id for a single matrix.
+#'   Required when the fit uses subject-specific spatial regularization. A list
+#'   is matched to fitted subjects positionally.
 #' @return List of Pxrank matrices; returns a single matrix when `Btil` is a matrix.
 #' @describeIn dkge_project_block Project subject-standardised betas into component space
 #' @keywords internal
@@ -187,18 +197,25 @@ dkge_project_blocks <- function(fit, B_list, Omega_list = NULL, w = NULL) {
 #' fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
 #' A <- dkge_project_btil(fit, fit$Btil[[1]])
 #' dim(A)
-dkge_project_btil <- function(fit, Btil) {
+dkge_project_btil <- function(fit, Btil, subject = NULL) {
   stopifnot(inherits(fit, "dkge"))
   KsU <- fit$K %*% fit$U
-  project_one <- function(mat) {
+  project_one <- function(mat, s = NULL) {
     mat <- as.matrix(mat)
     stopifnot(nrow(mat) == nrow(fit$U))
+    mat <- .dkge_apply_fit_spatial(fit, mat, subject = s)
     t(mat) %*% KsU
   }
   if (is.list(Btil)) {
-    lapply(Btil, project_one)
+    if (length(Btil) != length(fit$Btil)) {
+      stop("A beta-block list must have one entry per fitted subject.",
+           call. = FALSE)
+    }
+    out <- lapply(seq_along(Btil), function(s) project_one(Btil[[s]], s))
+    names(out) <- names(Btil) %||% fit$subject_ids
+    out
   } else {
-    project_one(Btil)
+    project_one(Btil, subject)
   }
 }
 
@@ -238,6 +255,16 @@ dkge_project_block <- function(fit, s, B_s, Omega_s = NULL, w_s = NULL,
 dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
   stopifnot(inherits(fit, "dkge"))
   .dkge_require_block_biprojector(fit, "dkge_project_cluster()")
+  if (!is.null(fit$spatial) && isTRUE(fit$spatial$active)) {
+    .dkge_abort(
+      paste0(
+        "`dkge_project_cluster()` cannot apply a spatial regularizer to one ",
+        "isolated unit. Project the complete spatial block with ",
+        "`dkge_project_clusters()`."
+      ),
+      "dkge_spatial_projection_error"
+    )
+  }
   b <- as.numeric(b)
   stopifnot(length(b) == nrow(fit$U))
   ctil <- t(fit$R) %*% matrix(b, ncol = 1)
@@ -259,15 +286,19 @@ dkge_project_cluster <- function(fit, b, omega = 1, w = 1) {
 #' @param B qxP matrix of cluster betas.
 #' @param omega_vec Optional vector of per-cluster weights.
 #' @param w Optional subject weight.
+#' @param subject Optional training-subject index or id used to select a
+#'   subject-specific spatial operator.
 #' @return Pxrank matrix of projected coordinates.
 #' @keywords internal
 #' @export
-dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1) {
+dkge_project_clusters <- function(fit, B, omega_vec = NULL, w = 1,
+                                  subject = NULL) {
   stopifnot(inherits(fit, "dkge"))
   .dkge_require_block_biprojector(fit, "dkge_project_clusters()")
   B <- as.matrix(B)
   stopifnot(nrow(B) == nrow(fit$U))
   ctil <- t(fit$R) %*% B
+  ctil <- .dkge_apply_fit_spatial(fit, ctil, subject = subject)
   if (!is.null(omega_vec)) {
     stopifnot(length(omega_vec) == ncol(B))
     ctil <- ctil * rep(sqrt(as.numeric(omega_vec)), each = nrow(ctil))

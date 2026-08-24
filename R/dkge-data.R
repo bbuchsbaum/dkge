@@ -814,6 +814,9 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL,
 #' @param effect_scaling Effect-space scaling passed to [dkge_fit()]. Use
 #'   `"none"` when input rows already share an absolute scale, such as
 #'   AUC-minus-chance cell maps.
+#' @param spatial Optional model-level spatial regularizer created by
+#'   [dkge_spatial_regularizer()]. It is applied inside fitting and reused for
+#'   all reconstructed subject fields.
 #' @param effects Optional character vector pinning the global effect order,
 #'   forwarded to [dkge_data()]. Ignored (and checked for agreement) when
 #'   `betas` is already a `dkge_data` bundle.
@@ -827,10 +830,11 @@ dkge_data <- function(betas, designs = NULL, omega = NULL, subject_ids = NULL,
 #'   RBF for ordinal factors, circulant for wrapped factors, Kronecker products for
 #'   interactions) encourage shared smoothness or coupling between design effects.
 #'
-#'   DKGE itself operates entirely in this low-dimensional design space: (1) the
-#'   pooled Gram matrix across subjects yields a shared Cholesky factor `R`; (2) each beta
-#'   matrix is row-standardised; (3) compressed covariance is accumulated in the
-#'   K-metric with optional subject and effect weighting; and (4) a tiny
+#'   DKGE's eigensystem remains entirely in this low-dimensional design space:
+#'   (1) the pooled Gram matrix across subjects yields a shared Cholesky factor
+#'   `R`; (2) each beta matrix is row-standardised; (3) an optional sparse
+#'   spatial solve acts on its columns; (4) compressed covariance is accumulated
+#'   in the K-metric with optional subject and effect weighting; and (5) a tiny
 #'   symmetric eigenproblem produces
 #'   the K-orthonormal group basis. The input harmonisation performed by this
 #'   wrapper ensures consistent effect naming, subject identifiers, and spatial
@@ -854,7 +858,7 @@ dkge <- function(betas, designs = NULL, K = NULL, Omega_list = NULL,
                  effect_weights = NULL,
                  debias = c("none", "analytic", "split_half"),
                  effect_scaling = c("pooled_design", "none"),
-                 effects = NULL, ...) {
+                 effects = NULL, spatial = NULL, ...) {
   # Deprecated aliases
   if (!is.null(kernel) && is.null(K)) {
     warning("Argument 'kernel' is deprecated; use 'K' instead.", call. = FALSE)
@@ -892,7 +896,8 @@ dkge <- function(betas, designs = NULL, K = NULL, Omega_list = NULL,
                      cpca_blocks = cpca_blocks, cpca_T = cpca_T,
                      cpca_part = cpca_part, cpca_ridge = cpca_ridge,
                      weights = weights, effect_weights = effect_weights,
-                     debias = debias, effect_scaling = effect_scaling, ...)
+                     debias = debias, effect_scaling = effect_scaling,
+                     spatial = spatial, ...)
   if (keep_inputs) fit$input <- data
   fit
 }

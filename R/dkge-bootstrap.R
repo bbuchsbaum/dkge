@@ -154,7 +154,10 @@ dkge_bootstrap_qspace <- function(fit,
   q <- nrow(fit$U)
   r <- ncol(fit$U)
 
-  loadings_ref <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+  Bmodel <- lapply(seq_along(fit$Btil), function(s) {
+    .dkge_apply_fit_spatial(fit, fit$Btil[[s]], subject = s)
+  })
+  loadings_ref <- lapply(Bmodel, function(Bts) t(Bts) %*% fit$K %*% fit$U)
   cache <- .dkge_bootstrap_prepare_cache(fit, transport_cache, mapper, centroids,
                                          loadings_ref, sizes, medoid, ...)
   operators <- cache$operators
@@ -165,7 +168,7 @@ dkge_bootstrap_qspace <- function(fit,
     stop("voxel_operator must have as many rows as medoid clusters.")
   }
 
-  KBtil_t <- lapply(fit$Btil, function(Bts) t(fit$K %*% Bts))
+  KBtil_t <- lapply(Bmodel, function(Bts) t(fit$K %*% Bts))
   Kctil_list <- lapply(contrast_list, function(c) {
     ctil <- backsolve(fit$R, c, transpose = FALSE)
     fit$K %*% ctil
@@ -316,7 +319,10 @@ dkge_bootstrap_analytic <- function(fit,
   q <- nrow(fit$U)
   r <- ncol(fit$U)
 
-  loadings_ref <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+  Bmodel <- lapply(seq_along(fit$Btil), function(s) {
+    .dkge_apply_fit_spatial(fit, fit$Btil[[s]], subject = s)
+  })
+  loadings_ref <- lapply(Bmodel, function(Bts) t(Bts) %*% fit$K %*% fit$U)
   cache <- .dkge_bootstrap_prepare_cache(fit, transport_cache, mapper, centroids,
                                          loadings_ref, sizes, medoid, ...)
   operators <- cache$operators
@@ -327,7 +333,7 @@ dkge_bootstrap_analytic <- function(fit,
     stop("voxel_operator must have as many rows as medoid clusters.")
   }
 
-  KBtil_t <- lapply(fit$Btil, function(Bts) t(fit$K %*% Bts))
+  KBtil_t <- lapply(Bmodel, function(Bts) t(fit$K %*% Bts))
   Kctil_list <- lapply(contrast_list, function(c) {
     ctil <- backsolve(fit$R, c, transpose = FALSE)
     fit$K %*% ctil

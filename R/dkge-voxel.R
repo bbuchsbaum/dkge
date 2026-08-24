@@ -36,7 +36,7 @@ dkge_transport_to_voxels <- function(fit,
   stopifnot(inherits(fit, "dkge"))
   mapper_spec <- .dkge_resolve_mapper_spec(mapper, method = NULL, dots = list(...))
 
-  loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+  loadings <- .dkge_fit_subject_loadings(fit)
   if (is.null(coords)) {
     coords <- vector("list", length(voxels))
   }

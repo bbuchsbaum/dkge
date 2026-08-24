@@ -59,8 +59,7 @@ dkge_component_stats <- function(fit,
   # Build mapper specification
   mapper_spec <- .dkge_resolve_mapper_spec(mapper, method = NULL, dots = list(...))
 
-  KU <- fit$K %*% fit$U
-  loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% KU)
+  loadings <- .dkge_fit_subject_loadings(fit)
   rank <- ncol(loadings[[1]])
 
   if (is.null(components)) {

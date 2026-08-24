@@ -9,7 +9,8 @@ dkge_predict_subjects(
   betas,
   contrasts,
   ids = NULL,
-  return_loadings = TRUE
+  return_loadings = TRUE,
+  spatial = NULL
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ dkge_predict_subjects(
 
 \item{return_loadings}{Logical; when TRUE, include projected loadings in the
 result bundle.}
+
+\item{spatial}{Optional \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} for prediction subjects.
+A fit with a shared spatial domain reuses its stored specification
+automatically. A fit with subject-specific domains requires this argument.}
 }
 \value{
 Output from \code{\link[=dkge_predict]{dkge_predict()}} with harmonised subject names.

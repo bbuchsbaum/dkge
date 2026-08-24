@@ -16,7 +16,8 @@ dkge_cv_kernel_rank(
   top_k = 3,
   validation_K = NULL,
   kernel_rank_policy = c("full", "allow_singular"),
-  kernel_concentration_threshold = 0.75
+  kernel_concentration_threshold = 0.75,
+  spatial = NULL
 )
 }
 \arguments{
@@ -51,6 +52,9 @@ concentration. The default \code{0.75} warns when the selected kernel's
 participation-ratio effective rank divided by the selected latent rank is
 below \code{0.75}. This does not change the CV score or selection; use \code{NULL} to
 disable the warning.}
+
+\item{spatial}{Optional fixed \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} applied inside
+every candidate fit and training fold.}
 }
 \value{
 List with the selected \code{kernel} and \code{rank}, alignment and CV tables

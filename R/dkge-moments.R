@@ -135,12 +135,13 @@
 
 #' @noRd
 .dkge_effect_moment <- function(B, Omega = NULL, voxel_weights = NULL,
-                                obs_mask = NULL) {
+                                obs_mask = NULL, spatial = NULL) {
   B <- as.matrix(B)
   q <- nrow(B)
   obs <- .dkge_observed_rows(obs_mask, q)
   if (!length(obs)) return(.dkge_empty_effect_moment(B))
   Bwork <- .dkge_scale_effect_columns(B, voxel_weights)
+  Bwork <- .dkge_spatial_apply_betas(Bwork, spatial)
   if (length(obs) < q) Bwork[-obs, ] <- 0
 
   M <- if (is.null(Omega)) {
@@ -167,7 +168,8 @@
 .dkge_split_effect_moment <- function(split_betas, Omega = NULL,
                                       voxel_weights = NULL,
                                       obs_mask = NULL,
-                                      subject_id = NULL) {
+                                      subject_id = NULL,
+                                      spatial = NULL) {
   if (is.null(split_betas) || !is.list(split_betas) || length(split_betas) != 2L) {
     who <- if (is.null(subject_id)) "every subject" else
       sprintf("subject %s", subject_id)
@@ -181,6 +183,8 @@
   if (!identical(dim(B1), dim(B2))) {
     stop("Stored split beta matrices must have identical dimensions.", call. = FALSE)
   }
+  B1 <- .dkge_spatial_apply_betas(B1, spatial)
+  B2 <- .dkge_spatial_apply_betas(B2, spatial)
   q <- nrow(B1)
   obs <- .dkge_observed_rows(obs_mask, q)
   if (!length(obs)) return(.dkge_empty_effect_moment(B1))
@@ -481,6 +485,7 @@
                                     B_list,
                                     Omega_list,
                                     voxel_weights,
+                                    spatial_list = NULL,
                                     obs_masks,
                                     subject_weights,
                                     effect_precision,
@@ -495,6 +500,11 @@
                                     pool_cache = NULL) {
   debias <- match.arg(debias)
   S <- length(B_list)
+  if (is.null(spatial_list)) spatial_list <- vector("list", S)
+  if (length(spatial_list) != S) {
+    .dkge_abort("`spatial_list` must have one entry per beta block.",
+                "dkge_spatial_domain_error")
+  }
   analytic <- identical(debias, "analytic")
   # `moments_raw` and `noise_moments` only differ from `moments` under analytic
   # debiasing; keeping them otherwise would store two more S x q x q copies of
@@ -509,9 +519,11 @@
     raw_s <- if (identical(debias, "split_half")) {
       .dkge_split_effect_moment(subjects[[s]]$split_betas,
                                 Omega_list[[s]], vw, obs_masks[[s]],
-                                subject_id = subjects[[s]]$id)
+                                subject_id = subjects[[s]]$id,
+                                spatial = spatial_list[[s]])
     } else {
-      .dkge_effect_moment(B_list[[s]], Omega_list[[s]], vw, obs_masks[[s]])
+      .dkge_effect_moment(B_list[[s]], Omega_list[[s]], vw, obs_masks[[s]],
+                          spatial = spatial_list[[s]])
     }
     if (analytic) {
       noise_s <- .dkge_effect_noise_moment(subjects[[s]], Omega_list[[s]], vw,

@@ -22,6 +22,7 @@ dkge(
   debias = c("none", "analytic", "split_half"),
   effect_scaling = c("pooled_design", "none"),
   effects = NULL,
+  spatial = NULL,
   ...
 )
 }
@@ -95,6 +96,10 @@ AUC-minus-chance cell maps.}
 forwarded to \code{\link[=dkge_data]{dkge_data()}}. Ignored (and checked for agreement) when
 \code{betas} is already a \code{dkge_data} bundle.}
 
+\item{spatial}{Optional model-level spatial regularizer created by
+\code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}}. It is applied inside fitting and reused for
+all reconstructed subject fields.}
+
 \item{...}{Additional arguments forwarded to \code{\link[=dkge_fit]{dkge_fit()}} (e.g. \code{rank},
 \code{ridge}, \code{w_method}, \code{weights}).}
 }
@@ -119,10 +124,11 @@ another-identity recovers standard OLS scaling, while structured kernels (e.g.
 RBF for ordinal factors, circulant for wrapped factors, Kronecker products for
 interactions) encourage shared smoothness or coupling between design effects.
 
-DKGE itself operates entirely in this low-dimensional design space: (1) the
-pooled Gram matrix across subjects yields a shared Cholesky factor \code{R}; (2) each beta
-matrix is row-standardised; (3) compressed covariance is accumulated in the
-K-metric with optional subject and effect weighting; and (4) a tiny
+DKGE's eigensystem remains entirely in this low-dimensional design space:
+(1) the pooled Gram matrix across subjects yields a shared Cholesky factor
+\code{R}; (2) each beta matrix is row-standardised; (3) an optional sparse
+spatial solve acts on its columns; (4) compressed covariance is accumulated
+in the K-metric with optional subject and effect weighting; and (5) a tiny
 symmetric eigenproblem produces
 the K-orthonormal group basis. The input harmonisation performed by this
 wrapper ensures consistent effect naming, subject identifiers, and spatial

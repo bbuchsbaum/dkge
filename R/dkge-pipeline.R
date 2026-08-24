@@ -14,6 +14,9 @@
 #' @param betas,designs,kernel Inputs passed to [dkge()] when neither `fit` nor
 #'   `input` is supplied.
 #' @param omega Optional spatial weights forwarded to [dkge()].
+#' @param spatial Optional model-level [dkge_spatial_regularizer()] forwarded
+#'   only to the raw-beta fitting stage. Current anchor input descriptors do not
+#'   expose a physical beta-column domain and therefore reject this argument.
 #' @param contrasts Contrast specification as accepted by [dkge_contrast()].
 #' @param transport Either a transport specification/service or `NULL`.
 #' @param inference Either an inference specification/service or `NULL`.
@@ -44,6 +47,7 @@
 dkge_pipeline <- function(fit = NULL,
                           input = NULL,
                           betas = NULL, designs = NULL, kernel = NULL, omega = NULL,
+                          spatial = NULL,
                           contrasts,
                           transport = NULL,
                           inference = list(),
@@ -69,13 +73,21 @@ dkge_pipeline <- function(fit = NULL,
       if (!inherits(input, "dkge_input")) {
         stop("`input` must be constructed with dkge_input_* helpers.", call. = FALSE)
       }
-      fit <- do.call(dkge_fit_from_input, c(list(input = input), extra_args))
+      fit_call <- c(list(input = input), extra_args)
+      if (!is.null(spatial)) fit_call$spatial <- spatial
+      fit <- do.call(dkge_fit_from_input, fit_call)
     } else {
       stopifnot(!is.null(betas), !is.null(designs), !is.null(kernel))
-      fit_args <- c(list(betas, designs = designs, K = kernel, Omega_list = omega),
+      fit_args <- c(list(betas, designs = designs, K = kernel,
+                         Omega_list = omega, spatial = spatial),
                     extra_args)
       fit <- do.call(dkge, fit_args)
     }
+  } else if (!is.null(spatial)) {
+    .dkge_abort(
+      "`spatial` cannot be added to a pre-computed fit; refit with the regularizer.",
+      "dkge_spatial_spec_error"
+    )
   }
   stopifnot(inherits(fit, "dkge"))
 

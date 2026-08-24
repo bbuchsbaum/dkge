@@ -4,7 +4,7 @@
 \alias{dkge_predict_stream}
 \title{Streaming prediction for new subjects via a loader}
 \usage{
-dkge_predict_stream(object, loader, contrasts)
+dkge_predict_stream(object, loader, contrasts, spatial = NULL)
 }
 \arguments{
 \item{object}{dkge | dkge_stream | dkge_model}
@@ -12,6 +12,10 @@ dkge_predict_stream(object, loader, contrasts)
 \item{loader}{object with n(), B(s) methods (and optional X(s))}
 
 \item{contrasts}{list or matrix as in dkge_predict()}
+
+\item{spatial}{Optional \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} for prediction subjects.
+A fit with a shared spatial domain reuses its stored specification
+automatically. A fit with subject-specific domains requires this argument.}
 }
 \value{
 list(values=list per subject, A_list=list of loadings)

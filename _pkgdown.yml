@@ -33,6 +33,7 @@ articles:
 - title: Spatial mapping
   navbar: Spatial mapping
   contents:
+  - dkge-spatial-regularization
   - dkge-dense-rendering
   - dkge-anchors
   - dkge-performance
@@ -65,6 +66,7 @@ reference:
   - dkge_fit
   - dkge_fit_from_input
   - dkge_fit_from_kernels
+  - dkge_spatial_regularizer
   - dkge_weights
   - dkge_weights_auto
   - dkge_weights_prior_mask
@@ -98,6 +100,7 @@ reference:
   - dkge_cv_kernel_grid
   - dkge_cv_kernel_rank
   - dkge_cv_rank_loso
+  - dkge_cv_spatial_grid
   - dkge_cv_train_latent_classifier
   - dkge_pooled_cov_q
   - dkge_predict_loadings

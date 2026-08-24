@@ -4,7 +4,7 @@
 \alias{dkge_project_clusters}
 \title{Project multiple cluster/voxel vectors}
 \usage{
-dkge_project_clusters(fit, B, omega_vec = NULL, w = 1)
+dkge_project_clusters(fit, B, omega_vec = NULL, w = 1, subject = NULL)
 }
 \arguments{
 \item{fit}{A \code{dkge} object.}
@@ -14,6 +14,9 @@ dkge_project_clusters(fit, B, omega_vec = NULL, w = 1)
 \item{omega_vec}{Optional vector of per-cluster weights.}
 
 \item{w}{Optional subject weight.}
+
+\item{subject}{Optional training-subject index or id used to select a
+subject-specific spatial operator.}
 }
 \value{
 Pxrank matrix of projected coordinates.

@@ -182,7 +182,7 @@ dkge_make_target <- function(fit = NULL,
 .dkge_subject_loadings <- function(fit) {
   stopifnot(inherits(fit, "dkge"))
   if (!is.null(fit$Btil)) {
-    out <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+    out <- .dkge_fit_subject_loadings(fit)
     names(out) <- fit$subject_ids
     return(out)
   }

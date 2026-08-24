@@ -1,8 +1,8 @@
 ---
 title: Weighting Strategies in DKGE
 description: >
-  Separate the four weighting layers - location, subject, spatial, and transport -
-  and see which object each one changes.
+  Separate location metrics, model-level spatial regularization, subject
+  weights, and transport masses, and see which object each one changes.
 output:
   rmarkdown::html_vignette:
     toc: yes
@@ -63,10 +63,10 @@ cat(sprintf(
 ```
 
 
-DKGE has separate weighting controls for locations within a subject, whole
-subjects, and spatial transport. Each changes a different estimand. This
-vignette shows where the controls enter the computation and what must be
-reported when they are used.
+DKGE has separate controls for locations within a subject, model-level spatial
+regularization, whole subjects, and spatial transport. Each changes a different
+estimand. This vignette shows where the controls enter the computation and what
+must be reported when they are used.
 
 Weighting is needed when “one unit, one vote” is scientifically wrong—for
 example, when parcels have unequal area or some measurements are demonstrably
@@ -74,7 +74,7 @@ less reliable. It is not a generic way to make a result cleaner. Every weight
 answers two questions: *what is the unit being reweighted, and at what stage?*
 
 ```text
-subject beta block --spatial weights--> subject moment --subject weights--> group basis --transport masses--> common map
+subject beta block --location scaling--> Laplacian solve --> subject moment --subject weights--> group basis --transport masses--> common map
 ```
 
 ### Adaptive voxel weighting (preview)
@@ -89,9 +89,10 @@ shows the specification, structural checks, and post-hoc updates with
 
 ## Which weighting control changes which object?
 
-| Layer | Unit receiving weight | Argument | Enters before | Typical rationale |
+| Layer | Unit receiving weight or coupling | Argument | Enters before | Typical rationale |
 |---|---|---|---|---|
-| Spatial | parcel, cluster, or voxel within subject | `Omega_list` / `omega` | subject moment | area, precision, or a declared spatial metric |
+| Location metric | parcel, cluster, or voxel within subject | `Omega_list` / `omega` | subject moment | area, precision, or a declared spatial metric |
+| Spatial regularizer | graph edge joining neighboring locations | `spatial` | subject moment and every reconstructed field | penalize spatial roughness inside the model |
 | Subject | entire subject block | `w_method`, `w_tau`, or `weights` | pooled eigensolve | prevent one high-energy block from dominating, or apply external subject mass |
 | Transport | source and target spatial mass | `sizes` | common-map summary | preserve parcel area or voxel density during alignment |
 
@@ -100,6 +101,16 @@ separate layer covered in `vignette("dkge-partial-effect-spaces")`, with the
 precision-weighted mean derived in `vignette("dkge-unbalanced-trialwise")`.
 Adaptive
 training-fold weights are covered in `vignette("dkge-adaptive-weighting")`.
+
+`spatial = dkge_spatial_regularizer(...)` is an operator rather than another
+diagonal weight. It couples neighboring columns through
+`(I + lambda * L)^{-1}`, changes the fitted group basis, and is reused for
+components, held-out contrasts, and prediction. DKGE applies adaptive column
+scaling first, this sparse spatial solve second, and `Omega_list` as the final
+metric in the subject moment. See
+`vignette("dkge-spatial-regularization")` for graph construction and lambda
+selection. By contrast, smoothing in `dkge_anchor_aggregate()` is a post-fit
+display/aggregation operation and cannot regularize the learned solution.
 
 The example below changes one layer at a time so that a changed output can be
 attributed to a named assumption.

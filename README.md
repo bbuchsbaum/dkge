@@ -8,7 +8,8 @@
 Design-Kernel Group Embedding (DKGE) turns subject-level GLM outputs into a shared, design-aware latent space. It preserves the structure of experimental designs, supports cross-validated contrasts, and provides transport utilities for mapping parcellated fields onto common anchor or voxel representations.
 
 ## What it does
-- **Design kernels** encode factorial structure, smoothness, and interactions, which control how effects align across subjects.
+- **Design kernels** encode factorial structure, effect-space smoothness, and interactions, which control how effects align across subjects.
+- **Model-level spatial regularization** uses sparse graph-Laplacian solves to smooth subject fields inside the pooled moment, so the spatial prior can change the learned basis as well as its reconstructed maps.
 - **Contrasts and inference** use leave-one-subject-out (LOSO) or K-fold cross-fitting, analytic approximations, and bootstrap utilities for medoid or voxel maps.
 - **Transport and rendering** map parcellated fields to a common space with barycentric kNN or C++-accelerated Sinkhorn mappers, anchor graph smoothing, and voxel decoders. The *medoid* is the reference subject whose parcellation the others are mapped onto; it is an index you supply, defaulting to subject 1.
 - **Classifier localization** cross-fits latent classifiers and returns decoder, Haufe, and LOCO maps.
@@ -47,7 +48,7 @@ Start with `vignette("dkge")`, then `vignette("dkge-workflow")`. The full set:
 
 **Weighting** — `vignette("dkge-weighting")`, `vignette("dkge-adaptive-weighting")`
 
-**Spatial mapping** — `vignette("dkge-dense-rendering")`, `vignette("dkge-anchors")`, `vignette("dkge-performance")`
+**Spatial mapping** — `vignette("dkge-spatial-regularization")`, `vignette("dkge-dense-rendering")`, `vignette("dkge-anchors")`, `vignette("dkge-performance")`
 
 **Extras** — `vignette("dkge-plotting")`, `vignette("dkge-cpca")`, `vignette("dkge-vs-pls")`
 

@@ -144,8 +144,9 @@
       } else {
         sweep(Bts, 2L, sqrt(pmax(w_s, 0)), "*")
       }
-      A_s <- t(Bw) %*% fit$K %*% U_fold
-      Y_s <- Bw %*% A_s
+      Bmodel <- .dkge_apply_fit_spatial(fit, Bw, subject = s)
+      A_s <- t(Bmodel) %*% fit$K %*% U_fold
+      Y_s <- Bmodel %*% A_s
       loader_list[[j]] <- list(
         subject = s,
         A = A_s,
@@ -257,8 +258,9 @@
   names(loader_template) <- as.character(seq_len(S))
   for (s in seq_len(S)) {
     Bts <- fit$Btil[[s]]
-    A_s <- t(Bts) %*% fit$K %*% U_global
-    Y_s <- Bts %*% A_s
+    Bmodel <- .dkge_apply_fit_spatial(fit, Bts, subject = s)
+    A_s <- t(Bmodel) %*% fit$K %*% U_global
+    Y_s <- Bmodel %*% A_s
     loader_template[[s]] <- list(
       subject = s,
       A = A_s,
@@ -451,6 +453,11 @@
     B_list = Braw_all[train_ids],
     Omega_list = Omega_train,
     voxel_weights = voxel_weights_train,
+    spatial_list = if (is.null(fit$spatial)) {
+      vector("list", length(train_ids))
+    } else {
+      fit$spatial$operators[train_ids]
+    },
     obs_masks = obs_masks_train,
     subject_weights = subject_weights,
     effect_precision = effect_precision_all[train_ids],

@@ -47,7 +47,8 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
 #' @param fit A `dkge` object.
 #' @return List with variance table, subject weights, rank info, and scalar
 #'   kernel diagnostics, including numerical rank/nullity, condition, status,
-#'   participation-ratio effective rank, and leading-eigenvalue share.
+#'   participation-ratio effective rank, leading-eigenvalue share, and any
+#'   model-level spatial-regularization provenance.
 #' @examples
 #' toy <- dkge_sim_toy(
 #'   factors = list(A = list(L = 2), B = list(L = 3)),
@@ -72,7 +73,14 @@ dkge_diagnostics <- function(fit) {
       .dkge_kernel_diagnostics(.dkge_kernel_geometry(fit$K)),
     n_subjects = length(fit$Btil),
     voxel_weights = voxel_stats,
-    weight_spec = fit$weight_spec
+    weight_spec = fit$weight_spec,
+    spatial = if (is.null(fit$spatial)) NULL else list(
+      active = fit$spatial$active,
+      lambda = fit$spatial$lambda,
+      shared = fit$spatial$shared,
+      diagnostics = fit$spatial$diagnostics,
+      provenance = fit$spatial$provenance
+    )
   )
 }
 
@@ -180,6 +188,28 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
   Q <- .dkge_cv_span_basis(validation_roots$Khalf %*% U)
   captured <- if (ncol(Q)) sum(crossprod(Q, Xs)^2) else 0
   pmin(1, pmax(0, captured / total))
+}
+
+#' Apply a fixed held-out spatial metric without candidate smoothing
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_apply_spatial_metric <- function(B, Omega = NULL) {
+  if (is.null(Omega)) return(B)
+  P <- ncol(B)
+  if (is.vector(Omega)) {
+    if (length(Omega) != P) {
+      stop("Held-out diagonal Omega must match the beta-block width.",
+           call. = FALSE)
+    }
+    return(sweep(B, 2L, sqrt(pmax(as.numeric(Omega), 0)), "*"))
+  }
+  Omega <- as.matrix(Omega)
+  if (!identical(dim(Omega), c(P, P))) {
+    stop("Held-out full Omega must be square and match the beta-block width.",
+         call. = FALSE)
+  }
+  B %*% sqrtm_sym(Omega)
 }
 
 #' Numerical rank and candidate basis for one fold moment
@@ -301,6 +331,8 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' @param ridge Optional ridge parameter passed to [dkge_fit()].
 #' @param w_method Subject-level weighting scheme passed to [dkge_fit()].
 #' @param w_tau Shrinkage parameter toward equal weights passed to [dkge_fit()].
+#' @param spatial Optional fixed [dkge_spatial_regularizer()] applied inside
+#'   every candidate fit and training fold.
 #' @param validation_K Optional fixed q by q PSD matrix used to score every
 #'   candidate. `NULL` (default) uses the identity. It affects scoring only;
 #'   candidate `K` still determines the learned training subspace.
@@ -330,7 +362,8 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                               w_method = "mfa_sigma1", w_tau = 0.3,
                               validation_K = NULL,
                               kernel_rank_policy = c("full", "allow_singular"),
-                              kernel_concentration_threshold = 0.75) {
+                              kernel_concentration_threshold = 0.75,
+                              spatial = NULL) {
   stopifnot(length(B_list) == length(X_list))
   kernel_rank_policy <- match.arg(kernel_rank_policy)
   .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
@@ -380,7 +413,7 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
 
   base <- dkge_fit(B_list, X_list, K, Omega_list = Omega_list,
                   w_method = w_method, w_tau = w_tau,
-                  ridge = ridge, rank = max(ranks_fit))
+                  ridge = ridge, rank = max(ranks_fit), spatial = spatial)
 
   rows <- vector("list", S * length(ranks_fit))
   row_id <- 1L
@@ -394,6 +427,7 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
     } else {
       sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
     }
+    Bw <- .dkge_apply_fit_spatial(base, Bw, subject = s)
     for (r in ranks_fit) {
       fold <- .dkge_cv_fold_basis(ctx$Chat, base, r)
       score <- if (is.null(fold$basis)) {
@@ -481,7 +515,8 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
                                 w_method = "mfa_sigma1", w_tau = 0.3,
                                 validation_K = NULL,
                                 kernel_rank_policy = c("full", "allow_singular"),
-                                kernel_concentration_threshold = 0.75) {
+                                kernel_concentration_threshold = 0.75,
+                                spatial = NULL) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
   kernel_rank_policy <- match.arg(kernel_rank_policy)
   .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
@@ -529,7 +564,7 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
 
     base <- dkge_fit(B_list, X_list, Kc, Omega_list = Omega_list,
                     w_method = w_method, w_tau = w_tau,
-                    ridge = ridge, rank = rank)
+                    ridge = ridge, rank = rank, spatial = spatial)
     S <- length(B_list)
     candidate_rows <- list()
 
@@ -541,6 +576,7 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
       Bts <- base$Btil[[s]]
       loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
       Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
+      Bw <- .dkge_apply_fit_spatial(base, Bw, subject = s)
       ev <- if (is.null(fold$basis)) {
         NA_real_
       } else {
@@ -618,6 +654,215 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
   )
 }
 
+#' LOSO selection of spatial regularization strength
+#'
+#' Selects the Laplacian penalty `lambda` while keeping the spatial graph,
+#' design kernel, latent rank, and validation geometry fixed. Each candidate is
+#' fitted inside each LOSO training fold, but scored against the **unsmoothed**
+#' held-out beta block in a candidate-independent effect-space geometry. Fixed
+#' effect scaling, adaptive location weights, and `Omega_list` remain part of
+#' that held-out geometry; only the candidate Laplacian solve is omitted. Thus a
+#' larger `lambda` cannot improve its score merely by smoothing or shrinking the
+#' same field used in the denominator.
+#'
+#' The returned `pick` is the largest (smoothest) candidate whose mean score is
+#' within one standard error of the best candidate. Include `0` in `lambdas` to
+#' compare against the unsmoothed model. A saturated score is reported and
+#' warned about in the same way as other DKGE CV helpers.
+#'
+#' @inheritParams dkge_cv_rank_loso
+#' @param spatial A [dkge_spatial_regularizer()] supplying the fixed graph. Its
+#'   stored `lambda` is ignored while evaluating `lambdas`.
+#' @param lambdas Non-negative finite candidate penalties.
+#' @param rank One positive latent rank used for every candidate.
+#' @param effect_scaling Effect-space scaling passed to every candidate
+#'   [dkge_fit()]. Use the same setting planned for the final refit.
+#' @return A list with selected `pick`, unconstrained `best`, summary `table`,
+#'   per-fold `raw` scores, the selected `spatial` specification, validation and
+#'   kernel diagnostics, the one-SE threshold, recorded `fit_settings`, and a
+#'   saturation flag.
+#' @export
+#' @examples
+#' \donttest{
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)), active_terms = "cond",
+#'   S = 4, P = 15, snr = 4
+#' )
+#' coords <- cbind(x = seq_len(ncol(toy$B_list[[1]])), y = 0, z = 0)
+#' spatial <- dkge_spatial_regularizer(
+#'   coords, lambda = 1, dthresh = 1.01, nnk = 3,
+#'   weight_mode = "binary"
+#' )
+#' cv <- dkge_cv_spatial_grid(
+#'   toy$B_list, toy$X_list, toy$K, spatial,
+#'   lambdas = c(0, 0.25, 1), rank = 1
+#' )
+#' cv$pick
+#' }
+dkge_cv_spatial_grid <- function(B_list, X_list, K, spatial, lambdas, rank,
+                                 Omega_list = NULL, ridge = 0,
+                                 w_method = "mfa_sigma1", w_tau = 0.3,
+                                 effect_scaling = c("pooled_design", "none"),
+                                 validation_K = NULL,
+                                 kernel_rank_policy = c("full", "allow_singular"),
+                                 kernel_concentration_threshold = 0.75) {
+  stopifnot(is.list(B_list), is.list(X_list),
+            length(B_list) == length(X_list), length(B_list) >= 2L)
+  if (!inherits(spatial, "dkge_spatial_regularizer")) {
+    .dkge_abort("`spatial` must be created by `dkge_spatial_regularizer()`.",
+                "dkge_spatial_spec_error")
+  }
+  if (!is.numeric(lambdas) || !length(lambdas) ||
+      any(!is.finite(lambdas)) || any(lambdas < 0)) {
+    .dkge_abort("`lambdas` must contain non-negative finite numbers.",
+                "dkge_spatial_spec_error")
+  }
+  lambdas <- sort(unique(as.numeric(lambdas)))
+  rank <- .dkge_cv_ranks(rank)
+  if (length(rank) != 1L) stop("`rank` must be one positive integer.", call. = FALSE)
+  effect_scaling <- match.arg(effect_scaling)
+
+  kernel_rank_policy <- match.arg(kernel_rank_policy)
+  .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
+  q <- nrow(B_list[[1]])
+  geometry <- .dkge_cv_candidate_geometry(K, q)
+  if (geometry$rank == 0L) {
+    .dkge_abort("Candidate kernel has numerical rank zero.",
+                "dkge_kernel_rank_error")
+  }
+  if (kernel_rank_policy == "full" && geometry$nullity > 0L) {
+    .dkge_abort(
+      sprintf(
+        paste0(
+          "Candidate kernel has numerical rank %d of %d. Full-rank CV is the ",
+          "default; use `kernel_rank_policy = \"allow_singular\"` only for an ",
+          "intentional quotient effect space."
+        ),
+        geometry$rank, q
+      ),
+      "dkge_cv_kernel_rank_error"
+    )
+  }
+  if (rank > geometry$rank) {
+    .dkge_abort(
+      sprintf("Requested rank %d exceeds kernel rank %d.", rank, geometry$rank),
+      "dkge_cv_rank_error"
+    )
+  }
+  validation <- .dkge_cv_validation_geometry(validation_K, q)
+  S <- length(B_list)
+  candidate_rows <- vector("list", length(lambdas))
+
+  for (i in seq_along(lambdas)) {
+    lambda <- lambdas[[i]]
+    candidate <- .dkge_spatial_with_lambda(spatial, lambda)
+    base <- dkge_fit(
+      B_list, X_list, K,
+      Omega_list = Omega_list,
+      w_method = w_method,
+      w_tau = w_tau,
+      ridge = ridge,
+      rank = rank,
+      effect_scaling = effect_scaling,
+      spatial = candidate
+    )
+    fold_rows <- vector("list", S)
+    for (s in seq_len(S)) {
+      train_ids <- setdiff(seq_len(S), s)
+      ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
+      fold <- .dkge_cv_fold_basis(ctx$Chat, base, rank)
+
+      # Deliberately do not call `.dkge_apply_fit_spatial()` here. Candidate
+      # lambda changes the training basis, while every candidate is judged on
+      # the same raw held-out field and fixed validation metric.
+      Bheld <- base$Btil[[s]]
+      loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bheld)
+      if (!is.null(loader_weights)) {
+        Bheld <- sweep(Bheld, 2L, sqrt(pmax(loader_weights, 0)), "*")
+      }
+      Bheld <- .dkge_cv_apply_spatial_metric(Bheld, Omega_list[[s]])
+      score <- if (is.null(fold$basis)) {
+        NA_real_
+      } else {
+        .dkge_cv_score_fixed(Bheld, fold$basis, validation$roots)
+      }
+      fold_rows[[s]] <- data.frame(
+        lambda = lambda,
+        subject = s,
+        rank = rank,
+        rank_used = if (is.null(fold$basis)) fold$available_rank else rank,
+        score = score,
+        admissible = !is.null(fold$basis) && is.finite(score),
+        stringsAsFactors = FALSE
+      )
+    }
+    candidate_rows[[i]] <- do.call(rbind, fold_rows)
+  }
+
+  raw <- do.call(rbind, candidate_rows)
+  table <- do.call(rbind, lapply(lambdas, function(lambda) {
+    rows <- raw[raw$lambda == lambda, , drop = FALSE]
+    admissible <- nrow(rows) == S && all(rows$admissible)
+    scores <- rows$score[rows$admissible]
+    data.frame(
+      lambda = lambda,
+      mean = if (admissible) mean(scores) else NA_real_,
+      se = if (admissible && length(scores) > 1L) {
+        stats::sd(scores) / sqrt(length(scores))
+      } else if (admissible) {
+        0
+      } else {
+        NA_real_
+      },
+      rank = rank,
+      rank_used = if (admissible) rank else min(rows$rank_used),
+      admissible = admissible,
+      reason = if (admissible) NA_character_ else
+        "at least one training fold has lower effective rank",
+      stringsAsFactors = FALSE
+    )
+  }))
+  eligible <- table[table$admissible & is.finite(table$mean), , drop = FALSE]
+  if (!nrow(eligible)) {
+    .dkge_abort("No spatial candidate is estimable in every training fold.",
+                "dkge_cv_spatial_rank_error")
+  }
+  best_idx <- which.max(eligible$mean)
+  best <- eligible$lambda[[best_idx]]
+  threshold <- eligible$mean[[best_idx]] - eligible$se[[best_idx]]
+  one_se <- eligible[eligible$mean >= threshold, , drop = FALSE]
+  pick <- max(one_se$lambda)
+  saturated <- .dkge_cv_saturation(eligible$mean)
+  concentration <- .dkge_cv_kernel_concentration(
+    geometry, rank, threshold = kernel_concentration_threshold
+  )
+
+  list(
+    pick = pick,
+    best = best,
+    table = table,
+    raw = raw,
+    spatial = .dkge_spatial_with_lambda(spatial, pick),
+    validation = validation$diagnostics,
+    heldout_geometry = "raw_beta_block",
+    heldout_spatial_metric = if (is.null(Omega_list)) "identity" else
+      "Omega_list",
+    selection_rule = "largest_lambda_within_one_se",
+    one_se_threshold = threshold,
+    fit_settings = list(
+      rank = rank,
+      ridge = ridge,
+      w_method = w_method,
+      w_tau = w_tau,
+      effect_scaling = effect_scaling
+    ),
+    kernel = .dkge_kernel_diagnostics(geometry),
+    kernel_rank_policy = kernel_rank_policy,
+    saturated = saturated,
+    kernel_concentration = concentration
+  )
+}
+
 #' Pooled design-space covariance and Cholesky factor
 #'
 #' Computes the qxq pooled design covariance and the corresponding Cholesky factor
@@ -635,7 +880,8 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
 #' dim(pooled$C)
 #' @keywords internal
 #' @export
-dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
+dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL,
+                              spatial = NULL) {
   stopifnot(length(B_list) == length(X_list))
   S <- length(B_list)
   q <- nrow(B_list[[1]])
@@ -646,10 +892,17 @@ dkge_pooled_cov_q <- function(B_list, X_list, Omega_list = NULL) {
   R <- chol(G)
 
   if (is.null(Omega_list)) Omega_list <- vector("list", S)
+  spatial_fit <- .dkge_resolve_spatial(
+    spatial, B_list,
+    subject_ids = names(B_list) %||% paste0("subject", seq_len(S))
+  )
 
   C <- matrix(0, q, q)
   for (s in seq_len(S)) {
     Bt <- t(R) %*% B_list[[s]]
+    Bt <- .dkge_spatial_apply_betas(
+      Bt, spatial_fit$operators[[s]] %||% NULL
+    )
     Omega <- Omega_list[[s]]
     if (is.null(Omega)) {
       C <- C + Bt %*% t(Bt)
@@ -732,7 +985,8 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
                                 w_method = "mfa_sigma1", w_tau = 0.3,
                                 top_k = 3, validation_K = NULL,
                                 kernel_rank_policy = c("full", "allow_singular"),
-                                kernel_concentration_threshold = 0.75) {
+                                kernel_concentration_threshold = 0.75,
+                                spatial = NULL) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
   kernel_rank_policy <- match.arg(kernel_rank_policy)
   .dkge_cv_validate_kernel_concentration_threshold(kernel_concentration_threshold)
@@ -769,7 +1023,8 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
     NA_character_
   }, character(1))
 
-  pooled <- dkge_pooled_cov_q(B_list, X_list, Omega_list)
+  pooled <- dkge_pooled_cov_q(B_list, X_list, Omega_list,
+                              spatial = spatial)
   alignment <- dkge_kernel_prescreen(
     K_grid, pooled$C, normalize_k = TRUE, top_k = length(K_grid)
   )
@@ -810,7 +1065,8 @@ dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
       w_method = w_method, w_tau = w_tau,
       validation_K = validation_K,
       kernel_rank_policy = kernel_rank_policy,
-      kernel_concentration_threshold = NULL
+      kernel_concentration_threshold = NULL,
+      spatial = spatial
     )
     summary_tbl <- cv$table %||% cv$summary
     stopifnot(!is.null(summary_tbl), all(c("param", "mean", "se") %in% names(summary_tbl)))

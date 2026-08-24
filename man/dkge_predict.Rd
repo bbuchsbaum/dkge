@@ -4,7 +4,7 @@
 \alias{dkge_predict}
 \title{Predict DKGE contrasts for new subjects (out-of-sample)}
 \usage{
-dkge_predict(object, B_list, contrasts, return_loadings = TRUE)
+dkge_predict(object, B_list, contrasts, return_loadings = TRUE, spatial = NULL)
 }
 \arguments{
 \item{object}{dkge | dkge_stream | dkge_model}
@@ -14,6 +14,10 @@ dkge_predict(object, B_list, contrasts, return_loadings = TRUE)
 \item{contrasts}{list of named q-vectors or a qxk matrix (columns are contrasts)}
 
 \item{return_loadings}{logical; if TRUE also return A_list}
+
+\item{spatial}{Optional \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} for prediction subjects.
+A fit with a shared spatial domain reuses its stored specification
+automatically. A fit with subject-specific domains requires this argument.}
 }
 \value{
 list(A_list=..., values = list of per-contrast subject vectors)

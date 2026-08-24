@@ -56,7 +56,8 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   Bts <- fit$Btil[[s]]
   loader_weights <- .dkge_subject_loader_weights(weight_eval$total, Bts)
   Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
-  A_s <- t(Bw) %*% fit$K %*% Uminus
+  Bmodel <- .dkge_apply_fit_spatial(fit, Bw, subject = s)
+  A_s <- t(Bmodel) %*% fit$K %*% Uminus
   v_s <- as.numeric(A_s %*% alpha)
 
   list(v = v_s, alpha = alpha, basis = Uminus, evals = eig_minus$values)

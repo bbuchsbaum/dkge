@@ -27,7 +27,8 @@ dkge_fit(
   effect_weights = NULL,
   debias = c("none", "analytic", "split_half"),
   missingness = c("none", "rescale", "mask", "shrink"),
-  miss_args = list()
+  miss_args = list(),
+  spatial = NULL
 )
 }
 \arguments{
@@ -44,12 +45,13 @@ element may be \code{NULL} (no extra weighting), a numeric vector of length
 \code{P_s} (diagonal weights for clusters/voxels), or a full \verb{P_s x P_s} matrix
 specifying custom covariance. These weights are applied both when
 accumulating the compressed covariance and when computing MFA/energy block
-normalization.}
+normalization. With \code{spatial}, the Laplacian solve precedes this metric.}
 
 \item{w_method}{Subject-level weighting scheme.
 \itemize{
 \item \code{"mfa_sigma1"} (default): inverse squared leading singular value of
-\eqn{K^{1/2} Btil_s \Omega_s^{1/2}} (Multiple Factor Analysis scaling).
+\eqn{K^{1/2} Btil_s H_s^{T} \Omega_s^{1/2}} (Multiple Factor Analysis
+scaling), with \eqn{H_s = I} when spatial regularization is absent.
 \item \code{"energy"}: inverse Frobenius norm squared of the same block.
 \item \code{"none"}: disable block scaling (all weights = 1).
 }}
@@ -137,9 +139,14 @@ the observed-mass scale rather than mean-imputing absent subjects.}
 \item{miss_args}{List of arguments for \code{missingness}. Known fields are
 \code{min_pairs} (used by \code{"mask"} and \code{"shrink"}) and \code{gamma} (used by
 \code{"shrink"}). Unknown names are an error.}
+
+\item{spatial}{Optional model-level spatial regularizer created by
+\code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}}. The same sparse Laplacian resolvent is used
+in the fitted moment, held-out folds, components, contrasts, and
+prediction. \code{lambda = 0} is exactly the unsmoothed model.}
 }
 \value{
-A fitted \code{dkge} object. Exact unregularized pooled moments
+A fitted \code{dkge} object. Exact factorizable pooled moments
 additionally inherit from \code{multiblock_biprojector} and advertise physical
 block loadings \verb{$v}. Pair-normalized, missingness-transformed, debiased,
 ridged, CPCA, and JD fits inherit from \code{dkge_qspace} instead, set \verb{$v}

@@ -73,7 +73,7 @@ the shared **effect space**; the final map is defined in a shared **spatial
 space**. Keeping those stages separate is the central organizing idea:
 
 ```text
-validate inputs -> fit in effect space -> name a contrast -> cross-fit subject fields -> transport to one map
+validate inputs -> optionally regularize spatial fields inside the fit -> fit in effect space -> name a contrast -> cross-fit subject fields -> transport to one map
 ```
 
 Each section below ends by naming the object you now have and the operation
@@ -137,10 +137,19 @@ stopifnot(length(unique(vapply(bundle$betas, nrow, integer(1)))) == 1L)
 or have very unequal cell precision, stop here and read
 `vignette("dkge-partial-effect-spaces")` first.
 
+If unsmoothed beta columns need a spatial prior, define it before fitting with
+`dkge_spatial_regularizer()` and pass it through `spatial =`. Although DKGE's
+eigensolve is in effect space, the regularized beta fields change the pooled
+effect-space moment and can therefore change the learned basis. This is not the
+same as smoothing a rendered map after fitting; see
+`vignette("dkge-spatial-regularization")` for graph construction, held-out
+selection of `lambda`, and inference boundaries.
+
 ## What is the baseline fit?
 
-Start with an identity kernel. It retains the GLM/design scaling but adds no
-kernel-imposed similarity between effects.
+Start with an identity kernel and no spatial regularizer. It retains the
+GLM/design scaling but adds neither kernel-imposed similarity between effects
+nor graph-imposed similarity between spatial units.
 
 ```{r fit-identity, fig.alt="Scree plot for the two-component identity-kernel baseline fit."}
 K_identity <- diag(bundle$q)

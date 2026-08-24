@@ -438,7 +438,7 @@ dkge_prepare_transport <- function(fit,
     if (!is.null(betas)) {
       loadings <- dkge_predict_loadings(fit, betas)
     } else if (!is.null(fit$Btil)) {
-      loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+      loadings <- .dkge_fit_subject_loadings(fit)
     } else {
       stop("Provide betas or pre-computed loadings.")
     }
@@ -604,7 +604,7 @@ dkge_transport_loadings_to_medoid <- function(fit, medoid, centroids,
     if (!is.null(betas)) {
       loadings <- dkge_predict_loadings(fit, betas)
     } else if (!is.null(fit$Btil)) {
-      loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+      loadings <- .dkge_fit_subject_loadings(fit)
     } else {
       stop("Provide betas or pre-computed loadings.")
     }
@@ -687,7 +687,7 @@ dkge_transport_contrasts_to_medoid <- function(fit, contrast_obj, medoid, centro
     if (!is.null(betas)) {
       loadings <- dkge_predict_loadings(fit, betas)
     } else if (!is.null(fit$Btil)) {
-      loadings <- lapply(fit$Btil, function(Bts) t(Bts) %*% fit$K %*% fit$U)
+      loadings <- .dkge_fit_subject_loadings(fit)
     } else {
       stop("Provide betas or pre-computed loadings.")
     }

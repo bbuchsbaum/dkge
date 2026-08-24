@@ -170,6 +170,11 @@ dkge_anchor_to_voxel_apply <- function(decoder, anchor_values) {
 
 #' Aggregate anchor fields with optional Laplacian smoothing
 #'
+#' This is a post-fit rendering operation: it smooths an already transported
+#' anchor average and does not change the DKGE basis, components, or held-out
+#' subject fields. To place a spatial penalty inside the fitted solution, use
+#' [dkge_spatial_regularizer()] through the `spatial` argument of [dkge_fit()].
+#'
 #' @param anchor_list List of anchor-valued vectors (length `Q`).
 #' @param subj_weights Optional subject weights applied during the average.
 #' @param L Optional graph Laplacian for Tikhonov regularisation.

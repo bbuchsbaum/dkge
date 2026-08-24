@@ -4,7 +4,9 @@
 
 #' Freeze a DKGE fit into a compact model for prediction
 #' @param fit a dkge or dkge_stream object
-#' @return list with U, K, R and class 'dkge_model'
+#' @return A `dkge_model` list with `U`, `K`, `R`, effect labels, and any
+#'   spatial specification/provenance needed to rebuild sparse factors for new
+#'   subjects. Training-subject factorization objects are omitted.
 #' @export
 #' @examples
 #' toy <- dkge_sim_toy(
@@ -16,7 +18,17 @@
 #' print(model)
 dkge_freeze <- function(fit) {
   stopifnot(is.list(fit), !is.null(fit$U), !is.null(fit$K), !is.null(fit$R))
-  model <- list(U = fit$U, K = fit$K, R = fit$R, effects = fit$effects)
+  spatial <- fit$spatial %||% NULL
+  if (!is.null(spatial)) {
+    # Prediction rebuilds sparse factors for the supplied domain, so a frozen
+    # model need not retain one factorization per training subject.
+    spatial <- structure(
+      spatial[c("active", "lambda", "shared", "diagnostics", "provenance", "spec")],
+      class = c("dkge_spatial_fit", "list")
+    )
+  }
+  model <- list(U = fit$U, K = fit$K, R = fit$R, effects = fit$effects,
+                spatial = spatial, subject_ids = fit$subject_ids)
   class(model) <- "dkge_model"
   model
 }
@@ -29,11 +41,8 @@ dkge_freeze <- function(fit) {
 }
 
 .dkge_components <- function(object) {
-  if (inherits(object, "dkge_model")) {
-    list(U = object$U, K = object$K, R = object$R, effects = object$effects)
-  } else {
-    list(U = object$U, K = object$K, R = object$R, effects = object$effects)
-  }
+  list(U = object$U, K = object$K, R = object$R, effects = object$effects,
+       spatial = object$spatial, subject_ids = object$subject_ids)
 }
 
 .dkge_align_effects <- function(B, effects) {
@@ -63,17 +72,26 @@ dkge_freeze <- function(fit) {
 #'
 #' @param object dkge | dkge_stream | dkge_model
 #' @param B_list list of qxP_s beta matrices for new subjects
+#' @param spatial Optional [dkge_spatial_regularizer()] for prediction subjects.
+#'   A fit with a shared spatial domain reuses its stored specification
+#'   automatically. A fit with subject-specific domains requires this argument.
 #' @return list of P_sxr loadings (A_s) for each subject
 #' @export
-dkge_predict_loadings <- function(object, B_list) {
+dkge_predict_loadings <- function(object, B_list, spatial = NULL) {
   comps <- .dkge_components(object)
   mats <- lapply(B_list, .dkge_coerce_beta)
-  lapply(mats, function(Bs) {
+  Btil_list <- lapply(mats, function(Bs) {
     Bs <- .dkge_align_effects(Bs, comps$effects)
     if (!is.null(attr(Bs, "coverage_rows"))) {
       attr(Bs, "coverage_rows") <- NULL
     }
-    Btil <- t(comps$R) %*% Bs
+    t(comps$R) %*% Bs
+  })
+  spatial_fit <- .dkge_prediction_spatial(comps, Btil_list, spatial)
+  out <- lapply(seq_along(Btil_list), function(s) {
+    Btil <- .dkge_spatial_apply_betas(
+      Btil_list[[s]], spatial_fit$operators[[s]] %||% NULL
+    )
     project_cpp <- get0("dkge_project_loadings_cpp", mode = "function")
     if (is.function(project_cpp)) {
       project_cpp(Btil, comps$K, comps$U)
@@ -81,6 +99,8 @@ dkge_predict_loadings <- function(object, B_list) {
       t(Btil) %*% comps$K %*% comps$U
     }
   })
+  names(out) <- names(B_list)
+  out
 }
 
 #' Predict DKGE contrasts for new subjects (out-of-sample)
@@ -89,9 +109,11 @@ dkge_predict_loadings <- function(object, B_list) {
 #' @param B_list list of qxP_s betas
 #' @param contrasts list of named q-vectors or a qxk matrix (columns are contrasts)
 #' @param return_loadings logical; if TRUE also return A_list
+#' @inheritParams dkge_predict_loadings
 #' @return list(A_list=..., values = list of per-contrast subject vectors)
 #' @export
-dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
+dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE,
+                         spatial = NULL) {
   comps <- .dkge_components(object)
   mats <- lapply(B_list, .dkge_coerce_beta)
   mats <- lapply(mats, .dkge_align_effects, effects = comps$effects)
@@ -129,7 +151,7 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
     fallback <- paste0("subj", seq_along(B_list))
     subj_names[!nzchar(subj_names)] <- fallback[!nzchar(subj_names)]
   }
-  A_list <- dkge_predict_loadings(comps, mats)
+  A_list <- dkge_predict_loadings(comps, mats, spatial = spatial)
   names(A_list) <- subj_names
   # precompute alpha per contrast
   alpha_list <- lapply(contrasts, function(c) {
@@ -175,18 +197,21 @@ dkge_predict <- function(object, B_list, contrasts, return_loadings = TRUE) {
 #'   `betas`.
 #' @param return_loadings Logical; when TRUE, include projected loadings in the
 #'   result bundle.
+#' @inheritParams dkge_predict_loadings
 #' @return Output from [dkge_predict()] with harmonised subject names.
 #' @export
 dkge_predict_subjects <- function(object,
                                   betas,
                                   contrasts,
                                   ids = NULL,
-                                  return_loadings = TRUE) {
+                                  return_loadings = TRUE,
+                                  spatial = NULL) {
   prep <- .dkge_prepare_predict_inputs(betas, ids)
   dkge_predict(object,
                B_list = prep$B_list,
                contrasts = contrasts,
-               return_loadings = return_loadings)
+               return_loadings = return_loadings,
+               spatial = spatial)
 }
 
 #' @keywords internal
@@ -260,10 +285,24 @@ dkge_predict_subjects <- function(object,
 #' @param object dkge | dkge_stream | dkge_model
 #' @param loader object with n(), B(s) methods (and optional X(s))
 #' @param contrasts list or matrix as in dkge_predict()
+#' @inheritParams dkge_predict_loadings
 #' @return list(values=list per subject, A_list=list of loadings)
 #' @export
-dkge_predict_stream <- function(object, loader, contrasts) {
+dkge_predict_stream <- function(object, loader, contrasts, spatial = NULL) {
   comps <- .dkge_components(object)
+  fitted_spatial <- comps$spatial %||% NULL
+  if (!is.null(spatial) ||
+      (!is.null(fitted_spatial) && isTRUE(fitted_spatial$active) &&
+       !isTRUE(fitted_spatial$shared))) {
+    .dkge_abort(
+      paste0(
+        "Streaming prediction currently supports only the shared spatial ",
+        "regularizer stored on the fitted model. Use `dkge_predict()` for ",
+        "subject-specific prediction domains."
+      ),
+      "dkge_spatial_prediction_error"
+    )
+  }
   # alphas
   if (is.matrix(contrasts)) {
     Cmat <- contrasts; cn <- colnames(Cmat); if (is.null(cn)) cn <- paste0("c", seq_len(ncol(Cmat)))
@@ -279,6 +318,10 @@ dkge_predict_stream <- function(object, loader, contrasts) {
   for (s in seq_len(S)) {
     Bs <- .dkge_align_effects(.dkge_coerce_beta(loader$B(s)), comps$effects)
     Btil <- t(comps$R) %*% Bs
+    spatial_s <- .dkge_prediction_spatial(comps, list(Btil), spatial = NULL)
+    Btil <- .dkge_spatial_apply_betas(
+      Btil, spatial_s$operators[[1L]] %||% NULL
+    )
     A <- t(Btil) %*% comps$K %*% comps$U
     A_list[[s]] <- A
     res <- sapply(alpha_list, function(a) as.numeric(A %*% a))

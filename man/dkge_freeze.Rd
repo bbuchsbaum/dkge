@@ -10,7 +10,9 @@ dkge_freeze(fit)
 \item{fit}{a dkge or dkge_stream object}
 }
 \value{
-list with U, K, R and class 'dkge_model'
+A \code{dkge_model} list with \code{U}, \code{K}, \code{R}, effect labels, and any
+spatial specification/provenance needed to rebuild sparse factors for new
+subjects. Training-subject factorization objects are omitted.
 }
 \description{
 Freeze a DKGE fit into a compact model for prediction

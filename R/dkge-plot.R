@@ -80,6 +80,7 @@ theme_dkge <- function(base_size = 12, base_family = "") {
  B_t <- fit$Btil[[s]]
  w_s <- .dkge_fit_subject_voxel_weights(fit, s, B_t, subject_id = subjects[[s]])
  B_t <- .dkge_apply_voxel_weights(B_t, w_s)
+ B_t <- .dkge_apply_fit_spatial(fit, B_t, subject = s)
  A_s <- t(B_t) %*% fit$K %*% fit$U
  energy[s, ] <- colSums(A_s * A_s)
  }
@@ -962,7 +963,9 @@ dkge_subject_component_projections <- function(fit,
  for (s in seq_len(S)) {
  Bts <- fit$Btil[[s]]
  w_s <- .dkge_fit_subject_voxel_weights(fit, s, Bts, subject_id = subjects[[s]])
- bbar[, s] <- rowMeans(.dkge_apply_voxel_weights(Bts, w_s))
+ Bmodel <- .dkge_apply_voxel_weights(Bts, w_s)
+ Bmodel <- .dkge_apply_fit_spatial(fit, Bmodel, subject = s)
+ bbar[, s] <- rowMeans(Bmodel)
  }
  proj <- crossprod(bbar, saliences)
  } else {

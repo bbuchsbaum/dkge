@@ -127,10 +127,12 @@
 #'   subjects that observe no effect row at all (they receive weight 0).
 #'   Voxel/parcel weights are ignored here: this uses the non-debiased `Btil`
 #'   matrices (row-standardised betas) and optional `Omega_list` only.
+#' @param spatial_list Optional resolved spatial operators, one per subject.
 #' @return Numeric vector of subject weights.
 #' @keywords internal
 #' @noRd
-.dkge_subject_weights <- function(Btil, Omega_list, Khalf, w_method, w_tau, obs_masks = NULL) {
+.dkge_subject_weights <- function(Btil, Omega_list, Khalf, w_method, w_tau,
+                                  obs_masks = NULL, spatial_list = NULL) {
   S <- length(Btil)
   if (w_method == "none") {
     return(rep(1, S))
@@ -140,10 +142,15 @@
     on.exit(.dkge_seed_exit(rng_state), add = TRUE)
   }
   q <- nrow(Btil[[1]])
+  if (is.null(spatial_list)) spatial_list <- vector("list", S)
+  if (length(spatial_list) != S) {
+    .dkge_abort("`spatial_list` must have one entry per subject.",
+                "dkge_spatial_domain_error")
+  }
   weights <- numeric(S)
   usable <- rep(TRUE, S)
   for (s in seq_len(S)) {
-    Bts <- Btil[[s]]
+    Bts <- .dkge_spatial_apply_betas(Btil[[s]], spatial_list[[s]])
     mask_s <- if (is.null(obs_masks) || length(obs_masks) < s) NULL else obs_masks[[s]]
     if (!length(.dkge_observed_rows(mask_s, q))) {
       usable[s] <- FALSE
@@ -353,16 +360,23 @@
 #' @param Khalf Kernel square root used to project into the K-metric.
 #' @param weights Subject weights applied during accumulation.
 #' @param voxel_weights Optional per-subject or shared voxel/parcel weights.
+#' @param spatial_list Optional resolved spatial operators, one per subject.
 #' @return List with the symmetrised compressed covariance (`Chat`) and
 #'   per-subject contributions.
 #' @keywords internal
 #' @noRd
 .dkge_accumulate_chat <- function(Btil, Omega_list, Khalf, weights,
-                                  voxel_weights = NULL) {
+                                  voxel_weights = NULL,
+                                  spatial_list = NULL) {
   S <- length(Btil)
   q <- nrow(Btil[[1]])
   Chat <- matrix(0, q, q)
   contribs <- vector("list", S)
+  if (is.null(spatial_list)) spatial_list <- vector("list", S)
+  if (length(spatial_list) != S) {
+    .dkge_abort("`spatial_list` must have one entry per subject.",
+                "dkge_spatial_domain_error")
+  }
 
   scale_columns <- function(B, w) {
     if (is.null(w) || length(w) == 0L) return(B)
@@ -376,6 +390,7 @@
     Bts <- Btil[[s]]
     w_s <- if (is.list(voxel_weights)) voxel_weights[[s]] else voxel_weights
     Bw <- scale_columns(Bts, w_s)
+    Bw <- .dkge_spatial_apply_betas(Bw, spatial_list[[s]])
     Omega <- Omega_list[[s]]
     right <- if (is.null(Omega)) {
       Bw %*% t(Bw)
@@ -412,10 +427,15 @@
 #'   `P_s` (diagonal weights for clusters/voxels), or a full `P_s x P_s` matrix
 #'   specifying custom covariance. These weights are applied both when
 #'   accumulating the compressed covariance and when computing MFA/energy block
-#'   normalization.
+#'   normalization. With `spatial`, the Laplacian solve precedes this metric.
+#' @param spatial Optional model-level spatial regularizer created by
+#'   [dkge_spatial_regularizer()]. The same sparse Laplacian resolvent is used
+#'   in the fitted moment, held-out folds, components, contrasts, and
+#'   prediction. `lambda = 0` is exactly the unsmoothed model.
 #' @param w_method Subject-level weighting scheme.
 #'   * `"mfa_sigma1"` (default): inverse squared leading singular value of
-#'     \eqn{K^{1/2} Btil_s \Omega_s^{1/2}} (Multiple Factor Analysis scaling).
+#'     \eqn{K^{1/2} Btil_s H_s^{T} \Omega_s^{1/2}} (Multiple Factor Analysis
+#'     scaling), with \eqn{H_s = I} when spatial regularization is absent.
 #'   * `"energy"`: inverse Frobenius norm squared of the same block.
 #'   * `"none"`: disable block scaling (all weights = 1).
 #' @param w_tau Shrinkage parameter (0..1) toward equal weights. 0 keeps the raw
@@ -484,7 +504,7 @@
 #' @param miss_args List of arguments for `missingness`. Known fields are
 #'   `min_pairs` (used by `"mask"` and `"shrink"`) and `gamma` (used by
 #'   `"shrink"`). Unknown names are an error.
-#' @return A fitted `dkge` object. Exact unregularized pooled moments
+#' @return A fitted `dkge` object. Exact factorizable pooled moments
 #'   additionally inherit from `multiblock_biprojector` and advertise physical
 #'   block loadings `$v`. Pair-normalized, missingness-transformed, debiased,
 #'   ridged, CPCA, and JD fits inherit from `dkge_qspace` instead, set `$v`
@@ -524,7 +544,8 @@ dkge_fit <- function(data, designs = NULL, K = NULL, Omega_list = NULL,
                      effect_weights = NULL,
                      debias = c("none", "analytic", "split_half"),
                      missingness = c("none", "rescale", "mask", "shrink"),
-                     miss_args = list()) {
+                     miss_args = list(),
+                     spatial = NULL) {
   w_method <- match.arg(w_method)
   effect_scaling <- match.arg(effect_scaling)
   cpca_part <- match.arg(cpca_part)
@@ -553,7 +574,21 @@ dkge_fit <- function(data, designs = NULL, K = NULL, Omega_list = NULL,
                                weights = weights,
                                effect_weights = effect_weight_spec,
                                rank = rank,
-                               effect_scaling = effect_scaling)
+                               effect_scaling = effect_scaling,
+                               spatial = spatial)
+
+  if (identical(debias, "analytic") &&
+      !is.null(prepped$spatial) && isTRUE(prepped$spatial$active)) {
+    .dkge_abort(
+      paste0(
+        "`debias = \"analytic\"` is not available with active spatial ",
+        "regularization because the smoothed spatial noise trace is not ",
+        "identified by the current diagonal residual-variance contract. Use ",
+        "`debias = \"split_half\"` or `\"none\"`."
+      ),
+      "dkge_spatial_debias_error"
+    )
+  }
 
   accum <- .dkge_fit_accumulate(prepped,
                                 w_method = w_method,

@@ -20,7 +20,10 @@ A list with the smoothed field \code{y}, the raw weighted mean \code{ybar},
 \code{coverage} (weighted contribution counts), and placeholder \code{ess} values.
 }
 \description{
-Aggregate anchor fields with optional Laplacian smoothing
+This is a post-fit rendering operation: it smooths an already transported
+anchor average and does not change the DKGE basis, components, or held-out
+subject fields. To place a spatial penalty inside the fitted solution, use
+\code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} through the \code{spatial} argument of \code{\link[=dkge_fit]{dkge_fit()}}.
 }
 \examples{
 anchor_list <- list(rnorm(10), rnorm(10), rnorm(10))

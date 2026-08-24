@@ -29,7 +29,9 @@ setup.}
 
 \item{sqrt_tol}{Eigenvalue tolerance used when extracting square roots.}
 
-\item{...}{Additional arguments forwarded to \code{\link[=dkge_fit]{dkge_fit()}}.}
+\item{...}{Additional arguments forwarded to \code{\link[=dkge_fit]{dkge_fit()}}. Model-level
+\code{spatial} regularization is deliberately unsupported because the synthetic
+factor columns do not index physical spatial units.}
 }
 \value{
 A \code{dkge} object identical to one obtained from \code{\link[=dkge_fit]{dkge_fit()}}, with

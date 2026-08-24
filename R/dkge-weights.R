@@ -608,7 +608,8 @@ dkge_update_weights <- function(fit, weights = NULL) {
     cpca_T = cpca$T %||% NULL,
     cpca_part = cpca$part %||% "none",
     cpca_ridge = cpca$ridge %||% 0,
-    weights = weight_spec
+    weights = weight_spec,
+    spatial = fit$spatial$spec %||% NULL
   )
   new_fit$input <- data_bundle
   new_fit

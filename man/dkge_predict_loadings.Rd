@@ -4,12 +4,16 @@
 \alias{dkge_predict_loadings}
 \title{Predict DKGE loadings for new subjects (out-of-sample)}
 \usage{
-dkge_predict_loadings(object, B_list)
+dkge_predict_loadings(object, B_list, spatial = NULL)
 }
 \arguments{
 \item{object}{dkge | dkge_stream | dkge_model}
 
 \item{B_list}{list of qxP_s beta matrices for new subjects}
+
+\item{spatial}{Optional \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} for prediction subjects.
+A fit with a shared spatial domain reuses its stored specification
+automatically. A fit with subject-specific domains requires this argument.}
 }
 \value{
 list of P_sxr loadings (A_s) for each subject

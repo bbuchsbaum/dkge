@@ -2,6 +2,18 @@
 
 ## New features
 
+* **Model-level spatial regularization.** `dkge_spatial_regularizer()` builds
+  graph Laplacians with `adjoin` (or accepts precomputed Laplacians), binds them
+  to shared or subject-specific beta-column domains, and applies sparse
+  `(I + lambda * L)^{-1}` solves inside the pooled moment and all reconstructed
+  component, contrast, bootstrap, transport, and prediction fields. The
+  regularizer can therefore change the learned q-space solution rather than
+  merely blur its display. `lambda = 0` is exactly the unsmoothed fit;
+  `dkge_cv_spatial_grid()` scores candidate penalties against raw held-out
+  fields in a fixed validation geometry and uses the smoothest one-SE choice.
+  Analytic noise debiasing fails closed because its diagonal residual-variance
+  contract does not identify smoothing-induced spatial covariance; split-half
+  debiasing remains supported.
 * `dkge_contrast_diagnostics()` preflights planned contrasts against the fitted
   kernel support, reporting retained/null fractions and distinct contrasts
   that produce nearly proportional kernel queries. Numerical support tolerance is

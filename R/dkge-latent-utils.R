@@ -31,18 +31,20 @@ NULL
 #' }
 dkge_project_clusters_to_latent <- function(fit) {
   stopifnot(inherits(fit, "dkge"))
-  Bs_list <- fit$Btil
   U <- fit$U
   K <- fit$K
-  stopifnot(is.list(Bs_list), !is.null(U), !is.null(K))
+  stopifnot(is.list(fit$Btil), !is.null(U), !is.null(K))
   stopifnot(ncol(U) >= 1L)
 
   KU <- K %*% U
-  lapply(Bs_list, function(Bs) {
+  out <- lapply(seq_along(fit$Btil), function(s) {
+    Bs <- .dkge_apply_fit_spatial(fit, fit$Btil[[s]], subject = s)
     stopifnot(is.matrix(Bs))
     proj <- crossprod(Bs, KU)  # P_s x r
     as.matrix(proj)
   })
+  names(out) <- names(fit$Btil)
+  out
 }
 
 #' Cluster-to-latent loadings for DKGE subjects
@@ -56,17 +58,19 @@ dkge_project_clusters_to_latent <- function(fit) {
 #' @export
 dkge_cluster_loadings <- function(fit) {
   stopifnot(inherits(fit, "dkge"))
-  Bs_list <- fit$Btil
   U <- fit$U
   K <- fit$K
-  stopifnot(is.list(Bs_list), !is.null(U), !is.null(K))
+  stopifnot(is.list(fit$Btil), !is.null(U), !is.null(K))
 
   KU <- K %*% U
-  lapply(Bs_list, function(Bs) {
+  out <- lapply(seq_along(fit$Btil), function(s) {
+    Bs <- .dkge_apply_fit_spatial(fit, fit$Btil[[s]], subject = s)
     stopifnot(is.matrix(Bs))
     loadings <- crossprod(Bs, KU)
     as.matrix(loadings)
   })
+  names(out) <- names(fit$Btil)
+  out
 }
 
 #' @keywords internal

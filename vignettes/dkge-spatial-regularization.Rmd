@@ -1,0 +1,428 @@
+---
+title: 'Model-Level Spatial Regularization in DKGE'
+description: >
+  Build a graph Laplacian with adjoin, let smoothing change the fitted DKGE
+  solution, tune its strength on raw held-out fields, and carry it into inference.
+output:
+  rmarkdown::html_vignette:
+    toc: yes
+    toc_depth: 2.0
+    css: albers.css
+    includes:
+      in_header: albers-header.html
+params:
+  family: red
+  preset: interaction
+resource_files:
+- albers.css
+- albers.js
+- albers-header.html
+- fonts
+
+vignette: |
+  %\VignetteIndexEntry{Model-Level Spatial Regularization in DKGE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
+if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+library(dkge)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.width = 7,
+  fig.height = 4,
+  out.width = "90%"
+)
+set.seed(20240824)
+```
+
+```{r albers-classes, echo=FALSE, results='asis'}
+cat(sprintf(
+  paste0(
+    '<script>document.addEventListener("DOMContentLoaded",function(){',
+    'document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");',
+    'document.body.classList.add("palette-%s","preset-%s");',
+    '});</script>'
+  ),
+  params$family,
+  params$preset
+))
+```
+
+Suppose each subject contributes a $q \times P_s$ GLM beta matrix: the rows
+are the same $q$ effects, while the columns are that subject's voxels or
+parcels. DKGE solves its eigensystem in the small $q$-dimensional effect
+space. That does **not** mean spatial regularization must be a cosmetic step
+after fitting. A spatial operator applied to the beta columns changes the
+effect-space moment and therefore can change the learned basis itself.
+
+This article follows one estimand:
+
+> Learn the rank-one effect direction that best explains spatial beta fields
+> after a prespecified graph-Laplacian regularization, then obtain held-out
+> subject fields under that same regularized model.
+
+The expected outputs are a $q \times 1$ group basis, one regularized loading
+field per subject, a held-out score for each candidate penalty, and LOSO
+contrast fields that inherit the selected operator.
+
+```text
+q x P_s beta fields -> sparse spatial solve -> q x q pooled moment -> group basis -> held-out fields
+```
+
+## Where does the regularizer enter?
+
+Let $L_s$ be a combinatorial graph Laplacian on subject $s$'s spatial units.
+DKGE uses the Tikhonov resolvent
+
+\[
+H_{s,\lambda} = (I + \lambda L_s)^{-1}, \qquad \lambda \ge 0,
+\]
+
+and replaces the design-scaled beta block $\widetilde B_s$ by
+$\widetilde B_s H_{s,\lambda}^{\mathsf T}$. With a spatial metric
+$\Omega_s$, the subject contribution becomes
+
+\[
+M_s(\lambda) =
+\widetilde B_s H_{s,\lambda}^{\mathsf T}\,
+\Omega_s\,
+H_{s,\lambda}\widetilde B_s^{\mathsf T}.
+\]
+
+Thus $\lambda$ changes the pooled $q \times q$ moment that DKGE
+diagonalizes. The same $H_{s,\lambda}$ is then used for components,
+cross-fitted contrasts, bootstrap inputs, transport inputs, and prediction. It
+is never necessary to form a dense inverse: DKGE stores a sparse Cholesky
+factorization and solves against beta fields as needed. At $\lambda=0$, the
+operation is exactly the identity.
+
+The graph and the design kernel play different roles. $L_s$ says which
+**spatial units** should vary together. $K$ says which **experimental
+effects** should vary together. Neither can substitute for the other.
+
+## Build an example with a rough distractor
+
+The example has two effects at 40 ordered locations. The first effect varies
+smoothly; the second alternates at every location and has larger amplitude.
+An unsmoothed rank-one fit therefore prefers the rough field.
+
+```{r make-spatial-data}
+S <- 6L
+P <- 40L
+effects <- c("smooth", "rough")
+locations <- sprintf("location%02d", seq_len(P))
+
+coords <- cbind(x = seq_len(P) - 1, y = 0, z = 0)
+rownames(coords) <- locations
+
+smooth_truth <- sin(seq(0, 2 * pi, length.out = P))
+rough_truth <- 1.5 * (-1)^seq_len(P)
+
+B_list <- setNames(lapply(seq_len(S), function(s) {
+  B <- rbind(
+    smooth = smooth_truth + rnorm(P, sd = 0.08),
+    rough = rough_truth + rnorm(P, sd = 0.08)
+  )
+  colnames(B) <- locations
+  B
+}), sprintf("sub%02d", seq_len(S)))
+
+X0 <- diag(2)
+colnames(X0) <- effects
+X_list <- setNames(replicate(S, X0, simplify = FALSE), names(B_list))
+
+K <- diag(2)
+dimnames(K) <- list(effects, effects)
+
+c(beta_rows = nrow(B_list[[1]]), spatial_units = ncol(B_list[[1]]))
+```
+
+```{r spatial-data-checks, include=FALSE}
+stopifnot(length(B_list) == S)
+stopifnot(all(vapply(B_list, nrow, integer(1)) == length(effects)))
+stopifnot(all(vapply(B_list, ncol, integer(1)) == P))
+stopifnot(identical(colnames(B_list[[1]]), rownames(coords)))
+```
+
+## Construct the graph with `adjoin`
+
+`dkge_spatial_regularizer()` delegates coordinate-based graph construction to
+`adjoin::spatial_laplacian()`. DKGE then validates the Laplacian, binds it to
+the beta-column domain, and records the graph recipe and `adjoin` version.
+Here a distance just above one connects adjacent locations on the line.
+
+```{r construct-spatial-regularizer}
+spatial_demo <- dkge_spatial_regularizer(
+  coords = coords,
+  lambda = 2,
+  dthresh = 1.01,
+  nnk = 3,
+  weight_mode = "binary",
+  normalized = FALSE,
+  handle_isolates = "keep_zero"
+)
+spatial_demo
+```
+
+Because `coords` is one matrix, this is a shared spatial domain: every subject
+must have the same number and ordering of columns. The matching location names
+make that contract explicit. If subjects have different parcellations, supply
+a named list of coordinate matrices or precomputed Laplacians instead; DKGE
+will bind one operator to each subject and fail on missing or mismatched
+domains. Names on that list are matched to the fitted subject IDs. For raw
+lists, declare them explicitly with
+`dkge_data(B_list, X_list, subject_ids = names(B_list))` before fitting.
+
+The combinatorial Laplacian is intentional. It preserves constant fields, so
+DKGE currently requires `normalized = FALSE`. For a surface mesh or a
+scientifically defined adjacency, construct the Laplacian in `adjoin` and pass
+it through `laplacian =` rather than approximating the topology with Euclidean
+distance.
+
+## Verify that smoothing changes the solution
+
+We first compare an unsmoothed fit with a deliberately visible penalty. Both
+use the same identity design kernel and disable subject weighting, so the only
+changed assumption is the spatial regularizer.
+
+```{r fit-raw-and-spatial}
+fit_raw <- dkge_fit(
+  B_list, X_list, K,
+  rank = 1,
+  w_method = "none",
+  effect_scaling = "none"
+)
+
+fit_demo <- dkge_fit(
+  B_list, X_list, K,
+  rank = 1,
+  w_method = "none",
+  effect_scaling = "none",
+  spatial = spatial_demo
+)
+
+effect_comparison <- data.frame(
+  effect = effects,
+  raw = abs(fit_raw$U[, 1]),
+  regularized = abs(fit_demo$U[, 1])
+)
+transform(effect_comparison,
+          raw = round(raw, 3), regularized = round(regularized, 3))
+```
+
+Component signs are arbitrary, hence the absolute values. The raw component
+is almost entirely the high-amplitude rough effect. Under the regularized
+moment, the dominant direction rotates toward the smooth effect. This is the
+key distinction from post-hoc image smoothing: the fitted $U$ changed.
+
+The reconstructed subject field uses the same operator. For a compact spatial
+diagnostic, define graph-path roughness as the sum of squared adjacent
+differences.
+
+```{r compare-spatial-fields}
+roughness <- function(x) sum(diff(x)^2)
+
+map_raw <- dkge_project_btil(fit_raw, fit_raw$Btil[[1]])[, 1]
+map_demo <- dkge_project_btil(
+  fit_demo, fit_demo$Btil[[1]], subject = 1
+)[, 1]
+
+map_raw <- map_raw * sign(stats::cor(map_raw, rough_truth))
+map_demo <- map_demo * sign(stats::cor(map_demo, smooth_truth))
+
+round(c(raw = roughness(map_raw), regularized = roughness(map_demo)), 3)
+```
+
+```{r plot-spatial-fields, echo=FALSE, fig.cap="A deliberately strong spatial penalty rotates the rank-one solution away from the alternating field and yields a smooth loading field. Component signs were aligned only for display.", fig.alt="Two line plots: the unsmoothed rank-one loading alternates sharply at adjacent locations, while the regularized loading varies smoothly."}
+map_frame <- rbind(
+  data.frame(location = seq_len(P), loading = map_raw,
+             fit = "No spatial regularization"),
+  data.frame(location = seq_len(P), loading = map_demo,
+             fit = "Laplacian regularization (lambda = 2)")
+)
+ggplot2::ggplot(map_frame, ggplot2::aes(location, loading)) +
+  ggplot2::geom_hline(yintercept = 0, colour = "grey80") +
+  ggplot2::geom_line(colour = "#b33b2e", linewidth = 0.65) +
+  ggplot2::facet_wrap(~ fit, ncol = 1, scales = "free_y") +
+  ggplot2::labs(
+    title = "The spatial operator changes both the basis and its loading field",
+    x = "Ordered spatial unit", y = "Component loading"
+  ) +
+  ggplot2::theme_minimal(base_size = 11)
+```
+
+```{r solution-change-checks, include=FALSE}
+stopifnot(abs(fit_raw$U[match("rough", effects), 1]) > 0.99)
+stopifnot(abs(fit_demo$U[match("smooth", effects), 1]) > 0.99)
+stopifnot(roughness(map_demo) < 0.01 * roughness(map_raw))
+stopifnot(all(is.finite(map_demo)))
+```
+
+The fitted object retains auditable domain and graph diagnostics. Identical
+fingerprints here are expected because all subjects share one ordered graph.
+
+```{r inspect-spatial-provenance}
+spatial_diagnostics <- dkge_diagnostics(fit_demo)$spatial
+spatial_diagnostics$diagnostics[
+  , c("subject", "n_units", "n_edges", "lambda", "domain_mode")
+]
+```
+
+## Select lambda on raw held-out fields
+
+The visible $\lambda=2$ comparison was chosen to explain the mechanism, not
+to justify that penalty. Use `dkge_cv_spatial_grid()` when $\lambda$ is to be
+selected from the data. Keep the graph, design kernel, rank, and validation
+geometry fixed, and include zero as the unsmoothed candidate.
+
+```{r select-spatial-lambda}
+cv_spatial <- dkge_cv_spatial_grid(
+  B_list, X_list, K,
+  spatial = spatial_demo,
+  lambdas = c(0, 0.1, 0.5, 2),
+  rank = 1,
+  w_method = "none",
+  effect_scaling = "none"
+)
+
+transform(
+  cv_spatial$table[, c("lambda", "mean", "se", "admissible")],
+  mean = round(mean, 4),
+  se = round(se, 4)
+)
+cv_spatial$pick
+```
+
+Each candidate basis is trained without the held-out subject, but all
+candidates are scored against the **unsmoothed** held-out beta block in one
+fixed effect-space geometry. Prespecified effect scaling, location weights,
+and `Omega_list` remain in that fixed geometry; only the candidate Laplacian
+solve is omitted. A candidate therefore cannot improve its own score by
+shrinking the field in both the numerator and denominator. `best` is the
+largest mean score; `pick` is the largest, smoothest $\lambda$ within one
+standard error of that best score. In this example the selected value is
+`r cv_spatial$pick`, much weaker than the explanatory $\lambda=2$.
+
+```{r spatial-cv-checks, include=FALSE}
+stopifnot(cv_spatial$pick %in% cv_spatial$table$lambda)
+stopifnot(cv_spatial$best %in% cv_spatial$table$lambda)
+stopifnot(all(cv_spatial$table$admissible))
+stopifnot(identical(cv_spatial$heldout_geometry, "raw_beta_block"))
+stopifnot(identical(cv_spatial$selection_rule,
+                    "largest_lambda_within_one_se"))
+```
+
+As with kernel selection, a saturated warning means the held-out criterion
+cannot discriminate the candidates well. Also remember that $\lambda$'s
+scale depends on the graph weights: compare penalties only while holding the
+graph construction fixed. If graph topology or edge weights are themselves
+learned from the outcome, they require their own nested validation rather than
+being tuned on the same folds.
+
+Refit the complete cohort with the selected specification returned by CV:
+
+```{r refit-selected-spatial-model}
+fit_selected <- dkge_fit(
+  B_list, X_list, K,
+  rank = 1,
+  w_method = "none",
+  effect_scaling = "none",
+  spatial = cv_spatial$spatial
+)
+dkge_diagnostics(fit_selected)$spatial[c("active", "lambda", "shared")]
+```
+
+## Carry the operator into LOSO inference
+
+Do not smooth a final $t$- or $p$-map. Instead, construct held-out subject
+fields under the fitted spatial model and perform inference on those fields.
+`dkge_contrast()` does this automatically because the operator is part of the
+fit.
+
+```{r selected-loso-contrast}
+rough_contrast <- c(smooth = 0, rough = 1)
+loso_raw <- dkge_contrast(fit_raw, rough_contrast, method = "loso")
+loso_selected <- dkge_contrast(
+  fit_selected, rough_contrast, method = "loso"
+)
+
+loso_roughness <- data.frame(
+  model = c("raw", "selected"),
+  median_roughness = c(
+    median(vapply(loso_raw$values[[1]], roughness, numeric(1))),
+    median(vapply(loso_selected$values[[1]], roughness, numeric(1)))
+  )
+)
+transform(loso_roughness,
+          median_roughness = round(median_roughness, 2))
+```
+
+```{r selected-loso-checks, include=FALSE}
+stopifnot(length(loso_selected$values[[1]]) == S)
+stopifnot(all(vapply(loso_selected$values[[1]], length, integer(1)) == P))
+stopifnot(loso_roughness$median_roughness[2] <
+            loso_roughness$median_roughness[1])
+```
+
+Transport to a medoid, anchor field, or voxel grid happens **after** these
+regularized subject fields are constructed. It aligns spatial domains; it does
+not redefine the fitted effect-space solution.
+
+## Keep the spatial controls distinct
+
+Several DKGE arguments mention space, but they do not estimate the same thing.
+
+| Control | What it changes | Changes fitted basis? |
+|---|---|---:|
+| `spatial = dkge_spatial_regularizer(...)` | Correlation across neighboring beta columns through $H_{s,\lambda}$ | Yes |
+| `Omega_list` or adaptive location weights | Spatial mass, precision, or reliability in the subject moment | Yes |
+| transport mapper and masses | Alignment of already estimated subject fields to a common domain | No |
+| `dkge_anchor_aggregate(L=, lambda=)` | Optional smoothing of an already transported anchor average | No |
+
+The operations can be combined, but order matters: DKGE applies adaptive
+column scaling first, the Laplacian solve second, and `Omega_list` as the final
+spatial metric in the moment. See `vignette("dkge-weighting")` for the complete
+weighting pipeline.
+
+Two further boundaries are deliberate:
+
+* Active spatial regularization is not available with
+  `debias = "analytic"`. The current analytic contract stores diagonal
+  residual variances, while $H$ induces spatial noise covariance that those
+  variances do not identify. DKGE fails closed; use `debias = "split_half"` or
+  `"none"`.
+* A shared graph is automatically reused for prediction. A fit with
+  subject-specific graphs requires a new `spatial` specification aligned to
+  the prediction subjects; smoothing cannot be added only at prediction time.
+* `dkge_fit_from_kernels()` and anchor-input fits do not expose physical beta
+  columns: their synthetic factor columns are algebraic, not spatial. They
+  reject model-level `spatial` regularization rather than treating those
+  factors as neighboring locations.
+
+## Reporting checklist
+
+For a reproducible analysis, report:
+
+1. the spatial domain and whether the graph was shared or subject-specific;
+2. how the graph was built (`dthresh`, `nnk`, edge weights, isolate policy, or
+   the provenance of a precomputed Laplacian);
+3. the candidate $\lambda$ grid, validation geometry, selection rule, and
+   whether scores saturated;
+4. the selected $\lambda$, latent rank, design kernel, `Omega_list`, and other
+   weighting choices;
+5. that inference used regularized held-out subject fields, with no direct
+   smoothing of the final inferential statistic.
+
+Continue with `vignette("dkge-contrasts-inference")` for the inferential
+estimand, `vignette("dkge-weighting")` for the neighboring weighting controls,
+or `vignette("dkge-dense-rendering")` for transport and rendering after the
+regularized subject fields have been estimated.

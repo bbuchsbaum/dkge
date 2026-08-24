@@ -5,7 +5,7 @@
 \alias{dkge_project_block}
 \title{Project DKGE data into component space}
 \usage{
-dkge_project_btil(fit, Btil)
+dkge_project_btil(fit, Btil, subject = NULL)
 
 dkge_project_block(
   fit,
@@ -20,6 +20,10 @@ dkge_project_block(
 \item{fit}{A \code{dkge} object.}
 
 \item{Btil}{Either a qxP matrix or a list of such matrices (e.g. \code{fit$Btil}).}
+
+\item{subject}{Optional training-subject index or id for a single matrix.
+Required when the fit uses subject-specific spatial regularization. A list
+is matched to fitted subjects positionally.}
 
 \item{s}{Block index (subject) to project against.}
 

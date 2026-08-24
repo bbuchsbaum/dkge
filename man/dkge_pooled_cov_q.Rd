@@ -4,7 +4,7 @@
 \alias{dkge_pooled_cov_q}
 \title{Pooled design-space covariance and Cholesky factor}
 \usage{
-dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
+dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL, spatial = NULL)
 }
 \arguments{
 \item{B_list}{List of qxP subject beta matrices.}
@@ -12,6 +12,9 @@ dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
 \item{X_list}{List of Txq subject design matrices.}
 
 \item{Omega_list}{Optional list of spatial weights.}
+
+\item{spatial}{Optional fixed \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} applied inside
+every candidate fit and training fold.}
 }
 \value{
 List containing \code{C} (pooled covariance in the ruler metric), \code{R}

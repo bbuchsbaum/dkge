@@ -239,7 +239,8 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   alpha <- t(U_minus) %*% fit$K %*% c_tilde
 
   Bts <- fit$Btil[[s]]
-  A_s <- t(Bts) %*% KU_minus
+  Bmodel <- .dkge_apply_fit_spatial(fit, Bts, subject = s)
+  A_s <- t(Bmodel) %*% KU_minus
   v_s <- as.numeric(A_s %*% alpha)
 
   diag_info <- .dkge_analytic_diagnostic(

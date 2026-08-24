@@ -20,7 +20,9 @@
 #'   to the \eqn{q \times q} identity matrix, which matches the whitened anchor
 #'   setup.
 #' @param sqrt_tol Eigenvalue tolerance used when extracting square roots.
-#' @param ... Additional arguments forwarded to [dkge_fit()].
+#' @param ... Additional arguments forwarded to [dkge_fit()]. Model-level
+#'   `spatial` regularization is deliberately unsupported because the synthetic
+#'   factor columns do not index physical spatial units.
 #'
 #' @return A `dkge` object identical to one obtained from [dkge_fit()], with
 #'   provenance annotated to record the kernel-driven construction. Effect
@@ -44,6 +46,17 @@ dkge_fit_from_kernels <- function(K_list,
                                   design_kernel = NULL,
                                   sqrt_tol = 1e-10,
                                   ...) {
+  dots <- list(...)
+  if (!is.null(dots$spatial)) {
+    .dkge_abort(
+      paste0(
+        "Model-level `spatial` regularization is not defined for ",
+        "`dkge_fit_from_kernels()`: its synthetic factor columns do not ",
+        "index physical spatial units. Fit raw beta blocks instead."
+      ),
+      "dkge_spatial_domain_error"
+    )
+  }
   stopifnot(is.list(K_list), length(K_list) >= 1L)
   effect_ids <- as.character(effect_ids)
   q <- length(effect_ids)

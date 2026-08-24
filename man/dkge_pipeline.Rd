@@ -11,6 +11,7 @@ dkge_pipeline(
   designs = NULL,
   kernel = NULL,
   omega = NULL,
+  spatial = NULL,
   contrasts,
   transport = NULL,
   inference = list(),
@@ -32,6 +33,10 @@ dkge_pipeline(
 \code{input} is supplied.}
 
 \item{omega}{Optional spatial weights forwarded to \code{\link[=dkge]{dkge()}}.}
+
+\item{spatial}{Optional model-level \code{\link[=dkge_spatial_regularizer]{dkge_spatial_regularizer()}} forwarded
+only to the raw-beta fitting stage. Current anchor input descriptors do not
+expose a physical beta-column domain and therefore reject this argument.}
 
 \item{contrasts}{Contrast specification as accepted by \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 

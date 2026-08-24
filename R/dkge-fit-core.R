@@ -38,6 +38,7 @@
 #   weights            numeric  per-subject weights
 #   Braw               list[S]  input betas (q x P_s), zero-filled on unobserved rows
 #   Omega              list[S]  per-subject AR/noise covariance structures
+#   spatial            list     resolved sparse spatial operators and provenance
 #   subjects           list[S]  slim subject records (debiasing sufficient
 #                               statistics; beta/design/omega stripped)
 #   provenance         list     data provenance metadata
@@ -347,7 +348,8 @@
                               weights = NULL,
                               effect_weights = NULL,
                               rank = NULL,
-                              effect_scaling = c("pooled_design", "none")) {
+                              effect_scaling = c("pooled_design", "none"),
+                              spatial = NULL) {
   effect_scaling <- match.arg(effect_scaling)
   if (inherits(data, "dkge_data")) {
     dataset <- data
@@ -474,6 +476,11 @@
 
   kernel_payload <- .dkge_weight_kernel_payload(K, kernel_info)
   weight_eval <- .dkge_resolve_voxel_weights(weight_spec, Btil, kernel_payload)
+  spatial_fit <- .dkge_resolve_spatial(spatial, Btil, subject_ids)
+  if (!is.null(spatial_fit)) {
+    provenance <- provenance %||% list()
+    provenance$spatial_regularization <- spatial_fit$provenance
+  }
 
   list(
     dataset = dataset,
@@ -485,6 +492,7 @@
     weight_spec = weight_spec,
     effect_weight_spec = effect_weight_spec,
     weight_eval = weight_eval,
+    spatial = spatial_fit,
     subject_ids = subject_ids,
     effects = effects,
     provenance = provenance,
@@ -514,13 +522,15 @@
   Btil <- prepped$Btil
   Omega_list <- prepped$dataset$omega
   kernels <- prepped$kernels
+  spatial_list <- prepped$spatial$operators %||% vector("list", prepped$S)
   obs_masks <- .dkge_obs_masks_from_provenance(prepped$provenance,
                                                prepped$subject_ids,
                                                prepped$q)
 
   subject_weights <- .dkge_subject_weights(Btil, Omega_list, kernels$Khalf,
                                            w_method, w_tau,
-                                           obs_masks = obs_masks)
+                                           obs_masks = obs_masks,
+                                           spatial_list = spatial_list)
 
   voxel_weights <- prepped$weight_eval$total
   voxel_weights_subject <- prepped$weight_eval$total_subject
@@ -550,6 +560,7 @@
     B_list = prepped$dataset$betas,
     Omega_list = Omega_list,
     voxel_weights = voxel_payload,
+    spatial_list = spatial_list,
     obs_masks = obs_masks,
     subject_weights = subject_weights,
     effect_precision = effect_precision,
@@ -1080,7 +1091,7 @@
 #' Assemble the final dkge fit object
 #'
 #' Combines prepared payload, accumulation results, and eigen solution into the
-#' object returned by `dkge_fit()`. Exact unregularized pooled moments inherit
+#' object returned by `dkge_fit()`. Exact factorizable pooled moments inherit
 #' from `multiblock_biprojector`; every other moment is a `dkge_qspace` object.
 #'
 #' @keywords internal
@@ -1133,6 +1144,10 @@
       s, P_s, prepped$subject_ids[[s]]
     )
     Bw <- .dkge_scale_effect_columns(Bts, w_s)
+    Bw <- .dkge_spatial_apply_betas(
+      Bw,
+      prepped$spatial$operators[[s]] %||% NULL
+    )
     Omega <- Omega_list[[s]]
     block <- if (is.null(Omega)) {
       Bw
@@ -1228,6 +1243,7 @@
     Braw = dataset$betas,
     Btil = Btil,
     Omega = Omega_list,
+    spatial = prepped$spatial,
     subject_ids = prepped$subject_ids,
     effects = prepped$effects,
     provenance = prepped$provenance,
