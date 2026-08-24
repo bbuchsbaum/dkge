@@ -18,6 +18,53 @@ line_spatial <- function(P, lambda, labels = NULL) {
   )
 }
 
+spatial_cycle_laplacian <- function(P) {
+  stopifnot(P >= 3L)
+  i <- seq_len(P)
+  j <- c(i[-1L], 1L)
+  adjacency <- Matrix::sparseMatrix(
+    i = c(i, j), j = c(j, i), x = 1,
+    dims = c(P, P)
+  )
+  Matrix::Diagonal(x = Matrix::rowSums(adjacency)) - adjacency
+}
+
+spatial_path_laplacian <- function(P) {
+  stopifnot(P >= 2L)
+  i <- seq_len(P - 1L)
+  adjacency <- Matrix::sparseMatrix(
+    i = c(i, i + 1L), j = c(i + 1L, i), x = 1,
+    dims = c(P, P)
+  )
+  Matrix::Diagonal(x = Matrix::rowSums(adjacency)) - adjacency
+}
+
+irregular_3d_coords <- function() {
+  rbind(
+    a = c(x = 0, y = 0, z = 0),
+    b = c(x = 0.15, y = 0.10, z = 0.75),
+    c = c(x = 0.75, y = 0.15, z = 0.10),
+    d = c(x = 0.65, y = 0.75, z = 0.25),
+    e = c(x = 0.10, y = 0.85, z = 0.35),
+    f = c(x = 0.75, y = 0.85, z = 0.90),
+    far_z = c(x = 0, y = 0, z = 2.20),
+    isolate = c(x = 5, y = 5, z = 5)
+  )
+}
+
+irregular_3d_spatial <- function(lambda, coords = irregular_3d_coords()) {
+  dkge_spatial_regularizer(
+    coords = coords,
+    lambda = lambda,
+    dthresh = 1.05,
+    nnk = nrow(coords),
+    weight_mode = "heat",
+    sigma = 0.5,
+    normalized = FALSE,
+    handle_isolates = "keep_zero"
+  )
+}
+
 test_that("coordinate construction dogfoods the adjoin Laplacian", {
   labels <- paste0("v", seq_len(8))
   coords <- line_coords(8, labels)
@@ -449,4 +496,209 @@ test_that("spatial CV keeps Omega but omits candidate smoothing from held-out sc
   expect_equal(cv$raw$score[[row]], expected, tolerance = 1e-12)
   expect_false(isTRUE(all.equal(expected, self_graded, tolerance = 1e-8)))
   expect_identical(cv$heldout_spatial_metric, "Omega_list")
+})
+
+test_that("the resolvent has the analytic Laplacian eigenmode response", {
+  P <- 12L
+  lambda <- 0.7
+  L <- spatial_cycle_laplacian(P)
+  eig <- eigen(as.matrix(L), symmetric = TRUE)
+  modes <- t(eig$vectors)
+  spatial <- dkge_spatial_regularizer(laplacian = L, lambda = lambda)
+  resolved <- .dkge_resolve_spatial(
+    spatial, list(modes), subject_ids = "s1"
+  )
+
+  observed <- .dkge_spatial_apply_betas(
+    modes, resolved$operators[[1]]
+  )
+  gains <- 1 / (1 + lambda * eig$values)
+  expected <- sweep(modes, 1L, gains, "*")
+  observed_gains <- sqrt(rowSums(observed^2) / rowSums(modes^2))
+
+  expect_equal(observed, expected, tolerance = 1e-10)
+  expect_equal(observed_gains, gains, tolerance = 1e-10)
+  expect_true(all(diff(observed_gains) >= -1e-12))
+
+  constant_mode <- which.min(abs(eig$values))
+  expect_equal(
+    observed[constant_mode, ], modes[constant_mode, ],
+    tolerance = 1e-12
+  )
+})
+
+test_that("irregular three-dimensional geometry smooths within graph components", {
+  coords <- irregular_3d_coords()
+  spatial <- irregular_3d_spatial(lambda = 1.5, coords = coords)
+  L <- spatial$laplacians[[1]]
+
+  # These checks require all three coordinates: b is a genuine 3-D neighbour
+  # of a, while far_z shares a's x/y location but lies beyond the radius.
+  expect_lt(L["a", "b"], 0)
+  expect_equal(L["a", "far_z"], 0)
+  expect_equal(
+    Matrix::rowSums(abs(L[c("far_z", "isolate"), , drop = FALSE])),
+    c(far_z = 0, isolate = 0)
+  )
+
+  raw <- matrix(
+    c(2, -1, 3, -2, 1, 0.5, 7, 9),
+    nrow = 1L,
+    dimnames = list("effect", rownames(coords))
+  )
+  resolved <- .dkge_resolve_spatial(
+    spatial, list(raw), subject_ids = "s1"
+  )
+  smoothed <- .dkge_spatial_apply_betas(raw, resolved$operators[[1]])
+  raw_energy <- as.numeric(raw %*% L %*% t(raw))
+  smoothed_energy <- as.numeric(smoothed %*% L %*% t(smoothed))
+  connected <- c("a", "b", "c", "d", "e", "f")
+  isolates <- c("far_z", "isolate")
+
+  expect_gt(raw_energy, 0)
+  expect_lt(smoothed_energy, raw_energy)
+  expect_equal(
+    sum(smoothed[, connected]), sum(raw[, connected]),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    smoothed[, isolates], raw[, isolates],
+    tolerance = 1e-12
+  )
+  expect_identical(spatial$construction$weight_mode, "heat")
+})
+
+test_that("fitting and projection are equivariant to spatial permutation", {
+  set.seed(7409)
+  coords <- irregular_3d_coords()
+  labels <- rownames(coords)
+  S <- 4L
+  q <- 3L
+  B <- replicate(S, {
+    out <- matrix(rnorm(q * length(labels)), q, length(labels))
+    colnames(out) <- labels
+    out
+  }, simplify = FALSE)
+  X <- replicate(S, diag(q), simplify = FALSE)
+  K <- matrix(c(1.3, 0.2, 0.1,
+                0.2, 1.1, 0.15,
+                0.1, 0.15, 0.9), q, q)
+  spatial <- irregular_3d_spatial(lambda = 0.8, coords = coords)
+  reference <- dkge_fit(
+    B, X, K, rank = 2, w_method = "none",
+    effect_scaling = "none", spatial = spatial
+  )
+
+  permutation <- c(4L, 1L, 8L, 2L, 6L, 3L, 7L, 5L)
+  permuted_B <- lapply(B, function(block) {
+    block[, permutation, drop = FALSE]
+  })
+  permuted_spatial <- irregular_3d_spatial(
+    lambda = 0.8,
+    coords = coords[permutation, , drop = FALSE]
+  )
+  permuted <- dkge_fit(
+    permuted_B, X, K, rank = 2, w_method = "none",
+    effect_scaling = "none", spatial = permuted_spatial
+  )
+  inverse <- order(permutation)
+
+  expect_equal(
+    as.matrix(permuted_spatial$laplacians[[1]][inverse, inverse]),
+    as.matrix(spatial$laplacians[[1]]),
+    tolerance = 1e-14
+  )
+  expect_equal(permuted$Chat, reference$Chat, tolerance = 1e-11)
+  expect_equal(permuted$sdev, reference$sdev, tolerance = 1e-11)
+  expect_equal(
+    tcrossprod(permuted$U), tcrossprod(reference$U),
+    tolerance = 1e-10
+  )
+
+  reference_maps <- dkge_project_btil(reference, reference$Btil)
+  permuted_maps <- dkge_project_btil(permuted, permuted$Btil)
+  first_restored <- permuted_maps[[1]][inverse, , drop = FALSE]
+  signs <- sign(colSums(reference_maps[[1]] * first_restored))
+  signs[signs == 0] <- 1
+  for (s in seq_len(S)) {
+    restored <- permuted_maps[[s]][inverse, , drop = FALSE]
+    restored <- sweep(restored, 2L, signs, "*")
+    expect_equal(restored, reference_maps[[s]], tolerance = 1e-10)
+  }
+})
+
+test_that("spatial CV recovers a shared smooth truth over subject-specific rough noise", {
+  set.seed(7410)
+  S <- 6L
+  q <- S + 1L
+  P <- 24L
+  position <- seq_len(P)
+  smooth_truth <- sqrt(2) * sin(2 * pi * position / P)
+  rough_noise <- (-1)^position
+  B <- lapply(seq_len(S), function(s) {
+    out <- 1e-6 * matrix(rnorm(q * P), q, P)
+    out[1L, ] <- out[1L, ] + smooth_truth
+    out[s + 1L, ] <- out[s + 1L, ] + 3 * rough_noise
+    out
+  })
+  X <- replicate(S, diag(q), simplify = FALSE)
+  L <- spatial_cycle_laplacian(P)
+  spatial <- dkge_spatial_regularizer(laplacian = L, lambda = 1)
+
+  smooth_energy <- as.numeric(t(smooth_truth) %*% L %*% smooth_truth)
+  rough_energy <- as.numeric(t(rough_noise) %*% L %*% rough_noise)
+  expect_lt(smooth_energy, rough_energy)
+
+  cv <- dkge_cv_spatial_grid(
+    B, X, diag(q), spatial,
+    lambdas = c(0, 0.25, 1), rank = 1,
+    w_method = "none", effect_scaling = "none"
+  )
+  zero_score <- cv$table$mean[cv$table$lambda == 0]
+  regularized_scores <- cv$table$mean[cv$table$lambda > 0]
+
+  expect_gt(min(regularized_scores), zero_score + 0.09)
+  expect_equal(cv$pick, 1)
+
+  raw_fit <- dkge_fit(
+    B, X, diag(q), rank = 1, w_method = "none",
+    effect_scaling = "none"
+  )
+  selected_fit <- dkge_fit(
+    B, X, diag(q), rank = 1, w_method = "none",
+    effect_scaling = "none", spatial = cv$spatial
+  )
+  expect_lt(abs(raw_fit$U[1L, 1L]), 1e-4)
+  expect_gt(abs(selected_fit$U[1L, 1L]), 0.9999)
+})
+
+test_that("large spatial domains retain sparse linear storage", {
+  P <- 10000L
+  L <- spatial_path_laplacian(P)
+  B <- rbind(
+    rough = (-1)^seq_len(P),
+    smooth = sin(seq_len(P) / 17)
+  )
+  spatial <- dkge_spatial_regularizer(laplacian = L, lambda = 0.75)
+  resolved <- .dkge_resolve_spatial(
+    spatial, list(B), subject_ids = "s1"
+  )
+  operator <- resolved$operators[[1]]
+  smoothed <- .dkge_spatial_apply_betas(B, operator)
+
+  expect_s4_class(operator$L, "sparseMatrix")
+  expect_s4_class(operator$A, "sparseMatrix")
+  expect_s4_class(operator$factor, "CHMfactor")
+  expect_equal(Matrix::nnzero(operator$L), 3L * P - 2L)
+  expect_equal(Matrix::nnzero(operator$A), 3L * P - 2L)
+  expect_null(operator$H)
+
+  dense_operator_bytes <- 8 * as.double(P)^2
+  expect_lt(
+    as.numeric(object.size(operator)),
+    dense_operator_bytes / 100
+  )
+  expect_equal(dim(smoothed), dim(B))
+  expect_true(all(is.finite(smoothed)))
+  expect_lt(sum(diff(smoothed[1L, ])^2), sum(diff(B[1L, ])^2))
 })
