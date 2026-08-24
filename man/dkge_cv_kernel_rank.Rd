@@ -13,7 +13,9 @@ dkge_cv_kernel_rank(
   ridge = 0,
   w_method = "mfa_sigma1",
   w_tau = 0.3,
-  top_k = 3
+  top_k = 3,
+  validation_K = NULL,
+  kernel_rank_policy = c("full", "allow_singular")
 )
 }
 \arguments{
@@ -34,10 +36,19 @@ dkge_cv_kernel_rank(
 \item{w_tau}{Shrinkage parameter toward equal weights passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
 \item{top_k}{Number of kernels to keep after pre-screening.}
+
+\item{validation_K}{Optional fixed q by q PSD matrix used to score every
+candidate. \code{NULL} (default) uses the identity. It affects scoring only;
+candidate \code{K} still determines the learned training subspace.}
+
+\item{kernel_rank_policy}{Kernel-support policy for selection. The default,
+\code{"full"}, requires \code{rank(K) = q}. Use \code{"allow_singular"} only when every
+candidate is intentionally allowed to define a quotient effect space.}
 }
 \value{
-List with the selected \code{kernel} and \code{rank}, alignment and CV tables,
-and a per-kernel summary of scores at the selected rank.
+List with the selected \code{kernel} and \code{rank}, alignment and CV tables
+carrying kernel-support diagnostics, per-kernel selections, exclusions,
+fixed validation diagnostics, and a saturation flag.
 }
 \description{
 Runs kernel alignment pre-screening followed by LOSO explained-variance

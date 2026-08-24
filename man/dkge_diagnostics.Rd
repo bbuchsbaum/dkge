@@ -10,11 +10,12 @@ dkge_diagnostics(fit)
 \item{fit}{A \code{dkge} object.}
 }
 \value{
-List with variance table, subject weights, and rank info.
+List with variance table, subject weights, rank info, and scalar
+kernel diagnostics (\code{rank}, \code{nullity}, \code{condition}, and status).
 }
 \description{
-Provides a compact list of variance explained, subject weights, and rank
-metadata for quick inspection.
+Provides a compact list of variance explained, subject weights, rank, and
+kernel-support metadata for quick inspection.
 }
 \examples{
 toy <- dkge_sim_toy(

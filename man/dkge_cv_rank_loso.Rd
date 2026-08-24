@@ -12,7 +12,9 @@ dkge_cv_rank_loso(
   Omega_list = NULL,
   ridge = 0,
   w_method = "mfa_sigma1",
-  w_tau = 0.3
+  w_tau = 0.3,
+  validation_K = NULL,
+  kernel_rank_policy = c("full", "allow_singular")
 )
 }
 \arguments{
@@ -31,14 +33,25 @@ dkge_cv_rank_loso(
 \item{w_method}{Subject-level weighting scheme passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
 \item{w_tau}{Shrinkage parameter toward equal weights passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
+
+\item{validation_K}{Optional fixed q by q PSD matrix used to score every
+candidate. \code{NULL} (default) uses the identity. It affects scoring only;
+candidate \code{K} still determines the learned training subspace.}
+
+\item{kernel_rank_policy}{Kernel-support policy for selection. The default,
+\code{"full"}, requires \code{rank(K) = q}. Use \code{"allow_singular"} only when every
+candidate is intentionally allowed to define a quotient effect space.}
 }
 \value{
-List containing the one-SE selection (\code{pick}), the best rank, and the
-aggregated score table.
+List containing the one-SE selection (\code{pick}), the best rank,
+aggregated and per-fold score tables, kernel/validation diagnostics,
+excluded ranks, and a saturation flag.
 }
 \description{
 Evaluates candidate ranks by recomputing LOSO bases and measuring explained
-variance on the held-out subject in the \eqn{K^{1/2}} metric.
+energy on the held-out subject in one candidate-independent validation
+geometry. By default this is ordinary effect space after pooled-design
+scaling, not the candidate kernel's own metric.
 }
 \examples{
 \donttest{

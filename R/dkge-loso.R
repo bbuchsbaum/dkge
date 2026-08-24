@@ -25,6 +25,7 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   stopifnot(inherits(fit, "dkge"), s >= 1L, s <= length(fit$Btil))
   q <- nrow(fit$U)
   stopifnot(length(contrasts) == q)
+  .dkge_validate_kernel_contrasts(list(contrast1 = as.numeric(contrasts)), fit)
 
   train_ids <- setdiff(seq_len(length(fit$Btil)), s)
   ctx <- .dkge_fold_weight_context(fit, train_ids, ridge = ridge)
@@ -33,7 +34,21 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
 
   eig_minus <- eigen(Chat_minus, symmetric = TRUE)
   r <- ncol(fit$U)
+  eig_scale <- max(eig_minus$values, 0)
+  eig_tol <- if (eig_scale > 0) 1e-10 * eig_scale else 0
+  fold_rank <- min(fit$kernel_rank %||% qr(fit$K)$rank,
+                   sum(eig_minus$values > eig_tol))
+  if (fold_rank < r) {
+    .dkge_abort(
+      sprintf(
+        "LOSO training data have effective rank %d, below fitted rank %d; refit at rank <= %d.",
+        fold_rank, r, fold_rank
+      ),
+      "dkge_fold_rank_error"
+    )
+  }
   Uminus <- fit$Kihalf %*% eig_minus$vectors[, seq_len(r), drop = FALSE]
+  Uminus <- dkge_k_orthonormalize(Uminus, fit$K)
 
   c_tilde <- backsolve(fit$R, contrasts, transpose = FALSE)
   alpha <- t(Uminus) %*% fit$K %*% c_tilde

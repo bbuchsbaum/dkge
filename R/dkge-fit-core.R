@@ -87,6 +87,8 @@
 #   rank_requested     integer    rank requested by caller
 #   effective_rank     integer    effective rank after regularisation
 #   rank_reduced       logical    whether rank was reduced from requested
+#   kernel_diagnostics list       numerical rank/nullity/condition of K
+#   kernel_support_projector q x q Euclidean projector onto image(K)
 
 #' Reconcile design-kernel labels with the dataset effect order
 #'
@@ -402,9 +404,47 @@
     dataset$effects <- effects
   }
   K <- .dkge_validate_kernel(K)
+  kernels <- .dkge_kernel_roots(K)
+  if (kernels$rank == 0L) {
+    .dkge_abort(
+      "Kernel `K` has numerical rank zero; it defines no estimable effect directions.",
+      "dkge_kernel_rank_error"
+    )
+  }
 
   rank_requested <- if (is.null(rank)) q else rank
-  rank <- max(1L, min(rank_requested, q))
+  if (!is.numeric(rank_requested) || length(rank_requested) != 1L ||
+      !is.finite(rank_requested) || rank_requested < 1L ||
+      rank_requested != as.integer(rank_requested)) {
+    stop("`rank` must be NULL or one positive integer.", call. = FALSE)
+  }
+  rank_requested <- as.integer(rank_requested)
+  rank_cap <- min(q, kernels$rank)
+  rank <- min(rank_requested, rank_cap)
+
+  if (kernels$nullity > 0L) {
+    suffix <- if (rank_requested > kernels$rank) {
+      sprintf(" Requested rank %d is being reduced to %d.", rank_requested, rank)
+    } else {
+      ""
+    }
+    .dkge_warn(
+      sprintf(
+        paste0(
+          "Kernel `K` has numerical rank %d of %d and defines a quotient effect space; ",
+          "directions in null(K) are not estimable.%s"
+        ),
+        kernels$rank, q, suffix
+      ),
+      "dkge_kernel_rank_warning"
+    )
+  } else if (rank_requested > q) {
+    .dkge_warn(
+      sprintf("Requested rank %d exceeds q = %d and is being reduced to %d.",
+              rank_requested, q, rank),
+      "dkge_rank_warning"
+    )
+  }
 
   if (is.null(Omega_list)) {
     Omega_list <- vector("list", S)
@@ -424,7 +464,6 @@
     ruler <- list(R = R_identity, G_pool = R_identity)
     Btil <- betas
   }
-  kernels <- .dkge_kernel_roots(K)
   weight_spec <- if (is.null(weights)) dkge_weights(adapt = "none") else weights
   stopifnot(inherits(weight_spec, "dkge_weights"))
   effect_weight_spec <- effect_weights %||% dkge_effect_weights("none")
@@ -600,13 +639,17 @@
     )
     if (cpca_part %in% c("design", "both")) {
       Chat_design <- split$Chat_design
-      if (cpca_ridge > 0) Chat_design <- Chat_design + cpca_ridge * diag(q)
+      if (cpca_ridge > 0) {
+        Chat_design <- Chat_design + cpca_ridge * prepped$kernels$support_projector
+      }
       Chat_design <- (Chat_design + t(Chat_design)) / 2
       cpca_info$Chat_design <- Chat_design
     }
     if (cpca_part %in% c("resid", "both")) {
       Chat_resid <- split$Chat_resid
-      if (cpca_ridge > 0) Chat_resid <- Chat_resid + cpca_ridge * diag(q)
+      if (cpca_ridge > 0) {
+        Chat_resid <- Chat_resid + cpca_ridge * prepped$kernels$support_projector
+      }
       Chat_resid <- (Chat_resid + t(Chat_resid)) / 2
       cpca_info$Chat_resid <- Chat_resid
     }
@@ -639,7 +682,7 @@
     }
   }
 
-  if (ridge > 0) Chat <- Chat + ridge * diag(q)
+  if (ridge > 0) Chat <- Chat + ridge * prepped$kernels$support_projector
   Chat <- (Chat + t(Chat)) / 2
 
   if (solver == "pooled") {
@@ -651,7 +694,7 @@
     # the rank when betas are small-magnitude (Chat eigenvalues scale as beta^2).
     # Never looser than 1e-12 so well-scaled fits keep their existing behavior.
     eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
-    effective_rank <- sum(eig_values_full > eig_tol)
+    effective_rank <- min(prepped$kernels$rank, sum(eig_values_full > eig_tol))
     rank_reduced <- FALSE
 
     # Warn if requested rank exceeds effective rank
@@ -757,7 +800,7 @@
 
   # Scale-relative positivity tolerance (see the pooled branch above).
   eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
-  effective_rank <- sum(eig_values_full > eig_tol)
+  effective_rank <- min(prepped$kernels$rank, sum(eig_values_full > eig_tol))
   rank_reduced <- FALSE
 
   # Warn if requested rank exceeds effective rank
@@ -1168,6 +1211,11 @@
     K = prepped$K,
     Khalf = kernels$Khalf,
     Kihalf = kernels$Kihalf,
+    kernel_support_projector = kernels$support_projector,
+    kernel_diagnostics = .dkge_kernel_diagnostics(kernels),
+    kernel_rank = kernels$rank,
+    kernel_nullity = kernels$nullity,
+    kernel_condition = kernels$condition,
     Chat = solved$Chat,
     contribs = accum$contribs,
     effect_moment = accum$effect_moment,
@@ -1218,7 +1266,7 @@
     ridge_input = ridge,
     rank_requested = prepped$rank_requested,
     effective_rank = solved$effective_rank,
-    rank_reduced = solved$rank_reduced
+    rank_reduced = isTRUE(solved$rank_reduced) || prepped$rank < prepped$rank_requested
   )
 
   fit$representation <- representation$kind

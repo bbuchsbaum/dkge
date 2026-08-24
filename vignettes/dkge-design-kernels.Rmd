@@ -69,12 +69,13 @@ That choice is the design kernel. It should express a scientific belief you can
 name—for example, that adjacent ordinal levels are similar—not serve as an
 opaque tuning matrix.
 
-This page answers three practical questions: what a kernel matrix means, how to
-compare defensible candidates on held-out subjects, and what ridge
-regularization can and cannot repair. The working sequence is:
+This page answers four practical questions: what a kernel matrix means, whether
+it deletes any effect directions, how to compare defensible candidates on
+held-out subjects, and what ridge regularization can and cannot repair. The
+working sequence is:
 
 ```text
-declare factors and terms -> inspect the resulting similarity matrix -> compare kernel x rank candidates -> refit once
+declare kernel -> inspect support rank -> compare kernel x rank in one validation geometry -> refit once
 ```
 
 If you do not yet have aligned `q` by `P_s` beta matrices, read
@@ -152,8 +153,11 @@ target and cross-validation helpers.
 ## Which rank and kernel predict held-out structure?
 
 `dkge_cv_kernel_rank()` first screens named kernels by alignment, then evaluates
-the retained kernel-rank pairs with leave-one-subject-out explained energy. It
-returns the selected pair and the tables needed to audit that choice.
+the retained kernel-rank pairs with leave-one-subject-out explained energy. A
+candidate kernel shapes the training basis, but it does **not** choose the metric
+used to grade itself: every candidate is scored in ordinary effect space after
+the common pooled-design scaling. Supply one fixed `validation_K` only when a
+different validation geometry was specified before looking at the scores.
 
 ```{r kernel-cv, message=FALSE}
 rho_vals <- seq(0.4, 1.0, by = 0.3)
@@ -177,15 +181,17 @@ selection <- dkge_cv_kernel_rank(
   ranks = 1:3,
   top_k = length(K_grid)
 )
+selection$validation
 selection$picks_per_kernel
 ```
 
-The score is the fraction of a held-out subject's K-metric energy captured by
-the training-fold basis. It is descriptive predictive evidence, not a
-significance test. Higher values mean that the fitted subspace captures more of
-the held-out energy. The selector applies its documented one-standard-error
-rule, preferring a lower rank among eligible pairs rather than blindly taking
-the largest observed mean.
+The score is the fraction of a held-out subject's energy in that fixed
+validation geometry captured by the training-fold basis. It is descriptive
+predictive evidence, not a significance test. Because the denominator is common
+across candidates, a low-rank kernel cannot obtain a near-perfect score merely
+by deleting the directions it fails to predict. The selector applies its
+documented one-standard-error rule, preferring a lower rank among eligible pairs
+rather than blindly taking the largest observed mean.
 
 The full rank curves reveal more than the final pick:
 
@@ -215,16 +221,65 @@ best
 K_best <- K_grid[[best$kernel]]
 fit <- dkge(bundle, K = K_best, rank = best$rank)
 round(fit$sdev, 3)
+dkge_diagnostics(fit)$kernel
+```
+
+## Support rank is part of the scientific model
+
+A positive-semidefinite kernel may be singular on purpose. Then DKGE works in
+the quotient space `image(K)`: directions in `null(K)` have been declared
+indistinguishable or irrelevant. That is a substantive restriction, not a
+numerical nuisance. `kernel_roots()` reports the numerical rank, nullity, and
+condition number without silently filling null directions.
+
+Here a candidate makes the first two effects identical. Its rank is three, not
+four, so a four-component fit does not exist:
+
+```{r singular-kernel}
+K_collapsed <- diag(q)
+K_collapsed[1:2, 1:2] <- 1
+
+collapsed_geometry <- kernel_roots(K_collapsed)
+unlist(collapsed_geometry[c("rank", "nullity", "condition", "status")])
+
+rank_guard <- suppressWarnings(dkge_cv_kernel_grid(
+  bundle$betas, bundle$designs,
+  K_grid = list(identity = diag(q), collapsed = K_collapsed),
+  rank = q
+))
+rank_guard$table[, c(
+  "kernel", "kernel_rank", "kernel_nullity", "rank_requested",
+  "admissible", "reason"
+)]
+```
+
+The candidate remains usable at rank three or below if that quotient geometry
+is scientifically intended and selection explicitly sets
+`kernel_rank_policy = "allow_singular"`. The default full-rank policy retains it
+in the audit table but excludes it from selection. A direct `dkge_fit()` still
+allows intentional PSD quotient geometry: it caps the rank, emits a kernel-rank
+warning, and records the decision in
+`dkge_diagnostics(fit)$kernel` and `fit$rank_reduced`.
+
+```{r kernel-contract-checks, include=FALSE}
+stopifnot(
+  identical(selection$validation$kind, "effect_space_identity"),
+  collapsed_geometry$rank == 3L,
+  collapsed_geometry$nullity == 1L,
+  !rank_guard$table$admissible[rank_guard$table$kernel == "collapsed"],
+  fit$rank <= fit$kernel_rank
+)
 ```
 
 ## What does ridge regularization do here?
 
-The `ridge` argument adds an isotropic diagonal term to the fitted q-space
-moment before eigendecomposition. For a fixed moment this shifts all
-eigenvalues equally and leaves its eigenvectors unchanged; it does not identify
-or selectively down-weight noisy effects. Encode effect-specific structure in
-the kernel or input weights instead. Ridge is mainly a numerical guard for
-near-singular moment calculations.
+For a full-rank kernel, `ridge` adds the usual isotropic term to the fitted
+q-space moment before eigendecomposition. For a singular kernel, it is isotropic
+only **within** `image(K)`; it never manufactures dimensions in `null(K)`. Thus
+ridge can stabilize a noisy moment, but it cannot raise kernel rank, distinguish
+effects the kernel merged, or selectively repair a questionable scientific
+geometry. Encode effect-specific structure in the kernel or input weights
+instead.
 
 ```{r ridge}
 fit_ridge <- dkge(bundle, K = K_best, rank = best$rank, ridge = 0.2)
@@ -236,10 +291,13 @@ round(fit_ridge$sdev, 3)
 Use `design_kernel()` to encode effect relationships you can defend. If the
 structure is uncertain, include `diag(q)` as a baseline rather than assuming a
 structured kernel must win. Compare kernels and ranks with
-`dkge_cv_kernel_rank()`, interpreting its scores as held-out explained energy.
-Refit the selected configuration before running inference,
-and treat ridge as isotropic numerical regularization rather than an
-effect-selection device.
+`dkge_cv_kernel_rank()`, verify that all candidates were scored in the same
+`validation` geometry, and inspect `kernel_rank`, `kernel_nullity`,
+`kernel_condition`, and `admissible` in the returned tables. Treat an all-near-1
+saturation warning as evidence that the criterion cannot discriminate the
+candidates. Refit the selected configuration before running inference, preflight
+the planned contrasts with `dkge_contrast_diagnostics()`, and treat ridge as
+within-support numerical regularization rather than an effect-selection device.
 
 ## Where to go next
 

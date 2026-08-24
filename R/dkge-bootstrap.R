@@ -181,6 +181,8 @@ dkge_bootstrap_qspace <- function(fit,
   weights_base <- as.numeric(fit$weights)
   contribs <- fit$contribs
   contrib_matrix <- vapply(contribs, function(M) as.numeric(M), numeric(q * q))
+  kernel_support <- fit$kernel_support_projector %||%
+    .dkge_kernel_geometry(fit$K)$support_projector
 
   for (b in seq_len(B)) {
     xi <- .dkge_bootstrap_multipliers(scheme, S)
@@ -188,13 +190,14 @@ dkge_bootstrap_qspace <- function(fit,
     Chat_vec <- contrib_matrix %*% coeff
     Chat_b <- matrix(Chat_vec, q, q)
     if (ridge > 0) {
-      diag(Chat_b) <- diag(Chat_b) + ridge
+      Chat_b <- Chat_b + ridge * kernel_support
     }
     Chat_b <- (Chat_b + t(Chat_b)) / 2
 
     eig <- eigen(Chat_b, symmetric = TRUE)
     Vb <- eig$vectors[, seq_len(r), drop = FALSE]
     Ub <- fit$Kihalf %*% Vb
+    Ub <- dkge_k_orthonormalize(Ub, fit$K)
     if (align) {
       pr <- dkge_procrustes_K(fit$U, Ub, fit$K, allow_reflection = allow_reflection)
       Ub <- pr$U_aligned
@@ -343,6 +346,8 @@ dkge_bootstrap_analytic <- function(fit,
   lambda_full <- fit$eig_values_full
 
   fallback_count <- 0L
+  kernel_support <- fit$kernel_support_projector %||%
+    .dkge_kernel_geometry(fit$K)$support_projector
 
   for (b in seq_len(B)) {
     xi <- .dkge_bootstrap_multipliers(scheme, S)
@@ -352,7 +357,7 @@ dkge_bootstrap_analytic <- function(fit,
       delta_chat <- delta_chat + (xi[s] - 1) * weights_base[s] * contribs[[s]]
     }
     if (ridge > 0) {
-      diag(delta_chat) <- diag(delta_chat) + ridge
+      delta_chat <- delta_chat + ridge * kernel_support
     }
     delta_chat <- (delta_chat + t(delta_chat)) / 2
 
@@ -363,6 +368,7 @@ dkge_bootstrap_analytic <- function(fit,
       Chat_b <- fit$Chat + delta_chat
       eig <- eigen(Chat_b, symmetric = TRUE)
       Ub <- fit$Kihalf %*% eig$vectors[, seq_len(r), drop = FALSE]
+      Ub <- dkge_k_orthonormalize(Ub, fit$K)
     }
 
     if (align) {

@@ -27,20 +27,20 @@
 #' dim(P$P_K)
 dkge_projector_K <- function(T, K) {
   stopifnot(is.matrix(T), is.matrix(K), nrow(T) == nrow(K))
+  geometry <- .dkge_kernel_geometry(K)
   M <- crossprod(T, K %*% T)
   Msym <- (M + t(M)) / 2
   chol_M <- tryCatch(chol(Msym), error = function(e) NULL)
   Minv <- if (is.null(chol_M)) {
-    solve(Msym)
+    .dkge_abort(
+      "Columns of `T` must be linearly independent in the K metric; their span contains a direction in null(K).",
+      "dkge_kernel_subspace_error"
+    )
   } else {
     chol2inv(chol_M)
   }
   P_K <- T %*% Minv %*% crossprod(T, K)
-
-  eig <- eigen((K + t(K)) / 2, symmetric = TRUE)
-  vals <- pmax(eig$values, 1e-12)
-  V <- eig$vectors
-  Khalf <- V %*% diag(sqrt(vals), length(vals)) %*% t(V)
+  Khalf <- geometry$Khalf
   P_hat <- Khalf %*% T %*% Minv %*% t(T) %*% Khalf
 
   list(P_K = P_K, P_hat = P_hat)
@@ -92,6 +92,9 @@ dkge_fit_cpca <- function(fit, blocks = NULL, T = NULL,
 
   q <- nrow(fit$U)
   if (is.null(rank)) rank <- ncol(fit$U)
+  rank <- min(as.integer(rank), fit$kernel_rank %||% .dkge_kernel_geometry(fit$K)$rank)
+  support <- fit$kernel_support_projector %||%
+    .dkge_kernel_geometry(fit$K)$support_projector
 
   if (is.null(T)) {
     stopifnot(!is.null(blocks), length(blocks) >= 1, all(blocks >= 1), all(blocks <= q))
@@ -103,7 +106,7 @@ dkge_fit_cpca <- function(fit, blocks = NULL, T = NULL,
 
   if (part %in% c("design", "both")) {
     C1 <- split$Chat_design
-    if (ridge > 0) C1 <- C1 + ridge * diag(q)
+    if (ridge > 0) C1 <- C1 + ridge * support
     eg1 <- eigen((C1 + t(C1)) / 2, symmetric = TRUE)
     out$U_design <- fit$Kihalf %*% eg1$vectors[, seq_len(rank), drop = FALSE]
     out$evals_design <- eg1$values
@@ -111,7 +114,7 @@ dkge_fit_cpca <- function(fit, blocks = NULL, T = NULL,
 
   if (part %in% c("resid", "both")) {
     C2 <- split$Chat_resid
-    if (ridge > 0) C2 <- C2 + ridge * diag(q)
+    if (ridge > 0) C2 <- C2 + ridge * support
     eg2 <- eigen((C2 + t(C2)) / 2, symmetric = TRUE)
     out$U_resid <- fit$Kihalf %*% eg2$vectors[, seq_len(rank), drop = FALSE]
     out$evals_resid <- eg2$values

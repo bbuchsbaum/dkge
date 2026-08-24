@@ -123,6 +123,64 @@ fit <- dkge(bundle, K = diag(q), rank = 3)
 fit$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 ```
 
+## Can the selected kernel represent the estimand?
+
+The contrast is expressed in the original effect basis, but DKGE queries it
+after pooled-design scaling and through `K`. With a singular kernel, a contrast
+can be fully represented, partly projected into `null(K)`, or lost entirely.
+Run this preflight before cross-fitting:
+
+```{r contrast-preflight}
+contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
+preflight <- dkge_contrast_diagnostics(fit, contrast_vec)
+preflight$estimability
+```
+
+The identity kernel has full rank, so the planned contrast is estimable. The
+diagnostic table reports the fraction retained in `image(K)` and the fraction
+lost to `null(K)`. For multiple contrasts, `preflight$pairs` also identifies
+distinct inputs that become proportional kernel queries and therefore can
+produce only the same map up to scale or sign.
+
+The following deliberately bad kernel merges effect 1 with effect 2. Each
+single-effect query is only partly represented, their transformed queries are
+identical, and the intended difference lies wholly in `null(K)`:
+
+```{r contrast-collapse}
+K_merged <- diag(q)
+K_merged[1:2, 1:2] <- 1
+fit_merged <- suppressWarnings(dkge(bundle, K = K_merged, rank = 3))
+
+merged_preflight <- dkge_contrast_diagnostics(
+  fit_merged,
+  list(
+    effect1 = c(1, 0, 0, 0),
+    effect2 = c(0, 1, 0, 0),
+    effect1_minus_effect2 = contrast_vec
+  )
+)
+merged_preflight$estimability
+merged_preflight$pairs[merged_preflight$pairs$collision, ]
+```
+
+`dkge_contrast()` errors for the null contrast rather than returning a plausible
+zero map. For partly represented contrasts it warns and stores both tables in
+`metadata$kernel_estimability` and `metadata$kernel_query_pairs`.
+
+```{r contrast-kernel-checks, include=FALSE}
+null_error <- tryCatch(
+  dkge_contrast(fit_merged, contrast_vec, method = "loso"),
+  error = identity
+)
+stopifnot(
+  identical(preflight$estimability$status, "estimable"),
+  merged_preflight$estimability$status[3] == "null",
+  any(merged_preflight$pairs$collision),
+  merged_preflight$kernel$rank == 3L,
+  inherits(null_error, "dkge_kernel_contrast_error")
+)
+```
+
 ## Leave-One-Subject-Out (LOSO) Contrasts
 
 The LOSO approach refits the latent basis without each held-out subject before
@@ -133,7 +191,6 @@ fields, after which one fixed set of transport operators can place them on a
 common reference for the inferential procedure defined below.
 
 ```{r loso}
-contrast_vec <- c(1, -1, 0, 0)  # effect1 minus effect2
 loso <- dkge_contrast(fit, contrast_vec, method = "loso")
 
 transported <- dkge_transport_contrasts_to_medoid(
@@ -146,6 +203,7 @@ transported <- dkge_transport_contrasts_to_medoid(
 )
 
 str(loso$values, max.level = 1)
+loso$metadata$kernel_estimability
 ```
 
 Keep the three representations distinct. `loso$values` contains raw
@@ -304,10 +362,12 @@ reference-distribution assumptions. Subject resampling avoids that particular
 reference distribution but still requires representative, independent subjects
 and enough observations for the empirical distribution to be informative.
 
-Before reporting results, state the contrast, analysis space, aggregation rule,
-resampling unit, mapper, medoid, and multiplicity correction. Inspect
-subject-level values as a diagnostic, but do not remove unusual subjects without
-a prespecified rule and sensitivity analysis.
+Before reporting results, state the contrast, kernel rank and nullity, retained
+support fraction, analysis space, aggregation rule, resampling unit, mapper,
+medoid, and multiplicity correction. Report any transformed-query collision;
+changing the contrast label does not create a distinct estimand after the kernel
+has merged it. Inspect subject-level values as a diagnostic, but do not remove
+unusual subjects without a prespecified rule and sensitivity analysis.
 
 ## Where to go next
 

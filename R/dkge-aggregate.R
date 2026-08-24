@@ -564,8 +564,7 @@ dkge_aggregate_target <- function(values,
 #'   dimnames they are matched against the aggregate row IDs; a kernel with only
 #'   row names (or only column names) is validated and reordered on whichever
 #'   labels are present. Rank-deficient PSD kernels keep a true square
-#'   root: null directions stay at zero rather than receiving the jitter
-#'   that `.dkge_kernel_roots()` uses for invertibility elsewhere.
+#'   root and Moore--Penrose inverse root: null directions stay at zero.
 #' @param rank Number of components to retain. Requests larger than
 #'   `min(nrow(Y), ncol(Y))` are capped with a message.
 #' @param center Centering applied to the aggregate matrix before fitting.
@@ -633,14 +632,18 @@ dkge_aggregate_fit <- function(target,
   if (length(rank) != 1L || is.na(rank) || rank < 1L) {
     stop("`rank` must be a positive integer.", call. = FALSE)
   }
-  cap <- min(q, ncol(Yc))
+  roots <- .dkge_aggregate_kernel_roots(K)
+  if (roots$rank == 0L) {
+    .dkge_abort("Aggregate kernel has numerical rank zero.",
+                "dkge_kernel_rank_error")
+  }
+  cap <- min(q, ncol(Yc), roots$rank)
   if (!is.null(requested_rank) && rank > cap) {
-    message(sprintf("`rank` (%d) exceeds min(nrow, ncol) = %d; capping to %d.",
+    message(sprintf("`rank` (%d) exceeds the data/kernel rank cap %d; capping to %d.",
                     rank, cap, cap))
   }
   rank <- min(rank, cap)
 
-  roots <- .dkge_aggregate_kernel_roots(K)
   Chat <- roots$Khalf %*% (Yc %*% t(Yc)) %*% roots$Khalf
   Chat <- (Chat + t(Chat)) / 2
   eg <- eigen(Chat, symmetric = TRUE)
@@ -657,7 +660,7 @@ dkge_aggregate_fit <- function(target,
   rownames(scores_feature) <- colnames(Yc)
   colnames(scores_feature) <- colnames(U)
   # Energy is the feature-score norm so it stays identical after alignment
-  # and cannot pick up jitter that K itself annihilates.
+  # and cannot pick up directions that K itself annihilates.
   singular_values <- sqrt(colSums(scores_feature^2))
   names(singular_values) <- colnames(U)
 
@@ -683,30 +686,20 @@ dkge_aggregate_fit <- function(target,
 
 #' True PSD square-root / pseudoinverse for aggregate kernels
 #'
-#' Unlike `.dkge_kernel_roots()`, null eigenvalues stay zero. Jittering them
-#' would put energy into `Chat` in directions that `K` still annihilates, so
-#' `singular_values` and `scores_feature` would disagree.
+#' Null eigenvalues stay zero. Jittering them would put energy into `Chat` in
+#' directions that `K` still annihilates, so `singular_values` and
+#' `scores_feature` would disagree.
 #'
 #' @keywords internal
 #' @noRd
 .dkge_aggregate_kernel_roots <- function(K, tol = NULL) {
-  Ksym <- (K + t(K)) / 2
-  ee <- eigen(Ksym, symmetric = TRUE)
-  vals <- pmax(ee$values, 0)
-  scale <- max(1, max(vals))
-  tol <- tol %||% (1e-10 * scale)
-  pos <- vals > tol
-  sqrt_vals <- sqrt(vals)
-  inv_sqrt <- numeric(length(vals))
-  inv_sqrt[pos] <- 1 / sqrt_vals[pos]
-  V <- ee$vectors
-  n <- length(vals)
-  list(
-    Khalf = V %*% diag(sqrt_vals, n) %*% t(V),
-    Kihalf = V %*% diag(inv_sqrt, n) %*% t(V),
-    evals = vals,
-    rank = sum(pos)
-  )
+  if (is.null(tol)) {
+    return(.dkge_kernel_geometry(K))
+  }
+  Ksym <- .dkge_validate_kernel(K)
+  scale <- max(pmax(eigen(Ksym, symmetric = TRUE, only.values = TRUE)$values, 0))
+  relative_tol <- if (scale > 0) tol / scale else 0
+  .dkge_kernel_geometry(Ksym, tol = min(relative_tol, 1 - .Machine$double.eps))
 }
 
 .dkge_as_aggregate_target <- function(target) {

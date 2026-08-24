@@ -102,7 +102,24 @@
     weight_eval <- ctx$weights
 
     eig_fold <- eigen(Chat_minus, symmetric = TRUE)
+    eig_scale <- max(eig_fold$values, 0)
+    eig_tol <- if (eig_scale > 0) 1e-10 * eig_scale else 0
+    fold_rank <- min(fit$kernel_rank %||% qr(fit$K)$rank,
+                     sum(eig_fold$values > eig_tol))
+    if (fold_rank < r) {
+      .dkge_abort(
+        sprintf(
+          paste0(
+            "Training fold %d has effective rank %d, below fitted rank %d. ",
+            "Refit or cross-validate at rank <= %d."
+          ),
+          fold_idx, fold_rank, r, fold_rank
+        ),
+        "dkge_fold_rank_error"
+      )
+    }
     U_fold <- fit$Kihalf %*% eig_fold$vectors[, seq_len(r), drop = FALSE]
+    U_fold <- dkge_k_orthonormalize(U_fold, fit$K)
 
     fold_bases[[fold_idx]] <- U_fold
     fold_evals[[fold_idx]] <- eig_fold$values
@@ -350,6 +367,14 @@
   B_train <- fit$Btil[train_ids]
   Omega_train <- fit$Omega[train_ids]
   subject_weights <- fit$weights[train_ids]
+  equal_weight_fallback <- !length(subject_weights) ||
+    any(!is.finite(subject_weights)) || sum(subject_weights) <= 0
+  if (equal_weight_fallback) {
+    # A zero-weight training fold has no moment and previously produced an
+    # arbitrary basis from the zero matrix. Match the package's downstream
+    # summary policy by falling back to explicit equal weights instead.
+    subject_weights <- rep(1, length(train_ids))
+  }
 
   # Reliability weighting cross-references a second run (weight_spec$B_list2),
   # one entry per subject. It must be subset to the training subjects so its
@@ -364,12 +389,17 @@
 
   # When the fold's voxel weights match the ones the fit used, the per-subject
   # raw-effect moments are unchanged and only the pooling has to be redone.
-  if (.dkge_voxel_weights_match(fit, voxel_weights_train, train_ids)) {
+  if (!equal_weight_fallback &&
+      .dkge_voxel_weights_match(fit, voxel_weights_train, train_ids)) {
     pool <- .dkge_repool_fit(fit, indices = train_ids,
                              missingness = missingness, miss_args = miss_args)
     if (!is.null(pool)) {
       Chat <- pool$Chat
-      if (ridge > 0) Chat <- Chat + ridge * diag(nrow(Chat))
+      if (ridge > 0) {
+        support <- fit$kernel_support_projector %||%
+          .dkge_kernel_geometry(fit$K)$support_projector
+        Chat <- Chat + ridge * support
+      }
       Chat <- (Chat + t(Chat)) / 2
       return(list(
         Chat = Chat,
@@ -434,7 +464,11 @@
   )
   Chat <- accum$Chat
 
-  if (ridge > 0) Chat <- Chat + ridge * diag(nrow(Chat))
+  if (ridge > 0) {
+    support <- fit$kernel_support_projector %||%
+      .dkge_kernel_geometry(fit$K)$support_projector
+    Chat <- Chat + ridge * support
+  }
   Chat <- (Chat + t(Chat)) / 2
 
   list(

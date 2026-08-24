@@ -33,6 +33,20 @@ NULL
   stop(condition)
 }
 
+#' Signal a stable DKGE warning condition
+#'
+#' @param message User-facing warning message.
+#' @param subclass Specific condition subclass.
+#' @keywords internal
+#' @noRd
+.dkge_warn <- function(message, subclass = "dkge_warning") {
+  condition <- structure(
+    list(message = as.character(message), call = NULL),
+    class = unique(c(subclass, "dkge_warning", "warning", "condition"))
+  )
+  warning(condition)
+}
+
 #' Validate optional design-kernel metadata
 #'
 #' @param info Optional metadata associated with a design kernel.
@@ -173,6 +187,95 @@ NULL
   }
 
   Ksym
+}
+
+#' Exact positive-semidefinite kernel geometry
+#'
+#' Computes square and Moore--Penrose inverse square roots without adding
+#' energy to the null space. The numerical support is defined by a relative
+#' eigentolerance, so rank is invariant to positive rescaling of the kernel.
+#'
+#' @param K Finite symmetric positive-semidefinite matrix.
+#' @param tol Relative eigentolerance used to define the kernel support.
+#' @return Kernel roots, support projectors, eigenstructure, and scalar rank
+#'   diagnostics.
+#' @keywords internal
+#' @noRd
+.dkge_kernel_geometry <- function(K, tol = 1e-10) {
+  if (!is.numeric(tol) || length(tol) != 1L || !is.finite(tol) ||
+      tol < 0 || tol >= 1) {
+    stop("`tol` must be a finite scalar in [0, 1).", call. = FALSE)
+  }
+
+  Ksym <- .dkge_validate_kernel(K)
+  ee <- eigen(Ksym, symmetric = TRUE)
+  vals_raw <- ee$values
+  vals <- pmax(vals_raw, 0)
+  spectral_scale <- if (length(vals)) max(vals) else 0
+  abs_tol <- tol * spectral_scale
+  positive <- if (spectral_scale > 0) vals > abs_tol else rep(FALSE, length(vals))
+  vals_support <- ifelse(positive, vals, 0)
+
+  sqrt_vals <- sqrt(vals_support)
+  inv_sqrt_vals <- numeric(length(vals_support))
+  inv_sqrt_vals[positive] <- 1 / sqrt_vals[positive]
+  V <- ee$vectors
+  n <- length(vals_support)
+  Khalf <- V %*% diag(sqrt_vals, n) %*% t(V)
+  Kihalf <- V %*% diag(inv_sqrt_vals, n) %*% t(V)
+  V_support <- V[, positive, drop = FALSE]
+  support_projector <- if (any(positive)) {
+    tcrossprod(V_support)
+  } else {
+    matrix(0, n, n)
+  }
+  null_projector <- diag(1, n) - support_projector
+
+  dimnames(Khalf) <- dimnames(Ksym)
+  dimnames(Kihalf) <- dimnames(Ksym)
+  dimnames(support_projector) <- dimnames(Ksym)
+  dimnames(null_projector) <- dimnames(Ksym)
+
+  rank <- sum(positive)
+  condition <- if (rank > 0L) {
+    max(vals[positive]) / min(vals[positive])
+  } else {
+    Inf
+  }
+  near_singular <- rank == n && is.finite(condition) && condition >= 1e8
+
+  list(
+    K = Ksym,
+    Khalf = Khalf,
+    Kihalf = Kihalf,
+    evals = vals_support,
+    evals_raw = vals_raw,
+    evecs = V,
+    support = positive,
+    support_projector = support_projector,
+    null_projector = null_projector,
+    rank = as.integer(rank),
+    nullity = as.integer(n - rank),
+    condition = as.numeric(condition),
+    tolerance = as.numeric(abs_tol),
+    relative_tolerance = tol,
+    full_rank = rank == n,
+    near_singular = near_singular,
+    status = if (rank < n) "singular" else if (near_singular) "ill_conditioned" else "well_conditioned"
+  )
+}
+
+#' Compact public-facing kernel diagnostics
+#'
+#' @param geometry Result from `.dkge_kernel_geometry()`.
+#' @return Scalar diagnostic fields only.
+#' @keywords internal
+#' @noRd
+.dkge_kernel_diagnostics <- function(geometry) {
+  geometry[c(
+    "rank", "nullity", "condition", "tolerance", "relative_tolerance",
+    "full_rank", "near_singular", "status"
+  )]
 }
 
 #' Check matrix rank for design and/or beta matrices
