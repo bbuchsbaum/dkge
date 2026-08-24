@@ -41,11 +41,12 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
 
 #' Summarize DKGE diagnostics
 #'
-#' Provides a compact list of variance explained, subject weights, and rank
-#' metadata for quick inspection.
+#' Provides a compact list of variance explained, subject weights, rank, and
+#' kernel-support metadata for quick inspection.
 #'
 #' @param fit A `dkge` object.
-#' @return List with variance table, subject weights, and rank info.
+#' @return List with variance table, subject weights, rank info, and scalar
+#'   kernel diagnostics (`rank`, `nullity`, `condition`, and status).
 #' @examples
 #' toy <- dkge_sim_toy(
 #'   factors = list(A = list(L = 2), B = list(L = 3)),
@@ -66,6 +67,8 @@ dkge_diagnostics <- function(fit) {
     weights = fit$weights,
     rank = fit$rank,
     q = nrow(fit$U),
+    kernel = fit$kernel_diagnostics %||%
+      .dkge_kernel_diagnostics(.dkge_kernel_geometry(fit$K)),
     n_subjects = length(fit$Btil),
     voxel_weights = voxel_stats,
     weight_spec = fit$weight_spec
@@ -116,10 +119,126 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
   )
 }
 
+#' Resolve one candidate-independent validation geometry for cross-validation
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_validation_geometry <- function(validation_K, q) {
+  kind <- if (is.null(validation_K)) "effect_space_identity" else "custom"
+  if (is.null(validation_K)) validation_K <- diag(q)
+  if (!is.matrix(validation_K) || any(dim(validation_K) != c(q, q))) {
+    stop(sprintf("`validation_K` must be NULL or a %d by %d matrix.", q, q),
+         call. = FALSE)
+  }
+  geometry <- .dkge_kernel_geometry(validation_K)
+  if (geometry$rank == 0L) {
+    .dkge_abort(
+      "`validation_K` has numerical rank zero and cannot define a held-out score.",
+      "dkge_cv_validation_error"
+    )
+  }
+  list(
+    roots = geometry,
+    diagnostics = c(list(kind = kind), .dkge_kernel_diagnostics(geometry))
+  )
+}
+
+#' Validate one CV candidate's effect-space dimensions
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_candidate_geometry <- function(K, q, label = "candidate kernel") {
+  if (!is.matrix(K) || !is.numeric(K) || any(dim(K) != c(q, q))) {
+    stop(sprintf("%s must be a finite numeric %d by %d matrix.", label, q, q),
+         call. = FALSE)
+  }
+  .dkge_kernel_geometry(K)
+}
+
+#' Euclidean orthonormal basis for a matrix column span
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_span_basis <- function(W, tol = 1e-10) {
+  W <- as.matrix(W)
+  if (!ncol(W) || !nrow(W)) return(matrix(0, nrow(W), 0L))
+  sv <- svd(W, nu = min(dim(W)), nv = 0L)
+  if (!length(sv$d) || max(sv$d) <= 0) return(matrix(0, nrow(W), 0L))
+  keep <- sv$d > tol * max(sv$d)
+  sv$u[, keep, drop = FALSE]
+}
+
+#' Score a learned effect-space span in a fixed validation geometry
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_score_fixed <- function(Bw, U, validation_roots) {
+  Xs <- validation_roots$Khalf %*% Bw
+  total <- sum(Xs^2)
+  if (!is.finite(total) || total <= 0) return(NA_real_)
+  Q <- .dkge_cv_span_basis(validation_roots$Khalf %*% U)
+  captured <- if (ncol(Q)) sum(crossprod(Q, Xs)^2) else 0
+  pmin(1, pmax(0, captured / total))
+}
+
+#' Numerical rank and candidate basis for one fold moment
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_fold_basis <- function(Chat, fit, rank) {
+  eg <- eigen((Chat + t(Chat)) / 2, symmetric = TRUE)
+  scale <- max(eg$values, 0)
+  eig_tol <- if (scale > 0) 1e-10 * scale else 0
+  available <- min(fit$kernel_rank %||% .dkge_kernel_geometry(fit$K)$rank,
+                   sum(eg$values > eig_tol))
+  if (rank > available) {
+    return(list(basis = NULL, eigen = eg, available_rank = available))
+  }
+  U <- fit$Kihalf %*% eg$vectors[, seq_len(rank), drop = FALSE]
+  U <- dkge_k_orthonormalize(U, fit$K)
+  list(basis = U, eigen = eg, available_rank = available)
+}
+
+#' Validate candidate ranks
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_ranks <- function(ranks) {
+  if (!is.numeric(ranks) || !length(ranks) || any(!is.finite(ranks)) ||
+      any(ranks < 1L) || any(ranks != as.integer(ranks))) {
+    stop("`ranks` must contain one or more positive integers.", call. = FALSE)
+  }
+  sort(unique(as.integer(ranks)))
+}
+
+#' Warn when a held-out criterion has saturated
+#'
+#' @keywords internal
+#' @noRd
+.dkge_cv_saturation <- function(scores, threshold = 0.999) {
+  scores <- scores[is.finite(scores)]
+  saturated <- length(scores) >= 2L && all(scores >= threshold)
+  if (saturated) {
+    .dkge_warn(
+      sprintf(
+        paste0(
+          "All comparable held-out scores are >= %.3f in the fixed validation ",
+          "geometry; this criterion provides little discrimination among candidates."
+        ),
+        threshold
+      ),
+      "dkge_cv_saturation_warning"
+    )
+  }
+  saturated
+}
+
 #' LOSO cross-validation for rank selection
 #'
 #' Evaluates candidate ranks by recomputing LOSO bases and measuring explained
-#' variance on the held-out subject in the \eqn{K^{1/2}} metric.
+#' energy on the held-out subject in one candidate-independent validation
+#' geometry. By default this is ordinary effect space after pooled-design
+#' scaling, not the candidate kernel's own metric.
 #'
 #' @param B_list List of qxP subject beta matrices.
 #' @param X_list List of Txq subject design matrices.
@@ -129,8 +248,15 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' @param ridge Optional ridge parameter passed to [dkge_fit()].
 #' @param w_method Subject-level weighting scheme passed to [dkge_fit()].
 #' @param w_tau Shrinkage parameter toward equal weights passed to [dkge_fit()].
-#' @return List containing the one-SE selection (`pick`), the best rank, and the
-#'   aggregated score table.
+#' @param validation_K Optional fixed q by q PSD matrix used to score every
+#'   candidate. `NULL` (default) uses the identity. It affects scoring only;
+#'   candidate `K` still determines the learned training subspace.
+#' @param kernel_rank_policy Kernel-support policy for selection. The default,
+#'   `"full"`, requires `rank(K) = q`. Use `"allow_singular"` only when every
+#'   candidate is intentionally allowed to define a quotient effect space.
+#' @return List containing the one-SE selection (`pick`), the best rank,
+#'   aggregated and per-fold score tables, kernel/validation diagnostics,
+#'   excluded ranks, and a saturation flag.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -143,52 +269,135 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' @export
 dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
                               Omega_list = NULL, ridge = 0,
-                              w_method = "mfa_sigma1", w_tau = 0.3) {
-  stopifnot(length(B_list) == length(X_list), length(ranks) >= 1)
+                              w_method = "mfa_sigma1", w_tau = 0.3,
+                              validation_K = NULL,
+                              kernel_rank_policy = c("full", "allow_singular")) {
+  stopifnot(length(B_list) == length(X_list))
+  kernel_rank_policy <- match.arg(kernel_rank_policy)
   S <- length(B_list)
   q <- nrow(B_list[[1]])
+  ranks <- .dkge_cv_ranks(ranks)
+  kernel_geometry <- .dkge_cv_candidate_geometry(K, q)
+  if (kernel_geometry$rank == 0L) {
+    .dkge_abort("Candidate kernel has numerical rank zero.",
+                "dkge_kernel_rank_error")
+  }
+  if (kernel_rank_policy == "full" && kernel_geometry$nullity > 0L) {
+    .dkge_abort(
+      sprintf(
+        paste0(
+          "Candidate kernel has numerical rank %d of %d. Full-rank CV is the ",
+          "default; use `kernel_rank_policy = \"allow_singular\"` only for an ",
+          "intentional quotient effect space."
+        ),
+        kernel_geometry$rank, q
+      ),
+      "dkge_cv_kernel_rank_error"
+    )
+  }
+  validation <- .dkge_cv_validation_geometry(validation_K, q)
 
-  fit_fun <- if (exists("dkge_fit_fast")) get("dkge_fit_fast") else dkge_fit
-  base <- fit_fun(B_list, X_list, K, Omega_list = Omega_list,
+  kernel_invalid <- ranks > kernel_geometry$rank
+  if (any(kernel_invalid)) {
+    .dkge_warn(
+      sprintf(
+        paste0(
+          "Dropping rank(s) %s: candidate kernel rank is %d of %d, so those ",
+          "latent dimensions do not exist."
+        ),
+        paste(ranks[kernel_invalid], collapse = ", "), kernel_geometry$rank, q
+      ),
+      "dkge_cv_rank_warning"
+    )
+  }
+  ranks_fit <- ranks[!kernel_invalid]
+  if (!length(ranks_fit)) {
+    .dkge_abort(
+      sprintf("No requested rank is admissible for kernel rank %d.", kernel_geometry$rank),
+      "dkge_cv_rank_error"
+    )
+  }
+
+  base <- dkge_fit(B_list, X_list, K, Omega_list = Omega_list,
                   w_method = w_method, w_tau = w_tau,
-                  ridge = ridge, rank = max(ranks))
-  Khalf <- base$Khalf
+                  ridge = ridge, rank = max(ranks_fit))
 
-  rows <- vector("list", S * length(ranks))
+  rows <- vector("list", S * length(ranks_fit))
   row_id <- 1L
   for (s in seq_len(S)) {
     train_ids <- setdiff(seq_len(S), s)
     ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
-    eg <- eigen(ctx$Chat, symmetric = TRUE)
-    for (r in ranks) {
-      Uminus <- base$Kihalf %*% eg$vectors[, seq_len(r), drop = FALSE]
-      score <- {
-        Bts <- base$Btil[[s]]
-        loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
-        Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
-        Xs <- base$Khalf %*% Bw
-        V <- base$Khalf %*% Uminus
-        Xhat <- V %*% (t(Uminus) %*% base$K %*% Bw)
-        sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
+    Bts <- base$Btil[[s]]
+    loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
+    Bw <- if (is.null(loader_weights)) {
+      Bts
+    } else {
+      sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
+    }
+    for (r in ranks_fit) {
+      fold <- .dkge_cv_fold_basis(ctx$Chat, base, r)
+      score <- if (is.null(fold$basis)) {
+        NA_real_
+      } else {
+        .dkge_cv_score_fixed(Bw, fold$basis, validation$roots)
       }
-      rows[[row_id]] <- data.frame(subject = s, rank = r, score = score)
+      rows[[row_id]] <- data.frame(
+        subject = s, rank = r, rank_used = if (is.null(fold$basis)) fold$available_rank else r,
+        score = score, admissible = !is.null(fold$basis) && is.finite(score)
+      )
       row_id <- row_id + 1L
     }
   }
   tab <- do.call(rbind, rows)
-  sel <- dkge_one_se(tab, param_col = "rank", metric_col = "score")
-  list(pick = sel$pick, best = sel$best, table = sel$summary, raw = tab)
+  fold_ok <- vapply(ranks_fit, function(r) {
+    rows_r <- tab[tab$rank == r, , drop = FALSE]
+    nrow(rows_r) == S && all(rows_r$admissible)
+  }, logical(1))
+  fold_invalid <- ranks_fit[!fold_ok]
+  if (length(fold_invalid)) {
+    .dkge_warn(
+      sprintf(
+        "Dropping rank(s) %s because at least one training fold has lower effective rank.",
+        paste(fold_invalid, collapse = ", ")
+      ),
+      "dkge_cv_fold_rank_warning"
+    )
+  }
+  usable_ranks <- ranks_fit[fold_ok]
+  if (!length(usable_ranks)) {
+    .dkge_abort("No requested rank is estimable in every training fold.",
+                "dkge_cv_fold_rank_error")
+  }
+  usable <- tab[tab$rank %in% usable_ranks, , drop = FALSE]
+  sel <- dkge_one_se(usable, param_col = "rank", metric_col = "score")
+  sel$summary$rank_used <- sel$summary$param
+  saturated <- .dkge_cv_saturation(sel$summary$mean)
+  list(
+    pick = sel$pick,
+    best = sel$best,
+    table = sel$summary,
+    raw = tab,
+    kernel = .dkge_kernel_diagnostics(kernel_geometry),
+    validation = validation$diagnostics,
+    kernel_rank_policy = kernel_rank_policy,
+    inadmissible_ranks = sort(unique(c(ranks[kernel_invalid], fold_invalid))),
+    saturated = saturated
+  )
 }
 
 #' LOSO kernel grid search
 #' 
 #' Evaluates a named list of candidate design kernels using LOSO explained
-#' variance at a fixed rank.
+#' energy at a fixed rank. Every candidate is scored in the same fixed
+#' validation geometry, so a kernel cannot inflate its score by collapsing the
+#' target metric it is judged against.
 #'
 #' @inheritParams dkge_cv_rank_loso
 #' @param K_grid Named list of candidate kernels.
 #' @param rank Rank used for evaluation.
-#' @return List with the one-SE pick, best kernel, summary table, and raw scores.
+#' @return List with the pick, best kernel, candidate audit table (including
+#'   kernel rank, nullity, condition, admissibility, and exclusion reason), raw
+#'   fold scores, fixed validation diagnostics, and a saturation flag.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -203,57 +412,123 @@ dkge_cv_rank_loso <- function(B_list, X_list, K, ranks,
 #' @export
 dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
                                 Omega_list = NULL, ridge = 0,
-                                w_method = "mfa_sigma1", w_tau = 0.3) {
+                                w_method = "mfa_sigma1", w_tau = 0.3,
+                                validation_K = NULL,
+                                kernel_rank_policy = c("full", "allow_singular")) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
+  kernel_rank_policy <- match.arg(kernel_rank_policy)
+  if (is.null(names(K_grid)) || any(!nzchar(names(K_grid))) || anyDuplicated(names(K_grid))) {
+    stop("`K_grid` must have unique, non-empty names.", call. = FALSE)
+  }
+  rank <- .dkge_cv_ranks(rank)
+  if (length(rank) != 1L) stop("`rank` must be one positive integer.", call. = FALSE)
+  q <- nrow(B_list[[1]])
+  validation <- .dkge_cv_validation_geometry(validation_K, q)
   rows <- list()
-  fit_fun <- if (exists("dkge_fit_fast")) get("dkge_fit_fast") else dkge_fit
+  summaries <- list()
 
   for (nm in names(K_grid)) {
     Kc <- K_grid[[nm]]
-    base <- fit_fun(B_list, X_list, Kc, Omega_list = Omega_list,
+    geometry <- .dkge_cv_candidate_geometry(Kc, q, sprintf("Kernel %s", shQuote(nm)))
+    reason <- NA_character_
+    if (geometry$rank == 0L) {
+      reason <- "kernel rank is zero"
+    } else if (kernel_rank_policy == "full" && geometry$nullity > 0L) {
+      reason <- sprintf(
+        "kernel rank %d is below q = %d under the full-rank policy",
+        geometry$rank, q
+      )
+    } else if (rank > geometry$rank) {
+      reason <- sprintf("requested rank %d exceeds kernel rank %d", rank, geometry$rank)
+    }
+    if (!is.na(reason)) {
+      summaries[[nm]] <- data.frame(
+        kernel = nm, mean = NA_real_, se = NA_real_,
+        kernel_rank = geometry$rank, kernel_nullity = geometry$nullity,
+        kernel_condition = geometry$condition, rank_requested = rank,
+        rank_used = min(rank, geometry$rank), admissible = FALSE,
+        reason = reason, stringsAsFactors = FALSE
+      )
+      next
+    }
+
+    base <- dkge_fit(B_list, X_list, Kc, Omega_list = Omega_list,
                     w_method = w_method, w_tau = w_tau,
                     ridge = ridge, rank = rank)
-    Khalf <- base$Khalf
     S <- length(B_list)
+    candidate_rows <- list()
 
     for (s in seq_len(S)) {
       train_ids <- setdiff(seq_len(S), s)
       ctx <- .dkge_fold_weight_context(base, train_ids, ridge = ridge)
-      eg <- eigen(ctx$Chat, symmetric = TRUE)
-      Uminus <- base$Kihalf %*% eg$vectors[, seq_len(rank), drop = FALSE]
+      fold <- .dkge_cv_fold_basis(ctx$Chat, base, rank)
 
       Bts <- base$Btil[[s]]
       loader_weights <- .dkge_subject_loader_weights(ctx$weights$total, Bts)
       Bw <- if (is.null(loader_weights)) Bts else sweep(Bts, 2L, sqrt(pmax(loader_weights, 0)), "*")
-      V <- Khalf %*% Uminus
-      Xs <- Khalf %*% Bw
-      Xhat <- V %*% (t(Uminus) %*% base$K %*% Bw)
-      ev <- sum(Xhat * Xhat) / (sum(Xs * Xs) + 1e-12)
-      rows[[length(rows) + 1L]] <- data.frame(kernel = nm, subject = s, score = ev)
+      ev <- if (is.null(fold$basis)) {
+        NA_real_
+      } else {
+        .dkge_cv_score_fixed(Bw, fold$basis, validation$roots)
+      }
+      candidate_rows[[s]] <- data.frame(
+        kernel = nm, subject = s, rank = rank,
+        rank_used = if (is.null(fold$basis)) fold$available_rank else rank,
+        score = ev, admissible = !is.null(fold$basis) && is.finite(ev)
+      )
     }
+    candidate_tab <- do.call(rbind, candidate_rows)
+    rows[[nm]] <- candidate_tab
+    admissible <- nrow(candidate_tab) == S && all(candidate_tab$admissible)
+    scores <- candidate_tab$score[candidate_tab$admissible]
+    summaries[[nm]] <- data.frame(
+      kernel = nm,
+      mean = if (admissible) mean(scores) else NA_real_,
+      se = if (admissible && length(scores) > 1L) stats::sd(scores) / sqrt(length(scores)) else if (admissible) 0 else NA_real_,
+      kernel_rank = geometry$rank,
+      kernel_nullity = geometry$nullity,
+      kernel_condition = geometry$condition,
+      rank_requested = rank,
+      rank_used = if (admissible) rank else min(candidate_tab$rank_used),
+      admissible = admissible,
+      reason = if (admissible) NA_character_ else "at least one training fold has lower effective rank",
+      stringsAsFactors = FALSE
+    )
   }
 
-  tab <- do.call(rbind, rows)
-  agg <- aggregate(tab$score, by = list(tab$kernel),
-                   FUN = function(x) c(mean = mean(x), se = stats::sd(x) / sqrt(length(x))))
-  kernels <- agg[[1]]
-  stats_raw <- agg[[2]]
-  stats_mat <- if (is.list(stats_raw)) do.call(rbind, stats_raw) else as.matrix(stats_raw)
-  if (is.null(colnames(stats_mat))) {
-    colnames(stats_mat) <- c("mean", "se")
+  tab <- if (length(rows)) do.call(rbind, rows) else data.frame(
+    kernel = character(0), subject = integer(0), rank = integer(0),
+    rank_used = integer(0), score = numeric(0), admissible = logical(0)
+  )
+  table <- do.call(rbind, summaries)
+  rownames(table) <- NULL
+  excluded <- table$kernel[!table$admissible]
+  if (length(excluded)) {
+    details <- paste0(excluded, " (", table$reason[!table$admissible], ")")
+    .dkge_warn(
+      sprintf("Excluded inadmissible kernel candidate(s): %s.", paste(details, collapse = "; ")),
+      "dkge_cv_kernel_rank_warning"
+    )
   }
-  means <- stats_mat[, "mean"]
-  ses <- stats_mat[, "se"]
-  best_idx <- which.max(means)
+  eligible <- table[table$admissible & is.finite(table$mean), , drop = FALSE]
+  if (!nrow(eligible)) {
+    .dkge_abort("No kernel candidate is estimable at the requested rank in every fold.",
+                "dkge_cv_kernel_rank_error")
+  }
+  best_idx <- which.max(eligible$mean)
   # Kernels are nominal: the one-SE "first within tolerance" rule reduces to an
   # arbitrary alphabetical tie-break, so select the best-scoring kernel directly.
   pick_idx <- best_idx
+  saturated <- .dkge_cv_saturation(eligible$mean)
 
   list(
-    pick = kernels[pick_idx],
-    best = kernels[best_idx],
-    table = data.frame(kernel = kernels, mean = means, se = ses),
-    raw = tab
+    pick = eligible$kernel[pick_idx],
+    best = eligible$kernel[best_idx],
+    table = table,
+    raw = tab,
+    validation = validation$diagnostics,
+    kernel_rank_policy = kernel_rank_policy,
+    saturated = saturated
   )
 }
 
@@ -350,8 +625,9 @@ dkge_kernel_prescreen <- function(K_grid, C, normalize_k = TRUE, top_k = 3) {
 #' @param K_grid Named list of candidate kernels.
 #' @param ranks Integer vector of ranks to evaluate.
 #' @param top_k Number of kernels to keep after pre-screening.
-#' @return List with the selected `kernel` and `rank`, alignment and CV tables,
-#'   and a per-kernel summary of scores at the selected rank.
+#' @return List with the selected `kernel` and `rank`, alignment and CV tables
+#'   carrying kernel-support diagnostics, per-kernel selections, exclusions,
+#'   fixed validation diagnostics, and a saturation flag.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -367,46 +643,125 @@ dkge_kernel_prescreen <- function(K_grid, C, normalize_k = TRUE, top_k = 3) {
 dkge_cv_kernel_rank <- function(B_list, X_list, K_grid, ranks,
                                 Omega_list = NULL, ridge = 0,
                                 w_method = "mfa_sigma1", w_tau = 0.3,
-                                top_k = 3) {
+                                top_k = 3, validation_K = NULL,
+                                kernel_rank_policy = c("full", "allow_singular")) {
   stopifnot(is.list(K_grid), length(K_grid) >= 1)
+  kernel_rank_policy <- match.arg(kernel_rank_policy)
+  if (is.null(names(K_grid)) || any(!nzchar(names(K_grid))) || anyDuplicated(names(K_grid))) {
+    stop("`K_grid` must have unique, non-empty names.", call. = FALSE)
+  }
+  if (!is.numeric(top_k) || length(top_k) != 1L || !is.finite(top_k) ||
+      top_k < 1L || top_k != as.integer(top_k)) {
+    stop("`top_k` must be one positive integer.", call. = FALSE)
+  }
+  top_k <- as.integer(top_k)
+  ranks <- .dkge_cv_ranks(ranks)
+  q <- nrow(B_list[[1]])
+  validation <- .dkge_cv_validation_geometry(validation_K, q)
+  kernel_geometries <- lapply(names(K_grid), function(nm) {
+    .dkge_cv_candidate_geometry(K_grid[[nm]], q, sprintf("Kernel %s", shQuote(nm)))
+  })
+  names(kernel_geometries) <- names(K_grid)
+
+  exclusion_reason <- vapply(names(K_grid), function(nm) {
+    geometry <- kernel_geometries[[nm]]
+    if (geometry$rank == 0L) {
+      return("kernel rank is zero")
+    }
+    if (kernel_rank_policy == "full" && geometry$nullity > 0L) {
+      return(sprintf(
+        "kernel rank %d is below q = %d under the full-rank policy",
+        geometry$rank, q
+      ))
+    }
+    if (!any(ranks <= geometry$rank)) {
+      return(sprintf("all requested ranks exceed kernel rank %d", geometry$rank))
+    }
+    NA_character_
+  }, character(1))
 
   pooled <- dkge_pooled_cov_q(B_list, X_list, Omega_list)
-  alignment <- dkge_kernel_prescreen(K_grid, pooled$C, normalize_k = TRUE, top_k = top_k)
-  keep <- attr(alignment, "top")
+  alignment <- dkge_kernel_prescreen(
+    K_grid, pooled$C, normalize_k = TRUE, top_k = length(K_grid)
+  )
+  alignment$kernel_rank <- vapply(alignment$kernel, function(nm) {
+    kernel_geometries[[nm]]$rank
+  }, integer(1))
+  alignment$kernel_nullity <- vapply(alignment$kernel, function(nm) {
+    kernel_geometries[[nm]]$nullity
+  }, integer(1))
+  alignment$kernel_condition <- vapply(alignment$kernel, function(nm) {
+    kernel_geometries[[nm]]$condition
+  }, numeric(1))
+  alignment$rank_policy_admissible <- is.na(exclusion_reason[alignment$kernel])
+  eligible_screen <- alignment$kernel[alignment$rank_policy_admissible]
+  keep <- head(eligible_screen, min(top_k, length(eligible_screen)))
+  attr(alignment, "top") <- keep
 
   cv_rows <- list()
-  picks <- vector("list", length(keep))
+  picks <- list()
+  excluded <- as.list(exclusion_reason[!is.na(exclusion_reason)])
 
   for (i in seq_along(keep)) {
     nm <- keep[[i]]
-    cv <- dkge_cv_rank_loso(B_list, X_list, K_grid[[nm]], ranks,
-                             Omega_list = Omega_list, ridge = ridge,
-                             w_method = w_method, w_tau = w_tau)
+    geometry <- kernel_geometries[[nm]]
+    candidate_ranks <- ranks[ranks <= geometry$rank]
+    cv <- dkge_cv_rank_loso(
+      B_list, X_list, K_grid[[nm]], candidate_ranks,
+      Omega_list = Omega_list, ridge = ridge,
+      w_method = w_method, w_tau = w_tau,
+      validation_K = validation_K,
+      kernel_rank_policy = kernel_rank_policy
+    )
     summary_tbl <- cv$table %||% cv$summary
     stopifnot(!is.null(summary_tbl), all(c("param", "mean", "se") %in% names(summary_tbl)))
     tmp <- data.frame(kernel = nm,
                       rank = summary_tbl$param,
                       mean = summary_tbl$mean,
-                      se = summary_tbl$se)
-    cv_rows[[i]] <- tmp
+                      se = summary_tbl$se,
+                      kernel_rank = geometry$rank,
+                      kernel_nullity = geometry$nullity,
+                      kernel_condition = geometry$condition)
+    cv_rows[[nm]] <- tmp
     idx <- tmp$rank == cv$pick
-    picks[[i]] <- data.frame(kernel = nm,
-                             rank = cv$pick,
-                             score = tmp$mean[idx],
-                             se = tmp$se[idx])
+    picks[[nm]] <- data.frame(kernel = nm,
+                              rank = cv$pick,
+                              score = tmp$mean[idx],
+                              se = tmp$se[idx],
+                              kernel_rank = geometry$rank,
+                              kernel_nullity = geometry$nullity,
+                              kernel_condition = geometry$condition)
   }
 
+  if (length(excluded)) {
+    detail <- paste0(names(excluded), " (", unlist(excluded, use.names = FALSE), ")")
+    .dkge_warn(
+      sprintf("Excluded inadmissible kernel candidate(s): %s.", paste(detail, collapse = "; ")),
+      "dkge_cv_kernel_rank_warning"
+    )
+  }
+  if (!length(cv_rows) || !length(picks)) {
+    .dkge_abort("No kernel-rank candidate is admissible.",
+                "dkge_cv_kernel_rank_error")
+  }
   cv_table <- do.call(rbind, cv_rows)
   pick_df <- do.call(rbind, picks)
+  rownames(cv_table) <- NULL
+  rownames(pick_df) <- NULL
 
   best_idx <- which.max(pick_df$score)
   threshold <- pick_df$score[best_idx] - pick_df$se[best_idx]
   candidates <- pick_df[pick_df$score >= threshold, , drop = FALSE]
   selected <- candidates[order(candidates$rank, -candidates$score), ][1, ]
+  saturated <- .dkge_cv_saturation(pick_df$score)
 
   list(
     pick = list(kernel = selected$kernel, rank = selected$rank),
     tables = list(alignment = alignment, cv = cv_table),
-    picks_per_kernel = pick_df
+    picks_per_kernel = pick_df,
+    excluded = excluded,
+    validation = validation$diagnostics,
+    kernel_rank_policy = kernel_rank_policy,
+    saturated = saturated
   )
 }

@@ -246,8 +246,8 @@ test_that("kernel roots and alignment behave", {
 test_that("kernel_roots reports clamped eigenvalues", {
   K <- diag(c(1, 1e-12, 0))
   roots <- kernel_roots(K, jitter = NULL)
-  expect_equal(roots$n_clamped, 1L)
-  expect_equal(roots$rank, 3L)
+  expect_equal(roots$n_clamped, 2L)
+  expect_equal(roots$rank, 1L)
   expect_true(all(roots$evals >= 0))
 })
 
@@ -322,7 +322,7 @@ test_that("kernel_roots handles near-zero eigenvalues with jitter", {
 })
 
 test_that("kernel_roots warns for asymmetric input", {
-  K <- matrix(c(1, 0.5, 0.6, 1), 2, 2)  # Asymmetric
+  K <- matrix(c(1, 0.5, 0.500000001, 1), 2, 2)  # Slightly asymmetric
   expect_warning(kernel_roots(K), "symmetric")
 })
 

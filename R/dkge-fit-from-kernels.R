@@ -200,7 +200,8 @@ dkge_fit_from_kernels <- function(K_list,
     x
   }
 
-  for (nm in c("R", "K", "Khalf", "Kihalf", "Chat", "Chat_sym",
+  for (nm in c("R", "K", "Khalf", "Kihalf", "kernel_support_projector",
+               "Chat", "Chat_sym",
                "effect_moment", "pair_counts", "pair_weight", "pair_ess")) {
     fit[[nm]] <- label_effect_square(fit[[nm]])
   }

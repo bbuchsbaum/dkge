@@ -76,7 +76,11 @@ may be less accurate when subjects have high leverage.
 }
 
 All methods work entirely in the qxq design space and respect the K-metric
-throughout. Multiple contrasts can be evaluated simultaneously for efficiency.
+throughout. A semidefinite kernel defines a quotient effect space:
+\code{dkge_contrast()} errors when a contrast lies wholly in \code{null(K)}, warns when
+only part of a contrast is represented, and reports transformed-query
+collisions in \code{metadata$kernel_query_pairs}. Multiple contrasts can be
+evaluated simultaneously for efficiency.
 }
 \examples{
 # Simulate and fit

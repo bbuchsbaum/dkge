@@ -2,6 +2,9 @@
 
 ## New features
 
+* `dkge_contrast_diagnostics()` preflights planned contrasts against the fitted
+  kernel support, reporting retained/null fractions and distinct contrasts
+  that collapse to proportional kernel queries.
 * `dkge_signflip_maxT()` now explicitly exposes both max-T FWER-adjusted `p`
   and per-location unadjusted `p_unadj`. The latter is the raw value reported
   by `dkge_infer()` in `p_values`, while `p_adjusted` retains max-T control;
@@ -53,6 +56,16 @@
 
 ## Bug fixes
 
+* Kernel roots now preserve exact positive-semidefinite support instead of
+  jittering `null(K)` into artificial inverse directions. Fits cap latent rank
+  at `rank(K)`, keep ridge inside `image(K)`, expose rank/nullity/condition
+  diagnostics, and reject contrasts that the chosen kernel cannot represent.
+* Kernel cross-validation now requires full-rank candidates by default and
+  scores every candidate in one fixed validation geometry (identity/effect
+  space by default). Intentional quotient models require
+  `kernel_rank_policy = "allow_singular"`; excluded candidates remain in audit
+  rows, and score saturation is flagged, preventing a low-rank kernel from
+  grading itself only on the directions it kept.
 * Sinkhorn transport now separates joint couplings from value-application
   operators. Intensive fields preserve constants, extensive values preserve
   total mass, fitted reliability is not applied twice, and each solve reports
@@ -115,6 +128,11 @@
 
 ## Breaking / behavior changes
 
+* `kernel_roots()` now defaults to `jitter = 0` and returns a Moore--Penrose
+  inverse square root for singular kernels. A positive `jitter` explicitly
+  regularizes `K`; it no longer happens invisibly on every call. `dkge_cv_*()`
+  scores are therefore comparable across kernels but are not numerically
+  interchangeable with the former candidate-specific K-metric scores.
 * `design_kernel(terms = NULL)` on a one-factor design now contains its main-effect term
   once. Previously the identical main effect and full interaction were both
   added, which doubled an unnormalized cell kernel and duplicated the

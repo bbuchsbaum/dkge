@@ -25,8 +25,7 @@ therefore be \code{nrow(target$Y)} by \code{nrow(target$Y)}. When \code{K} carri
 dimnames they are matched against the aggregate row IDs; a kernel with only
 row names (or only column names) is validated and reordered on whichever
 labels are present. Rank-deficient PSD kernels keep a true square
-root: null directions stay at zero rather than receiving the jitter
-that \code{.dkge_kernel_roots()} uses for invertibility elsewhere.}
+root and Moore--Penrose inverse root: null directions stay at zero.}
 
 \item{rank}{Number of components to retain. Requests larger than
 \code{min(nrow(Y), ncol(Y))} are capped with a message.}

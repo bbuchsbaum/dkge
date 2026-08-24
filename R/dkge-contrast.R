@@ -49,7 +49,11 @@
 #'    may be less accurate when subjects have high leverage.
 #'
 #' All methods work entirely in the qxq design space and respect the K-metric
-#' throughout. Multiple contrasts can be evaluated simultaneously for efficiency.
+#' throughout. A semidefinite kernel defines a quotient effect space:
+#' `dkge_contrast()` errors when a contrast lies wholly in `null(K)`, warns when
+#' only part of a contrast is represented, and reports transformed-query
+#' collisions in `metadata$kernel_query_pairs`. Multiple contrasts can be
+#' evaluated simultaneously for efficiency.
 #'
 #' @examples
 #' # Simulate and fit
@@ -83,6 +87,7 @@ dkge_contrast <- function(fit, contrasts,
 
   # Normalize contrast input
   contrast_list <- .normalize_contrasts(contrasts, fit)
+  kernel_contrast_info <- .dkge_validate_kernel_contrasts(contrast_list, fit)
   contrast_info <- .dkge_classify_contrasts(contrast_list, fit)
   .dkge_warn_contrast_inference(contrast_info, method)
 
@@ -97,6 +102,8 @@ dkge_contrast <- function(fit, contrasts,
     result$metadata <- list()
   }
   result$metadata$contrast_estimability <- contrast_info
+  result$metadata$kernel_estimability <- kernel_contrast_info$table
+  result$metadata$kernel_query_pairs <- kernel_contrast_info$pairs
   if (is.null(result$metadata$provenance) && !is.null(fit$provenance)) {
     result$metadata$provenance <- fit$provenance
   }
@@ -213,6 +220,187 @@ dkge_contrast <- function(fit, contrasts,
   }
 
   stop("contrasts must be a numeric vector, matrix, or named list")
+}
+
+#' Diagnose whether a kernel can represent planned contrasts
+#'
+#' Performs a read-only preflight check in the same pooled-design and kernel
+#' geometry used by [dkge_contrast()]. This is useful before running
+#' cross-fitting or inference, especially when `K` is singular or strongly
+#' structured.
+#'
+#' @param fit A fitted `dkge` object.
+#' @param contrasts A contrast vector, matrix, or list accepted by
+#'   [dkge_contrast()].
+#' @param tol Numerical tolerance for null-space and proportional-query checks.
+#' @return A list with `estimability` (support and null fractions per contrast),
+#'   `pairs` (pairwise transformed-query correlations and collision flags), and
+#'   scalar `kernel` rank diagnostics.
+#' @export
+#' @examples
+#' toy <- dkge_sim_toy(
+#'   factors = list(cond = list(L = 3)), active_terms = "cond",
+#'   S = 3, P = 10, snr = 4
+#' )
+#' fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
+#' c_vec <- c(1, -1, rep(0, nrow(fit$U) - 2))
+#' dkge_contrast_diagnostics(fit, c_vec)$estimability
+dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8) {
+  stopifnot(inherits(fit, "dkge"))
+  if (!is.numeric(tol) || length(tol) != 1L || !is.finite(tol) ||
+      tol <= 0 || tol >= 1) {
+    stop("`tol` must be one finite scalar in (0, 1).", call. = FALSE)
+  }
+  contrast_list <- .normalize_contrasts(contrasts, fit)
+  diagnostics <- .dkge_kernel_contrast_diagnostics(contrast_list, fit, tol = tol)
+  list(
+    estimability = diagnostics$table,
+    pairs = diagnostics$pairs,
+    kernel = diagnostics$kernel
+  )
+}
+
+#' Diagnose contrast estimability in a semidefinite kernel geometry
+#'
+#' A contrast is first moved through the pooled design ruler because that is
+#' the coordinate system in which `K` acts. Its Euclidean projection onto
+#' image(K) is the estimable part; the orthogonal remainder lies in null(K).
+#' The full query available to any DKGE basis is `K^(1/2) R^(-1) c`.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_kernel_contrast_diagnostics <- function(contrast_list, fit, tol = 1e-8) {
+  geometry <- .dkge_kernel_geometry(fit$K)
+  P <- fit$kernel_support_projector %||% geometry$support_projector
+  contrast_names <- names(contrast_list) %||%
+    paste0("contrast", seq_along(contrast_list))
+
+  transformed <- lapply(contrast_list, function(ct) {
+    backsolve(fit$R, as.numeric(ct), transpose = FALSE)
+  })
+  support_parts <- lapply(transformed, function(z) as.numeric(P %*% z))
+  queries <- lapply(transformed, function(z) as.numeric(geometry$Khalf %*% z))
+
+  rows <- lapply(seq_along(transformed), function(i) {
+    total_norm <- sqrt(sum(transformed[[i]]^2))
+    support_norm <- sqrt(sum(support_parts[[i]]^2))
+    null_norm <- sqrt(sum((transformed[[i]] - support_parts[[i]])^2))
+    support_fraction <- if (total_norm > 0) (support_norm / total_norm)^2 else 0
+    null_fraction <- if (total_norm > 0) (null_norm / total_norm)^2 else 1
+    status <- if (total_norm == 0 || support_norm <= tol * total_norm) {
+      "null"
+    } else if (null_norm > tol * total_norm) {
+      "partially_estimable"
+    } else {
+      "estimable"
+    }
+    data.frame(
+      contrast = contrast_names[[i]],
+      status = status,
+      support_fraction = support_fraction,
+      null_fraction = null_fraction,
+      query_norm = sqrt(sum(queries[[i]]^2)),
+      stringsAsFactors = FALSE
+    )
+  })
+  table <- do.call(rbind, rows)
+
+  pair_rows <- list()
+  if (length(queries) >= 2L) {
+    pairs <- utils::combn(seq_along(queries), 2L)
+    pair_rows <- lapply(seq_len(ncol(pairs)), function(j) {
+      i1 <- pairs[1L, j]
+      i2 <- pairs[2L, j]
+      cosine <- function(a, b) {
+        denom <- sqrt(sum(a^2) * sum(b^2))
+        if (denom == 0) NA_real_ else sum(a * b) / denom
+      }
+      query_cor <- cosine(queries[[i1]], queries[[i2]])
+      raw_cor <- cosine(transformed[[i1]], transformed[[i2]])
+      query_defined <- table$status[[i1]] != "null" && table$status[[i2]] != "null"
+      if (!query_defined) query_cor <- NA_real_
+      collision <- query_defined && is.finite(query_cor) && is.finite(raw_cor) &&
+        (1 - abs(query_cor)) <= tol && (1 - abs(raw_cor)) > tol
+      data.frame(
+        contrast1 = contrast_names[[i1]],
+        contrast2 = contrast_names[[i2]],
+        query_correlation = query_cor,
+        input_correlation = raw_cor,
+        collision = collision,
+        stringsAsFactors = FALSE
+      )
+    })
+  }
+  pair_table <- if (length(pair_rows)) {
+    do.call(rbind, pair_rows)
+  } else {
+    data.frame(
+      contrast1 = character(0), contrast2 = character(0),
+      query_correlation = numeric(0), input_correlation = numeric(0),
+      collision = logical(0), stringsAsFactors = FALSE
+    )
+  }
+
+  list(table = table, pairs = pair_table, queries = queries,
+       kernel = .dkge_kernel_diagnostics(geometry))
+}
+
+#' Enforce the kernel contrast contract
+#'
+#' @keywords internal
+#' @noRd
+.dkge_validate_kernel_contrasts <- function(contrast_list, fit, tol = 1e-8) {
+  diagnostics <- .dkge_kernel_contrast_diagnostics(contrast_list, fit, tol = tol)
+  null_names <- diagnostics$table$contrast[diagnostics$table$status == "null"]
+  if (length(null_names)) {
+    .dkge_abort(
+      sprintf(
+        paste0(
+          "Contrast(s) %s lie entirely in null(K) after pooled-design scaling; ",
+          "the selected kernel cannot represent these estimands. Choose a ",
+          "fuller-rank kernel or revise the contrasts."
+        ),
+        paste(shQuote(null_names), collapse = ", ")
+      ),
+      "dkge_kernel_contrast_error"
+    )
+  }
+
+  partial_names <- diagnostics$table$contrast[
+    diagnostics$table$status == "partially_estimable"
+  ]
+  if (length(partial_names)) {
+    .dkge_warn(
+      sprintf(
+        paste0(
+          "Contrast(s) %s contain directions in null(K); DKGE will evaluate ",
+          "only their projection onto image(K). Inspect ",
+          "`metadata$kernel_estimability`."
+        ),
+        paste(shQuote(partial_names), collapse = ", ")
+      ),
+      "dkge_kernel_contrast_warning"
+    )
+  }
+
+  collisions <- diagnostics$pairs[diagnostics$pairs$collision, , drop = FALSE]
+  if (nrow(collisions)) {
+    labels <- apply(collisions[c("contrast1", "contrast2")], 1L, function(x) {
+      paste(shQuote(x), collapse = " / ")
+    })
+    .dkge_warn(
+      sprintf(
+        paste0(
+          "Distinct contrast pairs collapse to proportional kernel queries: %s. ",
+          "Their DKGE maps can differ only by scale or sign; inspect ",
+          "`metadata$kernel_query_pairs`."
+        ),
+        paste(labels, collapse = "; ")
+      ),
+      "dkge_kernel_contrast_collision_warning"
+    )
+  }
+  diagnostics
 }
 
 .dkge_contrast_recommendation <- function(estimability) {

@@ -392,57 +392,34 @@ helmert_contrasts <- function(Ls) {
   })
 }
 
-#' Robust kernel roots
+#' Positive-semidefinite kernel roots
 #' @param K Positive semi-definite kernel matrix.
-#' @param jitter Small diagonal jitter added before inversion.
-#' @return List with `Khalf`, `Kihalf`, eigenvalues, eigenvectors, and basic diagnostics.
+#' @param jitter Optional non-negative diagonal regularization added explicitly
+#'   to `K` before computing roots. The default, zero, preserves an exact null
+#'   space. Use a positive value only when changing the kernel geometry is
+#'   scientifically intended.
+#' @param tol Relative eigentolerance used to define numerical support.
+#' @return List with the exact square root, Moore--Penrose inverse square root,
+#'   eigenstructure, support projectors, and rank diagnostics.
 #' @export
-kernel_roots <- function(K, jitter = 1e-10) {
-  if (!isTRUE(isSymmetric(K, tol = 1e-8))) {
-    warning("Kernel matrix not symmetric; applying symmetrization via (K + t(K))/2.")
+kernel_roots <- function(K, jitter = 0, tol = 1e-10) {
+  if (is.null(jitter)) jitter <- 0
+  if (!is.numeric(jitter) || length(jitter) != 1L || !is.finite(jitter) || jitter < 0) {
+    stop("`jitter` must be NULL or a finite non-negative numeric scalar.", call. = FALSE)
   }
-  Ks <- (K + t(K)) / 2
-  ee <- eigen(Ks, symmetric = TRUE)
-  vals <- ee$values
-  V <- ee$vectors
-
-  if (is.null(jitter)) {
-    pinned <- vals <= 0
-    tiny <- 1e-10
-    vals[pinned] <- tiny
-  } else {
-    if (!is.numeric(jitter) || length(jitter) != 1 || jitter < 0) {
-      stop("`jitter` must be NULL or a non-negative numeric scalar")
-    }
-    pinned <- vals < jitter
-    vals <- pmax(vals, jitter)
-  }
-
-  n_clamped <- sum(pinned)
-  n_total <- length(vals)
-  if (n_clamped > 0 && n_clamped / max(n_total, 1) > 0.1) {
-    warning(sprintf("%.0f%% of eigenvalues were clamped during kernel root computation.",
-                    100 * n_clamped / n_total))
-  }
-
-  sqrt_vals <- sqrt(vals)
-  inv_sqrt_vals <- rep(0, length(vals))
-  pos_idx <- vals > 0
-  inv_sqrt_vals[pos_idx] <- 1 / sqrt_vals[pos_idx]
-
-  Khalf  <- V %*% diag(sqrt_vals, length(sqrt_vals)) %*% t(V)
-  Kihalf <- V %*% diag(inv_sqrt_vals, length(inv_sqrt_vals)) %*% t(V)
-  dimnames(Khalf) <- dimnames(Ks)
-  dimnames(Kihalf) <- dimnames(Ks)
-
-  rank_est <- sum(vals > .Machine$double.eps)
-
-  list(Khalf = Khalf,
-       Kihalf = Kihalf,
-       evals = vals,
-       evecs = V,
-       rank = rank_est,
-       n_clamped = n_clamped)
+  Ksym <- .dkge_validate_kernel(K)
+  original <- .dkge_kernel_geometry(Ksym, tol = tol)
+  regularized <- jitter > 0
+  K_used <- if (regularized) Ksym + jitter * diag(nrow(Ksym)) else Ksym
+  # A positive jitter is an explicit positive-definite regularization. Do not
+  # immediately truncate that same ridge with the numerical support tolerance.
+  roots <- .dkge_kernel_geometry(K_used, tol = if (regularized) 0 else tol)
+  roots$jitter <- jitter
+  roots$regularized <- regularized
+  roots$original_rank <- original$rank
+  roots$original_nullity <- original$nullity
+  roots$n_clamped <- sum(original$evals_raw <= max(jitter, original$tolerance))
+  roots
 }
 
 #' Kernel alignment score

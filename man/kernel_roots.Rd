@@ -3,20 +3,26 @@
 \name{kernel_roots}
 \alias{kernel_roots}
 \alias{dkge_kernel_roots}
-\title{Robust kernel roots}
+\title{Positive-semidefinite kernel roots}
 \usage{
-kernel_roots(K, jitter = 1e-10)
+kernel_roots(K, jitter = 0, tol = 1e-10)
 
-dkge_kernel_roots(K, jitter = 1e-10)
+dkge_kernel_roots(K, jitter = 0, tol = 1e-10)
 }
 \arguments{
 \item{K}{Positive semi-definite kernel matrix.}
 
-\item{jitter}{Small diagonal jitter added before inversion.}
+\item{jitter}{Optional non-negative diagonal regularization added explicitly
+to \code{K} before computing roots. The default, zero, preserves an exact null
+space. Use a positive value only when changing the kernel geometry is
+scientifically intended.}
+
+\item{tol}{Relative eigentolerance used to define numerical support.}
 }
 \value{
-List with \code{Khalf}, \code{Kihalf}, eigenvalues, eigenvectors, and basic diagnostics.
+List with the exact square root, Moore--Penrose inverse square root,
+eigenstructure, support projectors, and rank diagnostics.
 }
 \description{
-Robust kernel roots
+Positive-semidefinite kernel roots
 }

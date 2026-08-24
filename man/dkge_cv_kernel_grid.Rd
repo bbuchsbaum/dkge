@@ -12,7 +12,9 @@ dkge_cv_kernel_grid(
   Omega_list = NULL,
   ridge = 0,
   w_method = "mfa_sigma1",
-  w_tau = 0.3
+  w_tau = 0.3,
+  validation_K = NULL,
+  kernel_rank_policy = c("full", "allow_singular")
 )
 }
 \arguments{
@@ -31,13 +33,25 @@ dkge_cv_kernel_grid(
 \item{w_method}{Subject-level weighting scheme passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
 
 \item{w_tau}{Shrinkage parameter toward equal weights passed to \code{\link[=dkge_fit]{dkge_fit()}}.}
+
+\item{validation_K}{Optional fixed q by q PSD matrix used to score every
+candidate. \code{NULL} (default) uses the identity. It affects scoring only;
+candidate \code{K} still determines the learned training subspace.}
+
+\item{kernel_rank_policy}{Kernel-support policy for selection. The default,
+\code{"full"}, requires \code{rank(K) = q}. Use \code{"allow_singular"} only when every
+candidate is intentionally allowed to define a quotient effect space.}
 }
 \value{
-List with the one-SE pick, best kernel, summary table, and raw scores.
+List with the pick, best kernel, candidate audit table (including
+kernel rank, nullity, condition, admissibility, and exclusion reason), raw
+fold scores, fixed validation diagnostics, and a saturation flag.
 }
 \description{
 Evaluates a named list of candidate design kernels using LOSO explained
-variance at a fixed rank.
+energy at a fixed rank. Every candidate is scored in the same fixed
+validation geometry, so a kernel cannot inflate its score by collapsing the
+target metric it is judged against.
 }
 \examples{
 \donttest{

@@ -16,5 +16,9 @@ test_that("LOSO CV rank selection is close to true rank in multi-factor toy", {
   ranks <- 1:6
   cv <- dkge_cv_rank_loso(sim$B_list, sim$X_list, sim$K, ranks)
   best_param <- cv$table$param[which.max(cv$table$mean)]
-  expect_equal(cv$pick, best_param)
+  best_row <- cv$table[cv$table$param == best_param, , drop = FALSE]
+  pick_row <- cv$table[cv$table$param == cv$pick, , drop = FALSE]
+  expect_true(cv$pick %in% ranks)
+  expect_lte(cv$pick, best_param)
+  expect_gte(pick_row$mean, best_row$mean - best_row$se - 1e-12)
 })
