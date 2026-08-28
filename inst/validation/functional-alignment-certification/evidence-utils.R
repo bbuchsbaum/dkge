@@ -53,9 +53,12 @@ dkfa_hash_file <- function(path) {
 }
 
 dkfa_relative_path <- function(path, root) {
-  path <- normalizePath(path, mustWork = TRUE)
-  root <- normalizePath(root, mustWork = TRUE)
-  prefix <- paste0(root, .Platform$file.sep)
+  # `normalizePath()` defaults to backslashes on Windows, whereas
+  # `.Platform$file.sep` and manifest records use forward slashes.  Canonical
+  # slash form makes the containment check and receipt names platform-neutral.
+  path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
+  prefix <- paste0(sub("/+$", "", root), "/")
   if (!startsWith(path, prefix)) {
     stop("Bundle file is outside its declared root: ", path, call. = FALSE)
   }
@@ -63,7 +66,10 @@ dkfa_relative_path <- function(path, root) {
 }
 
 dkfa_bundle_manifest <- function(paths, root) {
-  paths <- unique(vapply(paths, normalizePath, character(1), mustWork = TRUE))
+  paths <- unique(vapply(
+    paths, normalizePath, character(1),
+    winslash = "/", mustWork = TRUE
+  ))
   if (!length(paths) || any(file.info(paths)$isdir %in% TRUE)) {
     stop("A dependency bundle requires one or more files.", call. = FALSE)
   }
@@ -762,7 +768,7 @@ dkfa_known_warp_expected_schedule <- function(protocol) {
 }
 
 dkfa_tree_manifest <- function(root, roots = ".", exclude = character()) {
-  root <- normalizePath(root, mustWork = TRUE)
+  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
   paths <- unlist(lapply(roots, function(item) {
     absolute <- file.path(root, item)
     if (dir.exists(absolute)) {

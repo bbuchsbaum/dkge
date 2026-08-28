@@ -1196,11 +1196,14 @@ test_that("R build projection and docs overlay are explicit and fail closed", {
     "NAMESPACE", "R/code.R", "src/code.cpp", "man/topic.Rd",
     "vignettes/article.Rmd", "README.md", "inst/validation/helper.R",
     "inst/extdata/calibration.csv", "tests/testthat/test-projection.R",
-    "LICENSE", "NEWS.md", "CONTRIBUTING.md"
+    "LICENSE", "NEWS.md"
   )) {
     writeLines(paste("content", relative), file.path(live, relative))
     writeLines(paste("content", relative), file.path(built, relative))
   }
+  # Repository guidance is deliberately excluded by .Rbuildignore and is not
+  # part of the closed-world built-package projection.
+  writeLines("repository guidance", file.path(live, "CONTRIBUTING.md"))
   writeLines("url: https://example.org", file.path(live, "_pkgdown.yml"))
   writeLines("body {}", file.path(live, "pkgdown", "extra.css"))
 

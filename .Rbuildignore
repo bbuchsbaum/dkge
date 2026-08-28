@@ -9,6 +9,7 @@
 ^future$
 ^\.git$
 ^\.gitignore$
+^\.gitattributes$
 ^\.planning$
 ^repomix-output\.xml$
 ^repomix-output\.txt$

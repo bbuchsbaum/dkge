@@ -10,7 +10,7 @@ dkfa_normalize_dcf_value <- function(x) {
 }
 
 dkfa_raw_court_source_tree_hash <- function(root) {
-  root <- normalizePath(root, mustWork = TRUE)
+  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
   roots <- c("DESCRIPTION", "NAMESPACE", "R", "src")
   paths <- unlist(lapply(roots, function(path) {
     absolute <- file.path(root, path)
@@ -136,9 +136,7 @@ dkfa_verify_built_source <- function(live_root, built_root,
                                 names(built_files$files))
   file_bytes_match <- file_names_match &&
     identical(live_files$files, built_files$files)
-  shipped_payload_roots <- c(
-    "tests", "inst", "LICENSE", "NEWS.md", "CONTRIBUTING.md"
-  )
+  shipped_payload_roots <- c("tests", "inst", "LICENSE", "NEWS.md")
   live_shipped_payload <- dkfa_tree_manifest(
     live_root, shipped_payload_roots, excludes
   )
@@ -152,7 +150,7 @@ dkfa_verify_built_source <- function(live_root, built_root,
     identical(live_shipped_payload$files, built_shipped_payload$files)
   package_payload_roots <- c(
     "NAMESPACE", "R", "src", "tests", "inst", "LICENSE", "NEWS.md",
-    "CONTRIBUTING.md", "man", "vignettes", "README.md"
+    "man", "vignettes", "README.md"
   )
   live_package_payload <- dkfa_tree_manifest(
     live_root, package_payload_roots, excludes

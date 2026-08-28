@@ -399,8 +399,9 @@ dkge_infer_aligned <- function(
   inference <- match.arg(inference)
   correction <- match.arg(correction)
   .dkge_validate_inference_correction(inference, correction)
+  contrast_ids <- as.character(aligned_maps$contrast_ids)
   contrast_stub <- list(
-    contrasts = aligned_maps$contrast_ids,
+    contrasts = stats::setNames(contrast_ids, contrast_ids),
     values = aligned_maps$values,
     method = "aligned_reference_support"
   )
@@ -483,6 +484,9 @@ dkge_infer_aligned <- function(
   }
   contrast_ids <- as.character(contrast_ids %||%
                                  paste0("contrast", seq_len(n_contrasts)))
+  names(stats) <- contrast_ids
+  names(p_values) <- contrast_ids
+  names(p_adjusted) <- contrast_ids
   dimensions <- vapply(Ys, ncol, integer(1))
   names(dimensions) <- contrast_ids
 
@@ -634,9 +638,13 @@ dkge_infer_aligned <- function(
       length(contrast_results$contrasts) == n_contrasts) {
     contrast_ids <- contrast_results$contrasts
   }
-  names(dimensions) <- as.character(
+  contrast_ids <- as.character(
     contrast_ids %||% paste0("contrast", seq_len(n_contrasts))
   )
+  names(stats) <- contrast_ids
+  names(p_values) <- contrast_ids
+  names(df_vec) <- contrast_ids
+  names(dimensions) <- contrast_ids
 
   list(
     contrasts = contrast_results,

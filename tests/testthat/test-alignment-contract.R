@@ -29,7 +29,8 @@ make_contract_alignment <- function(
               identical(estimator_source, "same_data_rank_truncated"),
               !isTRUE(recompute_under_null))
     contrast <- suppressWarnings(dkge_contrast(
-      fit, c(1, -1, 0), method = "loso", align = FALSE
+      fit, cbind(task_vs_control = c(1, -1, 0)),
+      method = "loso", align = FALSE
     ))
     independent <- lapply(seq_len(S), function(s) {
       matrix(
@@ -292,8 +293,28 @@ test_that("aligned inference fails closed and labels any approximate override", 
     aligned, n_perm = 100, allow_approximate_alignment = TRUE
   )
   expect_s3_class(result, "dkge_inference")
+  expected_ids <- aligned$contrast_ids
+  expect_identical(names(result$statistics), expected_ids)
+  expect_identical(names(result$p_values), expected_ids)
+  expect_identical(names(result$p_adjusted), expected_ids)
+  expect_identical(names(result$significant), expected_ids)
+  expect_identical(
+    result$statistics[[expected_ids[[1L]]]], result$statistics[[1L]]
+  )
+  expect_identical(unique(as.data.frame(result)$contrast), expected_ids)
   expect_identical(result$metadata$alignment$status, "approximate")
   expect_true(result$metadata$alignment$approximate_override)
+  parametric <- dkge_infer_aligned(
+    aligned,
+    inference = "parametric",
+    correction = "none",
+    allow_approximate_alignment = TRUE
+  )
+  expect_identical(names(parametric$statistics), expected_ids)
+  expect_identical(names(parametric$p_values), expected_ids)
+  expect_identical(names(parametric$p_adjusted), expected_ids)
+  expect_identical(names(parametric$significant), expected_ids)
+  expect_identical(unique(as.data.frame(parametric)$contrast), expected_ids)
   mutated <- aligned
   mutated$values[[1L]][1L, 1L] <- mutated$values[[1L]][1L, 1L] + 1
   expect_error(
