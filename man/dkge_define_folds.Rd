@@ -12,6 +12,7 @@ dkge_define_folds(
   assignments = NULL,
   seed = NULL,
   align = FALSE,
+  partition = c("exact", "repeated", "partial"),
   ...
 )
 }
@@ -34,7 +35,14 @@ dkge_define_folds(
 
 \item{seed}{Random seed for reproducible fold assignment}
 
-\item{align}{Logical; if TRUE (default) compute Procrustes alignment/consensus when folds are evaluated.}
+\item{align}{Logical; if \code{TRUE}, compute Procrustes alignment/consensus when
+folds are evaluated. The default is \code{FALSE}.}
+
+\item{partition}{Contract for custom assessment sets. \code{"exact"} (default)
+requires a nonoverlapping partition covering every subject. \code{"repeated"}
+permits overlap but requires full coverage. \code{"partial"} permits incomplete
+coverage but remains nonoverlapping. Subject-collapsing consumers still
+require exactly one assessment per subject.}
 
 \item{...}{Additional arguments for specific fold types}
 }

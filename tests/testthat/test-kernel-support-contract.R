@@ -230,3 +230,62 @@ test_that("a zero-rank kernel fails before fitting", {
     class = "dkge_kernel_rank_error"
   )
 })
+
+make_moment_scale_fit <- function(scale = 1, K = diag(2), ridge = 0,
+                                  rank = 2L) {
+  effects <- c("e1", "e2")
+  B <- scale * diag(c(1, 1e-5))
+  rownames(B) <- effects
+  X <- diag(2)
+  colnames(X) <- effects
+  dimnames(K) <- list(effects, effects)
+  suppressWarnings(dkge_fit(
+    list(s1 = B, s2 = B),
+    list(s1 = X, s2 = X),
+    K = K, rank = rank, ridge = ridge,
+    w_method = "none", effect_scaling = "none"
+  ))
+}
+
+test_that("transformed-moment rank and subspace are invariant to beta scale", {
+  scales <- 10^seq(-10, 10, by = 5)
+  fits <- lapply(scales, make_moment_scale_fit)
+
+  expect_identical(vapply(fits, `[[`, integer(1), "rank"),
+                   rep(1L, length(scales)))
+  expect_identical(vapply(fits, `[[`, integer(1), "moment_rank"),
+                   rep(1L, length(scales)))
+  expect_identical(dkge_diagnostics(fits[[1]])$spectral,
+                   fits[[1]]$spectral_diagnostics)
+  reference <- tcrossprod(fits[[1]]$Khalf %*% fits[[1]]$U)
+  for (fit in fits[-1]) {
+    whitened <- fit$Khalf %*% fit$U
+    expect_equal(tcrossprod(whitened), reference, tolerance = 1e-8)
+    expect_equal(crossprod(fit$U, fit$K %*% fit$U), diag(fit$rank),
+                 tolerance = 1e-8)
+  }
+})
+
+test_that("ridge stays inside a singular kernel's numerical range", {
+  effects <- paste0("e", 1:3)
+  B <- diag(c(1, 0, 0))
+  rownames(B) <- effects
+  X <- diag(3)
+  colnames(X) <- effects
+  K <- diag(c(1, 1, 0))
+  dimnames(K) <- list(effects, effects)
+
+  fit <- suppressWarnings(dkge_fit(
+    list(s1 = B, s2 = B), list(s1 = X, s2 = X),
+    K = K, rank = 2L, ridge = 0.2,
+    w_method = "none", effect_scaling = "none"
+  ))
+
+  expect_equal(fit$rank, 2L)
+  expect_equal(fit$kernel_rank, 2L)
+  expect_equal(crossprod(fit$U, fit$K %*% fit$U), diag(2), tolerance = 1e-10)
+  expect_equal(fit$kernel_diagnostics$nullity, 1L)
+  expect_equal(unname(fit$kernel_support_projector %*% fit$Chat),
+               unname(fit$Chat),
+               tolerance = 1e-10)
+})

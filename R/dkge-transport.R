@@ -84,18 +84,50 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
   mu <- as.numeric(mu)
   nu <- as.numeric(nu)
   if (any(!is.finite(mu)) || any(!is.finite(nu)) ||
-      any(mu <= 0) || any(nu <= 0)) {
-    stop("`mu` and `nu` must contain finite, strictly positive masses.", call. = FALSE)
+      any(mu < 0) || any(nu < 0)) {
+    stop("`mu` and `nu` must contain finite, non-negative masses.", call. = FALSE)
   }
-  if (length(epsilon) != 1L || !is.finite(epsilon) || epsilon <= 0 ||
-      length(max_iter) != 1L || !is.finite(max_iter) || max_iter < 1 ||
-      length(tol) != 1L || !is.finite(tol) || tol <= 0) {
-    stop("`epsilon`, `max_iter`, and `tol` must be finite and positive.", call. = FALSE)
+  total_mu <- sum(mu)
+  total_nu <- sum(nu)
+  if (total_mu <= 0 || total_nu <= 0) {
+    stop("`mu` and `nu` must each have positive total mass.", call. = FALSE)
   }
-  max_iter <- as.integer(max_iter)
+  mass_tol <- 1e-8 * max(1, total_mu, total_nu)
+  if (abs(total_mu - total_nu) > mass_tol) {
+    stop("`mu` and `nu` must sum to the same total mass.", call. = FALSE)
+  }
+  epsilon <- .dkge_validate_positive_scalar(epsilon, "epsilon")
+  max_iter <- .dkge_validate_positive_integer(max_iter, "max_iter")
+  tol <- .dkge_validate_positive_scalar(tol, "tol")
   warm_start <- isTRUE(warm_start)
-  if (abs(sum(mu) - sum(nu)) > 1e-6) {
-    stop("mu and nu must sum to the same total mass")
+
+  positive_rows <- which(mu > 0)
+  positive_cols <- which(nu > 0)
+  if (length(positive_rows) < length(mu) ||
+      length(positive_cols) < length(nu)) {
+    supported <- .dkge_sinkhorn_plan(
+      C[positive_rows, positive_cols, drop = FALSE],
+      mu = mu[positive_rows], nu = nu[positive_cols],
+      epsilon = epsilon, max_iter = max_iter, tol = tol,
+      warm_start = warm_start, return_diagnostics = TRUE
+    )
+    plan <- matrix(0, nrow(C), ncol(C), dimnames = dimnames(C))
+    plan[positive_rows, positive_cols] <- supported$plan
+    supported$plan <- plan
+    supported$diagnostics$positive_row_support <- positive_rows
+    supported$diagnostics$positive_column_support <- positive_cols
+    if (!is.null(supported$log_u)) {
+      log_u <- rep(NA_real_, length(mu))
+      log_u[positive_rows] <- supported$log_u
+      supported$log_u <- log_u
+    }
+    if (!is.null(supported$log_v)) {
+      log_v <- rep(NA_real_, length(nu))
+      log_v[positive_cols] <- supported$log_v
+      supported$log_v <- log_v
+    }
+    if (return_diagnostics) return(supported)
+    return(plan)
   }
 
   sinkhorn_fun <- get0("sinkhorn_plan_cpp", mode = "function")
@@ -191,16 +223,26 @@ assign(".order", character(0), envir = .dkge_sinkhorn_cache)
   }
   if (value_type == "intensive") {
     target_mass <- colSums(plan)
-    if (any(!is.finite(target_mass)) || any(target_mass <= 0)) {
-      stop("The transport plan has an empty or invalid target marginal.", call. = FALSE)
+    if (any(!is.finite(target_mass)) || any(target_mass < 0)) {
+      stop("The transport plan has an invalid target marginal.", call. = FALSE)
     }
-    return(sweep(plan, 2L, target_mass, "/"))
+    operator <- matrix(0, nrow(plan), ncol(plan), dimnames = dimnames(plan))
+    positive <- target_mass > 0
+    operator[, positive] <- sweep(
+      plan[, positive, drop = FALSE], 2L, target_mass[positive], "/"
+    )
+    return(operator)
   }
   source_mass <- rowSums(plan)
-  if (any(!is.finite(source_mass)) || any(source_mass <= 0)) {
-    stop("The transport plan has an empty or invalid source marginal.", call. = FALSE)
+  if (any(!is.finite(source_mass)) || any(source_mass < 0)) {
+    stop("The transport plan has an invalid source marginal.", call. = FALSE)
   }
-  sweep(plan, 1L, source_mass, "/")
+  operator <- matrix(0, nrow(plan), ncol(plan), dimnames = dimnames(plan))
+  positive <- source_mass > 0
+  operator[positive, ] <- sweep(
+    plan[positive, , drop = FALSE], 1L, source_mass[positive], "/"
+  )
+  operator
 }
 
 #' Clear cached dual variables for Sinkhorn warm-starts

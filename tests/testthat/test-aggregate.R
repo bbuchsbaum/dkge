@@ -502,6 +502,105 @@ test_that("aggregate fit preserves the null space of a rank-deficient kernel", {
   expect_equal(roots$rank, 2L)
 })
 
+test_that("zero-signal aggregate fits report honest rank zero", {
+  target <- matrix(
+    0, nrow = 2, ncol = 3,
+    dimnames = list(c("r1", "r2"), paste0("f", 1:3))
+  )
+  K <- diag(c(1, 0))
+  dimnames(K) <- list(rownames(target), rownames(target))
+
+  fit <- dkge_aggregate_fit(target, K = K, rank = 2)
+
+  expect_equal(fit$rank, 0L)
+  expect_equal(dim(fit$U), c(2L, 0L))
+  expect_length(fit$singular_values, 0L)
+  expect_equal(fit$kernel_rank, 1L)
+  expect_equal(fit$moment_rank, 0L)
+  expect_equal(fit$effective_rank, 0L)
+})
+
+test_that("rank-zero aggregate resamples contribute explicit zero draws", {
+  row_ids <- c("c1", "c2")
+  feature_ids <- c("f1", "f2")
+  values <- list(
+    zero = matrix(0, 2, 2, dimnames = list(row_ids, feature_ids)),
+    signal = matrix(c(2, 0, 0, 1), 2, 2,
+                    dimnames = list(row_ids, feature_ids))
+  )
+  subject_data <- data.frame(
+    subject_id = names(values), stringsAsFactors = FALSE
+  )
+  target <- dkge_aggregate_target(values, subject_data)
+  K <- diag(2)
+  dimnames(K) <- list(target$row_ids, target$row_ids)
+  observed_fit <- dkge_aggregate_fit(target, K = K, rank = 2)
+  reference <- dkge:::.dkge_aggregate_alignment_reference(observed_fit)
+  contrasts <- matrix(
+    c(1, -1), 2, 1,
+    dimnames = list(target$row_ids, "cell_difference")
+  )
+  worker <- dkge:::.dkge_aggregate_bootstrap_worker(
+    spec = target$resample_spec,
+    reference = reference,
+    row_ids = target$row_ids,
+    center = "none",
+    statistic = "singular_value",
+    stat_args = list(component = 2L),
+    component_contrasts = contrasts,
+    component_scale = "score",
+    want_contrast = TRUE,
+    want_features = TRUE
+  )
+
+  draw <- worker(c(1L, 1L))
+
+  expect_equal(draw$stat, 0)
+  expect_identical(draw$alignment$method, "rank-zero")
+  expect_true(draw$alignment$rank_deficient)
+  expect_equal(draw$alignment$source_rank, 0L)
+  expect_equal(draw$alignment$reference_rank, 2L)
+  expect_equal(unname(draw$alignment$cosines), c(0, 0))
+  expect_equal(dim(draw$contrast), c(1L, 2L))
+  expect_true(all(draw$contrast == 0))
+  expect_equal(dim(draw$scores_feature), c(2L, 2L))
+  expect_true(all(draw$scores_feature == 0))
+
+  perm_values <- list(
+    s1 = matrix(1, 1, 1, dimnames = list("c1", "f1")),
+    s2 = matrix(1, 1, 1, dimnames = list("c1", "f1")),
+    s3 = matrix(-1, 1, 1, dimnames = list("c1", "f1")),
+    s4 = matrix(-1, 1, 1, dimnames = list("c1", "f1"))
+  )
+  perm_subjects <- data.frame(
+    subject_id = names(perm_values),
+    group = c("A", "A", "B", "B"),
+    stringsAsFactors = FALSE
+  )
+  perm_target <- dkge_aggregate_target(
+    perm_values, perm_subjects, group_vars = "group"
+  )
+  perm_K <- diag(2)
+  dimnames(perm_K) <- list(perm_target$row_ids, perm_target$row_ids)
+  perm_observed <- dkge_aggregate_fit(perm_target, K = perm_K, rank = 1)
+  perm_worker <- dkge:::.dkge_aggregate_permute_worker(
+    spec = perm_target$resample_spec,
+    reference = dkge:::.dkge_aggregate_alignment_reference(perm_observed),
+    row_ids = perm_target$row_ids,
+    group_vars = "group",
+    center = "none",
+    statistic = "singular_value",
+    stat_args = list(component = 1L)
+  )
+
+  perm_draw <- perm_worker(c(1L, 3L, 2L, 4L))
+
+  expect_equal(perm_draw$stat, 0)
+  expect_identical(perm_draw$alignment$method, "rank-zero")
+  expect_true(perm_draw$alignment$rank_deficient)
+  expect_equal(perm_draw$alignment$source_rank, 0L)
+})
+
 test_that("aggregate fit matches kernels on whichever dimnames are present", {
   set.seed(32)
   row_ids <- paste0("r", 1:5)
@@ -1448,11 +1547,13 @@ test_that("shared seed and B helpers behave identically in both layers", {
     expect_error(dkge_aggregate_permute(target, K = fx$K,
                                         statistic = "singular_value",
                                         B = bad, rank = 1),
-                 "`B` must be a positive integer")
+                 "`B`.*strictly positive integer",
+                 class = "dkge_validation_error")
     expect_error(dkge_aggregate_bootstrap(target, K = fx$K,
                                           statistic = "singular_value",
                                           B = bad, rank = 1),
-                 "`B` must be a positive integer")
+                 "`B`.*strictly positive integer",
+                 class = "dkge_validation_error")
   }
 
   # Both layers restore the caller's RNG stream after a seeded run.

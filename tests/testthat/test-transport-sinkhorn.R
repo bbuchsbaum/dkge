@@ -101,3 +101,51 @@ test_that("dkge_clear_sinkhorn_cache removes cached entries", {
   expect_equal(length(setdiff(ls(env, all.names = TRUE), ".order")), 0)
   expect_equal(length(get(".order", envir = env, inherits = FALSE)), 0)
 })
+
+test_that("Sinkhorn solves on positive support and re-expands zero masses", {
+  skip_if_not(exists("sinkhorn_plan_cpp", envir = asNamespace("dkge"),
+                     inherits = FALSE))
+  C <- matrix(c(0, 1, 1, 0), 2)
+  plan <- dkge:::.dkge_sinkhorn_plan(
+    C, mu = c(1, 0), nu = c(0.5, 0.5),
+    epsilon = 0.1, max_iter = 100L, tol = 1e-8,
+    warm_start = FALSE
+  )
+  expect_equal(rowSums(plan), c(1, 0), tolerance = 1e-7)
+  expect_equal(colSums(plan), c(0.5, 0.5), tolerance = 1e-7)
+  expect_equal(plan[2, ], c(0, 0), tolerance = 0)
+
+  supported <- dkge:::.dkge_sinkhorn_plan(
+    matrix(c(0, 1, 2, 1, 0, 1), nrow = 2),
+    mu = c(0.4, 0.6), nu = c(0.4, 0, 0.6),
+    epsilon = 0.1, max_iter = 100L, tol = 1e-8,
+    warm_start = FALSE, return_diagnostics = TRUE
+  )
+  expect_equal(colSums(supported$plan), c(0.4, 0, 0.6), tolerance = 1e-7)
+  expect_equal(supported$plan[, 2], c(0, 0), tolerance = 0)
+  expect_identical(supported$diagnostics$positive_column_support, c(1L, 3L))
+})
+
+test_that("native Sinkhorn rejects malformed warm starts", {
+  skip_if_not(exists("sinkhorn_plan_cpp", envir = asNamespace("dkge"),
+                     inherits = FALSE))
+  C <- matrix(c(0, 1, 1, 0), 2)
+  expect_error(
+    dkge:::sinkhorn_plan_cpp(
+      C, c(0.5, 0.5), c(0.5, 0.5),
+      epsilon = 0.1, max_iter = 10L, tol = 1e-6,
+      log_u_init = numeric(0), log_v_init = NULL,
+      keep_duals = TRUE
+    ),
+    "log_u_init.*length 2"
+  )
+  expect_error(
+    dkge:::sinkhorn_plan_cpp(
+      C, c(0.5, 0.5), c(0.5, 0.5),
+      epsilon = 0.1, max_iter = 10L, tol = 1e-6,
+      log_u_init = NULL, log_v_init = 0,
+      keep_duals = TRUE
+    ),
+    "log_v_init.*length 2"
+  )
+})

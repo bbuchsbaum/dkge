@@ -707,11 +707,9 @@
     eig_vectors_full <- eigChat$vectors
     eig_values_full <- eigChat$values
 
-    # Scale-relative positivity tolerance: an absolute 1e-12 spuriously collapses
-    # the rank when betas are small-magnitude (Chat eigenvalues scale as beta^2).
-    # Never looser than 1e-12 so well-scaled fits keep their existing behavior.
-    eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
-    effective_rank <- min(prepped$kernels$rank, sum(eig_values_full > eig_tol))
+    moment_contract <- .dkge_spectral_contract(eig_values_full)
+    eig_tol <- moment_contract$tolerance
+    effective_rank <- min(prepped$kernels$rank, moment_contract$rank)
     rank_reduced <- FALSE
 
     # Warn if requested rank exceeds effective rank
@@ -763,8 +761,12 @@
       U = U,
       sdev = sdev,
       rank = rank,
+      moment_rank = moment_contract$rank,
       effective_rank = effective_rank,
       rank_reduced = rank_reduced,
+      moment_tolerance = moment_contract$tolerance,
+      moment_absolute_tolerance = moment_contract$absolute_tolerance,
+      moment_relative_tolerance = moment_contract$relative_tolerance,
       cpca_info = cpca_info,
       solver = solver,
       jd = NULL
@@ -815,9 +817,9 @@
   eig_vectors_full <- jd_res$Q
   eig_values_full <- jd_res$diag_vals
 
-  # Scale-relative positivity tolerance (see the pooled branch above).
-  eig_tol <- min(1e-12, 1e-8 * max(eig_values_full, 0))
-  effective_rank <- min(prepped$kernels$rank, sum(eig_values_full > eig_tol))
+  moment_contract <- .dkge_spectral_contract(eig_values_full)
+  eig_tol <- moment_contract$tolerance
+  effective_rank <- min(prepped$kernels$rank, moment_contract$rank)
   rank_reduced <- FALSE
 
   # Warn if requested rank exceeds effective rank
@@ -891,8 +893,12 @@
     U = U,
     sdev = sdev,
     rank = rank,
+    moment_rank = moment_contract$rank,
     effective_rank = effective_rank,
     rank_reduced = rank_reduced,
+    moment_tolerance = moment_contract$tolerance,
+    moment_absolute_tolerance = moment_contract$absolute_tolerance,
+    moment_relative_tolerance = moment_contract$relative_tolerance,
     cpca_info = cpca_info,
     solver = solver,
     jd = jd_res
@@ -1289,14 +1295,41 @@
     miss_args = miss_args,
     ridge_input = ridge,
     rank_requested = prepped$rank_requested,
+    moment_rank = solved$moment_rank,
     effective_rank = solved$effective_rank,
-    rank_reduced = isTRUE(solved$rank_reduced) || prepped$rank < prepped$rank_requested
+    rank_reduced = isTRUE(solved$rank_reduced) || prepped$rank < prepped$rank_requested,
+    spectral_diagnostics = list(
+      absolute_tolerance = solved$moment_absolute_tolerance,
+      relative_tolerance = solved$moment_relative_tolerance,
+      kernel_tolerance = kernels$tolerance,
+      kernel_relative_tolerance = kernels$relative_tolerance,
+      moment_tolerance = solved$moment_tolerance,
+      kernel_rank = kernels$rank,
+      kernel_nullity = kernels$nullity,
+      moment_rank = solved$moment_rank,
+      effective_rank = solved$effective_rank
+    )
   )
 
   fit$representation <- representation$kind
   fit$representation_reasons <- representation$reasons
   fit$Chat_sym <- accum$Chat_sym
   fit$KU <- fit$K %*% fit$U
+  if (fit$rank > 0L) {
+    gram_error <- max(abs(crossprod(fit$U, fit$KU) - diag(fit$rank)))
+    if (!is.finite(gram_error) || gram_error > 1e-7) {
+      .dkge_abort(
+        sprintf(
+          paste0(
+            "Full-data DKGE basis failed the K-orthonormal postcondition ",
+            "(maximum Gram error %.3e)."
+          ),
+          gram_error
+        ),
+        "dkge_kernel_geometry_error"
+      )
+    }
+  }
   fit$scores_matrix <- fit$s
   .dkge_validate_block_factor(fit, X_concat)
 

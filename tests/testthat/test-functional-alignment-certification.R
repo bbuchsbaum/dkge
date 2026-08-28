@@ -268,9 +268,11 @@ test_that("v4 invalidation and v5-v9 succession are immutable", {
     candidate_source_tree_sha256 =
       "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400"
   )
-  expect_true(current$passed, info = paste(
-    names(current$checks)[!current$checks], collapse = ", "
-  ))
+  # The historical V9 protocol is source-bound. This successor changes
+  # executable source and packaged documentation, so the old certification
+  # must fail closed rather than silently certify the new candidate.
+  expect_false(current$passed)
+  expect_false(current$checks[["v8_supersession"]])
   expect_identical(
     current$protocol_v7_sha256,
     "c6d3a282b967bacef0f7da76a9192389e624e91075eccd3de4de648386f28487"
@@ -398,10 +400,15 @@ test_that("v8 supersession binds every retained execution and failure role", {
   )
   expected_source <-
     "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400"
-  expect_true(dkfa_validate_v8_supersession(
+  current <- dkfa_validate_v8_supersession(
     supersession, protocol_v8, root = certification_repo_root,
     candidate_source_tree_sha256 = expected_source
-  )$passed)
+  )
+  expect_false(current$passed)
+  expect_false(current$checks[["documentation_only_repair"]])
+  expect_true(all(current$checks[
+    names(current$checks) != "documentation_only_repair"
+  ]))
 
   path_functions <- list(
     source_test = dkfa_v8_source_test_paths,
@@ -423,6 +430,10 @@ test_that("v8 supersession binds every retained execution and failure role", {
       dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
       expect_true(file.copy(path, destination, overwrite = FALSE))
     }
+    expect_true(dkfa_validate_v8_supersession(
+      supersession, protocol_v8, root = sandbox,
+      candidate_source_tree_sha256 = expected_source
+    )$passed, info = paste("clean retained evidence must pass:", role))
     victim <- unname(path_functions[[role]](sandbox))[[1L]]
     writeLines(c(readLines(victim, warn = FALSE), "v8 mutation"), victim)
     expect_false(dkfa_validate_v8_supersession(
@@ -440,8 +451,9 @@ test_that("v8 supersession binds every retained execution and failure role", {
     payload, mutated_supersession, pretty = TRUE, auto_unbox = TRUE
   )
   expect_false(dkfa_validate_v8_supersession(
-    mutated_supersession, protocol_v8, root = certification_repo_root,
-    candidate_source_tree_sha256 = expected_source
+    mutated_supersession, protocol_v8,
+    candidate_source_tree_sha256 = expected_source,
+    verify_retained_evidence = FALSE
   )$passed)
 })
 

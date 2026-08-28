@@ -73,6 +73,17 @@
 
 ## Bug fixes
 
+* Numerical-rank decisions now use one scale-equivariant transformed-moment
+  tolerance across full fits, folds, LOSO, CV, and aggregate fits. Zero-signal
+  aggregates report rank zero, and rank-deficient resamples contribute exact
+  zeros for unavailable components instead of aborting; ridge remains inside
+  the kernel range; fold weight dimensions and custom assessment partitions
+  fail closed instead of recycling or silently duplicating subjects.
+* Scalar permutation and transport controls are validated before coercion.
+  Sinkhorn solves only on positive mass support, rejects malformed native warm
+  starts, and re-expands structural zero rows and columns. Classification
+  permutations require an independently fixed penalty and full representation
+  recomputation for cell-based modes.
 * Kernel roots now preserve exact positive-semidefinite support instead of
   jittering `null(K)` into artificial inverse directions. Fits cap latent rank
   at `rank(K)`, keep ridge inside `image(K)`, expose rank/nullity/condition

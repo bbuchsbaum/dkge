@@ -75,7 +75,12 @@ is enabled automatically for \code{mode = "cell_cross"} and disabled otherwise.}
 entries: \code{lambda_grid} (numeric vector of candidate penalties) and
 \code{lambda_fun} (function returning a lambda per target/fold with signature
 \verb{function(target, fold, method, default)}). Defaults to \code{NULL}, leaving the
-standard \code{lambda} behavior unchanged.}
+standard \code{lambda} behavior unchanged. Data-dependent selectors are
+descriptive-only: when \code{n_perm > 0}, supply one externally preselected
+positive scalar \code{lambda}. Cell and cell-cross permutations additionally
+require \code{randomization_recompute}, a callback that rebuilds the complete
+representation and returns finite named metrics for each randomized label
+vector.}
 
 \item{blocks}{Optional vector identifying within-subject blocks (e.g., runs or
 sessions) used to constrain permutations. Length must match the number of

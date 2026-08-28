@@ -294,6 +294,26 @@ test_that("mean max-T rejects retired center modes at the public boundary", {
   expect_no_error(dkge_inference_spec(B = 100, center = "mean"))
 })
 
+test_that("dkge_infer rejects invalid or unavailable procedures before fitting", {
+  expect_error(
+    dkge_infer(list(), 1, inference = "signflip", correction = "none",
+               n_perm = 0),
+    "finite whole number",
+    class = "dkge_inference_permutation_error"
+  )
+  expect_error(
+    dkge_infer(list(), 1, inference = "freedman-lane", correction = "none"),
+    "Freedman-Lane inference is not implemented",
+    class = "dkge_inference_compatibility_error"
+  )
+  expect_error(
+    dkge_infer(list(), 1, inference = "parametric", correction = "none",
+               alpha = 1.1),
+    "`alpha`.*1.1.*probability",
+    class = "dkge_validation_error"
+  )
+})
+
 test_that("sign-flip inputs and permutation counts fail closed", {
   Y <- matrix(
     seq_len(18), 6, 3,

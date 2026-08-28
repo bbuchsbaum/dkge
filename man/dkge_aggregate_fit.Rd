@@ -27,8 +27,9 @@ row names (or only column names) is validated and reordered on whichever
 labels are present. Rank-deficient PSD kernels keep a true square
 root and Moore--Penrose inverse root: null directions stay at zero.}
 
-\item{rank}{Number of components to retain. Requests larger than
-\code{min(nrow(Y), ncol(Y))} are capped with a message.}
+\item{rank}{Number of components to retain. Requests larger than the
+data/kernel cap are capped with a message. A zero-signal transformed
+moment returns an honest rank-zero fit.}
 
 \item{center}{Centering applied to the aggregate matrix before fitting.
 The default \code{"none"} keeps the grand mean in the decomposition, which makes
@@ -54,6 +55,8 @@ Object of class \code{dkge_aggregate_fit}. Notable fields:
 \code{\link[=dkge_aggregate_align]{dkge_aggregate_align()}} they are the energies of the \emph{rotated}
 components and are no longer sorted.}
 \item{eig_values}{Full length-q eigenvalue spectrum of \code{Chat}.}
+\item{kernel_rank,moment_rank,effective_rank}{Numerical support ranks for
+the aggregate kernel, transformed moment, and retained fit.}
 \item{Chat}{\eqn{K^{1/2} Y_c Y_c^\top K^{1/2}}. Both \code{Chat} and
 \code{eig_values} describe the data in the kernel metric and are
 invariant to the component rotation applied by \code{\link[=dkge_aggregate_align]{dkge_aggregate_align()}};

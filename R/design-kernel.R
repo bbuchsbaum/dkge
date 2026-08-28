@@ -405,9 +405,7 @@ helmert_contrasts <- function(Ls) {
 #' @export
 kernel_roots <- function(K, jitter = 0, tol = 1e-10) {
   if (is.null(jitter)) jitter <- 0
-  if (!is.numeric(jitter) || length(jitter) != 1L || !is.finite(jitter) || jitter < 0) {
-    stop("`jitter` must be NULL or a finite non-negative numeric scalar.", call. = FALSE)
-  }
+  jitter <- .dkge_validate_nonnegative_scalar(jitter, "jitter")
   Ksym <- .dkge_validate_kernel(K)
   original <- .dkge_kernel_geometry(Ksym, tol = tol)
   regularized <- jitter > 0
