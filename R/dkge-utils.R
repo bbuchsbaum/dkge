@@ -33,6 +33,79 @@ NULL
   stop(condition)
 }
 
+#' Validate one scalar against a named numeric domain
+#'
+#' Public scalar contracts must be checked before integer coercion can truncate
+#' fractional values or vector coercion can silently discard shape information.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_validate_scalar_domain <- function(x, arg, domain, predicate,
+                                         integer_result = FALSE) {
+  supplied <- if (!length(x)) {
+    "<empty>"
+  } else {
+    values <- paste(utils::head(as.character(x), 5L), collapse = ", ")
+    if (length(x) > 5L) paste0(values, ", ...") else values
+  }
+  valid <- is.numeric(x) && is.null(dim(x)) && length(x) == 1L &&
+    is.finite(x) && isTRUE(predicate(x))
+  if (!valid) {
+    .dkge_abort(
+      sprintf(
+        "`%s` supplied length %d value(s): %s; expected %s.",
+        arg, length(x), supplied, domain
+      ),
+      "dkge_validation_error"
+    )
+  }
+  if (integer_result) as.integer(x) else as.numeric(x)
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_positive_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite positive scalar", function(value) value > 0
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_nonnegative_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite non-negative scalar", function(value) value >= 0
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_integer_scalar <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a finite integer-valued scalar",
+    function(value) value == trunc(value), integer_result = TRUE
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_positive_integer <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a strictly positive integer",
+    function(value) value > 0 && value == trunc(value),
+    integer_result = TRUE
+  )
+}
+
+#' @keywords internal
+#' @noRd
+.dkge_validate_probability <- function(x, arg) {
+  .dkge_validate_scalar_domain(
+    x, arg, "a probability in the closed interval [0, 1]",
+    function(value) value >= 0 && value <= 1
+  )
+}
+
 #' Signal a stable DKGE warning condition
 #'
 #' @param message User-facing warning message.
@@ -283,6 +356,51 @@ NULL
   )
 }
 
+#' Scale-equivariant spectral rank contract
+#'
+#' The smallest positive normal double protects the exactly-zero case without
+#' imposing a fixed data scale. All transformed-moment rank decisions use the
+#' same relative threshold, so multiplying betas by a positive constant cannot
+#' change the selected rank while the spectrum remains representable.
+#'
+#' @param values Finite numeric spectrum.
+#' @param absolute_tolerance Non-negative absolute tolerance.
+#' @param relative_tolerance Non-negative tolerance relative to spectral scale.
+#' @return Applied tolerance, scale, positive mask, and numerical rank.
+#' @keywords internal
+#' @noRd
+.dkge_spectral_contract <- function(
+    values,
+    absolute_tolerance = .Machine$double.xmin,
+    relative_tolerance = 1e-8) {
+  if (!is.numeric(values) || any(!is.finite(values))) {
+    .dkge_abort(
+      "A finite numeric spectrum is required for rank selection.",
+      "dkge_spectral_error"
+    )
+  }
+  if (!is.numeric(absolute_tolerance) || length(absolute_tolerance) != 1L ||
+      !is.finite(absolute_tolerance) || absolute_tolerance < 0 ||
+      !is.numeric(relative_tolerance) || length(relative_tolerance) != 1L ||
+      !is.finite(relative_tolerance) || relative_tolerance < 0) {
+    .dkge_abort(
+      "Spectral absolute and relative tolerances must be finite non-negative scalars.",
+      "dkge_spectral_error"
+    )
+  }
+  scale <- if (length(values)) max(abs(values)) else 0
+  tolerance <- absolute_tolerance + relative_tolerance * scale
+  positive <- values > tolerance
+  list(
+    absolute_tolerance = absolute_tolerance,
+    relative_tolerance = relative_tolerance,
+    scale = scale,
+    tolerance = tolerance,
+    positive = positive,
+    rank = as.integer(sum(positive))
+  )
+}
+
 #' Compact public-facing kernel diagnostics
 #'
 #' @param geometry Result from `.dkge_kernel_geometry()`.
@@ -427,11 +545,7 @@ NULL
 #' @keywords internal
 #' @noRd
 .dkge_validate_resample_B <- function(B) {
-  B <- suppressWarnings(as.integer(B))
-  if (length(B) != 1L || is.na(B) || B < 1L) {
-    stop("`B` must be a positive integer.", call. = FALSE)
-  }
-  B
+  .dkge_validate_positive_integer(B, "B")
 }
 
 #' Enter a seeded RNG scope

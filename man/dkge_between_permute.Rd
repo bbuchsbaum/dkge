@@ -7,7 +7,7 @@
 dkge_between_permute(
   object,
   terms = NULL,
-  method = c("freedman_lane", "rotation"),
+  method = NULL,
   B = 999L,
   blocks = NULL,
   seed = NULL,
@@ -25,9 +25,10 @@ dkge_between_permute(
 \code{NULL}, all non-intercept formula terms except those listed in
 \code{object$design$nuisance} are tested.}
 
-\item{method}{Resampling method. \code{"rotation"} uses Haar rotations in the
-orthogonal complement of the reduced design; \code{"freedman_lane"} permutes
-reduced-model residual rows.}
+\item{method}{Resampling method, which must be chosen explicitly.
+\code{"rotation"} uses Haar rotations in the orthogonal complement of the
+reduced design; \code{"freedman_lane"} permutes reduced-model residual rows.
+Neither qualified method is a scientifically neutral default.}
 
 \item{B}{Number of rotations or permutations.}
 

@@ -117,6 +117,74 @@ test_that("dkge_define_folds(subject): reproducible seeds, full coverage, near-b
   expect_output(print(f1), paste0("Folds: ", k))
 })
 
+test_that("fold definition restores caller RNG state", {
+  fit <- .make_fit(S = 6)
+  set.seed(77)
+  before <- .Random.seed
+  invisible(dkge_define_folds(fit, type = "subject", k = 3, seed = 9))
+  expect_identical(.Random.seed, before)
+
+  saved_seed <- .Random.seed
+  on.exit(assign(".Random.seed", saved_seed, envir = .GlobalEnv), add = TRUE)
+  rm(".Random.seed", envir = .GlobalEnv)
+  invisible(dkge_define_folds(fit, type = "subject", k = 3, seed = 9))
+  expect_false(exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+})
+
+test_that("custom folds declare partition semantics and consumers fail closed", {
+  fit <- .make_fit(S = 6)
+  expect_identical(
+    eval(formals(dkge_define_folds)$type),
+    c("subject", "time", "run", "custom")
+  )
+  expect_error(
+    dkge_define_folds(
+      fit, type = "custom",
+      assignments = list(c(1L, 2L), c(2L, 3L, 4L, 5L, 6L))
+    ),
+    "nonoverlapping partition",
+    class = "dkge_fold_partition_error"
+  )
+  expect_error(
+    dkge_define_folds(
+      fit, type = "custom",
+      assignments = list(c(1L, 2L), c(3L, 4L))
+    ),
+    "cover every subject",
+    class = "dkge_fold_partition_error"
+  )
+
+  repeated <- dkge_define_folds(
+    fit, type = "custom",
+    assignments = list(c(1L, 2L), c(2L, 3L, 4L, 5L, 6L)),
+    partition = "repeated"
+  )
+  expect_true(repeated$metadata$overlap)
+  expect_identical(repeated$metadata$partition, "repeated")
+  expect_error(
+    dkge:::.dkge_normalize_folds(
+      repeated, fit, consumer = "K-fold contrasts"
+    ),
+    "K-fold contrasts does not support repeated assessment sets",
+    class = "dkge_fold_partition_error"
+  )
+
+  partial <- dkge_define_folds(
+    fit, type = "custom",
+    assignments = list(c(1L, 2L), c(3L, 4L)),
+    partition = "partial"
+  )
+  expect_equal(partial$metadata$coverage, 4L)
+  expect_identical(partial$metadata$partition, "partial")
+  expect_error(
+    dkge:::.dkge_normalize_folds(
+      partial, fit, consumer = "DKGE classification"
+    ),
+    "DKGE classification does not support incomplete assessment sets.*4 of 6",
+    class = "dkge_fold_partition_error"
+  )
+})
+
 # ------------------------- 2) k = S reproduces LOSO: values match; bases are K-orthonormal & subspace-equal -------------------------
 test_that(".dkge_contrast_kfold: with k=S equals LOSO and bases are valid", {
   skip_on_cran()

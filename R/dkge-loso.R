@@ -40,10 +40,9 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
 
   eig_minus <- eigen(Chat_minus, symmetric = TRUE)
   r <- ncol(fit$U)
-  eig_scale <- max(eig_minus$values, 0)
-  eig_tol <- if (eig_scale > 0) 1e-10 * eig_scale else 0
+  fold_contract <- .dkge_spectral_contract(eig_minus$values)
   fold_rank <- min(fit$kernel_rank %||% qr(fit$K)$rank,
-                   sum(eig_minus$values > eig_tol))
+                   fold_contract$rank)
   if (fold_rank < r) {
     .dkge_abort(
       sprintf(

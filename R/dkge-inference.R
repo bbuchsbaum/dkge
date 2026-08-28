@@ -286,6 +286,21 @@ dkge_infer <- function(fit, contrasts,
   inference <- match.arg(inference)
   correction <- match.arg(correction)
   .dkge_validate_inference_correction(inference, correction)
+  alpha <- .dkge_validate_probability(alpha, "alpha")
+  if (identical(inference, "freedman-lane")) {
+    .dkge_abort(
+      paste0(
+        "Freedman-Lane inference is not implemented in `dkge_infer()`; ",
+        "use `dkge_freedman_lane()` with the required time-series adapters."
+      ),
+      "dkge_inference_compatibility_error"
+    )
+  }
+  if (identical(inference, "signflip")) {
+    n_perm <- .dkge_validate_permutation_count(
+      n_perm, "n_perm", minimum = 100L
+    )
+  }
 
   if (isTRUE(transported) || !is.null(transport)) {
     .dkge_abort(
@@ -399,6 +414,12 @@ dkge_infer_aligned <- function(
   inference <- match.arg(inference)
   correction <- match.arg(correction)
   .dkge_validate_inference_correction(inference, correction)
+  alpha <- .dkge_validate_probability(alpha, "alpha")
+  if (identical(inference, "signflip")) {
+    n_perm <- .dkge_validate_permutation_count(
+      n_perm, "n_perm", minimum = 100L
+    )
+  }
   contrast_ids <- as.character(aligned_maps$contrast_ids)
   contrast_stub <- list(
     contrasts = stats::setNames(contrast_ids, contrast_ids),

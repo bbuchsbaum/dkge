@@ -27,6 +27,7 @@ dkge_test_between_null_experiment <- function(n = 18,
   perm <- dkge_between_permute(
     fit,
     terms = c("group", "trait", "group:trait"),
+    method = "freedman_lane",
     B = B,
     seed = seed + 10000L
   )

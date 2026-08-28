@@ -74,6 +74,7 @@ dkge_diagnostics <- function(fit) {
     q = nrow(fit$U),
     kernel = fit$kernel_diagnostics %||%
       .dkge_kernel_diagnostics(.dkge_kernel_geometry(fit$K)),
+    spectral = fit$spectral_diagnostics %||% NULL,
     n_subjects = length(fit$Btil),
     voxel_weights = voxel_stats,
     weight_spec = fit$weight_spec,
@@ -226,10 +227,9 @@ dkge_one_se <- function(scores, param_col = "param", metric_col = "score") {
 #' @noRd
 .dkge_cv_fold_basis <- function(Chat, fit, rank) {
   eg <- eigen((Chat + t(Chat)) / 2, symmetric = TRUE)
-  scale <- max(eg$values, 0)
-  eig_tol <- if (scale > 0) 1e-10 * scale else 0
+  fold_contract <- .dkge_spectral_contract(eg$values)
   available <- min(fit$kernel_rank %||% .dkge_kernel_geometry(fit$K)$rank,
-                   sum(eg$values > eig_tol))
+                   fold_contract$rank)
   if (rank > available) {
     return(list(basis = NULL, eigen = eg, available_rank = available))
   }

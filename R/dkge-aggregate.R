@@ -565,8 +565,9 @@ dkge_aggregate_target <- function(values,
 #'   row names (or only column names) is validated and reordered on whichever
 #'   labels are present. Rank-deficient PSD kernels keep a true square
 #'   root and Moore--Penrose inverse root: null directions stay at zero.
-#' @param rank Number of components to retain. Requests larger than
-#'   `min(nrow(Y), ncol(Y))` are capped with a message.
+#' @param rank Number of components to retain. Requests larger than the
+#'   data/kernel cap are capped with a message. A zero-signal transformed
+#'   moment returns an honest rank-zero fit.
 #' @param center Centering applied to the aggregate matrix before fitting.
 #'   The default `"none"` keeps the grand mean in the decomposition, which makes
 #'   the leading component largely a mean-level effect; under
@@ -586,6 +587,8 @@ dkge_aggregate_target <- function(values,
 #'       [dkge_aggregate_align()] they are the energies of the *rotated*
 #'       components and are no longer sorted.}
 #'     \item{eig_values}{Full length-q eigenvalue spectrum of \code{Chat}.}
+#'     \item{kernel_rank,moment_rank,effective_rank}{Numerical support ranks for
+#'       the aggregate kernel, transformed moment, and retained fit.}
 #'     \item{Chat}{\eqn{K^{1/2} Y_c Y_c^\top K^{1/2}}. Both \code{Chat} and
 #'       \code{eig_values} describe the data in the kernel metric and are
 #'       invariant to the component rotation applied by [dkge_aggregate_align()];
@@ -628,10 +631,7 @@ dkge_aggregate_fit <- function(target,
 
   requested_rank <- rank
   rank <- rank %||% min(q, ncol(Yc))
-  rank <- as.integer(rank)
-  if (length(rank) != 1L || is.na(rank) || rank < 1L) {
-    stop("`rank` must be a positive integer.", call. = FALSE)
-  }
+  rank <- .dkge_validate_positive_integer(rank, "rank")
   roots <- .dkge_aggregate_kernel_roots(K)
   if (roots$rank == 0L) {
     .dkge_abort("Aggregate kernel has numerical rank zero.",
@@ -648,11 +648,11 @@ dkge_aggregate_fit <- function(target,
   Chat <- (Chat + t(Chat)) / 2
   eg <- eigen(Chat, symmetric = TRUE)
   vals <- pmax(eg$values, 0)
-  chat_tol <- 1e-10 * max(1, max(vals))
-  rank <- min(rank, max(1L, sum(vals > chat_tol)))
+  moment_contract <- .dkge_spectral_contract(vals)
+  rank <- min(rank, moment_contract$rank)
   keep <- seq_len(rank)
   U <- roots$Kihalf %*% eg$vectors[, keep, drop = FALSE]
-  colnames(U) <- paste0("LV", keep)
+  colnames(U) <- if (rank > 0L) paste0("LV", keep) else character(0)
   rownames(U) <- rownames(Yc)
   saliences <- K %*% U
   dimnames(saliences) <- dimnames(U)
@@ -676,6 +676,17 @@ dkge_aggregate_fit <- function(target,
     Y = Yc,
     center = center,
     rank = rank,
+    kernel_rank = roots$rank,
+    kernel_nullity = roots$nullity,
+    moment_rank = moment_contract$rank,
+    effective_rank = rank,
+    spectral_diagnostics = list(
+      absolute_tolerance = moment_contract$absolute_tolerance,
+      relative_tolerance = moment_contract$relative_tolerance,
+      kernel_tolerance = roots$tolerance,
+      kernel_relative_tolerance = roots$relative_tolerance,
+      moment_tolerance = moment_contract$tolerance
+    ),
     kernel_info = kernel_info,
     estimand = "aggregate_cell_mean",
     call = match.call()

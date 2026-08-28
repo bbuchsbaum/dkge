@@ -29,6 +29,30 @@ test_that("dkge_inference_spec records the supported mean statistic", {
                class = "dkge_inference_center_error")
 })
 
+test_that("public scalar specifications reject before coercion", {
+  centroids <- list(matrix(0, 2, 3))
+  expect_error(
+    dkge_inference_spec(B = 1.9),
+    "`B`.*1.9.*strictly positive integer",
+    class = "dkge_validation_error"
+  )
+  expect_error(
+    dkge_transport_spec(centroids, max_iter = 2.5),
+    "`max_iter`.*2.5.*strictly positive integer",
+    class = "dkge_validation_error"
+  )
+  expect_error(
+    dkge_transport_spec(centroids, medoid = 1.5),
+    "`medoid`.*1.5.*strictly positive integer",
+    class = "dkge_validation_error"
+  )
+  expect_error(
+    kernel_roots(diag(2), jitter = c(1e-10, 1e-8)),
+    "`jitter`.*length 2.*non-negative scalar",
+    class = "dkge_validation_error"
+  )
+})
+
 test_that("dkge_classification_spec stores metadata", {
   spec <- expect_no_warning(dkge_classification_spec(targets = ~ condition,
                                                      method = "logit",

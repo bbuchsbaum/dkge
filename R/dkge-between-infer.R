@@ -13,9 +13,10 @@
 #' @param terms Character vector of terms or model-matrix columns to test. When
 #'   `NULL`, all non-intercept formula terms except those listed in
 #'   `object$design$nuisance` are tested.
-#' @param method Resampling method. `"rotation"` uses Haar rotations in the
-#'   orthogonal complement of the reduced design; `"freedman_lane"` permutes
-#'   reduced-model residual rows.
+#' @param method Resampling method, which must be chosen explicitly.
+#'   `"rotation"` uses Haar rotations in the orthogonal complement of the
+#'   reduced design; `"freedman_lane"` permutes reduced-model residual rows.
+#'   Neither qualified method is a scientifically neutral default.
 #' @param B Number of rotations or permutations.
 #' @param blocks Optional exchangeability blocks of length `n_subjects`.
 #' @param seed Optional random seed.
@@ -99,7 +100,7 @@
 #' @export
 dkge_between_permute <- function(object,
                                  terms = NULL,
-                                 method = c("freedman_lane", "rotation"),
+                                 method = NULL,
                                  B = 999L,
                                  blocks = NULL,
                                  seed = NULL,
@@ -109,7 +110,17 @@ dkge_between_permute <- function(object,
                                  feature_adjust = c("none", "fdr", "maxT"),
                                  parallel = FALSE) {
   stopifnot(inherits(object, "dkge_between_rrr"))
-  method <- match.arg(method)
+  if (is.null(method)) {
+    .dkge_abort(
+      paste0(
+        "`method` must be chosen explicitly as `\"rotation\"` or ",
+        "`\"freedman_lane\"`; neither qualified procedure is a neutral ",
+        "default."
+      ),
+      "dkge_inference_compatibility_error"
+    )
+  }
+  method <- match.arg(method, c("freedman_lane", "rotation"))
   statistic <- match.arg(statistic)
   scope <- match.arg(scope)
   feature_adjust <- match.arg(feature_adjust)

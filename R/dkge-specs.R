@@ -58,12 +58,17 @@ dkge_transport_spec <- function(centroids,
   if (!is.null(sizes)) {
     stopifnot(is.list(sizes), length(sizes) == length(centroids))
   }
-  medoid <- as.integer(medoid)
+  medoid <- .dkge_validate_positive_integer(medoid, "medoid")
   if (medoid < 1L || medoid > length(centroids)) {
     stop("`medoid` must index one of the provided centroid lists")
   }
-  stopifnot(epsilon > 0, max_iter > 0, tol > 0, lambda_emb >= 0,
-            lambda_spa >= 0, sigma_mm > 0, lambda_size >= 0)
+  epsilon <- .dkge_validate_positive_scalar(epsilon, "epsilon")
+  max_iter <- .dkge_validate_positive_integer(max_iter, "max_iter")
+  tol <- .dkge_validate_positive_scalar(tol, "tol")
+  lambda_emb <- .dkge_validate_nonnegative_scalar(lambda_emb, "lambda_emb")
+  lambda_spa <- .dkge_validate_nonnegative_scalar(lambda_spa, "lambda_spa")
+  sigma_mm <- .dkge_validate_positive_scalar(sigma_mm, "sigma_mm")
+  lambda_size <- .dkge_validate_nonnegative_scalar(lambda_size, "lambda_size")
 
   spec <- list(
     centroids = centroids,
@@ -72,7 +77,7 @@ dkge_transport_spec <- function(centroids,
     method = method,
     mapper = mapper,
     epsilon = epsilon,
-    max_iter = as.integer(max_iter),
+    max_iter = max_iter,
     tol = tol,
     lambda_emb = lambda_emb,
     lambda_spa = lambda_spa,
@@ -105,7 +110,7 @@ dkge_inference_spec <- function(B = 2000L,
                                 tail = c("two.sided", "greater", "less"),
                                 center = c("mean", "median", "none"),
                                 allow_approximate_alignment = FALSE) {
-  stopifnot(B > 0)
+  B <- .dkge_validate_resample_B(B)
   tail <- match.arg(tail)
   center <- match.arg(center)
   if (!identical(center, "mean")) {
@@ -124,7 +129,7 @@ dkge_inference_spec <- function(B = 2000L,
     .dkge_abort("`allow_approximate_alignment` must be TRUE or FALSE.",
                 "dkge_inference_spec_error")
   }
-  structure(list(B = as.integer(B), tail = tail, center = center,
+  structure(list(B = B, tail = tail, center = center,
                  allow_approximate_alignment = allow_approximate_alignment),
             class = c("dkge_inference_spec", "list"))
 }

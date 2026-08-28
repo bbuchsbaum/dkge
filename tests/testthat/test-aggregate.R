@@ -502,6 +502,24 @@ test_that("aggregate fit preserves the null space of a rank-deficient kernel", {
   expect_equal(roots$rank, 2L)
 })
 
+test_that("zero-signal aggregate fits report honest rank zero", {
+  target <- matrix(
+    0, nrow = 2, ncol = 3,
+    dimnames = list(c("r1", "r2"), paste0("f", 1:3))
+  )
+  K <- diag(c(1, 0))
+  dimnames(K) <- list(rownames(target), rownames(target))
+
+  fit <- dkge_aggregate_fit(target, K = K, rank = 2)
+
+  expect_equal(fit$rank, 0L)
+  expect_equal(dim(fit$U), c(2L, 0L))
+  expect_length(fit$singular_values, 0L)
+  expect_equal(fit$kernel_rank, 1L)
+  expect_equal(fit$moment_rank, 0L)
+  expect_equal(fit$effective_rank, 0L)
+})
+
 test_that("aggregate fit matches kernels on whichever dimnames are present", {
   set.seed(32)
   row_ids <- paste0("r", 1:5)
@@ -1448,11 +1466,13 @@ test_that("shared seed and B helpers behave identically in both layers", {
     expect_error(dkge_aggregate_permute(target, K = fx$K,
                                         statistic = "singular_value",
                                         B = bad, rank = 1),
-                 "`B` must be a positive integer")
+                 "`B`.*strictly positive integer",
+                 class = "dkge_validation_error")
     expect_error(dkge_aggregate_bootstrap(target, K = fx$K,
                                           statistic = "singular_value",
                                           B = bad, rank = 1),
-                 "`B` must be a positive integer")
+                 "`B`.*strictly positive integer",
+                 class = "dkge_validation_error")
   }
 
   # Both layers restore the caller's RNG stream after a seeded run.

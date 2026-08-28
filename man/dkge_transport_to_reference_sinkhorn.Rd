@@ -52,8 +52,6 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 \item{reference_subject}{Integer index of the fixed reference subject
 (1-based). This argument does not select or certify a medoid.}
 
-\item{medoid}{Deprecated name for \code{reference_subject}.}
-
 \item{lambda_emb, lambda_spa}{Cost weights for embedding and spatial terms.}
 
 \item{sigma_mm}{Spatial rescaling (millimetres).}
@@ -70,6 +68,8 @@ cost-and-mass problem.}
 \item{transport_cache}{Optional fitted alignment returned by
 \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}. Cached operators are reused only after every
 structural input is fingerprint-validated.}
+
+\item{medoid}{Deprecated name for \code{reference_subject}.}
 
 \item{return_plans}{Logical; if TRUE, include transport plans in the output.}
 }
