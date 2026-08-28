@@ -146,25 +146,29 @@ test_that("dkge_predict zero-fills missing effects and reports coverage", {
 })
 
 
-test_that("latent loadings transport to medoid", {
+test_that("latent loadings self-transport the reference", {
   centroids <- context_fixture$centroids
   loadings <- dkge_predict_loadings(fit_fixture, context_fixture$betas)
-  transport <- dkge_transport_loadings_to_medoid(fit_fixture, medoid = 1,
+  transport <- suppressWarnings(dkge_transport_loadings_to_medoid(fit_fixture, medoid = 1,
                                                  centroids = centroids,
-                                                 loadings = loadings)
+                                                 loadings = loadings))
   first_component <- transport$subjects[[1]][1, ]
-  expect_equal(first_component, loadings[[1]][, 1], tolerance = 1e-6)
+  expect_equal(first_component,
+               as.numeric(transport$cache$operators[[1]] %*% loadings[[1]][, 1]),
+               tolerance = 1e-8)
 })
 
-test_that("contrast transport to medoid matches loadings", {
+test_that("legacy contrast transport applies the fitted self-map", {
   centroids <- context_fixture$centroids
   contrast <- dkge_contrast(fit_fixture, c(1, -1, 0), method = "loso")
-  res <- dkge_transport_contrasts_to_medoid(fit_fixture, contrast, medoid = 1,
-                                            centroids = centroids,
-                                            betas = context_fixture$betas)
+  res <- suppressWarnings(dkge_transport_contrasts_to_medoid(
+    fit_fixture, contrast, medoid = 1, centroids = centroids
+  ))
   first_subject <- res[[1]]$subj_values[1, ]
   base_vals <- contrast$values[[1]][[1]]
-  expect_equal(first_subject, base_vals, tolerance = 1e-6)
+  expect_equal(first_subject,
+               as.numeric(res[[1]]$operators[[1]] %*% base_vals),
+               tolerance = 1e-8)
 })
 
 test_that("transform of a training subject applies the voxel prior", {

@@ -1,0 +1,28 @@
+{
+  "check": "known_warp_serial_parallel_determinism",
+  "passed": true,
+  "seeds": [
+    91201,
+    91202
+  ],
+  "tolerance": 1e-12,
+  "excluded_nondeterministic_fields": "runtime_seconds",
+  "compared_fields": [
+    "seed",
+    "arm",
+    "maxT_statistic",
+    "p_value",
+    "reject",
+    "correlation",
+    "rmse",
+    "amplitude_ratio",
+    "positive_peak_error",
+    "negative_peak_error",
+    "latent_error",
+    "point_spread",
+    "template_converged",
+    "template_iterations"
+  ],
+  "parallel_run_id": "known-warp-6d6c84f34e5b-9ce7d46a4e2e",
+  "detail": "identical within tolerance"
+}

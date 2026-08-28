@@ -11,12 +11,22 @@ test_that("dkge_transport_spec validates medoid and shape", {
   expect_error(dkge_transport_spec(list(), medoid = 1), "length")
 })
 
-test_that("dkge_inference_spec records arguments", {
-  spec <- dkge_inference_spec(B = 500, tail = "less", center = "median")
+test_that("dkge_inference_spec records the supported mean statistic", {
+  spec <- dkge_inference_spec(B = 500, tail = "less", center = "mean")
   expect_s3_class(spec, "dkge_inference_spec")
   expect_equal(spec$B, 500L)
   expect_equal(spec$tail, "less")
-  expect_equal(spec$center, "median")
+  expect_equal(spec$center, "mean")
+  expect_false(spec$allow_approximate_alignment)
+  expect_true(dkge_inference_spec(
+    B = 100, allow_approximate_alignment = TRUE
+  )$allow_approximate_alignment)
+  expect_error(
+    dkge_inference_spec(allow_approximate_alignment = NA),
+    class = "dkge_inference_spec_error"
+  )
+  expect_error(suppressWarnings(dkge_inference_spec(center = "median")),
+               class = "dkge_inference_center_error")
 })
 
 test_that("dkge_classification_spec stores metadata", {

@@ -35,6 +35,7 @@ articles:
   contents:
   - dkge-spatial-regularization
   - dkge-dense-rendering
+  - dkge-functional-alignment
   - dkge-anchors
   - dkge-performance
 - title: Extras
@@ -52,7 +53,10 @@ reference:
   desc: Primary functions for fitting, contrasting, classifying, and predicting
   contents:
   - dkge
+  - print.dkge
   - dkge_contrast
+  - dkge_contrast_diagnostics
+  - dkge_component_contrasts
   - dkge_classify
   - dkge_infer
   - dkge_predict
@@ -60,6 +64,25 @@ reference:
   - dkge_bootstrap_analytic
   - dkge_bootstrap_projected
   - dkge_bootstrap_qspace
+- title: Functional alignment
+  desc: Typed correspondence, reference support, group templates, inference, and rendering
+  contents:
+  - dkge_alignment_features
+  - dkge_alignment_feature_control
+  - dkge_residualize_alignment_features
+  - dkge_alignment_eligibility
+  - dkge_select_reference_subject
+  - dkge_reference_support
+  - dkge_prepare_alignment
+  - dkge_transport_contrasts_to_reference
+  - dkge_functional_template
+  - dkge_fit_functional_template
+  - dkge_align_to_template
+  - dkge_aligned_maps
+  - dkge_infer_aligned
+  - dkge_renderer
+  - dkge_render_aligned
+  - dkge_paint_reference_map
 - title: Advanced — model construction
   desc: Lower-level functions for custom workflows
   contents:
@@ -76,7 +99,6 @@ reference:
   - dkge_mapper
   - dkge_mapper_spec
   - dkge_transport_spec
-  - dkge_transport_contrasts_to_medoid
   - dkge_transport_loadings_to_medoid
   - dkge_transport_to_medoid_sinkhorn
   - dkge_transport_to_medoid_sinkhorn_cpp
@@ -115,6 +137,11 @@ reference:
   - dkge_project_clusters_to_latent
   - dkge_sim_toy
   - dkge_update_weights
+- title: Deprecated medoid compatibility
+  desc: One-cycle shims retained while users migrate to reference-oriented APIs
+  contents:
+  - dkge_transport_contrasts_to_medoid
+  - dkge_paint_medoid_map
 - title: Aggregate (cell-mean) decomposition
   desc: PLS-style decomposition of group-by-cell aggregate maps with permutation and
     bootstrap inference
@@ -217,7 +244,6 @@ reference:
   - dkge_info_map_haufe
   - dkge_info_map_loco
   - dkge_confusion
-  - dkge_paint_medoid_map
   - theme_dkge
 - title: Internal building blocks
   desc: Low-level functions exposed for advanced use and testing

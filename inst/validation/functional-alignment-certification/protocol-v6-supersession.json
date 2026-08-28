@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "status": "superseded_before_execution_due_candidate_source_drift",
+  "superseded_on": "2026-08-27",
+  "superseded_protocol": {
+    "protocol_id": "dkge-functional-alignment-certification-v6",
+    "path": "protocol-v6.json",
+    "sha256": "6c40c99387fd157e875871a242256d1ab6bea9d2fcc8f2ba21309f26b150f5ef",
+    "candidate_source_tree_sha256_before_drift": "9054ca2e51ea11ea88cca447c15536194090d21732dd7c50f95462d7b98f3887"
+  },
+  "materialization": {
+    "independent_freeze_issued": true,
+    "independent_freeze_subsequently_revoked": true,
+    "source_test_suite_started": false,
+    "court_started": false,
+    "known_warp_power_started": false,
+    "statistical_outputs_materialized": false,
+    "statistical_results_used_for_supersession": false
+  },
+  "source_change": {
+    "candidate_source_tree_sha256_after_drift": "7bee7084bc4c66d29880efd3006c16d4118e38b08c3242127ab9d1b4e9f4a2b6",
+    "reason": "A final independent adversary found that removing the explicit domain from a named Laplacian was accepted at the public spec/display boundary. Exact domain-to-dimname equivalence and its regressions were added before any v6 executor. A reviewer-requested print-weight wording correction and valid generated Rd markup were also completed before successor freeze.",
+    "review_verdict": "FREEZE",
+    "reviewed_source_tree_sha256": "7bee7084bc4c66d29880efd3006c16d4118e38b08c3242127ab9d1b4e9f4a2b6",
+    "reviewed_test_validation_tree_sha256_before_protocol_tests": "cc001f434e191516a673bcda063d79f2adb5923fa7107c2b38734b28c6a24860"
+  },
+  "successor": {
+    "protocol_id": "dkge-functional-alignment-certification-v7",
+    "path": "protocol.json",
+    "candidate_source_tree_sha256": "7bee7084bc4c66d29880efd3006c16d4118e38b08c3242127ab9d1b4e9f4a2b6",
+    "protocol_change": "Candidate source binding and v6-to-v7 output-directory label only.",
+    "numerical_protocol_change": false,
+    "statistical_protocol_change": false
+  }
+}

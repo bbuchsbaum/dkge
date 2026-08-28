@@ -42,23 +42,71 @@ with folds instead of single subjects. It limits basis-reuse optimism; it
 does not supply a population p-value.
 }
 
-\section{Medoid}{
+\section{Reference support}{
 
-The reference subject whose clusters the other subjects are mapped onto.
-Nothing computes it: it is an index you supply, defaulting to subject 1, and
-the medoid subject's own values pass through the transport unchanged. A
-reader who knows the clustering sense of the word should note that the
-package does not select a most-representative subject.
+The coordinates, labels, topology, and optional decoder on which aligned
+values are represented. A subject parcellation or fixed anatomical/MNI grid
+can supply support. Coordinates alone contain no functional correspondence
+and no participant's activation values. See \code{\link[=dkge_reference_support]{dkge_reference_support()}}.
+}
+
+\section{Reference subject and medoid}{
+
+A reference subject supplies a real subject parcellation as display support.
+It is a \emph{medoid} only when selected by a stated cohort criterion, such as
+held-out symmetric functional reconstruction or geometry-only loss. A
+caller-fixed subject is recorded as an explicit reference, not relabelled a
+medoid. See \code{\link[=dkge_select_reference_subject]{dkge_select_reference_subject()}}.
+}
+
+\section{Functional correspondence}{
+
+The fitted operator that maps a subject's parcels to one reference support.
+Functional costs must come from typed response-signature features; geometry
+may regularize or select support but does not become functional data. Every
+subject, including a reference subject, is fitted through the same mapper
+policy.
+}
+
+\section{Functional template}{
+
+Target response signatures and masses attached to a reference support. A
+selected subject can initialize a template without becoming privileged
+functional truth. \code{\link[=dkge_fit_functional_template]{dkge_fit_functional_template()}} instead pools information
+across subjects with mass-aware updates and fixed feature scale.
+}
+
+\section{Aligned subject rows}{
+
+One contrast row per subject on the same identified support. These rows, not
+parcels, are the observations for group inference. Fit-level MFA weights are
+pooling weights for learning the DKGE basis and are not silently reused as
+contrast inverse-variance weights. Obtain operator-bound rows from
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}} or \code{\link[=dkge_align_to_template]{dkge_align_to_template()}}; the
+raw \code{\link[=dkge_aligned_maps]{dkge_aligned_maps()}} constructor is deliberately descriptive only.
+}
+
+\section{Group inference}{
+
+Subject-level inference performed after correspondence has been fixed.
+\code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}} never learns a mapper. It fails closed for ineligible
+alignments and requires an explicit override for objects labelled
+approximate by the calibration court.
+}
+
+\section{Rendering}{
+
+Display or decoding of an already aligned statistic. A \code{\link[=dkge_renderer]{dkge_renderer()}}
+owns no subject correspondence and cannot turn a bare MNI grid into a
+functional template.
 }
 
 \section{Transport}{
 
-Moving per-cluster values from each subject's own parcellation onto a common
-set of locations, so that fields defined on different clusterings can be
-compared or averaged. The plan is built from cluster centroids by one of
-several mappers (\code{"sinkhorn"}, \code{"ridge"}, \code{"ols"}, or a k-nearest-neighbour
-variant). Transport is a spatial alignment step and it is separate from the
-effect-space alignment that \code{K} performs.
+Applying fitted correspondence to move per-cluster values from each
+subject's parcellation onto a common support. Sinkhorn, ridge, or OLS mappers
+may implement the operator. Transport is separate from both the shared
+effect-space metric \code{K} and downstream rendering.
 }
 
 \section{LOSO}{

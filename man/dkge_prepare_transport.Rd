@@ -12,6 +12,9 @@ dkge_prepare_transport(
   sizes = NULL,
   mapper = "sinkhorn",
   medoid = 1L,
+  reference_selection = NULL,
+  alignment_features = NULL,
+  preprocessing = NULL,
   ...
 )
 }
@@ -33,6 +36,18 @@ they are recomputed from \code{fit$Btil} or the supplied \code{betas}.}
 \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}.}
 
 \item{medoid}{Index (1-based) of the reference subject.}
+
+\item{reference_selection}{Optional typed selection from
+\code{\link[=dkge_select_reference_subject]{dkge_select_reference_subject()}}. When supplied, its selected subject is
+authoritative and \code{medoid} is only a compatibility alias.}
+
+\item{alignment_features}{Optional typed feature object used both for
+reference selection and mapper fitting.}
+
+\item{preprocessing}{Optional immutable provenance for feature construction.
+Caller-authored provenance is accepted only when it exactly matches a typed
+\code{alignment_features} object. Loose loadings/betas are always recorded as
+descriptive and inferentially ineligible.}
 
 \item{...}{Additional mapper arguments such as \code{epsilon} or \code{lambda_spa}.}
 }

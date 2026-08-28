@@ -29,7 +29,10 @@ non-negative diagonal, non-positive off-diagonal, and zero row sums.}
 identity operation and reproduces an unsmoothed DKGE fit.}
 
 \item{dthresh, nnk, weight_mode, sigma, handle_isolates}{Arguments forwarded to
-\code{\link[adjoin:spatial_laplacian]{adjoin::spatial_laplacian()}} when \code{coords} is supplied. DKGE does not allow
+\code{\link[adjoin:spatial_laplacian]{adjoin::spatial_laplacian()}} when \code{coords} is supplied. \code{dthresh} is a
+distance cutoff in the units of \code{coords} and \code{nnk} caps the number of
+neighbours; see the "Choosing \code{dthresh}" section, as the defaults assume
+unit-spaced voxel indices rather than millimetres. DKGE does not allow
 \code{handle_isolates = "drop"}, because dropping rows would change the beta
 column domain.}
 
@@ -50,11 +53,51 @@ An object of class \code{dkge_spatial_regularizer}, suitable for the
 Builds a sparse graph-Laplacian regularizer for the spatial columns of each
 subject beta block. Coordinate-based construction delegates to
 \code{\link[adjoin:spatial_laplacian]{adjoin::spatial_laplacian()}}; DKGE validates the resulting operator, binds it
-to the beta-column domain, and applies the resolvent
-\deqn{H_\lambda = (I + \lambda L)^{-1}}
-inside the fitted moment and every downstream component or contrast map.
+to the beta-column domain, and smooths the beta block with the Tikhonov
+resolvent
+\deqn{H_\lambda = (I + \lambda L)^{-1},}
+replacing \eqn{\widetilde B_s} by \eqn{\widetilde B_s H_\lambda} in the
+fitted moment and in every downstream component or contrast map.
 }
-\details{
+\section{Effect on the pooled moment}{
+
+Because the resolvent is applied to the beta block and the moment is then
+formed from the smoothed block, \eqn{H_\lambda} enters the \eqn{q \times q}
+moment \strong{twice}:
+\deqn{M_s(\lambda) = \widetilde B_s H_\lambda \Omega_s H_\lambda \widetilde B_s^{\mathsf T},}
+which reduces to \eqn{\widetilde B_s H_\lambda^2 \widetilde B_s^{\mathsf T}}
+under an identity spatial metric. The effective moment-level smoothing is
+therefore the \emph{squared} resolvent, not \eqn{H_\lambda}; keep that in mind
+when comparing \code{lambda} against a target smoothing kernel.
+
+Two per-unit weightings sit on \strong{opposite sides} of the smoother. Writing
+\eqn{W} for \code{\link[=dkge_weights]{dkge_weights()}} voxel weights and \eqn{\Omega_s} for the spatial
+metric in \code{Omega_list}, the moment DKGE actually accumulates is
+\deqn{M_s(\lambda) = (\widetilde B_s W^{1/2}) H_\lambda \Omega_s H_\lambda (\widetilde B_s W^{1/2})^{\mathsf T}.}
+Voxel weights are applied to the beta columns \emph{before} smoothing, so a
+down-weighted unit is shrunk first and then diffuses its reduced value to its
+neighbours -- a zero-weight unit acts as a hole in the field rather than
+being removed from the graph. \code{Omega_list} is applied \emph{after} smoothing, as a
+metric on the smoothed field. To exclude a unit completely, remove the
+matching beta column, graph node, domain label, and every aligned per-unit
+input; changing only \code{coords}, \code{laplacian}, or a voxel weight is not a domain
+exclusion operation.
+}
+
+\section{Choosing \code{dthresh}}{
+
+\code{dthresh} is expressed in the units of \code{coords}. The defaults
+(\code{dthresh = 1.42}, \code{nnk = 27}) assume \strong{unit-spaced voxel indices}, where
+1.42 admits face and edge neighbours of a 3x3x3 neighbourhood. Passing
+millimetre coordinates with the default threshold isolates every unit, which
+makes \code{L} the zero matrix and the resolvent the identity: the fit is then
+bit-identical to an unregularized one despite a positive \code{lambda}.
+Construction warns when a positive-\code{lambda} graph ends up with no edges.
+Spatial status is \code{inactive} for \code{lambda = 0}, \code{inert} when all graphs are
+edgeless, \code{partial} when only some subject graphs are edgeless, and \code{active}
+when every graph can smooth. Both \code{print()} and
+\code{dkge_diagnostics(fit)$spatial$diagnostics} report the status and edge count.
+
 Supply either \code{coords} or \code{laplacian}. A single matrix defines one shared
 spatial domain and therefore requires every subject to have the same number
 and ordering of spatial units. A list allows subject-specific domains and may
@@ -63,6 +106,7 @@ use \code{dkge_data(..., subject_ids = ...)} to declare those IDs explicitly.
 When both beta columns and \code{domain} are named, DKGE matches them by name and
 fails if they do not describe the same units.
 }
+
 \examples{
 coords <- cbind(x = 0:11, y = 0, z = 0)
 spatial <- dkge_spatial_regularizer(

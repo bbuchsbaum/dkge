@@ -15,6 +15,7 @@ doc/
 *.o
 *.Rcheck/
 *.tar.gz
+!data-raw/functional-alignment-certification/final-e38585975999d2bc-9b117ec2441a/durable/package/dkge_0.0.0.9000.tar.gz
 Rplots.pdf
 docs
 /doc/

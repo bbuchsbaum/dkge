@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-specs.R
 \name{dkge_transport_spec}
 \alias{dkge_transport_spec}
-\title{Transport specification helper}
+\title{Legacy descriptive transport specification helper}
 \usage{
 dkge_transport_spec(
   centroids,
@@ -27,7 +27,9 @@ dkge_transport_spec(
 
 \item{sizes}{Optional list of cluster sizes (one numeric vector per subject).}
 
-\item{medoid}{Integer index of the medoid subject (default 1).}
+\item{medoid}{Legacy integer reference-subject index (default 1). This field
+fixes a support; it does not perform or certify medoid selection. New
+functional-alignment workflows should use \code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}}.}
 
 \item{method}{Mapper backend. Default "sinkhorn".}
 
@@ -60,9 +62,10 @@ or betas).}
 Object with class \code{dkge_transport_spec}.
 }
 \description{
-Builds a validated transport configuration that can be passed to
-\code{\link[=dkge_pipeline]{dkge_pipeline()}} or transport utilities. The helper enforces basic argument
-checks and provides sensible defaults for Sinkhorn-based mapping.
+Builds a validated descriptive transport configuration for
+\code{\link[=dkge_pipeline]{dkge_pipeline()}}. Pipeline transport cannot enter inference. New functional
+alignment workflows should use \code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}} or
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}}.
 }
 \examples{
 transport <- dkge_transport_spec(centroids = list(matrix(runif(12), 4, 3)))

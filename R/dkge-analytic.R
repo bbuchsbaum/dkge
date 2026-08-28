@@ -3,7 +3,6 @@
 
 .dkge_analytic_reason_levels <- c(
   "analytic",
-  "solver_not_pooled",
   "pair_normalized_pooling",
   "covariance_aware_moment",
   "nonuniform_voxel_weights",
@@ -54,29 +53,33 @@
 #' This function implements the first-order eigenvalue perturbation approximation
 #' described in the paper. For the held-out compressed covariance:
 #'
-#' Chat^(-s) ~ Chat - w_s S_s
+#' Delta_s = Chat^(-s) - Chat
 #'
-#' The eigenvalues and eigenvectors are updated using:
-#' - deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
-#' - deltav_j = -w_s Sum over k!=j of (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
+#' where `Chat^(-s)` is formed with the same fold-local subject-weight
+#' normalization and shrinkage as exact LOSO. The eigenvalues and eigenvectors
+#' are updated using:
+#' - deltalambda_j = v_j^T Delta_s v_j (eigenvalue shift)
+#' - deltav_j = Sum over k!=j of (v_k^T Delta_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
 #'
-#' This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r) operations
-#' where r is the rank. The approximation is accurate when:
-#' 1. Subject weights w_s are small (no single subject dominates)
+#' After the exact fold moment has been constructed, this replaces its O(q^3)
+#' eigen-decomposition with an O(q^2 r) first-order eigensystem update, where r
+#' is the rank. The approximation is accurate when:
+#' 1. The fold perturbation norm is small relative to the fitted eigensystem
 #' 2. Eigenvalue gaps are large (well-separated components)
-#' 3. The perturbation S_s is not aligned with transition regions
+#' 3. The resulting first-order rotation coefficients remain below the gate
 #'
 #' When these conditions are violated (detected via condition number or
 #' eigenvalue gaps), the function can fall back to full eigen-decomposition.
 #'
 #' Fallback diagnostics use a closed reason vocabulary with this precedence:
-#' `solver_not_pooled`, `pair_normalized_pooling`,
-#' `covariance_aware_moment`, `nonuniform_voxel_weights`,
+#' `pair_normalized_pooling`, `covariance_aware_moment`, `nonuniform_voxel_weights`,
 #' `missing_full_decomposition`, `dimension_mismatch`, `eigengap`, and
 #' `perturbation_magnitude`. Structural reasons are checked before numerical
 #' perturbation thresholds, so a large perturbation cannot mask the more basic
-#' fact that the leave-one-out covariance is not a linear subtraction from the
-#' fitted pooled moment. A successful approximation reports `analytic`.
+#' fact that the fitted moment does not support this approximation. The
+#' q-by-q perturbation itself is exact for the fold pooling contract; only its
+#' eigensystem update is first-order. A successful approximation reports
+#' `analytic`.
 #'
 #' @examples
 #' \donttest{
@@ -98,18 +101,13 @@
 #' @export
 dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, ridge = 0) {
   stopifnot(inherits(fit, "dkge"), s >= 1L, s <= length(fit$Btil))
+  .dkge_assert_crossfit_estimator_supported(
+    fit, "Analytic LOSO contrast estimation"
+  )
+  S <- length(fit$Btil)
   q <- nrow(fit$U)
   r <- ncol(fit$U)
   stopifnot(length(contrasts) == q)
-
-  solver_type <- fit$solver
-  if (is.null(solver_type)) solver_type <- "pooled"
-  if (!identical(solver_type, "pooled")) {
-    diag_info <- .dkge_analytic_diagnostic("solver_not_pooled")
-    return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
-                                   reason = "solver_not_pooled",
-                                   diagnostic = diag_info))
-  }
 
   nonlinear_pool <-
     !identical(fit$effect_weight_spec$method %||% "none", "none") ||
@@ -128,8 +126,19 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                    diagnostic = diag_info))
   }
 
-  if (!is.null(fit$voxel_weights)) {
-    uniform <- isTRUE(all.equal(fit$voxel_weights, rep(1, length(fit$voxel_weights)), tolerance = 1e-6))
+  voxel_weight_payload <- fit$voxel_weights_subject %||% fit$voxel_weights
+  if (!is.null(voxel_weight_payload)) {
+    is_uniform_one <- function(weights) {
+      weights <- as.numeric(weights)
+      length(weights) > 0L && all(is.finite(weights)) &&
+        isTRUE(all.equal(weights, rep(1, length(weights)), tolerance = 1e-6))
+    }
+    uniform <- if (is.list(voxel_weight_payload)) {
+      length(voxel_weight_payload) == S &&
+        all(vapply(voxel_weight_payload, is_uniform_one, logical(1)))
+    } else {
+      is_uniform_one(voxel_weight_payload)
+    }
     if (!uniform) {
       diag_info <- .dkge_analytic_diagnostic("nonuniform_voxel_weights")
       return(.dkge_analytic_fallback(fit, s, contrasts, ridge,
@@ -138,9 +147,8 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
     }
   }
 
-  w_s <- fit$weights[s]
-  S_s <- fit$contribs[[s]]
-  S_s <- (S_s + t(S_s)) / 2
+  perturbation <- .dkge_analytic_fold_perturbation(fit, s, ridge = ridge)
+  Delta_s <- perturbation$delta
 
   V_full <- fit$eig_vectors_full
   lambda_full <- fit$eig_values_full
@@ -158,8 +166,8 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                    diagnostic = diag_info))
   }
 
-  # Precompute couplings H = V^T S V
-  H <- t(V_full) %*% S_s %*% V_full
+  # Precompute exact fold-perturbation couplings H = V^T Delta_s V.
+  H <- t(V_full) %*% Delta_s %*% V_full
   H <- (H + t(H)) / 2
 
   lambda_new <- lambda_full[seq_len(r)]
@@ -172,7 +180,7 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
 
   for (j in seq_len(r)) {
     v_j <- V_full[, j]
-    delta_lambda_j <- -w_s * H[j, j]
+    delta_lambda_j <- H[j, j]
     lambda_new[j] <- lambda_full[j] + delta_lambda_j
 
     gaps <- lambda_full[j] - lambda_full
@@ -201,7 +209,7 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                      diagnostic = diag_info))
     }
     coeffs <- rep(0, q)
-    coeffs[-j] <- -w_s * H[-j, j] / gaps[-j]
+    coeffs[-j] <- H[-j, j] / gaps[-j]
     max_coeff_j <- suppressWarnings(max(abs(coeffs[-j]), na.rm = TRUE))
     if (!is.finite(max_coeff_j)) {
       max_coeff_j <- NA_real_
@@ -259,13 +267,74 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
     threshold_coeff = perturb_tol
   )
 
+  train_ids <- perturbation$train_ids
+  preprocessing <- .dkge_alignment_preprocessing_receipt(
+    fit, s, Bts, voxel_weights = NULL
+  )
+  receipt <- .dkge_make_alignment_receipt(
+    fit = fit,
+    subject = s,
+    train_ids = train_ids,
+    basis = U_minus,
+    evals = lambda_new,
+    loadings = A_s,
+    preprocessing = preprocessing,
+    alphas = list(contrast1 = as.numeric(alpha)),
+    fold_index = s,
+    holdout = s,
+    subject_weights = perturbation$subject_weights,
+    subject_weight_source = perturbation$subject_weight_source,
+    method = "analytic",
+    eligible = FALSE,
+    eligibility_reason = "analytic_basis_is_approximate"
+  )
+
   list(
     v = v_s,
     alpha = alpha,
     basis = U_minus,
     evals = lambda_new,
+    loadings = A_s,
     method = "analytic",
-    diagnostic = diag_info
+    diagnostic = diag_info,
+    alignment_receipt = receipt
+  )
+}
+
+#' Exact fold-local q-space perturbation for analytic LOSO
+#'
+#' The subject weights in a held-out fold are normalized and shrunken over the
+#' training cohort. Consequently, the perturbation is generally not
+#' `-fit$weights[s] * fit$contribs[[s]]`. This helper forms the exact target
+#' used by LOSO before the analytic eigensystem approximation is applied.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_analytic_fold_perturbation <- function(fit, s, ridge = 0) {
+  S <- length(fit$Btil)
+  train_ids <- setdiff(seq_len(S), s)
+  ctx <- .dkge_fold_weight_context(
+    fit,
+    train_ids,
+    ridge = ridge,
+    missingness = fit$missingness %||% "none",
+    miss_args = fit$miss_args %||% list()
+  )
+  fold_chat <- as.matrix(ctx$Chat)
+  full_chat <- as.matrix(fit$Chat)
+  if (!identical(dim(fold_chat), dim(full_chat)) ||
+      any(!is.finite(fold_chat)) || any(!is.finite(full_chat))) {
+    stop("Analytic LOSO requires finite conformable full and fold moments.",
+         call. = FALSE)
+  }
+  delta <- fold_chat - full_chat
+  list(
+    delta = (delta + t(delta)) / 2,
+    fold_chat = (fold_chat + t(fold_chat)) / 2,
+    train_ids = train_ids,
+    subject_weights = ctx$subject_weights,
+    subject_weight_source = ctx$subject_weight_source,
+    weight_evaluation = ctx$weights
   )
 }
 
@@ -284,6 +353,9 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
                                     diagnostic = NULL) {
   result <- dkge_loso_contrast(fit, s, contrasts, ridge)
   result$method <- "fallback"
+  result$alignment_receipt$estimation_method <- "analytic_fallback_exact"
+  result$alignment_receipt$inference$eligible <- TRUE
+  result$alignment_receipt$inference$reason <- "exact_loso_fallback"
   diag_out <- diagnostic %||% .dkge_analytic_diagnostic(reason)
   if (!reason %in% .dkge_analytic_reason_levels) {
     stop("Internal DKGE error: unknown analytic fallback reason.",
@@ -338,7 +410,8 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
 #'
 #' @param fit dkge object
 #' @param contrast_list List of normalized contrasts
-#' @param ridge Ridge parameter (unused in analytic, kept for consistency)
+#' @param ridge Ridge parameter added to the exact fold moment before the
+#'   first-order eigensystem update (and used by an exact fallback).
 #' @param parallel Logical; enables future.apply-based parallelism for
 #'   per-subject computations (requires future.apply)
 #' @param verbose Print progress
@@ -366,6 +439,7 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
   alphas <- vector("list", n_contrasts)
   methods_list <- vector("list", n_contrasts)
   diagnostics_list <- vector("list", n_contrasts)
+  receipt_sets <- vector("list", n_contrasts)
   subject_indices <- seq_len(S)
 
   for (i in seq_along(contrast_list)) {
@@ -382,7 +456,8 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
           alpha = as.numeric(res$alpha),
           method = res$method,
           basis = res$basis,
-          diagnostic = res$diagnostic %||% list()
+          diagnostic = res$diagnostic %||% list(),
+          receipt = res$alignment_receipt
         )
       },
       parallel = parallel
@@ -394,6 +469,8 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
     alphas[[i]] <- alpha_mat
     methods_list[[i]] <- vapply(subject_results, function(x) x$method, character(1))
     diagnostics_list[[i]] <- lapply(subject_results, `[[`, "diagnostic")
+    receipt_sets[[i]] <- lapply(subject_results, `[[`, "receipt")
+    names(receipt_sets[[i]]) <- as.character(fit$subject_ids %||% subject_indices)
 
     if (i == 1) {
       bases <- lapply(subject_results, `[[`, "basis")
@@ -474,6 +551,11 @@ dkge_analytic_loso <- function(fit, s, contrasts, tol = 1e-6, fallback = TRUE, r
       alphas = alphas,
       methods = methods_list,
       diagnostics = diagnostics_list,
+      alignment_receipts = .dkge_merge_alignment_receipt_sets(
+        receipt_sets,
+        names(contrast_list) %||% paste0("contrast", seq_along(contrast_list)),
+        method = "analytic"
+      ),
       tol = tol,
       fallback = fallback,
       fallback_rates = fallback_rates,

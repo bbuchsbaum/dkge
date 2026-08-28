@@ -49,6 +49,61 @@ test_that("subject weights handle MFA and Omega matrices", {
   expect_true(all(w_mat > 0))
 })
 
+test_that("MFA weights use the exact leading singular value", {
+  # This direction is orthogonal to the initial vector used by the retired
+  # fixed-seed power approximation. That approximation returned zero for this
+  # rank-one block even though sigma_1^2 is exactly 100.
+  set.seed(8172026)
+  initial <- stats::rnorm(2)
+  adversarial_direction <- c(-initial[2], initial[1])
+  adversarial_direction <- 10 * adversarial_direction /
+    sqrt(sum(adversarial_direction^2))
+
+  blocks <- list(
+    matrix(adversarial_direction, nrow = 2),
+    diag(2)
+  )
+  scores <- dkge:::.dkge_subject_weight_scores(
+    blocks,
+    Omega_list = list(NULL, NULL),
+    Khalf = diag(2),
+    w_method = "mfa_sigma1"
+  )
+  weights <- dkge:::.dkge_normalize_subject_weights(
+    scores$raw, scores$usable, w_tau = 0
+  )
+
+  expect_equal(dkge:::.dkge_leading_sv_squared(blocks[[1]]), 100,
+               tolerance = 1e-12)
+  expect_equal(scores$raw, c(0.01, 1), tolerance = 1e-12)
+  expect_true(all(is.finite(scores$raw)))
+  expect_gte(min(scores$raw), 0.01 - 1e-12)
+  expect_lte(max(scores$raw), 1 + 1e-12)
+  expect_equal(weights, c(0.01, 1) / mean(c(0.01, 1)), tolerance = 1e-12)
+  expect_true(all(is.finite(weights)))
+  expect_true(max(weights) < 2)
+})
+
+test_that("raw subject scores are normalized and shrunk within the requested cohort", {
+  raw <- c(0.5, 2, 8, 4)
+  usable <- c(TRUE, TRUE, TRUE, FALSE)
+
+  full <- dkge:::.dkge_normalize_subject_weights(raw, usable, w_tau = 0.3)
+  expect_equal(mean(full[usable]), 1, tolerance = 1e-14)
+  expect_equal(full[!usable], 0)
+
+  train <- c(1L, 3L)
+  fold <- dkge:::.dkge_normalize_subject_weights(
+    raw[train], usable[train], w_tau = 0.3
+  )
+  oracle <- 0.7 * raw[train] / mean(raw[train]) + 0.3
+  expect_equal(fold, oracle, tolerance = 1e-14)
+
+  # Subsetting already-normalized/shrunken full-cohort weights is not the
+  # fold estimand whenever 0 < tau < 1.
+  expect_false(isTRUE(all.equal(fold, full[train], tolerance = 1e-14)))
+})
+
 test_that("subject weights apply the full Khalf congruence to zero-filled rows", {
   K <- matrix(0.35, 3, 3)
   diag(K) <- 1
@@ -1060,8 +1115,112 @@ test_that("fold re-pooling agrees whether or not stored moments are reused", {
   slow <- dkge:::.dkge_fold_weight_context(slow_fit, train)
 
   expect_equal(fast$Chat, slow$Chat, tolerance = 1e-12)
+  expect_equal(fast$subject_weights, slow$subject_weights, tolerance = 1e-14)
   expect_equal(fast$pair_counts, slow$pair_counts)
   expect_equal(fast$pair_ess, slow$pair_ess, tolerance = 1e-12)
+})
+
+test_that("fast and slow fold pooling agree across subject, Omega, spatial, and missingness policies", {
+  full <- make_fit_fixture(S = 5, q = 4, P = 6, T = 24, seed = 1401)
+  train_full <- c(1L, 2L, 4L, 5L)
+  omega <- lapply(seq_len(5), function(s) {
+    diag(seq(0.7, 1.3, length.out = 6) * (1 + 0.05 * s))
+  })
+  L <- Matrix::bandSparse(6, k = c(-1, 0, 1),
+                          diagonals = list(rep(-1, 5),
+                                           c(1, 2, 2, 2, 2, 1),
+                                           rep(-1, 5)))
+  spatial <- dkge_spatial_regularizer(laplacian = L, lambda = 0.4)
+  cases <- list(
+    equal = list(w_method = "none"),
+    energy = list(w_method = "energy"),
+    mfa = list(w_method = "mfa_sigma1"),
+    omega = list(w_method = "mfa_sigma1", Omega_list = omega),
+    spatial = list(w_method = "mfa_sigma1", spatial = spatial),
+    omega_spatial = list(w_method = "energy", Omega_list = omega,
+                         spatial = spatial)
+  )
+  for (nm in names(cases)) {
+    fit <- do.call(
+      dkge_fit,
+      c(list(data = full$betas, designs = full$designs, K = full$K,
+             rank = 3), cases[[nm]])
+    )
+    fast <- dkge:::.dkge_fold_weight_context(fit, train_full)
+    slow_fit <- fit
+    slow_fit$effect_moments <- NULL
+    slow <- dkge:::.dkge_fold_weight_context(slow_fit, train_full)
+    expect_equal(fast$Chat, slow$Chat, tolerance = 1e-10, info = nm)
+    expect_equal(fast$subject_weights, slow$subject_weights,
+                 tolerance = 1e-13, info = nm)
+  }
+
+  partial <- make_partial_coverage_data(seed = 1402)
+  train_partial <- c(1L, 2L, 4L)
+  for (miss in c("none", "rescale", "mask", "shrink")) {
+    fit <- dkge_fit(
+      partial$data, K = partial$K, rank = 3, w_method = "energy",
+      missingness = miss, miss_args = list(min_pairs = 2L, gamma = 1)
+    )
+    fast <- dkge:::.dkge_fold_weight_context(fit, train_partial)
+    slow_fit <- fit
+    slow_fit$effect_moments <- NULL
+    slow <- dkge:::.dkge_fold_weight_context(slow_fit, train_partial)
+    expect_equal(fast$Chat, slow$Chat, tolerance = 1e-10, info = miss)
+    expect_equal(fast$subject_weights, slow$subject_weights,
+                 tolerance = 1e-13, info = miss)
+  }
+})
+
+test_that("held-out beta energy cannot change training-fold MFA weights or Chat", {
+  fx <- make_fit_fixture(S = 6, q = 4, P = 7, T = 24, seed = 3107)
+  heldout <- 4L
+  train <- setdiff(seq_along(fx$betas), heldout)
+
+  fit <- dkge_fit(
+    fx$betas, fx$designs, fx$K, rank = 3,
+    w_method = "energy", w_tau = 0.3
+  )
+  perturbed_betas <- fx$betas
+  perturbed_betas[[heldout]] <- perturbed_betas[[heldout]] * 1e4
+  perturbed <- dkge_fit(
+    perturbed_betas, fx$designs, fx$K, rank = 3,
+    w_method = "energy", w_tau = 0.3
+  )
+
+  # The full-cohort normalized weights change, demonstrating that this fixture
+  # exercises the historical leakage path.
+  expect_false(isTRUE(all.equal(fit$weights[train], perturbed$weights[train],
+                                tolerance = 1e-12)))
+
+  base_fold <- dkge:::.dkge_fold_weight_context(fit, train)
+  perturbed_fold <- dkge:::.dkge_fold_weight_context(perturbed, train)
+  expect_equal(base_fold$subject_weights, perturbed_fold$subject_weights,
+               tolerance = 1e-12)
+  expect_equal(base_fold$Chat, perturbed_fold$Chat, tolerance = 1e-10)
+
+  # The fast re-pooling primitive must apply the same fold-local normalization
+  # even when its caller does not precompute subject weights.
+  base_repool <- dkge:::.dkge_repool_fit(fit, indices = train)
+  perturbed_repool <- dkge:::.dkge_repool_fit(perturbed, indices = train)
+  expect_equal(base_repool$Chat, perturbed_repool$Chat, tolerance = 1e-10)
+})
+
+test_that("legacy fits recover fold weights from final shrunken weights", {
+  fx <- make_fit_fixture(S = 5, q = 4, P = 6, T = 20, seed = 912)
+  fit <- dkge_fit(
+    fx$betas, fx$designs, fx$K, rank = 3,
+    w_method = "energy", w_tau = 0.3
+  )
+  train <- c(1L, 3L, 4L)
+  expected <- dkge:::.dkge_fold_weight_context(fit, train)$subject_weights
+
+  legacy <- fit
+  legacy$subject_weight_scores_raw <- NULL
+  legacy$subject_weight_usable <- NULL
+  recovered <- dkge:::.dkge_fold_weight_context(legacy, train)$subject_weights
+
+  expect_equal(recovered, expected, tolerance = 1e-12)
 })
 
 test_that("design kernel labels are validated against the data effects", {

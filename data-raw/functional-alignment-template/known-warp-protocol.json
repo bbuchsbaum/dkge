@@ -1,0 +1,38 @@
+{
+  "protocol": "dkge-functional-template-known-warp-v1",
+  "config": {
+    "seed": 911,
+    "S": 8,
+    "P": 10,
+    "q": 5,
+    "reference_subject": 1,
+    "reference_feature_noise": 1.5,
+    "other_feature_noise": 0.35,
+    "heldout_signal_scale": 1,
+    "heldout_value_noise": 0.2,
+    "epsilon": 0.015,
+    "lambda_emb": 0.95,
+    "lambda_spa": 0.05,
+    "sigma_mm": 0.2,
+    "template_max_iter": 25,
+    "template_tolerance": 0.002,
+    "template_objective_tolerance": 0.002,
+    "update_rate": 0.5
+  },
+  "gates": {
+    "convergence": true,
+    "independent_prediction": true,
+    "beats_geometry_correlation": true,
+    "beats_mni_correlation": true,
+    "amplitude_is_auditable": true,
+    "raw_medoid_comparator_reported": true,
+    "approximate_not_promoted": true
+  },
+  "all_gates_pass": true,
+  "runtime_seconds": 21.714,
+  "template_converged": true,
+  "template_iterations": 18,
+  "template_eligibility": "approximate",
+  "template_hash": "c5a2c2816441e128",
+  "source_fingerprint": "c7cd6f813675e0985b26216eebb5bf6d76d0debde37f3b517a2cebc697a34878"
+}

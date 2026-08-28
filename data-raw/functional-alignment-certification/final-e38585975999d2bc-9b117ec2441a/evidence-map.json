@@ -1,0 +1,105 @@
+{
+  "algebraic_oracles": {
+    "fold_weight_renormalization": {
+      "file": "tests/testthat/test-fit.R",
+      "line": 1175,
+      "test": "held-out beta energy cannot change training-fold MFA weights or Chat"
+    },
+    "legacy_weight_inversion": {
+      "file": "tests/testthat/test-fit.R",
+      "line": 1209,
+      "test": "legacy fits recover fold weights from final shrunken weights"
+    },
+    "value_reconstruction_and_covariance": {
+      "file": "tests/testthat/test-alignment-features.R",
+      "line": 83,
+      "test": "conditional residualization matches a hand-matrix oracle"
+    },
+    "whole_field_covariance": {
+      "file": "tests/testthat/test-alignment-features.R",
+      "line": 111,
+      "test": "the separable oracle covers every cross-parcel covariance"
+    },
+    "constant_and_mass_preservation": {
+      "file": "tests/testthat/test-transport-contracts.R",
+      "line": 5,
+      "test": "joint plans and application operators obey distinct conservation laws"
+    },
+    "reference_self_map": {
+      "file": "tests/testthat/test-alignment-operator-symmetry.R",
+      "line": 27,
+      "test": "reference and non-reference subjects use one mapper policy"
+    },
+    "template_mass_update": {
+      "file": "tests/testthat/test-functional-template-fit.R",
+      "line": 253,
+      "test": "mass-aware template update matches a direct plan oracle"
+    }
+  },
+  "regression_contracts": {
+    "parametric_transport": {
+      "file": "tests/testthat/test-inference.R",
+      "line": 261,
+      "test": "parametric helper consumes transported rows with unequal cluster counts"
+    },
+    "center_mode": {
+      "file": "tests/testthat/test-inference.R",
+      "line": 284,
+      "test": "mean max-T rejects retired center modes at the public boundary"
+    },
+    "mixed_cache_provenance": {
+      "file": "tests/testthat/test-transport-prepare.R",
+      "line": 73,
+      "test": "fitted alignment rejects every mutated structural input"
+    },
+    "full_fit_loading_fallback": {
+      "file": "tests/testthat/test-inference-transport.R",
+      "line": 56,
+      "test": "inferential transport never falls back to full-fit loadings"
+    },
+    "identity_reference_asymmetry": {
+      "file": "tests/testthat/test-alignment-operator-symmetry.R",
+      "line": 27,
+      "test": "reference and non-reference subjects use one mapper policy"
+    },
+    "feature_collapse_and_singular_span": {
+      "file": "tests/testthat/test-alignment-features.R",
+      "line": 398,
+      "test": "rank, condition, energy, and covariance gates fail closed"
+    },
+    "bare_grid_semantics": {
+      "file": "tests/testthat/test-functional-template-fit.R",
+      "line": 551,
+      "test": "a bare MNI grid is support, not functional correspondence"
+    }
+  },
+  "statistical_evidence": {
+    "frozen_protocol": "inst/validation/functional-alignment-certification/protocol.json",
+    "superseded_v3_protocol": "inst/validation/functional-alignment-certification/protocol-v3.json",
+    "v3_supersession": "inst/validation/functional-alignment-certification/protocol-v3-supersession.json",
+    "invalidated_v4_protocol": "inst/validation/functional-alignment-certification/protocol-v4.json",
+    "v4_invalidation": "inst/validation/functional-alignment-certification/protocol-v4-invalidation.json",
+    "superseded_v5_protocol": "inst/validation/functional-alignment-certification/protocol-v5.json",
+    "v5_supersession": "inst/validation/functional-alignment-certification/protocol-v5-supersession.json",
+    "superseded_v6_protocol": "inst/validation/functional-alignment-certification/protocol-v6.json",
+    "v6_supersession": "inst/validation/functional-alignment-certification/protocol-v6-supersession.json",
+    "superseded_v2_protocol": "inst/validation/functional-alignment-certification/protocol-v2.json",
+    "v2_invalidation": "inst/validation/functional-alignment-certification/court-v2-invalidation.json",
+    "v2_sinkhorn_fixture": "inst/validation/functional-alignment-certification/court-v2-failing-sinkhorn-fixture.json",
+    "v2_source_test_manifest": "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/source-test-manifest.json",
+    "v2_source_test_results": "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/source-test-results.csv",
+    "v2_source_test_session_info": "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/session-info.txt",
+    "v2_failed_court_formal_budget": "data-raw/functional-alignment-certification/court-0be19103609aa074-30c9732ef157/formal-budget.csv",
+    "formal_court": "data-raw/functional-alignment-certification/court-e38585975999d2bc-e2c5c95305af/court-verdict.json",
+    "formal_court_run_state": "data-raw/functional-alignment-certification/court-e38585975999d2bc-e2c5c95305af/court-run-state.json",
+    "formal_court_harness": "data-raw/functional-alignment-certification/court-e38585975999d2bc-e2c5c95305af/court-harness-manifest.json",
+    "known_warp": "data-raw/functional-alignment-certification/known-warp-e38585975999-4e6b828f463d-f7b44edd945e/known-warp-power-summary.csv",
+    "known_warp_run_state": "data-raw/functional-alignment-certification/known-warp-e38585975999-4e6b828f463d-f7b44edd945e/known-warp-power-run-state.json",
+    "known_warp_harness": "data-raw/functional-alignment-certification/known-warp-e38585975999-4e6b828f463d-f7b44edd945e/known-warp-power-harness-manifest.json",
+    "source_test_manifest": "data-raw/functional-alignment-certification/package-e38585975999d2bc-09fbab6159cf/source-test-manifest.json",
+    "source_test_results": "data-raw/functional-alignment-certification/package-e38585975999d2bc-09fbab6159cf/source-test-results.csv",
+    "source_test_session_info": "data-raw/functional-alignment-certification/package-e38585975999d2bc-09fbab6159cf/session-info.txt",
+    "pkgdown_receipt": "/private/tmp/dkge-v9-certified.m914En/pkgdown-site/.dkge-pkgdown-receipt.json",
+    "independent_review": "data-raw/functional-alignment-certification/independent-review.json"
+  }
+}

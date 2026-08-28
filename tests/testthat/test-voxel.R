@@ -26,6 +26,8 @@ test_that("dkge_transport_to_voxels maps values", {
                                   mapper = "ridge")
   expect_equal(nrow(res$subj_values), length(fx$values))
   expect_equal(length(res$value), ncol(res$subj_values))
+  expect_identical(res$metadata$status, "descriptive")
+  expect_false(res$metadata$inferential)
 })
 
 test_that("dkge_transport_to_voxels handles missing sizes weights", {

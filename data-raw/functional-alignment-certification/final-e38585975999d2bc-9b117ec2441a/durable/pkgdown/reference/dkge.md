@@ -1,0 +1,204 @@
+# Fit DKGE across multiple subjects
+
+This high-level wrapper prepares subject-level inputs and calls
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+to estimate the shared Design-Kernel Group Embedding (DKGE) basis.
+Provide a design kernel in effect space together with per-subject GLM
+coefficients and design matrices, and receive a `dkge` object ready for
+LOSO contrasts, medoid transport, or out-of-sample prediction.
+
+## Usage
+
+``` r
+dkge(
+  betas,
+  designs = NULL,
+  K = NULL,
+  Omega_list = NULL,
+  subject_ids = NULL,
+  keep_inputs = TRUE,
+  cpca_blocks = NULL,
+  cpca_T = NULL,
+  cpca_part = c("none", "design", "resid", "both"),
+  cpca_ridge = 0,
+  weights = NULL,
+  kernel = NULL,
+  omega = NULL,
+  effect_weights = NULL,
+  debias = c("none", "analytic", "split_half"),
+  effect_scaling = c("pooled_design", "none"),
+  effects = NULL,
+  spatial = NULL,
+  ...
+)
+```
+
+## Arguments
+
+- betas:
+
+  Either (i) a list of qxP_s beta matrices (one per subject), (ii) a
+  list/tibble of
+  [`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
+  objects, or (iii) a pre-built `dkge_data` bundle. Rows must align with
+  design effects.
+
+- designs:
+
+  Optional list of T_sxq design matrices from the subject GLMs. Each
+  column corresponds to an effect/regressor; column names become the
+  canonical effect labels enforced across subjects. Ignored when `betas`
+  already carries `dkge_subject`/`dkge_data` entries.
+
+- K:
+
+  Design kernel that expresses similarity or smoothness between effects
+  in the design space (e.g. identity for nominal factors, RBF for
+  ordinal factors, Kronecker combinations for interactions). Supply
+  either a qxq numeric matrix or the list returned by
+  [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md),
+  whose `K` element is extracted automatically. Matches the `K`
+  parameter name used by
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
+
+- Omega_list:
+
+  Optional list overriding per-subject spatial weights. Each element may
+  be `NULL`, a length-P_s numeric vector, or a P_sxP_s matrix. When
+  betas are voxelwise (e.g. coming from `NeuroVec`), these weights
+  operate on spatial units (voxels) rather than clusters; equal weights
+  are assumed when omitted. Matches the `Omega_list` parameter name used
+  by
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
+
+- subject_ids:
+
+  Optional subject identifiers used when raw matrices are provided.
+  Ignored when `betas` carries IDs already.
+
+- keep_inputs:
+
+  Logical; when `TRUE` (default) the returned object stores the
+  canonicalised `dkge_data` bundle under `$input` for later inspection
+  or prediction.
+
+- cpca_blocks:
+
+  Optional integer vector specifying the effect rows that span a CPCA
+  design subspace. Ignored when `cpca_part = "none"` or when `cpca_T` is
+  provided.
+
+- cpca_T:
+
+  Optional qxq0 matrix giving the CPCA design basis explicitly.
+  Overrides `cpca_blocks` when supplied.
+
+- cpca_part:
+
+  Which CPCA-filtered component to fit: `"none"` (default) performs the
+  standard DKGE fit; `"design"` uses only the CPCA design part;
+  `"resid"` uses the residual part; `"both"` fits the design part but
+  also stores the residual basis.
+
+- cpca_ridge:
+
+  Optional ridge applied to the CPCA-filtered matrices before
+  eigen-decomposition.
+
+- weights:
+
+  Optional
+  [`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
+  specification that overrides the default adaptive weighting behavior
+  when accumulating covariance. Use this to inject custom spatial
+  reliabilities or to reuse a precomputed weighting recipe produced by
+  [`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md).
+
+- kernel:
+
+  Deprecated. Use `K` instead.
+
+- omega:
+
+  Deprecated. Use `Omega_list` instead.
+
+- effect_weights:
+
+  Optional
+  [`dkge_effect_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_effect_weights.md)
+  specification for subject-by-effect count or precision weighting.
+
+- debias:
+
+  Effect-moment estimator passed to
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md):
+  observed (`"none"`), analytic finite-trial subtraction (`"analytic"`),
+  or a split-half cross-moment (`"split_half"`).
+
+- effect_scaling:
+
+  Effect-space scaling passed to
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
+  Use `"none"` when input rows already share an absolute scale, such as
+  AUC-minus-chance cell maps.
+
+- effects:
+
+  Optional character vector pinning the global effect order, forwarded
+  to
+  [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md).
+  Ignored (and checked for agreement) when `betas` is already a
+  `dkge_data` bundle.
+
+- spatial:
+
+  Optional model-level spatial regularizer created by
+  [`dkge_spatial_regularizer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_spatial_regularizer.md).
+  It is applied inside fitting and reused for all reconstructed subject
+  fields.
+
+- ...:
+
+  Additional arguments forwarded to
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+  (e.g. `rank`, `ridge`, `w_method`, `weights`).
+
+## Value
+
+A `dkge` object containing the learned basis (`$U`), eigenvalues, pooled
+design Cholesky factor (`$R`), compressed covariance matrix, subject
+weights, and metadata (subject IDs, effect names, cluster identifiers)
+derived from the input bundle.
+
+## Details
+
+The design matrices `X_s` supplied here are the same T_sxq regressors
+used to fit the subject-level GLMs; their columns must align with the
+effects encoded by the kernel. The kernel `K` captures how effects
+relate to one another-identity recovers standard OLS scaling, while
+structured kernels (e.g. RBF for ordinal factors, circulant for wrapped
+factors, Kronecker products for interactions) encourage shared
+smoothness or coupling between design effects.
+
+DKGE's eigensystem remains entirely in this low-dimensional design
+space: (1) the pooled Gram matrix across subjects yields a shared
+Cholesky factor `R`; (2) each beta matrix is row-standardised; (3) an
+optional sparse spatial solve acts on its columns; (4) compressed
+covariance is accumulated in the K-metric with optional subject and
+effect weighting; and (5) a tiny symmetric eigenproblem produces the
+K-orthonormal group basis. The input harmonisation performed by this
+wrapper ensures consistent effect naming, subject identifiers, and
+spatial weights so downstream utilities such as
+[`dkge_loso_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_loso_contrast.md)
+can work without additional bookkeeping. Use
+[`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
+to build subjects from raw matrices, `NeuroVec`, or `ClusteredNeuroVec`
+sources prior to calling `dkge()`.
+
+## See also
+
+[`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md),
+[`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md),
+[`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md),
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md),
+[`dkge_loso_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_loso_contrast.md)

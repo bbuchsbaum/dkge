@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
@@ -369,9 +371,11 @@ unequal numbers of trials.
 **Permutation testing.** Increase `n_perm` for precise p-values near significance
 thresholds. Set `n_perm = 0` during exploratory analysis to skip the permutation loop.
 
-**Spatial alignment.** When subjects have different voxel grids, apply transport to a
-common medoid parcellation via `dkge_transport_contrasts_to_medoid()` before
-classification.
+**Functional alignment.** When subjects have different voxel grids or parcel
+systems, fit correspondence from an eligible functional feature channel and
+use `dkge_transport_contrasts_to_reference()` before classification. A bare
+MNI grid supplies display coordinates, not functional correspondence; see
+`vignette("dkge-functional-alignment")`.
 
 **Input caching.** Keep `keep_inputs = TRUE` (default) to enable `dkge_update_weights()`
 without re-running the full fit.

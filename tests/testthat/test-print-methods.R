@@ -75,7 +75,8 @@ make_inference_fixture <- function() {
              method = "analytic",
              inference = "parametric",
              correction = "none",
-             n_perm = 10)
+             n_perm = 10,
+             allow_approximate_alignment = TRUE)
 }
 
 make_inference_spec_fixture <- function() {
@@ -113,6 +114,19 @@ make_weights_fixture <- function() {
 # -----------------------------------------------------------------------------
 # Print method contract tests
 # -----------------------------------------------------------------------------
+
+test_that("print.dkge exposes subject-weight provenance and dispersion", {
+  obj <- make_small_fit()$fit
+  output <- capture.output(result <- print(obj))
+  output_text <- paste(output, collapse = "\n")
+
+  expect_identical(result, obj)
+  expect_match(output_text, "Subject weighting:", fixed = TRUE)
+  expect_match(output_text, obj$w_method, fixed = TRUE)
+  expect_match(output_text, "tau", fixed = TRUE)
+  expect_match(output_text, "Effective subject mass:", fixed = TRUE)
+  expect_match(output_text, "Weight range:", fixed = TRUE)
+})
 
 test_that("print.dkge_classification returns invisibly", {
   obj <- make_classification_fixture()

@@ -81,6 +81,12 @@ The returned \code{pick} is the largest (smoothest) candidate whose mean score i
 within one standard error of the best candidate. Include \code{0} in \code{lambdas} to
 compare against the unsmoothed model. A saturated score is reported and
 warned about in the same way as other DKGE CV helpers.
+
+Spatial CV fails closed when any positive candidate is requested but every
+supplied graph is edgeless: all candidate resolvents would be the identity,
+so \code{lambda} is not identifiable from the score. If only some
+subject-specific graphs are edgeless, CV warns once with their identifiers
+and continues with status \code{partial}.
 }
 \examples{
 \donttest{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-render-core.R
 \name{dkge_render_subject_values}
 \alias{dkge_render_subject_values}
-\title{Render per-subject values to anchors and voxels}
+\title{Render values with a legacy descriptive renderer (deprecated)}
 \usage{
 dkge_render_subject_values(renderer, values_list, lambda = 0, to_vox = TRUE)
 }
@@ -21,7 +21,9 @@ A list with \code{anchor} (dense anchor field), optional \code{voxel} map,
 the aggregation diagnostics, and the intermediate per-subject anchor maps.
 }
 \description{
-Render per-subject values to anchors and voxels
+This compatibility helper never performs inference. It consumes the
+correspondence already stored in a legacy renderer and labels the result as
+descriptive. New workflows should use \code{\link[=dkge_render_aligned]{dkge_render_aligned()}}.
 }
 \examples{
 \donttest{
@@ -31,13 +33,13 @@ toy <- dkge_sim_toy(
 )
 fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-renderer <- dkge_build_renderer(fit,
+renderer <- suppressWarnings(dkge_build_renderer(fit,
                                 centroids = centroids,
                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
                                 anchor_n = 20,
-                                anchor_method = "sample")
+                                anchor_method = "sample"))
 values_list <- lapply(centroids, function(C) rnorm(nrow(C)))
-out <- dkge_render_subject_values(renderer, values_list)
+out <- suppressWarnings(dkge_render_subject_values(renderer, values_list))
 length(out$anchor)
 }
 }

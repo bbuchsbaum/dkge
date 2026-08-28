@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 
 knitr::opts_chunk$set(
@@ -81,8 +83,9 @@ missingness and precision must be handled before the kernel transform.
 ## What enters the decomposition?
 
 Terms used throughout this page and the rest of the suite are defined in
-`?dkge-glossary`: effect space, design kernel, salience, cross-fitting, medoid,
-transport, and the estimand each analysis targets.
+`?dkge-glossary`: effect space, design kernel, salience, cross-fitting,
+reference support, functional correspondence, template, aligned subject rows,
+inference, rendering, medoid, transport, and the estimand each analysis targets.
 
 
 For subject \(s\), let \(B_s\) be the `q` by `P_s` beta matrix. In the simplest
@@ -268,7 +271,7 @@ claim rather than treating “significant DKGE” as a single outcome.
 | Component diagnostics | How much fitted variation is retained, and how sensitive is the subspace to refitting choices? | eigenspectrum, identity comparison, `dkge_plot_subspace_stability()` | inferential reliability or that a particular contrast is non-zero |
 | Aggregate component inference | Is a prespecified aggregate component statistic unusual under its resampling null? | `dkge_aggregate_permute()`, `dkge_aggregate_bootstrap()` | validity for the subject-wise q-space fit or an untested contrast |
 | Contrast | Does a prespecified effect-space contrast produce a reproducible field? | `dkge_contrast(method = "loso")`, bootstrap or analytic contrast inference | spatial localization without transport and multiplicity control |
-| Feature | Where is a component or contrast expressed after alignment? | `dkge_component_stats()`, `dkge_transport_contrasts_to_medoid()` | that the latent direction was selected without bias |
+| Feature | Where is a prespecified contrast expressed after identified alignment? | `dkge_transport_contrasts_to_reference()`, `dkge_infer_aligned()` | that the latent direction was selected without bias or that an approximate alignment is exact |
 | Between-subject term | Is a subject-level covariate associated with a named multivariate target? | `dkge_between_rrr()`, `dkge_between_permute()` | a test of the DKGE component itself, or a causal effect without identification assumptions |
 
 For population claims, the subject is the resampling unit. Clusters, anchors,
@@ -296,8 +299,14 @@ point:
    solves for the shared basis under the design kernel.
 3. **Cross-fit** a prespecified contrast with `dkge_contrast()`, so no subject's
    own data shapes the basis used to score it.
-4. **Align** the resulting fields onto common locations with
-   `dkge_prepare_transport()` and `dkge_transport_contrasts_to_medoid()`.
+4. **Align** the resulting fields onto an identified support with typed
+   functional features, `dkge_prepare_alignment()`, and
+   `dkge_transport_contrasts_to_reference()`.
+
+The effect-space basis, reference support, fitted correspondence, functional
+template, aligned subject rows, group inference, and renderer are distinct
+objects. In particular, a coordinate grid has no functional mapping until
+features have been learned on it. See `vignette("dkge-functional-alignment")`.
 
 `dkge_pipeline()` runs all four in one call. `CONTRIBUTING.md` in the package
 repository carries the implementation map for contributors: which source file

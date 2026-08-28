@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "reviewed_at_utc": "2026-08-28T01:36:49Z",
+  "reviewer_identity": "OpenAI Codex independent FA-10 reviewer",
+  "reviewer_task": "/root/fa10_independent_review",
+  "verdict": "pass_with_limitations",
+  "blockers": [],
+  "limitations": [
+    "The frozen court's exact full-pipeline null-action comparator passed, but the negative-control promotion gate failed. Public rank-truncated aligned inference therefore remains approximate, fails closed by default, and requires an explicit override; this review does not certify nominal FWER for that public approximate path.",
+    "The subject is the sampling and exchangeability unit. Sign-flip inference requires joint subject-row sign invariance across the complete prespecified contrast-by-location family; locations and contrasts within a row are not independent sampling units.",
+    "An independent_data_hash is an auditable provenance identifier, not empirical proof that the supplied feature acquisition is statistically independent of the estimation data. That independence remains a caller-owned design claim.",
+    "The same-data residualized feature mode establishes covariance orthogonality only under the declared separable effect-by-parcel covariance model and conditional on fixed generating directions. The preprocessing receipt verifies the implemented transforms, not separability in an observed cohort, and the estimated rank-truncated directions leave this mode approximate.",
+    "Aligned group inference has an equal-subject estimand. MFA or energy weights affect pooled-moment estimation only and are not inverse-variance weights for, or imported into, the aligned group test.",
+    "The known-warp study is a finite 40-cohort efficacy and numerical study, not evidence of power superiority. All solver rows converged and serial/parallel replay passed, but the iterative template converged in 39 of 40 cohorts and the observed rejection rates do not establish a power advantage.",
+    "The exact package check intentionally used --ignore-vignettes. Executable and rendered documentation is covered by the separately source-bound, UTF-8-gated exact-tarball pkgdown receipt rather than by the R CMD check vignette phase.",
+    "Parametric aligned inference remains a cellwise one-sample t approximation requiring independent subjects and an adequate normal approximation; it does not provide a max-T randomization distribution."
+  ],
+  "reviewed_source_tree_sha256": "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400",
+  "reviewed_test_validation_tree_sha256": "09fbab6159cf3525c6a141d184833ad2c2de831713e546a5474a718277b90143",
+  "reviewed_tarball_sha256": "9b117ec2441a4d6d94d23c39b977828aab8a5fea6c7ce09b96ef741d4c5cbc59",
+  "reviewed_check_source_tree_sha256": "bf45b5983f999070febb64ca2f78ab807ed2aeff832d6c2c6e06a8f2115dee6e",
+  "reviewed_pkgdown_site_sha256": "b3c17aa07dae899ec92899cf4606410cab7b25909625f64cbf428d46764a7c35",
+  "reviewed_court_bundle_sha256": "e2c5c95305af660f2b7a68e4f14a39bddc93d995ba68763852662595e5aa3c9a",
+  "reviewed_known_warp_bundle_sha256": "f7b44edd945e0195d176e6ad3d7341bac40c3c8cc666052371cad648111ece3e",
+  "reviewed_evidence_bundle_sha256": "35925cd206558a3f1875150274995a251d2aed12eb2673a2fcae752d34960c8e",
+  "reviewed_collector_sha256": "d95e749d48172257606c8efeea00028b05f6708e8040b4e2bf7c3891c5e9c970",
+  "evidence_checked": {
+    "source_and_tests": {
+      "directory": "data-raw/functional-alignment-certification/package-e38585975999d2bc-09fbab6159cf",
+      "test_blocks": 858,
+      "expectations": 4338,
+      "failures": 0,
+      "warnings": 14,
+      "skips": 4,
+      "validator_passed": true
+    },
+    "package": {
+      "tarball": "/private/tmp/dkge-v9-certified.m914En/dkge_0.0.0.9000.tar.gz",
+      "r_cmd_check_log_sha256": "747aa511dee1c9a6d66bb5825994750ef7c9d49658f16a9eb7b8c19d890c0bf9",
+      "r_cmd_check_status": "OK",
+      "installed_test_expectations_passed": 3736,
+      "closed_world_source_projection_checks_passed": 8,
+      "pkgdown_receipt_sha256": "937cceb106702f5baa806ecffae6697abaa9cd93a0e9f83342255f6760ecea8c",
+      "pkgdown_receipt_checks_passed": 14,
+      "utf8_rendering_visually_checked": true
+    },
+    "court": {
+      "directory": "data-raw/functional-alignment-certification/court-e38585975999d2bc-e2c5c95305af",
+      "run_state": "analyzed_complete",
+      "raw_rows": 5280,
+      "cohorts": 840,
+      "minimum_cell_arm_convergence": 1,
+      "exact_oracle_gate": true,
+      "negative_control_promotion_gate": false,
+      "materially_inflated_cells": 38,
+      "baseline_fwer": {
+        "full_permutation_reestimation": 0.05,
+        "geometry_only": 0.05,
+        "independent_alignment": 0.075,
+        "kernel_image_residual_prototype": 0.075
+      },
+      "strong_nuisance_independent_alignment_fwer": 0.425,
+      "schedule_summary_and_verdict_recomputed": true
+    },
+    "known_warp": {
+      "directory": "data-raw/functional-alignment-certification/known-warp-e38585975999-4e6b828f463d-f7b44edd945e",
+      "run_state": "determinism_complete",
+      "raw_rows": 160,
+      "cohorts": 40,
+      "all_solver_rows_converged": true,
+      "template_converged_cohorts": 39,
+      "serial_parallel_tolerance": 1e-12,
+      "serial_parallel_passed": true,
+      "schedule_and_summary_recomputed": true
+    },
+    "provenance": {
+      "role_bound_artifacts": 109,
+      "protocol_history_chain_validated": true,
+      "cache_operator_family_source_and_fit_bindings_reviewed": true,
+      "public_api_deprecation_and_descriptive_inferential_boundaries_reviewed": true,
+      "documentation_claims_match_failed_promotion_gate": true
+    }
+  }
+}

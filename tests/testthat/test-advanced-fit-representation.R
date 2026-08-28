@@ -126,12 +126,15 @@ test_that("q-space fits support audited downstream consumers or fail closed", {
     operators = replicate(length(fit$Braw), diag(ncol(fit$Braw[[1]])),
                           simplify = FALSE)
   )
-  boot <- dkge_bootstrap_qspace(
-    fit, contrasts = contrast, B = 3, seed = 7402,
-    transport_cache = identity_cache, medoid = 1, align = FALSE
+  expect_error(
+    dkge_bootstrap_qspace(
+      fit, contrasts = contrast, B = 3, seed = 7402,
+      transport_cache = identity_cache, medoid = 1, align = FALSE,
+      allow_approximate_alignment = TRUE
+    ),
+    "typed `dkge_fitted_alignment`",
+    class = "dkge_alignment_ineligible_error"
   )
-  expect_equal(boot$B, 3)
-  expect_true(all(is.finite(boot$summary[[1]]$boot)))
 
   expect_error(
     multivarious::project(fit, diag(nrow(fit$K))),

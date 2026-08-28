@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.1.0",
+  "gate": "full_source_test_suite",
+  "passed": false,
+  "source_tree_sha256": "61b974437dc09150cf1988d50e7f358f8444643486c54f7274207ad64d172931",
+  "test_validation_tree_sha256": "1e11edc22087824f0ffd48f6fda7c83456a6f1268072266c32d85928942b51c0",
+  "test_blocks": 821,
+  "expectations": 3728,
+  "expectation_failures": 7,
+  "errors": 1,
+  "failed": 8,
+  "warnings": 14,
+  "skipped": 4,
+  "results_sha256": "b34088a2698a0344e4e57f581e0387d6b5d4eb0a66fc081e647646970b2f1177",
+  "session_info_sha256": "aee793056533c3869689eda0d3efae0b7826829df693ed3192b71af1290a8084",
+  "elapsed_seconds": 205.084,
+  "optional_backends": {
+    "future": true,
+    "future.apply": true,
+    "T4transport": false,
+    "neuralign": true,
+    "patchwork": true,
+    "ragg": true,
+    "pkgdown": true
+  },
+  "skip_classification": {
+    "long_between_subject_null": "opt-in DKGE_LONG_TESTS; unrelated to alignment candidate",
+    "future_apply_absence_branch": "installed backend makes absence-only branch inapplicable",
+    "T4transport": "not installed; optional comparison backend skip",
+    "long_weight_null": "opt-in DKGE_LONG_TESTS; unrelated to alignment candidate"
+  },
+  "warning_classification": {
+    "expected_model_diagnostics": "rank reduction, degenerate classification target, reduced-rank input, and intentionally strict Sinkhorn convergence comparator warnings",
+    "optional_plot_backend": "installed",
+    "environment": "locale and package-built-under-version messages are external to DKGE"
+  },
+  "R": "R version 4.5.1 (2025-06-13)",
+  "platform": "aarch64-apple-darwin20"
+}

@@ -15,12 +15,12 @@ test_that("dkge_write_component_stats writes tidy CSV output", {
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp), add = TRUE)
 
-  res <- dkge_write_component_stats(fit,
+  res <- suppressWarnings(dkge_write_component_stats(fit,
                                     file = tmp,
                                     mapper = dkge_mapper_spec("ridge", lambda = 1e-3),
                                     centroids = centroids,
                                     components = 1,
-                                    inference = list(type = "parametric"))
+                                    inference = NULL))
 
   expect_true(file.exists(tmp))
   expect_gt(file.size(tmp), 0)
@@ -28,6 +28,8 @@ test_that("dkge_write_component_stats writes tidy CSV output", {
   expect_true("summary" %in% names(res))
 
   csv_data <- utils::read.csv(tmp, stringsAsFactors = FALSE)
-  expect_true(all(c("component", "cluster", "stat", "p", "p_adj", "significant") %in% names(csv_data)))
+  expect_true(all(c("component", "cluster", "mean", "sd", "n_subjects") %in%
+                  names(csv_data)))
+  expect_false(any(c("p", "p_adj", "significant") %in% names(csv_data)))
   expect_equal(nrow(csv_data), nrow(res$summary))
 })

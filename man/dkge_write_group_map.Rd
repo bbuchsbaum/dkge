@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-write.R
 \name{dkge_write_group_map}
 \alias{dkge_write_group_map}
-\title{Write a group map as NIfTI using a medoid label image}
+\title{Write a group map as NIfTI using a reference label image}
 \usage{
 dkge_write_group_map(
   group_values,
@@ -12,10 +12,11 @@ dkge_write_group_map(
 )
 }
 \arguments{
-\item{group_values}{Numeric vector of medoid-cluster values (length Q). When
+\item{group_values}{Numeric vector of reference-cluster values (length Q). When
 named, entries are matched to label IDs before fallback to positional order.}
 
-\item{medoid_labels}{A \code{neuroim2::BrainVolume} containing integer medoid labels.}
+\item{medoid_labels}{A \code{neuroim2::BrainVolume} containing integer reference
+labels. The argument name is retained for compatibility.}
 
 \item{label_table}{Optional data frame with cluster metadata (currently unused).}
 
@@ -27,7 +28,7 @@ Either the output path (when \code{out_file} is supplied) or a
 \code{neuroim2::BrainVolume}.
 }
 \description{
-Paints medoid-level values onto the reference parcellation and either
+Paints reference-support values onto the reference parcellation and either
 returns a \code{neuroim2::BrainVolume} or writes it to disk.
 }
 \examples{

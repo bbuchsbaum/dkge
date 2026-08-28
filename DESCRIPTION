@@ -8,7 +8,8 @@ Authors@R: c(
 Description: Implements Design-Kernel Group Embedding (DKGE) for design-aware
     cluster-level fMRI analysis. Provides streaming and memory-light estimators,
     leave-one-subject-out cross-fitting, kernel-based design alignment, and
-    optimal transport to medoid parcellations. Integrates with
+    provenance-checked functional alignment to identified reference supports,
+    group functional templates, and optimal transport. Integrates with
     neuroimaging toolkits such as 'neuroim2', 'fmridesign', and 'fmriAR'.
 Depends: R (>= 4.2.0)
 Imports:
@@ -31,8 +32,10 @@ Suggests:
     albersdown,
     fmriAR,
     future,
+    jsonlite,
     microbenchmark,
     neuralign,
+    pkgload,
     pkgdown,
     remotes,
     testthat,

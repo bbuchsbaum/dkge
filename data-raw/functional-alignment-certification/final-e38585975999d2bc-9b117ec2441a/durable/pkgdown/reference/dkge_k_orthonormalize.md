@@ -1,0 +1,44 @@
+# Robust K-orthonormalization
+
+Ensures the columns of `W` are orthonormal with respect to the design
+kernel metric: U^T K U = I.
+
+## Usage
+
+``` r
+dkge_k_orthonormalize(W, K, Kroots = NULL)
+```
+
+## Arguments
+
+- W:
+
+  qxr matrix (columns = basis vectors)
+
+- K:
+
+  qxq design kernel (PSD)
+
+- Kroots:
+
+  Optional precomputed kernel roots retained for API compatibility.
+  Orthonormalization is computed from the exact Gram matrix
+  `t(W) %*% K %*% W`, so null directions of a PSD kernel are not
+  jittered into artificial metric dimensions.
+
+## Value
+
+qxr matrix with K-orthonormal columns
+
+## Examples
+
+``` r
+K <- diag(5)
+W <- matrix(rnorm(10), 5, 2)
+U <- dkge_k_orthonormalize(W, K)
+# Verify K-orthonormality
+round(t(U) %*% K %*% U, 10)
+#>      [,1] [,2]
+#> [1,]    1    0
+#> [2,]    0    1
+```

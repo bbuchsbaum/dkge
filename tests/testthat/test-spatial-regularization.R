@@ -92,6 +92,117 @@ test_that("coordinate construction dogfoods the adjoin Laplacian", {
   expect_true(inherits(spatial$laplacians[[1]], "sparseMatrix"))
 })
 
+test_that("mutable spatial specifications are revalidated at fit and CV boundaries", {
+  set.seed(7415)
+  P <- 6L
+  q <- 2L
+  labels <- paste0("parcel", seq_len(P))
+  B <- replicate(3L, {
+    value <- matrix(rnorm(q * P), q, P)
+    colnames(value) <- labels
+    value
+  }, simplify = FALSE)
+  X <- replicate(3L, diag(q), simplify = FALSE)
+  base <- line_spatial(P, lambda = 0.4, labels = labels)
+
+  mutations <- list(
+    diagonal_drift = list(
+      class = "dkge_spatial_laplacian_error",
+      apply = function(x) {
+        x$laplacians[[1L]] <-
+          x$laplacians[[1L]] + Matrix::Diagonal(P, x = rep(0.1, P))
+        x
+      }
+    ),
+    asymmetry = list(
+      class = "dkge_spatial_laplacian_error",
+      apply = function(x) {
+        L <- Matrix::Matrix(as.matrix(x$laplacians[[1L]]), sparse = TRUE)
+        L[1L, 2L] <- L[1L, 2L] + 0.1
+        x$laplacians[[1L]] <- L
+        x
+      }
+    ),
+    domain = list(
+      class = "dkge_spatial_domain_error",
+      apply = function(x) {
+        x$domains[[1L]][[1L]] <- x$domains[[1L]][[2L]]
+        x
+      }
+    ),
+    domain_removed = list(
+      class = "dkge_spatial_domain_error",
+      apply = function(x) {
+        x$domains[1L] <- list(NULL)
+        x
+      }
+    ),
+    foreign_entry = list(
+      class = "dkge_spatial_provenance_error",
+      apply = function(x) { x$foreign_entry <- TRUE; x }
+    ),
+    construction = list(
+      class = "dkge_spatial_provenance_error",
+      apply = function(x) {
+        x$construction$function_name <- "foreign::laplacian"
+        x
+      }
+    )
+  )
+
+  for (mutation in mutations) {
+    candidate <- mutation$apply(base)
+    expect_error(
+      dkge_fit(
+        B, X, diag(q), rank = 1L, w_method = "none",
+        effect_scaling = "none", spatial = candidate
+      ),
+      class = mutation$class
+    )
+    expect_error(
+      dkge_cv_spatial_grid(
+        B, X, diag(q), candidate,
+        lambdas = c(0, 0.4), rank = 1L,
+        w_method = "none", effect_scaling = "none"
+      ),
+      class = mutation$class
+    )
+    expect_error(
+      .dkge_spatial_with_lambda(candidate, 0.2),
+      class = mutation$class
+    )
+  }
+
+  invalid_display <- mutations$diagonal_drift$apply(base)
+  expect_error(
+    print(invalid_display),
+    class = "dkge_spatial_laplacian_error"
+  )
+
+  fitted <- dkge_fit(
+    B, X, diag(q), rank = 1L, w_method = "none",
+    effect_scaling = "none", spatial = base
+  )
+  status_spoof <- fitted
+  status_spoof$spatial$status <- "inert"
+  for (audit in list(print, dkge_diagnostics)) {
+    expect_error(
+      audit(status_spoof),
+      class = "dkge_spatial_provenance_error"
+    )
+  }
+  diagonal_spoof <- fitted
+  diagonal_spoof$spatial$spec$laplacians[[1L]] <-
+    diagonal_spoof$spatial$spec$laplacians[[1L]] +
+    Matrix::Diagonal(P, x = rep(0.1, P))
+  for (audit in list(print, dkge_diagnostics)) {
+    expect_error(
+      audit(diagonal_spoof),
+      class = "dkge_spatial_laplacian_error"
+    )
+  }
+})
+
 test_that("spatial constructor and domain contracts fail closed", {
   coords <- line_coords(5)
   L <- adjoin::spatial_laplacian(
@@ -701,4 +812,209 @@ test_that("large spatial domains retain sparse linear storage", {
   expect_equal(dim(smoothed), dim(B))
   expect_true(all(is.finite(smoothed)))
   expect_lt(sum(diff(smoothed[1L, ])^2), sum(diff(B[1L, ])^2))
+})
+
+test_that("an edgeless graph is reported rather than silently inert", {
+  # The defaults assume unit-spaced voxel indices. Millimetre coordinates with
+  # the default dthresh isolate every unit, giving L = 0 and H = I: the fit is
+  # then bit-identical to an unregularized one despite lambda > 0. That must be
+  # visible at construction, not discovered later.
+  mm <- cbind(x = seq(0, 33, by = 3), y = 0, z = 0)
+
+  expect_warning(
+    spatial <- dkge_spatial_regularizer(coords = mm, lambda = 2),
+    "no edges",
+    class = "dkge_spatial_inert_warning"
+  )
+  expect_equal(dkge:::.dkge_spatial_edge_count(spatial$laplacians[[1]]), 0)
+  expect_identical(spatial$topology$status, "inert")
+  expect_true(spatial$topology$requested)
+  expect_false(spatial$topology$effective)
+  expect_false(spatial$topology$fully_effective)
+  expect_output(print(spatial), "edges\\s*: 0")
+  expect_output(print(spatial), "status\\s*: inert")
+  expect_output(print(spatial), "no effect")
+
+  # A threshold on the right scale for 3 mm spacing connects the chain.
+  expect_silent(
+    connected <- dkge_spatial_regularizer(coords = mm, lambda = 2,
+                                          dthresh = 3.1, nnk = 6)
+  )
+  expect_equal(dkge:::.dkge_spatial_edge_count(connected$laplacians[[1]]),
+               nrow(mm) - 1)
+  expect_identical(connected$topology$status, "active")
+  expect_true(connected$topology$effective)
+  expect_true(connected$topology$fully_effective)
+
+  # lambda = 0 is already an explicit no-op, so it must not warn.
+  expect_silent(inactive <- dkge_spatial_regularizer(coords = mm, lambda = 0))
+  expect_identical(inactive$topology$status, "inactive")
+  expect_false(inactive$topology$requested)
+  expect_false(inactive$topology$effective)
+})
+
+test_that("edgeless status survives fitting and stale positive retunes re-warn", {
+  set.seed(7412)
+  mm <- cbind(x = seq(0, 21, by = 3), y = 0, z = 0)
+  S <- 3L
+  q <- 2L
+  P <- nrow(mm)
+  B <- replicate(S, matrix(rnorm(q * P), q, P), simplify = FALSE)
+  X <- replicate(S, diag(q), simplify = FALSE)
+  raw <- dkge_fit(B, X, diag(q), rank = 1, w_method = "none",
+                  effect_scaling = "none")
+
+  expect_warning(
+    spatial <- dkge_spatial_regularizer(mm, lambda = 2),
+    class = "dkge_spatial_inert_warning"
+  )
+  expect_silent(
+    fit <- dkge_fit(B, X, diag(q), rank = 1, w_method = "none",
+                    effect_scaling = "none", spatial = spatial)
+  )
+  diagnostics <- dkge_diagnostics(fit)$spatial
+  expect_equal(fit$Chat, raw$Chat, tolerance = 0)
+  expect_identical(diagnostics$status, "inert")
+  expect_true(diagnostics$requested)
+  expect_false(diagnostics$active)
+  expect_false(diagnostics$effective)
+  expect_false(diagnostics$fully_effective)
+  expect_false(any(diagnostics$diagnostics$effective))
+  expect_output(print(fit), "Spatial smoothing: inert", fixed = TRUE)
+
+  expect_silent(template <- dkge_spatial_regularizer(mm, lambda = 0))
+  retuned <- .dkge_spatial_with_lambda(template, 2)
+  expect_identical(retuned$topology$status, "inert")
+  expect_warning(
+    dkge_fit(B, X, diag(q), rank = 1, w_method = "none",
+             effect_scaling = "none", spatial = retuned),
+    class = "dkge_spatial_inert_warning"
+  )
+})
+
+test_that("spatial CV fails closed when positive lambdas cannot change the fit", {
+  set.seed(7413)
+  mm <- cbind(x = seq(0, 21, by = 3), y = 0, z = 0)
+  B <- replicate(3L, matrix(rnorm(2L * nrow(mm)), 2L, nrow(mm)),
+                 simplify = FALSE)
+  X <- replicate(3L, diag(2L), simplify = FALSE)
+  expect_silent(template <- dkge_spatial_regularizer(mm, lambda = 0))
+
+  expect_error(
+    dkge_cv_spatial_grid(
+      B, X, diag(2L), template,
+      lambdas = c(0, 1, 2), rank = 1L,
+      w_method = "none", effect_scaling = "none"
+    ),
+    "cannot distinguish",
+    class = "dkge_cv_spatial_inert_error"
+  )
+
+  # An all-zero grid is an explicit request for the identity operator, not an
+  # attempt to tune an unidentifiable positive penalty.
+  expect_no_error(
+    cv_zero <- suppressWarnings(dkge_cv_spatial_grid(
+      B, X, diag(2L), template,
+      lambdas = 0, rank = 1L,
+      w_method = "none", effect_scaling = "none"
+    ))
+  )
+  expect_identical(cv_zero$pick, 0)
+  expect_identical(cv_zero$spatial$topology$status, "inactive")
+})
+
+test_that("subject-specific edgeless graphs are reported as partially active", {
+  set.seed(7414)
+  P <- 6L
+  coords <- list(
+    sub01 = line_coords(P),
+    sub02 = cbind(x = seq(0, by = 3, length.out = P), y = 0, z = 0)
+  )
+  expect_warning(
+    spatial <- dkge_spatial_regularizer(coords, lambda = 1,
+                                        dthresh = 1.42, nnk = 6),
+    "sub02",
+    class = "dkge_spatial_partial_warning"
+  )
+  expect_identical(spatial$topology$status, "partial")
+  expect_identical(spatial$topology$empty_labels, "sub02")
+
+  B <- lapply(coords, function(x) matrix(rnorm(2L * nrow(x)), 2L, nrow(x)))
+  X <- lapply(coords, function(x) diag(2L))
+  data <- dkge_data(B, X, subject_ids = names(B))
+  expect_silent(
+    fit <- dkge_fit(data, K = diag(2L), rank = 1L,
+                    w_method = "none", effect_scaling = "none",
+                    spatial = spatial)
+  )
+  diagnostics <- dkge_diagnostics(fit)$spatial
+  expect_identical(diagnostics$status, "partial")
+  expect_true(diagnostics$active)
+  expect_true(diagnostics$effective)
+  expect_false(diagnostics$fully_effective)
+  expect_identical(diagnostics$diagnostics$effective, c(TRUE, FALSE))
+
+  observed_empty <- dkge:::.dkge_spatial_apply_betas(
+    B$sub02, fit$spatial$operators$sub02
+  )
+  expect_identical(observed_empty, B$sub02)
+
+  warning_classes <- list()
+  cv <- withCallingHandlers(
+    dkge_cv_spatial_grid(
+      B, X, diag(2L), spatial,
+      lambdas = c(0, 0.25), rank = 1L,
+      w_method = "none", effect_scaling = "none"
+    ),
+    warning = function(w) {
+      warning_classes[[length(warning_classes) + 1L]] <<- class(w)
+      invokeRestart("muffleWarning")
+    }
+  )
+  partial_warning_n <- sum(vapply(
+    warning_classes,
+    function(classes) "dkge_spatial_partial_warning" %in% classes,
+    logical(1)
+  ))
+  expect_equal(partial_warning_n, 1L)
+  expect_identical(cv$spatial$topology$status, "partial")
+})
+
+test_that("voxel weights smooth inside the resolvent and Omega outside it", {
+  # Pins the documented moment algebra, including the asymmetry between the two
+  # per-unit weightings:
+  #   M = (Btil W^1/2) H Omega H (Btil W^1/2)'
+  # Voxel weights enter before the smoother, Omega after it.
+  set.seed(7411)
+  P <- 8L
+  q <- 3L
+  B <- matrix(rnorm(q * P), q, P)
+  spatial <- line_spatial(P, lambda = 1.5)
+  fit <- dkge_fit(
+    list(B, matrix(rnorm(q * P), q, P)),
+    list(diag(q), diag(q)), diag(q),
+    rank = 1, spatial = spatial,
+    w_method = "none", effect_scaling = "none"
+  )
+  op <- fit$spatial$operators[[1]]
+  H <- solve(diag(P) + op$lambda * as.matrix(op$L))
+  w <- seq(0.3, 1.7, length.out = P)
+  omega <- seq(0.5, 1.5, length.out = P)
+
+  observed <- dkge:::.dkge_effect_moment(B, Omega = omega, voxel_weights = w,
+                                         spatial = op)
+  inner <- (B %*% diag(sqrt(w))) %*% H %*% diag(sqrt(omega))
+  expect_equal(unname(observed), unname(inner %*% t(inner)), tolerance = 1e-10)
+
+  # The alternative orderings must not coincide, or the assertion above is
+  # vacuous and the documented distinction is untestable.
+  swapped <- (B %*% H) %*% diag(sqrt(w * omega))
+  expect_false(isTRUE(all.equal(unname(observed), unname(swapped %*% t(swapped)),
+                                tolerance = 1e-10)))
+
+  # H really does appear twice: the moment is not Btil H Btil'.
+  plain <- dkge:::.dkge_effect_moment(B, spatial = op)
+  expect_equal(unname(plain), unname(B %*% H %*% H %*% t(B)), tolerance = 1e-10)
+  expect_false(isTRUE(all.equal(unname(plain), unname(B %*% H %*% t(B)),
+                                tolerance = 1e-10)))
 })

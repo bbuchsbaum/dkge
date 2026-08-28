@@ -10,10 +10,11 @@
 #' [dkge_transport_spec()], [dkge_prepare_transport()], or directly to
 #' [fit_mapper()] together with `source_feat` / `target_feat` matrices.
 #'
-#' Use [dkge_mapper()] instead when you need a **dense rendering / anchor
-#' mapper** that works in 3-D spatial coordinates (kNN barycentric, Sinkhorn
-#' OT over point clouds) for functions such as [dkge_build_renderer()] or
-#' [dkge_render_subject_values()].
+#' Use [dkge_mapper()] for the legacy descriptive dense-rendering pipeline.
+#' [dkge_build_renderer()] and [dkge_render_subject_values()] are deprecated
+#' display helpers and do not establish inferential correspondence. For group
+#' functional alignment, use [dkge_prepare_alignment()] and
+#' [dkge_render_aligned()].
 #'
 #' @param type Mapping strategy identifier: `"sinkhorn"` (optimal transport),
 #'   `"ridge"` (ridge regression), or `"ols"` (ordinary least squares).
@@ -42,11 +43,13 @@ dkge_mapper_spec <- function(type = c("sinkhorn", "ridge", "ols"),
 #' Create a pluggable DKGE anchor mapper for dense rendering
 #'
 #' @description
-#' Constructs a mapper descriptor for the **dense rendering / anchor pipeline**
+#' Constructs a mapper descriptor for the legacy **dense rendering / anchor pipeline**
 #' — used when projecting subject-space voxel/parcel values onto a set of 3-D
 #' spatial anchor points (e.g., medoid centroids).  Pass the result to
-#' [dkge_build_renderer()], [dkge_render_subject_values()], or directly to
-#' [fit_mapper()] together with `subj_points` / `anchor_points` matrices.
+#' deprecated [dkge_build_renderer()] or [dkge_render_subject_values()], or
+#' directly to [fit_mapper()] together with `subj_points` / `anchor_points`
+#' matrices. These operations are descriptive and do not make an alignment
+#' inferentially eligible. Use [dkge_prepare_alignment()] for that contract.
 #'
 #' Use [dkge_mapper_spec()] instead when you need a **transport pipeline
 #' mapper** that operates in an abstract feature space (ridge regression,
@@ -155,7 +158,7 @@ fit_mapper.dkge_mapper_knn <- function(spec,
 
   W <- W / (rowSums(W) + 1e-12)
 
-  structure(list(
+  out <- structure(list(
     type = "knn",
     idx = nn$nn.index,
     weights = W,
@@ -305,7 +308,7 @@ fit_mapper.dkge_mapper_sinkhorn <- function(spec,
   plan_sparse <- Matrix::Matrix(plan, sparse = TRUE)
   transport_cost <- sum(plan * C)
 
-  structure(list(
+  out <- structure(list(
     type = "sinkhorn",
     plan = plan_sparse,
     operator = Matrix::Matrix(operator, sparse = TRUE),
@@ -321,6 +324,12 @@ fit_mapper.dkge_mapper_sinkhorn <- function(spec,
     P = P,
     Q = Q
   ), class = "dkge_mapper_fit_sinkhorn")
+  .dkge_assert_mapping_numerically_valid(
+    out,
+    context = "Legacy Sinkhorn mapper",
+    class = "dkge_alignment_numerical_error"
+  )
+  out
 }
 
 #' @export
@@ -500,6 +509,11 @@ fit_mapper.dkge_mapper_spec_sinkhorn <- function(spec, source_feat, source_vals 
                                   cost = C,
                                   weights = list(source = a, target = b)))
   class(mapping) <- c("dkge_mapping_sinkhorn", "dkge_mapping")
+  .dkge_assert_mapping_numerically_valid(
+    mapping,
+    mapper_spec = spec,
+    context = "Direct Sinkhorn mapper fit"
+  )
   mapping
 }
 

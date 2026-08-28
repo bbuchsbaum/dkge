@@ -527,10 +527,14 @@
                                                prepped$subject_ids,
                                                prepped$q)
 
-  subject_weights <- .dkge_subject_weights(Btil, Omega_list, kernels$Khalf,
-                                           w_method, w_tau,
-                                           obs_masks = obs_masks,
-                                           spatial_list = spatial_list)
+  subject_weight_info <- .dkge_subject_weight_scores(
+    Btil, Omega_list, kernels$Khalf, w_method,
+    obs_masks = obs_masks,
+    spatial_list = spatial_list
+  )
+  subject_weights <- .dkge_normalize_subject_weights(
+    subject_weight_info$raw, subject_weight_info$usable, w_tau
+  )
 
   voxel_weights <- prepped$weight_eval$total
   voxel_weights_subject <- prepped$weight_eval$total_subject
@@ -578,6 +582,8 @@
     Chat_sym = (Chat + t(Chat)) / 2,
     contribs = accum$contribs,
     subject_weights = subject_weights,
+    subject_weight_scores_raw = subject_weight_info$raw,
+    subject_weight_usable = subject_weight_info$usable,
     voxel_weights = voxel_weights,
     voxel_weights_subject = voxel_weights_subject,
     pair_counts = accum$pair_counts,
@@ -1240,6 +1246,8 @@
     pool_cache = accum$pool_cache,
     moment_diagnostics = accum$moment_diagnostics,
     weights = accum$subject_weights,
+    subject_weight_scores_raw = accum$subject_weight_scores_raw,
+    subject_weight_usable = accum$subject_weight_usable,
     Braw = dataset$betas,
     Btil = Btil,
     Omega = Omega_list,

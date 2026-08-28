@@ -1,11 +1,14 @@
 # dkge-components.R
 # Convenience helpers for component-level inference and transport
 
-#' Component-level consensus statistics
+#' Deprecated descriptive component consensus
 #'
-#' Transports each subject's component loadings to a reference parcellation,
-#' computes inference statistics, and returns tidy summaries ready for
-#' visualization.
+#' This legacy helper transports full-fit component loadings with correspondence
+#' learned from those same loadings. It is retained only for descriptive
+#' summaries and cannot compute p-values, confidence claims, or significance.
+#' Use [dkge_prepare_alignment()], apply correspondence with
+#' [dkge_transport_contrasts_to_reference()] or [dkge_align_to_template()], and
+#' then call [dkge_infer_aligned()] for the typed inferential workflow.
 #'
 #' @param fit A fitted `dkge` object.
 #' @param mapper Mapper strategy (string or [dkge_mapper_spec()]). Defaults to
@@ -13,19 +16,20 @@
 #' @param centroids Optional list of subject centroid matrices; defaults to
 #'   centroids stored in `fit` if available.
 #' @param sizes Optional list of cluster masses (one vector per subject).
-#' @param inference One of "signflip" or "parametric", or a list providing
-#'   `type`, `B`, `tail`, and `alpha`.
-#' @param medoid Reference subject index (defaults to 1).
+#' @param inference Deprecated. Must be `NULL`; legacy full-fit correspondence
+#'   is descriptive/ineligible and cannot enter an inference boundary.
+#' @param medoid Reference subject index for the descriptive display.
 #' @param components Optional vector of component indices or names; default is
 #'   all components.
-#' @param adjust Method supplied to [stats::p.adjust()] for multiple testing
-#'   correction in the tidy summary.
+#' @param adjust Deprecated and ignored because inferential p-values are no
+#'   longer produced by this helper.
 #' @param ... Additional mapper-specific parameters (e.g. `epsilon`).
 #'
 #' @return A list with fields:
-#'   - `summary`: tidy data frame of statistics and p-values.
-#'   - `statistics`: per-component statistic vectors.
+#'   - `summary`: tidy data frame of descriptive means and standard deviations.
+#'   - `statistics`: per-component mean vectors.
 #'   - `transport`: per-component transported subject matrices.
+#'   - `eligibility`: an ineligible/descriptive alignment receipt.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -34,11 +38,11 @@
 #' )
 #' fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 #' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-#' res <- dkge_component_stats(fit,
+#' res <- suppressWarnings(dkge_component_stats(fit,
 #'                             centroids = centroids,
 #'                             mapper = "ridge",
-#'                             inference = "parametric",
-#'                             components = 1)
+#'                             inference = NULL,
+#'                             components = 1))
 #' head(res$summary)
 #' }
 #' @export
@@ -46,12 +50,30 @@ dkge_component_stats <- function(fit,
                                  mapper = "sinkhorn",
                                  centroids = NULL,
                                  sizes = NULL,
-                                 inference = "signflip",
+                                 inference = NULL,
                                  medoid = 1L,
                                  components = NULL,
                                  adjust = "fdr",
                                  ...) {
   stopifnot(inherits(fit, "dkge"))
+  .Deprecated(
+    "dkge_prepare_alignment",
+    package = "dkge",
+    msg = paste0(
+      "`dkge_component_stats()` is deprecated and descriptive only; use the ",
+      "typed alignment and `dkge_infer_aligned()` workflow for inference."
+    )
+  )
+  if (!is.null(inference)) {
+    .dkge_abort(
+      paste0(
+        "Legacy component correspondence is fitted from full-fit loadings and ",
+        "is descriptive/ineligible. `dkge_component_stats()` cannot compute ",
+        "inferential p-values or significance."
+      ),
+      "dkge_alignment_ineligible_error"
+    )
+  }
 
   centroids <- centroids %||% fit$centroids %||% fit$input$centroids %||%
     stop("Centroids must be supplied or stored in the fit object.")
@@ -70,12 +92,12 @@ dkge_component_stats <- function(fit,
     comp_idx <- match(components, colnames(fit$U))
   }
 
-  transport <- dkge_transport_loadings_to_medoid(fit,
+  transport <- suppressWarnings(dkge_transport_loadings_to_medoid(fit,
                                                  medoid = medoid,
                                                  centroids = centroids,
                                                  loadings = loadings,
                                                  sizes = sizes,
-                                                 mapper = mapper_spec)
+                                                 mapper = mapper_spec))
 
   # transport$subjects is a length-`rank` list (one S x Q matrix per component);
   # select the requested components, not columns (clusters) of every component.
@@ -83,13 +105,27 @@ dkge_component_stats <- function(fit,
     stop("`components` must index existing components (1..rank).", call. = FALSE)
   }
   subj_mats <- transport$subjects[comp_idx]
+  alignment <- transport$cache
+  .dkge_validate_fitted_alignment_object(alignment)
+  if (!isTRUE(alignment$eligibility$solver_converged) &&
+      !is.na(alignment$eligibility$solver_converged)) {
+    .dkge_abort(
+      "Legacy component transport did not satisfy its numerical contract.",
+      "dkge_alignment_numerical_error"
+    )
+  }
+  descriptive <- .dkge_component_descriptive(subj_mats, comp_idx)
 
-  inference_res <- .dkge_component_inference(subj_mats, inference)
-  tidy <- .dkge_component_tidy(inference_res, comp_idx, adjust)
-
-  list(summary = tidy,
-       statistics = inference_res$stats,
-       transport = subj_mats)
+  list(summary = descriptive$summary,
+       statistics = descriptive$means,
+       transport = subj_mats,
+       eligibility = alignment$eligibility,
+       metadata = list(
+         status = "descriptive",
+         inferential = FALSE,
+         subject_weighting = "equal_subject",
+         reference_subject = alignment$reference_subject %||% alignment$medoid
+       ))
 }
 
 #' @rdname dkge_component_stats
@@ -101,46 +137,16 @@ dkge_write_component_stats <- function(fit, file, ...) {
   invisible(res)
 }
 
-.dkge_component_inference <- function(subj_mats, inference) {
-  if (is.character(inference)) {
-    inference <- list(type = inference)
-  }
-  type <- inference$type %||% "signflip"
-  alpha <- inference$alpha %||% 0.05
-
-  stats <- vector("list", length(subj_mats))
-  pvals <- vector("list", length(subj_mats))
-  for (i in seq_along(subj_mats)) {
-    Y <- subj_mats[[i]]
-    if (type == "signflip") {
-      B <- inference$B %||% 2000
-      tail <- inference$tail %||% "two.sided"
-      res <- dkge_signflip_maxT(Y, B = B, tail = tail)
-      stats[[i]] <- res$stat
-      pvals[[i]] <- res$p
-    } else if (type == "parametric") {
-      mu <- colMeans(Y)
-      se <- apply(Y, 2, stats::sd) / sqrt(nrow(Y))
-      tstat <- mu / (se + 1e-12)
-      stats[[i]] <- tstat
-      pvals[[i]] <- 2 * stats::pt(-abs(tstat), df = nrow(Y) - 1)
-    } else {
-      stop("Unsupported inference type")
-    }
-  }
-  list(stats = stats, pvals = pvals, alpha = alpha)
-}
-
-.dkge_component_tidy <- function(inference_res, comp_idx, adjust) {
-  out <- Map(function(stat, p, comp) {
+.dkge_component_descriptive <- function(subj_mats, comp_idx) {
+  means <- lapply(subj_mats, colMeans)
+  sds <- lapply(subj_mats, function(Y) apply(Y, 2, stats::sd))
+  out <- Map(function(mean_value, sd_value, Y, comp) {
     data.frame(component = comp,
-               cluster = seq_along(stat),
-               stat = stat,
-               p = p,
+               cluster = seq_along(mean_value),
+               mean = mean_value,
+               sd = sd_value,
+               n_subjects = nrow(Y),
                stringsAsFactors = FALSE)
-  }, inference_res$stats, inference_res$pvals, comp_idx)
-  df <- do.call(rbind, out)
-  df$p_adj <- stats::p.adjust(df$p, method = adjust)
-  df$significant <- df$p_adj <= inference_res$alpha
-  df
+  }, means, sds, subj_mats, comp_idx)
+  list(summary = do.call(rbind, out), means = means)
 }

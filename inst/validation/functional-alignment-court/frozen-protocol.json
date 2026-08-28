@@ -1,0 +1,82 @@
+{
+  "protocol_id": "dkge-functional-alignment-type1-v1",
+  "frozen_on": "2026-08-26",
+  "status": "frozen_before_formal_results",
+  "estimand": {
+    "null": "zero population mean for every tested raw effect row",
+    "unit": "subject",
+    "statistic": "maximum absolute one-sample t across target parcels and the jointly tested contrast family",
+    "fwer_rejection": "randomization p_maxT <= 0.05",
+    "unadjusted_rejection": "at least one coordinate-wise randomization p <= 0.05",
+    "effect_bias": "mean and mean absolute group map under the null",
+    "reference": "subject 1 fixed before data generation"
+  },
+  "null_dgps": [
+    "gaussian_separable",
+    "student_t_spatial_heteroscedastic"
+  ],
+  "raw_sign_action": "For each subject, multiply every tested raw beta row by one common subject sign, leave nuisance rows, geometry, masses, designs, kernel, and independent alignment replicate fixed, then refit every beta-dependent quantity in the full-reestimation arm.",
+  "arms": [
+    "legacy_fullfit_functional",
+    "l1_fixed_fullfit_functional",
+    "l2_fold_loading",
+    "geometry_only",
+    "kernel_image_residual_prototype",
+    "independent_alignment",
+    "full_permutation_reestimation"
+  ],
+  "factors": {
+    "S": [8, 16, 32],
+    "estimation_rank": [2, 4],
+    "kernel_rank": [4, 6],
+    "contrast_family_dimension": [1, 2],
+    "eigengap": ["large", "small"],
+    "nuisance_magnitude": [0.5, 2.0],
+    "spatial_correlation": [0.0, 0.65],
+    "spatial_heteroscedasticity": [1.0, 3.0],
+    "parcel_count_heterogeneity": [false, true],
+    "epsilon": [0.03, 0.15],
+    "functional_cost_weight": [0.0, 0.5, 1.0]
+  },
+  "grid_design": "Deterministic fractional/OAT grid in court.R; every named factor varies while keeping full re-estimation computationally identifiable.",
+  "seeds": {
+    "pilot": 7202601,
+    "formal_base": 7300000,
+    "rule": "formal_base + 10000 * cell_index + simulation_index"
+  },
+  "pilot_budget_rule": {
+    "order": "Run full_permutation_reestimation first on the pilot cell.",
+    "pilot_n_sim": 2,
+    "pilot_n_perm": 15,
+    "formal_wall_seconds": 1200,
+    "candidate_n_sim": [40, 64, 96],
+    "candidate_n_perm": [31, 63, 127],
+    "minimum": {"n_sim": 40, "n_perm": 31},
+    "formal_cores": 4,
+    "selection": "Choose the largest n_sim*n_perm whose predicted four-worker full-reestimation wall time across the six exact-oracle cells is at most the fixed formal wall budget; ties prefer larger n_sim. The minimum n_sim is 40 because with 24 simulations even zero rejections has a Wilson upper bound above the frozen 0.12 negative-control gate. If the minimum exceeds budget, run the minimum and label the court resource-limited rather than weakening gates."
+  },
+  "mapper_solver": {
+    "family": "entropic Sinkhorn for non-reference subjects; the current identity-special-cased reference is retained as a diagnosed legacy behavior in this early court",
+    "max_iter": 5000,
+    "marginal_tolerance": 0.0001,
+    "warm_start": false,
+    "failure_policy": "record nonconvergence; do not retune epsilon, tolerance, or iteration cap after formal results",
+    "pilot_refinements": "v0 identified an unfrozen overly strict tolerance; v1 showed that 2000 iterations violated the predeclared 5% solver gate. Both pilots and seeds are retained. The final pre-formal policy uses package-standard tolerance 1e-4 and 5000 iterations."
+  },
+  "formal_gates": {
+    "nominal_alpha": 0.05,
+    "negative_control": "geometry_only and independent_alignment each require a Wilson 95% interval containing 0.05 and upper bound <= 0.12",
+    "exact_oracle": "full_permutation_reestimation requires a Wilson 95% interval containing 0.05; otherwise the candidate is invalid",
+    "inflation_flag": "a same-data arm is materially inflated when its Wilson lower bound exceeds 0.05 and its point estimate exceeds 0.10",
+    "solver_gate": "more than 5% nonconverged or failed mappings invalidates that cell",
+    "latent_span_model": "Regress excess rejection and operator sensitivity on 1/(S*relative_eigengap); never summarize the residual dependence as uniformly O(1/S)."
+  },
+  "stopping_rule": "Run the frozen budget for every scheduled cell. Stop only for the solver gate, non-finite statistics, or the fixed wall/resource ceiling; retain all completed seeds and label the result incomplete. Do not replace seeds, delete adverse cells, weaken thresholds, or increase epsilon after observing results.",
+  "promotion_language": {
+    "independent": "May be called inferentially eligible only if its negative-control gate passes.",
+    "geometry_only": "Ancillary correspondence bound, not evidence that functional alignment works.",
+    "same_data": "Always approximate under rank truncation, even if observed size is favorable.",
+    "full_reestimation": "Exact same-data reference only for the frozen raw sign action and DGP scope.",
+    "later_work": "FA-5 through FA-8 inherit these labels and may not be promoted on power alone."
+  }
+}

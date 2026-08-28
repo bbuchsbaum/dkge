@@ -216,7 +216,12 @@ dkge_anchor_aggregate <- function(anchor_list,
   list(y = y, ybar = ybar, coverage = coverage, ess = ess)
 }
 
-#' Prepare reusable rendering objects for a fitted DKGE model
+#' Prepare a legacy descriptive renderer (deprecated)
+#'
+#' This helper fits correspondence directly from caller-supplied geometry or
+#' features and is retained only for descriptive displays. It does not create a
+#' typed inferential alignment. Use [dkge_prepare_alignment()] followed by
+#' [dkge_renderer()] and [dkge_render_aligned()] for new workflows.
 #'
 #' @param fit Fitted `dkge` object.
 #' @param centroids List of per-subject centroid matrices (`P_s x 3`).
@@ -243,13 +248,17 @@ dkge_anchor_aggregate <- function(anchor_list,
 #' @param feat_lambda Feature cost weight passed to Sinkhorn mappers. Ignored by
 #'   kNN.
 #' @param feat_sigma Feature bandwidth used when computing feature costs.
+#' @param subject_weights Optional fixed subject weights for descriptive
+#'   aggregation. Equal subject weighting is the default; fit-level MFA weights
+#'   are never inherited silently.
 #' @param reliabilities Optional list of per-subject reliability vectors passed
 #'   to the mapper during fitting.
 #' @param graph_k Optional integer; when provided, an anchor graph of this
 #'   neighborhood size is constructed for subsequent smoothing.
 #' @param decoder_k Number of anchors per voxel when building the decoder.
-#' @return A list bundling anchors, optional graph/decoder, fitted per-subject
-#'   mappers, and subject weights.
+#' @return A deprecated `dkge_legacy_renderer` bundling anchors, optional
+#'   graph/decoder, fitted per-subject mappers, fixed subject weights, and an
+#'   ineligible/descriptive alignment receipt.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -258,11 +267,11 @@ dkge_anchor_aggregate <- function(anchor_list,
 #' )
 #' fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 #' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-#' renderer <- dkge_build_renderer(fit,
+#' renderer <- suppressWarnings(dkge_build_renderer(fit,
 #'                                 centroids = centroids,
 #'                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
 #'                                 anchor_n = 20,
-#'                                 anchor_method = "sample")
+#'                                 anchor_method = "sample"))
 #' length(renderer$anchors)
 #' }
 #' @export
@@ -281,10 +290,31 @@ dkge_build_renderer <- function(fit,
                                 subject_feats = NULL,
                                 anchor_feats = NULL,
                                 feat_lambda = NULL,
-                                feat_sigma = NULL) {
+                                feat_sigma = NULL,
+                                subject_weights = NULL) {
+  .Deprecated(
+    "dkge_renderer",
+    package = "dkge",
+    msg = paste0(
+      "`dkge_build_renderer()` is a deprecated descriptive mapper. Use ",
+      "`dkge_prepare_alignment()` plus `dkge_renderer()` for typed workflows."
+    )
+  )
   stopifnot(inherits(fit, "dkge"))
   S <- length(fit$Btil)
   stopifnot(length(centroids) == S)
+  if (is.null(subject_weights)) {
+    subject_weights <- rep(1, S)
+    subject_weighting <- "equal_subject"
+  } else {
+    subject_weights <- as.numeric(subject_weights)
+    if (length(subject_weights) != S || any(!is.finite(subject_weights)) ||
+        any(subject_weights < 0) || sum(subject_weights) <= 0) {
+      stop("`subject_weights` must be finite non-negative weights with positive total.",
+           call. = FALSE)
+    }
+    subject_weighting <- "explicit_fixed"
+  }
 
   anchor_method <- match.arg(anchor_method)
 
@@ -379,19 +409,29 @@ dkge_build_renderer <- function(fit,
     mapper_stats[[s]] <- stats
   }
 
-  list(
+  structure(list(
     anchors = anchor_mat,
     graph = graph,
     decoder = decoder,
     mapper = mapper,
     mapper_fits = mapper_fits,
-    weights = fit$weights %||% rep(1, S),
+    weights = subject_weights,
+    subject_weighting = subject_weighting,
+    eligibility = dkge_alignment_eligibility(
+      feature_source = "descriptive_adaptive",
+      estimator_source = "descriptive"
+    ),
+    mode = "legacy_descriptive",
     anchor_feats = anchor_feats,
     mapper_stats = mapper_stats
-  )
+  ), class = c("dkge_legacy_renderer", "list"))
 }
 
-#' Render per-subject values to anchors and voxels
+#' Render values with a legacy descriptive renderer (deprecated)
+#'
+#' This compatibility helper never performs inference. It consumes the
+#' correspondence already stored in a legacy renderer and labels the result as
+#' descriptive. New workflows should use [dkge_render_aligned()].
 #'
 #' @param renderer Object produced by [dkge_build_renderer()].
 #' @param values_list List of per-subject value vectors (aligned with centroids).
@@ -408,13 +448,13 @@ dkge_build_renderer <- function(fit,
 #' )
 #' fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 #' centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-#' renderer <- dkge_build_renderer(fit,
+#' renderer <- suppressWarnings(dkge_build_renderer(fit,
 #'                                 centroids = centroids,
 #'                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
 #'                                 anchor_n = 20,
-#'                                 anchor_method = "sample")
+#'                                 anchor_method = "sample"))
 #' values_list <- lapply(centroids, function(C) rnorm(nrow(C)))
-#' out <- dkge_render_subject_values(renderer, values_list)
+#' out <- suppressWarnings(dkge_render_subject_values(renderer, values_list))
 #' length(out$anchor)
 #' }
 #' @export
@@ -422,6 +462,14 @@ dkge_render_subject_values <- function(renderer,
                                         values_list,
                                         lambda = 0,
                                         to_vox = TRUE) {
+  .Deprecated(
+    "dkge_render_aligned",
+    package = "dkge",
+    msg = paste0(
+      "`dkge_render_subject_values()` is deprecated and descriptive only; ",
+      "use `dkge_render_aligned()` for typed aligned maps."
+    )
+  )
   stopifnot(is.list(renderer$mapper_fits))
   S <- length(renderer$mapper_fits)
   stopifnot(length(values_list) == S)
@@ -459,5 +507,11 @@ dkge_render_subject_values <- function(renderer,
   list(anchor = agg$y,
        voxel = vox,
        details = agg,
-       subject_anchor_maps = anchor_maps)
+       subject_anchor_maps = anchor_maps,
+       metadata = list(
+         status = "descriptive",
+         inferential = FALSE,
+         subject_weighting = renderer$subject_weighting %||% "explicit_fixed",
+         eligibility = renderer$eligibility %||% NULL
+       ))
 }

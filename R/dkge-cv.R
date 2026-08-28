@@ -60,6 +60,9 @@ dkge_variance_explained <- function(fit, relative_to = c("kept", "total")) {
 #' @export
 dkge_diagnostics <- function(fit) {
   stopifnot(inherits(fit, "dkge"))
+  if (!is.null(fit$spatial)) {
+    .dkge_spatial_fit_payload(fit$spatial, validate = TRUE)
+  }
   voxel_stats <- if (!is.null(fit$voxel_weights)) {
     vw <- fit$voxel_weights
     list(mean = mean(vw), sd = stats::sd(vw), min = min(vw), max = max(vw))
@@ -76,6 +79,11 @@ dkge_diagnostics <- function(fit) {
     weight_spec = fit$weight_spec,
     spatial = if (is.null(fit$spatial)) NULL else list(
       active = fit$spatial$active,
+      requested = fit$spatial$requested %||% (fit$spatial$lambda > 0),
+      effective = fit$spatial$effective %||% fit$spatial$active,
+      fully_effective = fit$spatial$fully_effective %||% fit$spatial$active,
+      status = fit$spatial$status %||%
+        if (isTRUE(fit$spatial$active)) "active" else "inactive",
       lambda = fit$spatial$lambda,
       shared = fit$spatial$shared,
       diagnostics = fit$spatial$diagnostics,
@@ -670,6 +678,12 @@ dkge_cv_kernel_grid <- function(B_list, X_list, K_grid, rank,
 #' compare against the unsmoothed model. A saturated score is reported and
 #' warned about in the same way as other DKGE CV helpers.
 #'
+#' Spatial CV fails closed when any positive candidate is requested but every
+#' supplied graph is edgeless: all candidate resolvents would be the identity,
+#' so `lambda` is not identifiable from the score. If only some
+#' subject-specific graphs are edgeless, CV warns once with their identifiers
+#' and continues with status `partial`.
+#'
 #' @inheritParams dkge_cv_rank_loso
 #' @param spatial A [dkge_spatial_regularizer()] supplying the fixed graph. Its
 #'   stored `lambda` is ignored while evaluating `lambdas`.
@@ -712,12 +726,36 @@ dkge_cv_spatial_grid <- function(B_list, X_list, K, spatial, lambdas, rank,
     .dkge_abort("`spatial` must be created by `dkge_spatial_regularizer()`.",
                 "dkge_spatial_spec_error")
   }
+  .dkge_spatial_spec_payload(spatial, validate = TRUE)
   if (!is.numeric(lambdas) || !length(lambdas) ||
       any(!is.finite(lambdas)) || any(lambdas < 0)) {
     .dkge_abort("`lambdas` must contain non-negative finite numbers.",
                 "dkge_spatial_spec_error")
   }
   lambdas <- sort(unique(as.numeric(lambdas)))
+  cv_topology <- .dkge_spatial_topology(
+    spatial$laplacians,
+    if (any(lambdas > 0)) max(lambdas) else 0
+  )
+  if (identical(cv_topology$status, "inert")) {
+    .dkge_abort(
+      paste0(
+        "Spatial CV cannot distinguish positive `lambda` candidates because ",
+        "all supplied graphs have no edges: every resolvent is the identity. ",
+        "Increase `dthresh` to the scale of `coords` or supply a connected ",
+        "Laplacian before tuning."
+      ),
+      "dkge_cv_spatial_inert_error"
+    )
+  }
+  if (identical(cv_topology$status, "partial")) {
+    .dkge_spatial_warn_topology(
+      cv_topology,
+      spatial$source,
+      spatial$construction$dthresh %||% NULL
+    )
+  }
+  topology_checked <- identical(cv_topology$status, "partial")
   rank <- .dkge_cv_ranks(rank)
   if (length(rank) != 1L) stop("`rank` must be one positive integer.", call. = FALSE)
   effect_scaling <- match.arg(effect_scaling)
@@ -755,7 +793,9 @@ dkge_cv_spatial_grid <- function(B_list, X_list, K, spatial, lambdas, rank,
 
   for (i in seq_along(lambdas)) {
     lambda <- lambdas[[i]]
-    candidate <- .dkge_spatial_with_lambda(spatial, lambda)
+    candidate <- .dkge_spatial_with_lambda(
+      spatial, lambda, topology_checked = topology_checked
+    )
     base <- dkge_fit(
       B_list, X_list, K,
       Omega_list = Omega_list,
@@ -842,7 +882,9 @@ dkge_cv_spatial_grid <- function(B_list, X_list, K, spatial, lambdas, rank,
     best = best,
     table = table,
     raw = raw,
-    spatial = .dkge_spatial_with_lambda(spatial, pick),
+    spatial = .dkge_spatial_with_lambda(
+      spatial, pick, topology_checked = topology_checked
+    ),
     validation = validation$diagnostics,
     heldout_geometry = "raw_beta_block",
     heldout_spatial_metric = if (is.null(Omega_list)) "identity" else

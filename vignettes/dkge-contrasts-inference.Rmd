@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 library(ggplot2)
 
@@ -217,17 +219,25 @@ The LOSO approach refits the latent basis without each held-out subject before
 computing that subject's contrast field. This limits basis-reuse optimism; it
 does not by itself guarantee unbiased population inference. The public
 `dkge_contrast(..., method = "loso")` path returns those subject-specific
-fields, after which one fixed set of transport operators can place them on a
-common reference for the inferential procedure defined below.
+fields. Alignment then needs a declared feature channel and an identified
+reference support; it cannot be inferred from coordinates alone.
 
 ```{r loso}
 loso <- dkge_contrast(fit, contrast_vec, method = "loso")
 
-transported <- dkge_transport_contrasts_to_medoid(
+alignment_features <- dkge_alignment_features(
   fit,
   loso,
-  medoid = 1L,
+  feature_source = "same_data_residualized",
+  effect_noise_cov = lapply(designs, function(X) solve(crossprod(X)))
+)
+
+transported <- dkge_transport_contrasts_to_reference(
+  fit,
+  loso,
+  alignment_features = alignment_features,
   centroids = centroids,
+  selection_method = "geometry_only",
   mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, lambda_spa = 1,
                             max_iter = 5000, tol = 1e-4)
 )
@@ -241,6 +251,13 @@ subject-level fields on the original subject supports.
 `transported[[1]]$subj_values` is the subject-by-reference-cluster matrix after
 alignment. `transported[[1]]$value` is only the coordinate-wise median of that
 matrix. Inference needs the subject rows, not just the median curve.
+
+This vignette has only the fitted beta maps, so it uses the opt-in
+contrast-residualized feature mode and a geometry-only reference choice. The
+alignment is explicitly **approximate**: residualization does not remove the
+estimated truncated-span dependence. For the recommended independent-channel
+workflow, held-out functional reference selection, and a learned template, see
+`vignette("dkge-functional-alignment")`.
 
 We summarize the region where the planted raw contrast is largest. DKGE
 projection and transport change the numerical scale, so agreement in direction
@@ -299,30 +316,31 @@ lines show the uncertainty and subject heterogeneity that the next stage must
 respect. This figure is a recovery diagnostic for the simulation, not a
 multiple-comparison-corrected spatial result.
 
-## Analytic Inference on Components
+## Legacy component display is descriptive
 
-`dkge_component_stats()` answers a different question from the contrast above:
-it transports subject component loadings and tests their coordinate-wise group
-means. The parametric option below uses a t reference distribution, then applies
-the requested p-value adjustment across returned component-coordinate tests.
+`dkge_component_stats()` is deprecated because it learns correspondence from
+the same full-fit component loadings it then summarizes. It remains available
+for descriptive migration output only and refuses every inferential option.
 
 ```{r analytic}
-comp_stats <- dkge_component_stats(
+comp_stats <- suppressWarnings(dkge_component_stats(
   fit,
   components = 1:2,
   mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, lambda_spa = 0.5,
                             max_iter = 2000, tol = 1e-4),
   centroids = centroids,
-  inference = list(type = "parametric"),
+  inference = NULL,
   medoid = 1L
-)
+))
 head(comp_stats$summary)
 ```
 
-The table reports component, reference-cluster index, t statistic, raw p-value,
-FDR-adjusted p-value, and the declared significance flag. These are
-component-loading tests under the mapper and parametric assumptions above; they
-are not tests of the effect-1 minus effect-2 contrast.
+The table reports only component, reference-cluster index, mean, standard
+deviation, and subject count. It contains no statistic, p-value, adjusted
+p-value, or significance flag. Typed group inference starts by applying fitted
+operators with `dkge_transport_contrasts_to_reference()` or
+`dkge_align_to_template()`, then uses `dkge_infer_aligned()` on the returned
+operator-bound maps.
 
 ## Bootstrap Inference
 
@@ -332,14 +350,14 @@ conditional on the fitted basis, chosen medoid, and fixed transport operators;
 it does not propagate uncertainty from those earlier steps.
 
 ```{r bootstrap, message=FALSE}
-subject_medoid <- lapply(seq_len(nrow(transported[[1]]$subj_values)), function(idx) {
-  transported[[1]]$subj_values[idx, ]
-})
+aligned_for_bootstrap <- attr(transported, "aligned_maps")
 
 boot <- dkge_bootstrap_projected(
-  subject_medoid,
+  aligned_for_bootstrap,
+  contrast = 1,
   B = 200,
-  seed = 2
+  seed = 2,
+  allow_approximate_alignment = TRUE
 )
 
 head(boot$medoid$mean)
@@ -379,18 +397,23 @@ transport operators are held fixed, this interval should not be described as
 unconditional uncertainty for the full DKGE pipeline.
 
 `dkge_bootstrap_projected()` also returns coordinate-wise means, standard
-deviations, z ratios, intervals, and (optionally) the draws used above. When the
-estimand lives in q-space instead, `dkge_bootstrap_qspace()` performs multiplier
-resampling there and can reuse a declared transport cache.
+deviations, z ratios, intervals, and (optionally) the draws used above. It
+accepts only typed aligned maps and preserves their fixed subject weights. The
+explicit override is required here because this example uses same-data
+residualized features and is labelled approximate. When the estimand lives in
+q-space instead, `dkge_bootstrap_qspace()` requires a validated typed fitted
+alignment and a separate explicit approximate-alignment override. Its stored
+MFA/energy weights reweight only the bootstrap pooled moment; subject maps are
+aggregated under an equal-subject base estimand using the multiplier draws
+alone. The returned metadata records these two weighting roles separately.
 
 ## What to check before reporting
 
-Choose the inferential target before choosing a procedure. The component table
-tests transported component loadings; the projected bootstrap above summarizes
-an explicit contrast after transport. Parametric inference relies on its
-reference-distribution assumptions. Subject resampling avoids that particular
-reference distribution but still requires representative, independent subjects
-and enough observations for the empirical distribution to be informative.
+Choose the inferential target before choosing a procedure. The legacy component
+table only describes transported component loadings; the projected bootstrap
+above summarizes an explicit contrast after typed transport. Subject resampling
+still requires representative, independent subjects and enough observations
+for the empirical distribution to be informative.
 
 Before reporting results, state the contrast, kernel rank and nullity, retained
 support fraction, participation-ratio effective rank, maximum planned-query

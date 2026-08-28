@@ -54,6 +54,106 @@ test_that("dkge_contrast works with multiple contrasts", {
   expect_length(result$values, 3)
   expect_named(result$values, names(contrasts))
   expect_equal(result$contrasts, contrasts)
+
+  receipts <- result$metadata$alignment_receipts
+  expect_s3_class(receipts, "dkge_alignment_receipts")
+  expect_identical(attr(receipts, "estimation_method"), "loso")
+  expect_identical(names(receipts), fit$subject_ids)
+  for (s in seq_along(receipts)) {
+    receipt <- receipts[[s]]
+    expect_named(receipt$alphas, names(contrasts))
+    for (nm in names(contrasts)) {
+      expect_equal(result$values[[nm]][[s]],
+                   as.numeric(receipt$loadings %*% receipt$alphas[[nm]]),
+                   tolerance = 1e-10)
+    }
+  }
+})
+
+test_that("fold receipt features are invariant to admissible basis gauge rotation", {
+  data <- create_toy_data(S = 6, q = 5, P = 14, seed = 911)
+  fit <- dkge_fit(data$betas, data$designs, K = data$K, rank = 3)
+  result <- dkge_contrast(fit, c(1, -1, 0, 0, 0), method = "loso")
+
+  baseline <- dkge:::.dkge_fold_receipt_loadings(fit, result, 1L)
+  rotated <- result
+  Q <- diag(c(-1, 1, 1))
+  receipt <- rotated$metadata$alignment_receipts[[2]]
+  receipt$basis <- receipt$basis %*% Q
+  receipt$loadings <- receipt$loadings %*% Q
+  receipt$basis_hash <- dkge:::.dkge_object_hash(receipt$basis)
+  receipt$loadings_hash <- dkge:::.dkge_object_hash(receipt$loadings)
+  rotated$metadata$alignment_receipts[[2]] <- receipt
+
+  observed <- dkge:::.dkge_fold_receipt_loadings(fit, rotated, 1L)
+  expect_equal(observed$loadings[[2]], baseline$loadings[[2]],
+               tolerance = 1e-10)
+  expect_equal(result$values[[1]][[2]],
+               as.numeric(receipt$loadings %*% (Q %*% receipt$alphas[[1]])),
+               tolerance = 1e-10)
+})
+
+test_that("LOSO receipts are subject-order equivariant up to one cohort gauge", {
+  data <- create_toy_data(S = 6, q = 4, P = 11, seed = 912)
+  fit <- dkge_fit(data$betas, data$designs, K = data$K, rank = 2)
+  contrast <- c(1, -1, 0, 0)
+  baseline <- dkge_contrast(fit, contrast, method = "loso", align = FALSE)
+
+  perm <- c(4, 1, 6, 2, 5, 3)
+  fit_perm <- dkge_fit(data$betas[perm], data$designs[perm],
+                       K = data$K, rank = 2)
+  observed <- dkge_contrast(fit_perm, contrast, method = "loso", align = FALSE)
+
+  for (s in seq_len(data$S)) {
+    observed_position <- which(perm == s)
+    expect_equal(observed$values[[1]][[observed_position]],
+                 baseline$values[[1]][[s]],
+                 tolerance = 1e-6)
+    expect_setequal(
+      perm[observed$metadata$alignment_receipts[[observed_position]]$
+             training_subject_indices],
+      baseline$metadata$alignment_receipts[[s]]$training_subject_indices
+    )
+  }
+  baseline_features <- dkge:::.dkge_fold_receipt_loadings(fit, baseline, 1L)
+  observed_features <- dkge:::.dkge_fold_receipt_loadings(
+    fit_perm, observed, which(perm == 1L)
+  )
+  baseline_matrix <- do.call(rbind, baseline_features$loadings)
+  observed_matrix <- do.call(rbind, lapply(seq_len(data$S), function(s) {
+    observed_features$loadings[[which(perm == s)]]
+  }))
+  gauge_svd <- svd(crossprod(observed_matrix, baseline_matrix))
+  common_gauge <- gauge_svd$u %*% t(gauge_svd$v)
+  expect_equal(crossprod(common_gauge), diag(ncol(common_gauge)),
+               tolerance = 1e-10)
+  expect_equal(observed_matrix %*% common_gauge, baseline_matrix,
+               tolerance = 1e-6)
+  expect_equal(tcrossprod(observed_matrix), tcrossprod(baseline_matrix),
+               tolerance = 1e-6)
+})
+
+test_that("analytic alignment receipts fail closed unless the subject path is exact", {
+  data <- create_toy_data(S = 7, q = 4, P = 12)
+  fit <- dkge_fit(data$betas, data$designs, K = data$K,
+                  rank = 2, w_method = "none")
+
+  result <- dkge_contrast(fit, c(1, -1, 0, 0), method = "analytic",
+                          fallback = FALSE)
+  receipts <- result$metadata$alignment_receipts
+  expect_s3_class(receipts, "dkge_alignment_receipts")
+  for (receipt in receipts) {
+    if (identical(receipt$estimation_method, "analytic")) {
+      expect_false(receipt$inference$eligible)
+      expect_identical(receipt$inference$reason,
+                       "analytic_basis_is_approximate")
+    } else {
+      expect_identical(receipt$estimation_method,
+                       "analytic_fallback_exact")
+      expect_true(receipt$inference$eligible)
+      expect_identical(receipt$inference$reason, "exact_loso_fallback")
+    }
+  }
 })
 
 test_that("dkge_contrast works with matrix input", {
@@ -213,10 +313,12 @@ test_that("ridge mapper aligns mismatched cluster sizes", {
 
   mapper_spec <- dkge_mapper_spec("ridge", lambda = 1e-2)
   contrast <- suppressWarnings(dkge_contrast(fit, c(1, -1, 0), method = "loso"))
-  mapped <- dkge_transport_contrasts_to_medoid(fit, contrast,
-                                               medoid = 1L,
-                                               centroids = data$centroids,
-                                               mapper = mapper_spec)
+  mapped <- suppressWarnings(dkge_transport_contrasts_to_medoid(
+    fit, contrast,
+    medoid = 1L,
+    centroids = data$centroids,
+    mapper = mapper_spec
+  ))
 
   mat <- mapped[[1]]$subj_values
   expect_equal(dim(mat), c(data$S, nrow(data$centroids[[1]])))
@@ -284,7 +386,7 @@ test_that("as.matrix hints about transport when cluster counts differ", {
   # Tamper with one subject to shorten the value vector
   result$values[[1]][[1]] <- result$values[[1]][[1]][-1]
   expect_error(as.matrix(result),
-               "dkge_transport_contrasts_to_medoid",
+               "dkge_transport_contrasts_to_reference",
                class = "dkge_transport_needed")
 })
 

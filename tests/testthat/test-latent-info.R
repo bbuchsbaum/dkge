@@ -33,11 +33,11 @@ make_demo_renderer <- function(fit) {
     rbind(c(0, 0, 1), c(1, 0, 1)),
     rbind(c(0, 1, 1), c(1, 1, 1))
   )
-  dkge_build_renderer(fit,
+  suppressWarnings(dkge_build_renderer(fit,
                       centroids = centroids,
                       anchors = anchors,
                       mapper = dkge_mapper("knn", k = 2, sigx = 2.0),
-                      graph_k = 2)
+                      graph_k = 2))
 }
 
 make_demo_classifier <- function(betas) {
@@ -119,6 +119,16 @@ test_that("decoder map matches manual aggregation", {
   expect_equal(info$mean_anchor, manual$y, tolerance = 1e-10)
   expect_null(info$t_anchor)
   expect_equal(info$meta$kind, "decoder")
+  expect_identical(info$meta$status, "descriptive")
+  expect_false(info$meta$inferential)
+  expect_identical(info$meta$subject_weighting, "equal_subject")
+  expect_error(
+    dkge_info_map_from_classifier(
+      fit, betas, renderer, to_vox = FALSE, inference = "signflip"
+    ),
+    "descriptive/ineligible",
+    class = "dkge_alignment_ineligible_error"
+  )
 })
 
 
@@ -142,6 +152,13 @@ test_that("Haufe map collapses to decoder when covariance is identity", {
                                inference = "none")
   expect_equal(haufe$mean_anchor, dec$mean_anchor, tolerance = 1e-6)
   expect_equal(haufe$meta$kind, "haufe")
+  expect_error(
+    dkge_info_map_haufe(
+      fit, clf, renderer, to_vox = FALSE, inference = "parametric"
+    ),
+    "descriptive/ineligible",
+    class = "dkge_alignment_ineligible_error"
+  )
 })
 
 

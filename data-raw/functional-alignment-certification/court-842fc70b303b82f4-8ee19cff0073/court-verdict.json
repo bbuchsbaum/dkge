@@ -1,0 +1,280 @@
+{
+  "protocol_id": "dkge-functional-alignment-certification-v2",
+  "run_id": "court-842fc70b303b82f4-8ee19cff0073",
+  "status": "complete_approximate_only_inferential_promotion_blocked",
+  "exact_oracle_gate": true,
+  "negative_control_promotion_gate": false,
+  "materially_inflated": [
+    {
+      "cell": "baseline",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.125,
+      "fwer_ci_lower": 0.0546,
+      "fwer_ci_upper": 0.2611
+    },
+    {
+      "cell": "equal_parcels",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.225,
+      "fwer_ci_lower": 0.1232,
+      "fwer_ci_upper": 0.375
+    },
+    {
+      "cell": "equal_parcels",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.2,
+      "fwer_ci_lower": 0.105,
+      "fwer_ci_upper": 0.3476
+    },
+    {
+      "cell": "equal_parcels",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.225,
+      "fwer_ci_lower": 0.1232,
+      "fwer_ci_upper": 0.375
+    },
+    {
+      "cell": "family_2",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.3,
+      "fwer_ci_lower": 0.1807,
+      "fwer_ci_upper": 0.4543
+    },
+    {
+      "cell": "family_2",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.3,
+      "fwer_ci_lower": 0.1807,
+      "fwer_ci_upper": 0.4543
+    },
+    {
+      "cell": "family_2",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.3,
+      "fwer_ci_lower": 0.1807,
+      "fwer_ci_upper": 0.4543
+    },
+    {
+      "cell": "functional_cost",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.225,
+      "fwer_ci_lower": 0.1232,
+      "fwer_ci_upper": 0.375
+    },
+    {
+      "cell": "functional_cost",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.2,
+      "fwer_ci_lower": 0.105,
+      "fwer_ci_upper": 0.3476
+    },
+    {
+      "cell": "functional_cost",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.225,
+      "fwer_ci_lower": 0.1232,
+      "fwer_ci_upper": 0.375
+    },
+    {
+      "cell": "heavy_tail",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "heavy_tail",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "heavy_tail",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "heteroscedastic",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "heteroscedastic",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "heteroscedastic",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "high_epsilon",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.175,
+      "fwer_ci_lower": 0.0875,
+      "fwer_ci_upper": 0.3195
+    },
+    {
+      "cell": "homoscedastic",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.125,
+      "fwer_ci_lower": 0.0546,
+      "fwer_ci_upper": 0.2611
+    },
+    {
+      "cell": "homoscedastic",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.125,
+      "fwer_ci_lower": 0.0546,
+      "fwer_ci_upper": 0.2611
+    },
+    {
+      "cell": "homoscedastic",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.125,
+      "fwer_ci_lower": 0.0546,
+      "fwer_ci_upper": 0.2611
+    },
+    {
+      "cell": "independent_space",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    },
+    {
+      "cell": "independent_space",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.275,
+      "fwer_ci_lower": 0.1611,
+      "fwer_ci_upper": 0.4283
+    },
+    {
+      "cell": "independent_space",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    },
+    {
+      "cell": "large_S",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    },
+    {
+      "cell": "large_S",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    },
+    {
+      "cell": "large_S",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    },
+    {
+      "cell": "medium_S",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.125,
+      "fwer_ci_lower": 0.0546,
+      "fwer_ci_upper": 0.2611
+    },
+    {
+      "cell": "medium_S",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "medium_S",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.125,
+      "fwer_ci_lower": 0.0546,
+      "fwer_ci_upper": 0.2611
+    },
+    {
+      "cell": "rank_2",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.275,
+      "fwer_ci_lower": 0.1611,
+      "fwer_ci_upper": 0.4283
+    },
+    {
+      "cell": "rank_2",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.275,
+      "fwer_ci_lower": 0.1611,
+      "fwer_ci_upper": 0.4283
+    },
+    {
+      "cell": "rank_2",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.275,
+      "fwer_ci_lower": 0.1611,
+      "fwer_ci_upper": 0.4283
+    },
+    {
+      "cell": "small_gap",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.2,
+      "fwer_ci_lower": 0.105,
+      "fwer_ci_upper": 0.3476
+    },
+    {
+      "cell": "small_gap",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.15,
+      "fwer_ci_lower": 0.0706,
+      "fwer_ci_upper": 0.2907
+    },
+    {
+      "cell": "small_gap",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.2,
+      "fwer_ci_lower": 0.105,
+      "fwer_ci_upper": 0.3476
+    },
+    {
+      "cell": "strong_nuisance",
+      "arm": "l1_fixed_fullfit_functional",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    },
+    {
+      "cell": "strong_nuisance",
+      "arm": "l2_fold_loading",
+      "fwer_rate": 0.35,
+      "fwer_ci_lower": 0.2213,
+      "fwer_ci_upper": 0.5049
+    },
+    {
+      "cell": "strong_nuisance",
+      "arm": "legacy_fullfit_functional",
+      "fwer_rate": 0.325,
+      "fwer_ci_lower": 0.2008,
+      "fwer_ci_upper": 0.4798
+    }
+  ],
+  "source_tree_sha256": "842fc70b303b82f40751ec3202c1a0056ff08798ed9583e26bf37dbfeef38151",
+  "court_harness_bundle_sha256": "8ee19cff0073a2acc6015dfedd0513f33634ba1eaccb0c3c6c99e5ab457aabc8",
+  "source_tree_unchanged": true,
+  "thresholds_changed_after_results": false,
+  "claim": "The exact comparator and evidence-integrity gates passed, but the frozen-plan promotion gate failed. Public alignment remains approximate and requires an explicit inference override."
+}

@@ -2,8 +2,7 @@
 % Please edit documentation in R/dkge-transport.R
 \name{dkge_transport_to_medoid_sinkhorn}
 \alias{dkge_transport_to_medoid_sinkhorn}
-\alias{dkge_transport_to_medoid_sinkhorn_cpp}
-\title{Transport cluster values to a medoid via entropic Sinkhorn OT}
+\title{Transport cluster values to a medoid (deprecated)}
 \usage{
 dkge_transport_to_medoid_sinkhorn(
   v_list,
@@ -21,24 +20,6 @@ dkge_transport_to_medoid_sinkhorn(
   warm_start = TRUE,
   transport_cache = NULL
 )
-
-dkge_transport_to_medoid_sinkhorn_cpp(
-  v_list,
-  A_list,
-  centroids,
-  sizes = NULL,
-  medoid,
-  lambda_emb = 1,
-  lambda_spa = 0.5,
-  sigma_mm = 15,
-  epsilon = 0.05,
-  max_iter = 5000L,
-  tol = 1e-04,
-  value_type = c("intensive", "extensive"),
-  warm_start = TRUE,
-  return_plans = FALSE,
-  transport_cache = NULL
-)
 }
 \arguments{
 \item{v_list}{List of subject-level cluster values (length P_s each).}
@@ -49,7 +30,7 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 \item{sizes}{Optional list of cluster masses (defaults to uniform weights).}
 
-\item{medoid}{Integer index of the reference subject (1-based).}
+\item{medoid}{Deprecated name for \code{reference_subject}.}
 
 \item{lambda_emb, lambda_spa}{Cost weights for embedding and spatial terms.}
 
@@ -64,18 +45,10 @@ distributes source totals and preserves their sum.}
 \item{warm_start}{Logical; reuse converged dual variables for an identical
 cost-and-mass problem.}
 
-\item{transport_cache}{Optional cache returned by \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.
-When supplied, cached operators are reused and the mapper configuration
-stored in the cache takes precedence.}
-
-\item{return_plans}{Logical; if TRUE, include transport plans in the output.}
-}
-\value{
-List containing summary statistics, transported subject maps, and
-per-subject joint \code{plans}, application \code{operators}, and solver
-\code{diagnostics}.
+\item{transport_cache}{Optional fitted alignment returned by
+\code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}. Cached operators are reused only after every
+structural input is fingerprint-validated.}
 }
 \description{
-\code{dkge_transport_to_medoid_sinkhorn_cpp()} is a deprecated compatibility
-alias. The main function already uses the compiled Sinkhorn backend.
+Compatibility alias for \code{\link[=dkge_transport_to_reference_sinkhorn]{dkge_transport_to_reference_sinkhorn()}}.
 }

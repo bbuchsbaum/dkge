@@ -21,6 +21,7 @@ dkge_bootstrap_analytic(
   voxel_operator = NULL,
   perturb_tol = 0.2,
   gap_tol = 1e-06,
+  allow_approximate_alignment = FALSE,
   ...
 )
 }
@@ -31,7 +32,9 @@ dkge_bootstrap_analytic(
 
 \item{B}{Number of bootstrap replicates.}
 
-\item{scheme}{Multiplier distribution (\code{"poisson"}, \code{"exp"}, or \code{"bayes"}).}
+\item{scheme}{Multiplier distribution (\code{"poisson"}, \code{"exp"}, or \code{"bayes"}).
+Poisson draws are conditioned on at least one positive subject multiplier,
+so every bootstrap replicate contains a non-empty resampled cohort.}
 
 \item{ridge}{Optional ridge added to the reweighted compressed covariance.}
 
@@ -42,16 +45,19 @@ baseline basis via K-Procrustes before contrasts are evaluated.}
 
 \item{seed}{Optional random seed for reproducibility.}
 
-\item{transport_cache}{Optional cache from \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.}
+\item{transport_cache}{Required typed fitted alignment object produced by
+\code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}}. Untyped/legacy caches and automatic full-fit
+correspondence are refused.}
 
-\item{mapper}{Mapper specification used when a cache is not supplied.}
+\item{mapper}{Deprecated; automatic mapper fitting is no longer permitted.}
 
-\item{centroids}{Optional centroids overriding those stored on the fit.}
+\item{centroids}{Deprecated; correspondence must be supplied through
+\code{transport_cache}.}
 
-\item{sizes}{Optional list of cluster weights passed to
-\code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}.}
+\item{sizes}{Deprecated compatibility argument; correspondence and masses
+must already be fixed in \code{transport_cache}.}
 
-\item{medoid}{Medoid index used during transport.}
+\item{medoid}{Deprecated compatibility argument.}
 
 \item{voxel_operator}{Optional matrix mapping medoid values to voxels.}
 
@@ -61,8 +67,10 @@ perturbation; larger changes trigger a fallback to the full eigensolve.}
 \item{gap_tol}{Minimum eigen-gap tolerated (in absolute value) before
 triggering a fallback to the full eigensolve.}
 
-\item{...}{Additional arguments forwarded to \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}} when
-the transport cache needs to be built.}
+\item{allow_approximate_alignment}{Permit a typed alignment labelled
+approximate. Descriptive/ineligible alignment is always refused.}
+
+\item{...}{Deprecated compatibility arguments; ignored.}
 }
 \value{
 Same structure as \code{\link[=dkge_bootstrap_qspace]{dkge_bootstrap_qspace()}} with additional metadata
@@ -72,4 +80,9 @@ on the number of fallbacks used.
 Uses the stored full eigendecomposition to apply first-order perturbations
 for each bootstrap draw. When the perturbation exceeds the validity region,
 the method falls back to the exact multiplier bootstrap for that replicate.
+}
+\details{
+As in \code{\link[=dkge_bootstrap_qspace]{dkge_bootstrap_qspace()}}, stored fit weights affect only the
+reweighted pooled moment. Subject maps are aggregated with an equal-subject
+base estimand using the bootstrap multipliers alone.
 }

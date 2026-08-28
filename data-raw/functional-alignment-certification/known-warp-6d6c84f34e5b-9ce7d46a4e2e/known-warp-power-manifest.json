@@ -1,0 +1,18 @@
+{
+  "protocol_id": "dkge-functional-alignment-certification-v2",
+  "run_id": "known-warp-6d6c84f34e5b-9ce7d46a4e2e",
+  "source_tree_sha256": "6d6c84f34e5b7e7bd7952ef14a8c4f1c950e6a51cd8d7afcd59a5c786732ed44",
+  "protocol_sha256": "9ce7d46a4e2efd98f9319f157dd477a78125972e7a4e961aa772a8377541b25e",
+  "runner_sha256": "cc6d7ddc0cc8ac522890df39c6b9cbab9d917b6966563e4320e5ac6a45dcbd0d",
+  "seeds": {
+    "first": 91201,
+    "last": 91240,
+    "n": 40
+  },
+  "workers": 4,
+  "n_perm": 127,
+  "heldout_signal_scale": 0.35,
+  "heldout_value_noise": 0.8,
+  "runtime_seconds": 575.47,
+  "role": "Descriptive held-out efficacy only; power cannot override court or provenance gates."
+}

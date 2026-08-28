@@ -1,15 +1,18 @@
 # dkge-specs.R
 # User-facing helper constructors for orchestration specs.
 
-#' Transport specification helper
+#' Legacy descriptive transport specification helper
 #'
-#' Builds a validated transport configuration that can be passed to
-#' [dkge_pipeline()] or transport utilities. The helper enforces basic argument
-#' checks and provides sensible defaults for Sinkhorn-based mapping.
+#' Builds a validated descriptive transport configuration for
+#' [dkge_pipeline()]. Pipeline transport cannot enter inference. New functional
+#' alignment workflows should use [dkge_prepare_alignment()] or
+#' [dkge_transport_contrasts_to_reference()].
 #'
 #' @param centroids List of subject-specific centroid matrices (P_s x d).
 #' @param sizes Optional list of cluster sizes (one numeric vector per subject).
-#' @param medoid Integer index of the medoid subject (default 1).
+#' @param medoid Legacy integer reference-subject index (default 1). This field
+#'   fixes a support; it does not perform or certify medoid selection. New
+#'   functional-alignment workflows should use [dkge_prepare_alignment()].
 #' @param method Mapper backend. Default "sinkhorn".
 #' @param mapper Optional prefit mapper specification (advanced use).
 #' @param epsilon Sinkhorn entropic regularisation parameter.
@@ -88,18 +91,41 @@ dkge_transport_spec <- function(centroids,
 #'
 #' @param B Number of permutations for sign-flip inference.
 #' @param tail Tail of the test: "two.sided", "greater", or "less".
-#' @param center Centering method for permutations: "mean", "median", or "none".
+#' @param center Location statistic. Only `"mean"` is supported. Legacy
+#'   `"median"` and `"none"` values now fail at construction because the
+#'   downstream max-T statistic is a studentized mean.
+#' @param allow_approximate_alignment Logical; explicitly permit inference from
+#'   an estimator or fitted alignment labelled `"approximate"`. The default is
+#'   fail-closed; ineligible states are never permitted.
 #' @return Object with class `dkge_inference_spec`.
 #' @export
 #' @examples
 #' infer <- dkge_inference_spec(B = 1000, tail = "two.sided")
 dkge_inference_spec <- function(B = 2000L,
                                 tail = c("two.sided", "greater", "less"),
-                                center = c("mean", "median", "none")) {
+                                center = c("mean", "median", "none"),
+                                allow_approximate_alignment = FALSE) {
   stopifnot(B > 0)
   tail <- match.arg(tail)
   center <- match.arg(center)
-  structure(list(B = as.integer(B), tail = tail, center = center),
+  if (!identical(center, "mean")) {
+    warning(
+      "Non-mean `center` modes are deprecated because max-T uses a studentized mean statistic.",
+      call. = FALSE
+    )
+    .dkge_abort(
+      "`dkge_inference_spec()` supports only `center = 'mean'`.",
+      "dkge_inference_center_error"
+    )
+  }
+  if (length(allow_approximate_alignment) != 1L ||
+      is.na(allow_approximate_alignment) ||
+      !is.logical(allow_approximate_alignment)) {
+    .dkge_abort("`allow_approximate_alignment` must be TRUE or FALSE.",
+                "dkge_inference_spec_error")
+  }
+  structure(list(B = as.integer(B), tail = tail, center = center,
+                 allow_approximate_alignment = allow_approximate_alignment),
             class = c("dkge_inference_spec", "list"))
 }
 
@@ -158,6 +184,7 @@ print.dkge_inference_spec <- function(x, ...) {
   cat("  permutations :", x$B, "\n")
   cat("  tail         :", x$tail, "\n")
   cat("  center       :", x$center, "\n")
+  cat("  approximate  :", x$allow_approximate_alignment, "\n")
   invisible(x)
 }
 

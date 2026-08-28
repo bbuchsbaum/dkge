@@ -20,10 +20,14 @@ dkge_freeze <- function(fit) {
   stopifnot(is.list(fit), !is.null(fit$U), !is.null(fit$K), !is.null(fit$R))
   spatial <- fit$spatial %||% NULL
   if (!is.null(spatial)) {
+    .dkge_spatial_fit_payload(spatial, validate = TRUE)
     # Prediction rebuilds sparse factors for the supplied domain, so a frozen
     # model need not retain one factorization per training subject.
     spatial <- structure(
-      spatial[c("active", "lambda", "shared", "diagnostics", "provenance", "spec")],
+      spatial[c(
+        "active", "requested", "effective", "fully_effective", "status",
+        "lambda", "shared", "diagnostics", "provenance", "spec"
+      )],
       class = c("dkge_spatial_fit", "list")
     )
   }

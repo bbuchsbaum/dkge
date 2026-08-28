@@ -14,6 +14,7 @@ dkge_infer(
   alpha = 0.05,
   transported = FALSE,
   transport = NULL,
+  allow_approximate_alignment = FALSE,
   ...
 )
 }
@@ -43,13 +44,16 @@ dkge_infer(
 
 \item{alpha}{Significance level for corrections}
 
-\item{transported}{Logical; retained for backwards compatibility. Deprecated.}
+\item{transported}{Deprecated. Must be \code{FALSE}. Rendering/alignment is no
+longer learned inside this inference helper.}
 
-\item{transport}{Optional list describing how to map subject clusters to a
-shared reference before inference. Provide \code{centroids}, \code{medoid}, and an
-optional mapper specification created via \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}}. Additional
-parameters (e.g. \code{epsilon}, \code{lambda_emb}) are forwarded when constructing
-the default Sinkhorn mapper.}
+\item{transport}{Deprecated. Must be \code{NULL}. Use the typed two-stage workflow
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}} then \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}}.}
+
+\item{allow_approximate_alignment}{Logical; permit an explicitly labelled
+\code{"approximate"} alignment or same-data rank-truncated LOSO, K-fold, or
+analytic estimator. Ineligible/descriptive states are always refused. The
+default is fail-closed.}
 
 \item{...}{Additional arguments passed to \code{\link[=dkge_contrast]{dkge_contrast()}} and inference functions}
 }
@@ -78,10 +82,11 @@ values using the specified cross-fitting method, then applies the chosen
 inference procedure to obtain p-values, and finally applies multiple
 testing correction.
 
-When subject cluster counts differ across participants, supply the
-\code{transport} argument so that contrasts are first mapped to a shared
-parcellation before stacking. The resulting mapped subject matrices are
-returned in the \code{transport} field of the output for downstream inspection.
+This helper performs inference only in the contrast result's native support.
+It never learns correspondence. When subject supports differ, first build
+typed alignment features, transport with
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}}, extract its \code{dkge_aligned_maps}
+object, and pass that object to \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}}.
 
 The workflow is:
 \enumerate{
@@ -90,8 +95,14 @@ The workflow is:
 \item Apply multiple testing correction (maxT/FDR/Bonferroni)
 }
 
-For sign-flip inference, the max-T correction provides strong FWER control.
-For parametric inference, FDR may be more appropriate for exploratory analyses.
+Max-T uses one subject-sign action and one maximum over the entire
+prespecified contrast-by-location family. Its conditional FWER guarantee
+requires joint row-sign invariance of the supplied subject matrix. Standard
+rank-truncated LOSO/K-fold DKGE estimates retain same-data latent-span
+dependence and are therefore labelled approximate unless the full estimator
+is rebuilt under every null action. The analytic method is also approximate:
+it uses a first-order approximation to the LOSO basis except where its
+diagnostic selects an exact-LOSO fallback.
 }
 \examples{
 # Simulate and fit
@@ -103,11 +114,16 @@ fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 
 # LOSO with sign-flip and maxT correction (fast with few perms for example)
 \donttest{
-results <- dkge_infer(fit, c(1, rep(0, 4)), n_perm = 100)
+results <- dkge_infer(
+  fit, c(1, rep(0, 4)), n_perm = 100,
+  allow_approximate_alignment = TRUE
+)
 results
 }
 
 }
 \seealso{
-\code{\link[=dkge_contrast]{dkge_contrast()}}, \code{\link[=dkge_signflip_maxT]{dkge_signflip_maxT()}}, \code{\link[=dkge_freedman_lane]{dkge_freedman_lane()}}
+\code{\link[=dkge_contrast]{dkge_contrast()}}, \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}},
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}}, \code{\link[=dkge_signflip_maxT]{dkge_signflip_maxT()}},
+\code{\link[=dkge_freedman_lane]{dkge_freedman_lane()}}
 }

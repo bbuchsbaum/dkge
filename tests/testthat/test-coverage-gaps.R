@@ -150,7 +150,7 @@ test_that("dkge_pipeline handles minimal inputs", {
     kernel = toy$K,
     contrasts = c(1, 0, 0, 0, 0),
     method = "analytic",
-    inference = list()  # disable inference to avoid S>=5 constraint
+    inference = NULL
   )
 
   expect_named(result, c("fit", "diagnostics", "contrasts", "transport",

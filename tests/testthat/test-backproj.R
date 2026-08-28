@@ -34,20 +34,27 @@ make_backproj_fixture <- function(S = 3, q = 3, P = 4, T = 24, seed = 4242) {
        P = P)
 }
 
-test_that("dkge_transport_loadings_to_medoid keeps medoid subject unchanged", {
+test_that("dkge_transport_loadings_to_medoid self-transports the reference", {
   fixture <- make_backproj_fixture()
-  res <- dkge_transport_loadings_to_medoid(
+  res <- suppressWarnings(dkge_transport_loadings_to_medoid(
     fixture$fit,
     medoid = 1,
     centroids = fixture$centroids,
     loadings = fixture$loadings,
     method = "sinkhorn"
-  )
+  ))
 
   expect_length(res$subjects, fixture$fit$rank)
   expect_equal(dim(res$subjects[[1]]), c(fixture$S, fixture$P))
-  expect_equal(res$subjects[[1]][1, ], fixture$loadings[[1]][, 1],
-               tolerance = 1e-6)
+  expect_equal(
+    res$subjects[[1]][1, ],
+    as.numeric(res$cache$operators[[1]] %*% fixture$loadings[[1]][, 1]),
+    tolerance = 1e-8
+  )
+  expect_true(res$cache$diagnostics[[1]]$self_map)
+  expect_true(is.finite(
+    res$cache$diagnostics[[1]]$point_spread$mean_effective_points
+  ))
   expect_equal(res$group[[1]], apply(res$subjects[[1]], 2, stats::median),
                tolerance = 1e-12)
 })
@@ -56,33 +63,44 @@ test_that("dkge_transport_contrasts_to_medoid returns aligned subject maps", {
   fixture <- make_backproj_fixture(seed = 2024)
   contrast_obj <- dkge_contrast(fixture$fit, c(1, -1, 0), method = "loso")
 
-  res <- dkge_transport_contrasts_to_medoid(
+  res <- suppressWarnings(dkge_transport_contrasts_to_medoid(
     fixture$fit,
     contrast_obj,
     medoid = 1,
     centroids = fixture$centroids,
-    betas = fixture$betas,
     method = "sinkhorn"
-  )
+  ))
 
   expect_named(res, names(contrast_obj$values))
   first <- res[[1]]
   expect_equal(dim(first$subj_values), c(fixture$S, fixture$P))
-  expect_equal(first$subj_values[1, ], contrast_obj$values[[1]][[1]],
+  expect_equal(
+    first$subj_values[1, ],
+    as.numeric(first$operators[[1]] %*% contrast_obj$values[[1]][[1]]),
+    tolerance = 1e-8
+  )
+  expect_equal(rowSums(first$plans[[1]]), rep(1 / fixture$P, fixture$P),
                tolerance = 1e-6)
-  expect_equal(first$plans[[1]], diag(1 / fixture$P, fixture$P), tolerance = 1e-6)
-  expect_equal(first$operators[[1]], diag(1, fixture$P), tolerance = 1e-6)
+  expect_equal(colSums(first$plans[[1]]), rep(1 / fixture$P, fixture$P),
+               tolerance = 1e-6)
+  expect_equal(rowSums(first$operators[[1]]), rep(1, fixture$P),
+               tolerance = 1e-6)
+  expect_gt(max(abs(first$operators[[1]] - diag(fixture$P))), 1e-8)
 })
 
 test_that("dkge_transport_loadings_to_medoid falls back to stored loadings", {
   fixture <- make_backproj_fixture()
   fixture$fit$input$betas <- NULL
-  res <- dkge_transport_loadings_to_medoid(
+  res <- suppressWarnings(dkge_transport_loadings_to_medoid(
     fixture$fit,
     medoid = 1,
     centroids = fixture$centroids,
     method = "sinkhorn"
-  )
+  ))
 
-  expect_equal(res$subjects[[1]][1, ], fixture$loadings[[1]][, 1], tolerance = 1e-6)
+  expect_equal(
+    res$subjects[[1]][1, ],
+    as.numeric(res$cache$operators[[1]] %*% fixture$loadings[[1]][, 1]),
+    tolerance = 1e-8
+  )
 })

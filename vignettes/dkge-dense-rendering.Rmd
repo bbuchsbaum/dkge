@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 library(ggplot2)
 
@@ -73,11 +75,11 @@ and, optionally, decoding the anchor field onto a voxel grid.
 subject cluster values -> fitted subject-to-anchor maps -> shared anchor field -> voxel interpolation
 ```
 
-This page shows that object flow and the diagnostics attached to it. The toy
-coordinates are deliberately geometry-only, so the final picture demonstrates
-rendering mechanics rather than an anatomical result. Read
-`vignette("dkge-workflow")` first if you do not yet have a component or
-contrast field to render.
+This page preserves the deprecated geometry-only renderer as a worked example
+of rendering mechanics. It is descriptive, cannot produce valid group
+inference, and must not be mistaken for functional alignment. For the typed
+workflow in which independent response signatures identify correspondence,
+read `vignette("dkge-functional-alignment")` instead.
 
 ## What spatial information is required?
 
@@ -99,25 +101,30 @@ fit <- dkge(bundle, K = diag(q), rank = 2)
 fit$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 ```
 
-## How is the shared anchor representation built?
+## Legacy descriptive anchor rendering
 
-`dkge_build_renderer()` maps subject-specific cluster coordinates onto a
-shared anchor space. It needs a target voxel grid and the transport
-parameters.
+`dkge_build_renderer()` is deprecated. It maps subject-specific cluster
+coordinates onto a shared anchor space for descriptive display, defaults to
+equal subject weights, and records an inferentially ineligible receipt. A bare
+anchor or MNI grid supplies display coordinates; it supplies no functional
+correspondence to any subject.
+This legacy example uses a deterministic geometric k-nearest-neighbor mapper;
+the functional Sinkhorn workflow and its numerical eligibility gates are
+covered in `vignette("dkge-functional-alignment")`.
 
 ```{r renderer}
 # use 5k anchors sampled from grey-matter-like cube
 vox_xyz <- as.matrix(expand.grid(seq(-40, 40, by = 10), seq(-40, 40, by = 10), seq(-40, 40, by = 20)))
-renderer <- dkge_build_renderer(
+renderer <- suppressWarnings(dkge_build_renderer(
   fit,
   centroids = centroids,
   vox_xyz = vox_xyz,
-  mapper = dkge_mapper("sinkhorn", epsilon = 0.05, lambda_xyz = 1, lambda_feat = 0),
+  mapper = dkge_mapper("knn", k = 8, sigx = 3),
   graph_k = 10,
   decoder_k = 8,
   anchor_n = min(500L, nrow(vox_xyz)),
   anchor_method = "sample"
-)
+))
 str(renderer, max.level = 1)
 ```
 
@@ -132,14 +139,17 @@ The renderer carries four components:
 - `mapper_stats`: transport diagnostics - costs, entropies, and support sizes -
   for assessing the mapping.
 
-## Rendering Subject Values
+## Rendering subject values descriptively
 
 `dkge_render_subject_values()` transports subject cluster values into the
-shared anchor space, then interpolates them to the full voxel grid.
+shared anchor space, then interpolates them to the full voxel grid. It too is
+deprecated and returns no inferential result.
 
 ```{r render}
 values_list <- lapply(fit$Btil, function(Bts) as.numeric(Bts[1, ]))
-rendered <- dkge_render_subject_values(renderer, values_list, lambda = 0.2, to_vox = TRUE)
+rendered <- suppressWarnings(
+  dkge_render_subject_values(renderer, values_list, lambda = 0.2, to_vox = TRUE)
+)
 summary(rendered$details$y)
 head(rendered$details$subject_stats)
 ```
@@ -181,7 +191,8 @@ Three settings change the result:
   data against spatial smoothness. Watch `plan_entropy_mean` to judge whether a
   setting smooths too much or too little.
 - `subject_feats` and `anchor_feats` in `dkge_build_renderer()` let the
-  transport use additional latent features.
+  descriptive transport use additional latent features. They do not establish
+  fold-safe or independent functional correspondence.
 - Reuse a renderer for repeated maps: its fitted plans avoid solving the same
   subject-to-anchor mappings again. Separately, DKGE keeps a process-local cache
   of converged Sinkhorn duals for byte-identical fit problems; inspect
@@ -195,3 +206,6 @@ Three settings change the result:
   and caching pay for themselves.
 - `vignette("dkge-weighting")` covers the transport weighting layer, which
   changes what a rendered field means.
+- `vignette("dkge-functional-alignment")` is the supported typed workflow for
+  functional correspondence, aligned subject rows, group inference, and
+  rendering on one identified reference support.

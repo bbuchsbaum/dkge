@@ -26,10 +26,11 @@ mapping subject-level contrast/loading vectors from a source feature space
 \code{\link[=dkge_transport_spec]{dkge_transport_spec()}}, \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}, or directly to
 \code{\link[=fit_mapper]{fit_mapper()}} together with \code{source_feat} / \code{target_feat} matrices.
 
-Use \code{\link[=dkge_mapper]{dkge_mapper()}} instead when you need a \strong{dense rendering / anchor
-mapper} that works in 3-D spatial coordinates (kNN barycentric, Sinkhorn
-OT over point clouds) for functions such as \code{\link[=dkge_build_renderer]{dkge_build_renderer()}} or
-\code{\link[=dkge_render_subject_values]{dkge_render_subject_values()}}.
+Use \code{\link[=dkge_mapper]{dkge_mapper()}} for the legacy descriptive dense-rendering pipeline.
+\code{\link[=dkge_build_renderer]{dkge_build_renderer()}} and \code{\link[=dkge_render_subject_values]{dkge_render_subject_values()}} are deprecated
+display helpers and do not establish inferential correspondence. For group
+functional alignment, use \code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}} and
+\code{\link[=dkge_render_aligned]{dkge_render_aligned()}}.
 }
 \examples{
 spec <- dkge_mapper_spec(type = "ridge", lambda = 1e-2)

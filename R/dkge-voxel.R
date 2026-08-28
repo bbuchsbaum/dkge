@@ -1,7 +1,13 @@
 # dkge-voxel.R
 # Utilities for voxel-level consensus mapping.
 
-#' Transport DKGE quantities directly to voxel space
+#' Descriptively transport DKGE quantities directly to voxel space
+#'
+#' This legacy convenience path learns voxel correspondence from full-fit
+#' loadings and returns untyped display values. It is descriptive only and its
+#' output is not accepted by [dkge_infer_aligned()]. For group functional
+#' alignment, fit typed features and use
+#' [dkge_transport_contrasts_to_reference()] or [dkge_align_to_template()].
 #'
 #' @param fit A `dkge` object containing subject loadings and centroids.
 #' @param values List of subject value vectors (one per subject, length P_s).
@@ -11,7 +17,8 @@
 #' @param sizes Optional list of cluster masses (one vector per subject).
 #' @param ... Additional mapper parameters.
 #'
-#' @return List with `subj_values` (S x V matrix) and `value` (mean across subjects).
+#' @return Descriptive list with `subj_values` (S x V matrix), `value` (mean
+#'   across subjects), and explicit non-inferential metadata.
 #' @examples
 #' \donttest{
 #' toy <- dkge_sim_toy(
@@ -53,6 +60,13 @@ dkge_transport_to_voxels <- function(fit,
     mapped[[s]] <- predict_mapper(map_fit, values[[s]])
   }
   subj_mat <- do.call(rbind, mapped)
-  list(subj_values = subj_mat,
-       value = colMeans(subj_mat))
+  list(
+    subj_values = subj_mat,
+    value = colMeans(subj_mat),
+    metadata = list(
+      status = "descriptive",
+      inferential = FALSE,
+      correspondence_source = "full_fit_loadings"
+    )
+  )
 }

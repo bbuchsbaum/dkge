@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -188,9 +190,12 @@ At this point the object journey has reached the third box in the diagram:
 `condition_loso` holds one field per subject, but the field lengths and cluster
 identities can still differ. The next step is therefore alignment, not averaging.
 
-**Next operation:** if clusters differ across subjects, transport the contrast
-with `dkge_transport_contrasts_to_medoid()`. If they already share a common
-index, `as.matrix(condition_loso)` stacks them directly.
+**Next operation:** if clusters differ across subjects, identify a functional
+feature channel and use `dkge_transport_contrasts_to_reference()`. If they
+already share a genuinely corresponding index, `as.matrix(condition_loso)`
+stacks them directly. Coordinates alone do not establish that correspondence;
+the complete, executable workflow is in
+`vignette("dkge-functional-alignment")`.
 
 ## What must your real data look like?
 

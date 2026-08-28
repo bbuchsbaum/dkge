@@ -3,14 +3,14 @@
 \name{dkge_component_stats}
 \alias{dkge_component_stats}
 \alias{dkge_write_component_stats}
-\title{Component-level consensus statistics}
+\title{Deprecated descriptive component consensus}
 \usage{
 dkge_component_stats(
   fit,
   mapper = "sinkhorn",
   centroids = NULL,
   sizes = NULL,
-  inference = "signflip",
+  inference = NULL,
   medoid = 1L,
   components = NULL,
   adjust = "fdr",
@@ -30,16 +30,16 @@ centroids stored in \code{fit} if available.}
 
 \item{sizes}{Optional list of cluster masses (one vector per subject).}
 
-\item{inference}{One of "signflip" or "parametric", or a list providing
-\code{type}, \code{B}, \code{tail}, and \code{alpha}.}
+\item{inference}{Deprecated. Must be \code{NULL}; legacy full-fit correspondence
+is descriptive/ineligible and cannot enter an inference boundary.}
 
-\item{medoid}{Reference subject index (defaults to 1).}
+\item{medoid}{Reference subject index for the descriptive display.}
 
 \item{components}{Optional vector of component indices or names; default is
 all components.}
 
-\item{adjust}{Method supplied to \code{\link[stats:p.adjust]{stats::p.adjust()}} for multiple testing
-correction in the tidy summary.}
+\item{adjust}{Deprecated and ignored because inferential p-values are no
+longer produced by this helper.}
 
 \item{...}{Additional mapper-specific parameters (e.g. \code{epsilon}).}
 
@@ -48,15 +48,19 @@ correction in the tidy summary.}
 \value{
 A list with fields:
 \itemize{
-\item \code{summary}: tidy data frame of statistics and p-values.
-\item \code{statistics}: per-component statistic vectors.
+\item \code{summary}: tidy data frame of descriptive means and standard deviations.
+\item \code{statistics}: per-component mean vectors.
 \item \code{transport}: per-component transported subject matrices.
+\item \code{eligibility}: an ineligible/descriptive alignment receipt.
 }
 }
 \description{
-Transports each subject's component loadings to a reference parcellation,
-computes inference statistics, and returns tidy summaries ready for
-visualization.
+This legacy helper transports full-fit component loadings with correspondence
+learned from those same loadings. It is retained only for descriptive
+summaries and cannot compute p-values, confidence claims, or significance.
+Use \code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}}, apply correspondence with
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}} or \code{\link[=dkge_align_to_template]{dkge_align_to_template()}}, and
+then call \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}} for the typed inferential workflow.
 }
 \examples{
 \donttest{
@@ -66,11 +70,11 @@ toy <- dkge_sim_toy(
 )
 fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-res <- dkge_component_stats(fit,
+res <- suppressWarnings(dkge_component_stats(fit,
                             centroids = centroids,
                             mapper = "ridge",
-                            inference = "parametric",
-                            components = 1)
+                            inference = NULL,
+                            components = 1))
 head(res$summary)
 }
 }

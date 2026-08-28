@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.2.0",
+  "gate": "full_source_test_suite",
+  "passed": true,
+  "source_loader": {
+    "method": "pkgload::load_all",
+    "package_root": "/Users/bbuchsbaum/code/dkge",
+    "loader_version": "1.5.2",
+    "compile": true
+  },
+  "source_tree_sha256": "17e10ec404ab7758ada4591522ec415a98cc6c93e7a203d0ba6b42ac9aee066f",
+  "test_validation_tree_sha256": "555e000abf338344763bfdb4cc718d530c6b86c4a5fd1f403a245f7ca1d0a7d7",
+  "protocol_id": "dkge-functional-alignment-certification-v4",
+  "protocol_v2_sha256": "9ce7d46a4e2efd98f9319f157dd477a78125972e7a4e961aa772a8377541b25e",
+  "protocol_v3_sha256": "f2b843c630ec2166a152b306938b105e42a9e06203fc0cd50e3855d343d78dc7",
+  "protocol_v3_supersession_sha256": "9e29eeb8d58da95e30eafe4818361bad7b1e44b51dbac5ee074b46dce4be0f16",
+  "protocol_v4_sha256": "728a40762eeeca517760452d854cf2a870ba299cad05d77366f7afb43acd4cba",
+  "test_blocks": 842,
+  "expectations": 3946,
+  "expectation_failures": 0,
+  "errors": 0,
+  "failed": 0,
+  "warnings": 14,
+  "skipped": 4,
+  "results_sha256": "3d732ca971291c65c68abd377093a4aa6ab0c2a74e298392484590a273b65b97",
+  "session_info_sha256": "7cda8fe33c3c20fb2eaf70959496c69c9bca21a7ea3e865dc88a54429f433b1a",
+  "elapsed_seconds": 169.495,
+  "optional_backends": {
+    "future": true,
+    "future.apply": true,
+    "T4transport": false,
+    "neuralign": true,
+    "patchwork": true,
+    "ragg": true,
+    "pkgdown": true
+  },
+  "skip_classification": {
+    "long_between_subject_null": "opt-in DKGE_LONG_TESTS; unrelated to alignment candidate",
+    "future_apply_absence_branch": "installed backend makes absence-only branch inapplicable",
+    "T4transport": "not installed; optional comparison backend skip",
+    "long_weight_null": "opt-in DKGE_LONG_TESTS; unrelated to alignment candidate"
+  },
+  "warning_classification": {
+    "expected_model_diagnostics": "rank reduction, degenerate classification target, reduced-rank input, and intentionally strict Sinkhorn convergence comparator warnings",
+    "optional_plot_backend": "installed",
+    "environment": "locale and package-built-under-version messages are external to DKGE"
+  },
+  "R": "R version 4.5.1 (2025-06-13)",
+  "platform": "aarch64-apple-darwin20"
+}

@@ -31,7 +31,8 @@ test_that("as.data.frame.dkge_inference summarises statistics", {
                           method = "analytic",
                           inference = "parametric",
                           correction = "none",
-                          n_perm = 10)
+                          n_perm = 10,
+                          allow_approximate_alignment = TRUE)
 
   df <- as.data.frame(infer_obj)
 

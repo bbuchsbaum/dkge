@@ -1,0 +1,17 @@
+mode=formal
+generated_at=2026-08-27 02:50:53 UTC
+elapsed_seconds=4996.343
+source_sha=f40c1f630c8bc94d0f7dc1d9d177b78bd877b6c3
+source_tree_sha256=787ebf9a1fe00ccc98854a668a20ce63bc4ac9271274e511e23e17f18090b3f3
+script_sha256=d068c4936c736381f43f82a25c1fdb09cc19be4864461caf967e3c9bff2e878e
+protocol_sha256=97c05786232a92fa9d6dabd1814dbdbc815a2832449abbfde2d39a61e676701d
+n_sim=40
+n_perm=31
+formal_cores=1
+requested_formal_cores=4
+candidate_valid=FALSE
+exact_oracle_gate=TRUE
+negative_control_gate=FALSE
+claim=Court controls failed or are incomplete; no inferential promotion is permitted.
+R=R version 4.5.1 (2025-06-13)
+platform=aarch64-apple-darwin20

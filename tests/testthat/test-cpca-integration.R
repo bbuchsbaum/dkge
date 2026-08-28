@@ -74,3 +74,26 @@ test_that("dkge_cpca_fit wrapper matches dkge", {
   expect_equal(fit1$U, fit2$U)
   expect_equal(fit1$cpca$Chat_design, fit2$cpca$Chat_design, tolerance = 1e-5)
 })
+
+test_that("CPCA fits fail closed when exact fold replay is unavailable", {
+  fit <- dkge(
+    fixture$betas, designs = fixture$designs, K = kernel_identity,
+    cpca_blocks = 1:2, cpca_part = "design", rank = 2
+  )
+  contrast <- c(1, -1, 0, 0)
+  for (method in c("loso", "kfold", "analytic")) {
+    args <- list(fit = fit, contrasts = contrast, method = method)
+    if (identical(method, "kfold")) args$folds <- 2L
+    expect_error(
+      do.call(dkge_contrast, args),
+      "CPCA|cpca_part|ordinary pooled eigensolve",
+      class = "dkge_crossfit_estimator_error",
+      info = method
+    )
+  }
+  expect_error(
+    dkge_loso_contrast(fit, 1L, contrast),
+    "CPCA|cpca_part|ordinary pooled eigensolve",
+    class = "dkge_crossfit_estimator_error"
+  )
+})

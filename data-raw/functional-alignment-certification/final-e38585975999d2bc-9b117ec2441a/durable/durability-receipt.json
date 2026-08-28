@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "purpose": "Byte-for-byte preservation of the exact V9 package, check log, and complete pkgdown site outside ephemeral temporary storage.",
+  "historical_certificate": "dkge-functional-alignment-certification-v9",
+  "historical_certificate_directory": "data-raw/functional-alignment-certification/final-e38585975999d2bc-9b117ec2441a",
+  "historical_source_tree_sha256": "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400",
+  "copied_from": "/private/tmp/dkge-v9-certified.m914En",
+  "copied_at_utc": "2026-08-28T11:56:37Z",
+  "copy_verification": {
+    "package_sha256_equal": true,
+    "check_log_sha256_equal": true,
+    "pkgdown_recursive_diff_equal": true,
+    "pkgdown_site_content_sha256_equal": true
+  },
+  "artifacts": {
+    "package": {
+      "path": "package/dkge_0.0.0.9000.tar.gz",
+      "bytes": 1351452,
+      "sha256": "9b117ec2441a4d6d94d23c39b977828aab8a5fea6c7ce09b96ef741d4c5cbc59"
+    },
+    "check_log": {
+      "path": "check/00check.log",
+      "bytes": 2760,
+      "sha256": "747aa511dee1c9a6d66bb5825994750ef7c9d49658f16a9eb7b8c19d890c0bf9"
+    },
+    "pkgdown_site": {
+      "path": "pkgdown",
+      "content_file_count_excluding_receipt": 538,
+      "content_sha256": "b3c17aa07dae899ec92899cf4606410cab7b25909625f64cbf428d46764a7c35",
+      "embedded_receipt_sha256": "937cceb106702f5baa806ecffae6697abaa9cd93a0e9f83342255f6760ecea8c"
+    }
+  },
+  "scope_note": "This receipt preserves the historical V9 evidence. It does not certify source changes made after source tree e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400."
+}

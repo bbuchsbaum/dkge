@@ -1,0 +1,68 @@
+# Freeze a DKGE fit into a compact model for prediction
+
+Freeze a DKGE fit into a compact model for prediction
+
+## Usage
+
+``` r
+dkge_freeze(fit)
+```
+
+## Arguments
+
+- fit:
+
+  a dkge or dkge_stream object
+
+## Value
+
+A `dkge_model` list with `U`, `K`, `R`, effect labels, and any spatial
+specification/provenance needed to rebuild sparse factors for new
+subjects. Training-subject factorization objects are omitted.
+
+## Examples
+
+``` r
+toy <- dkge_sim_toy(
+  factors = list(A = list(L = 2), B = list(L = 3)),
+  active_terms = c("A", "B"), S = 3, P = 20, snr = 5
+)
+fit <- dkge_fit(toy$B_list, toy$X_list, toy$K, rank = 2)
+model <- dkge_freeze(fit)
+print(model)
+#> $U
+#>              [,1]        [,2]
+#> [1,]  0.826322303 0.903668181
+#> [2,]  0.031522406 0.009575458
+#> [3,] -1.277793914 1.169044798
+#> [4,]  0.061535214 0.005058685
+#> [5,]  0.002274041 0.005972561
+#> 
+#> $K
+#>                  A            B1            B2          A:B1          A:B2
+#> A     6.666667e-01  0.000000e+00  0.000000e+00 -9.540492e-19  5.508037e-17
+#> B1    0.000000e+00  3.333333e-01 -1.783622e-17  2.420792e-19  2.578766e-19
+#> B2    0.000000e+00 -1.783622e-17  3.333333e-01  0.000000e+00 -4.731550e-18
+#> A:B1 -9.540492e-19  2.420792e-19  0.000000e+00  5.555556e-02 -2.746414e-18
+#> A:B2  5.508037e-17  2.578766e-19 -4.731550e-18 -2.746414e-18  5.555556e-02
+#> 
+#> $R
+#>          effect1  effect2  effect3  effect4  effect5
+#> effect1 1.732051 0.000000 0.000000 0.000000 0.000000
+#> effect2 0.000000 1.732051 0.000000 0.000000 0.000000
+#> effect3 0.000000 0.000000 1.732051 0.000000 0.000000
+#> effect4 0.000000 0.000000 0.000000 1.732051 0.000000
+#> effect5 0.000000 0.000000 0.000000 0.000000 1.732051
+#> 
+#> $effects
+#> [1] "A"    "B1"   "B2"   "A:B1" "A:B2"
+#> 
+#> $spatial
+#> NULL
+#> 
+#> $subject_ids
+#> [1] "sub01" "sub02" "sub03"
+#> 
+#> attr(,"class")
+#> [1] "dkge_model"
+```

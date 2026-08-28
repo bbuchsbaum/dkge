@@ -21,7 +21,8 @@
 
 \item{contrast_list}{List of normalized contrasts}
 
-\item{ridge}{Ridge parameter (unused in analytic, kept for consistency)}
+\item{ridge}{Ridge parameter added to the exact fold moment before the
+first-order eigensystem update (and used by an exact fallback).}
 
 \item{parallel}{Logical; enables future.apply-based parallelism for
 per-subject computations (requires future.apply)}

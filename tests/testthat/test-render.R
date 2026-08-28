@@ -51,14 +51,14 @@ test_that("renderer builds anchors from voxels when not supplied", {
   centroids <- list(matrix(runif(9, -10, 10), ncol = 3))
   vox_xyz <- matrix(runif(300, -40, 40), ncol = 3)
 
-  renderer <- dkge_build_renderer(fit_stub,
+  renderer <- suppressWarnings(dkge_build_renderer(fit_stub,
                                  centroids = centroids,
                                  anchors = NULL,
                                  vox_xyz = vox_xyz,
                                  anchor_n = 15L,
                                  anchor_method = "sample",
                                  anchor_seed = 1L,
-                                 mapper = dkge_mapper("knn", k = 3, sigx = 5))
+                                 mapper = dkge_mapper("knn", k = 3, sigx = 5)))
 
   expect_true(is.matrix(renderer$anchors))
   expect_equal(nrow(renderer$anchors), min(15L, nrow(vox_xyz)))
@@ -153,21 +153,64 @@ test_that("sinkhorn renderer uses latent features and reports diagnostics", {
                         lambda_feat = 1,
                         sigz = 1)
 
-  renderer <- dkge_build_renderer(fit_stub,
+  renderer <- suppressWarnings(dkge_build_renderer(fit_stub,
                                  centroids = centroids,
                                  anchors = anchors,
                                  mapper = mapper,
                                  subject_feats = subj_feats,
                                  anchor_feats = anchor_feats,
                                  feat_lambda = 1,
-                                 feat_sigma = 1)
+                                 feat_sigma = 1))
 
   expect_equal(renderer$anchor_feats, anchor_feats, tolerance = 1e-8)
   expect_false(all(vapply(renderer$mapper_stats, is.null, logical(1))))
 
   values_list <- list(c(1, -1), c(-1, 1))
-  rendered <- dkge_render_subject_values(renderer, values_list, lambda = 0, to_vox = FALSE)
+  rendered <- suppressWarnings(dkge_render_subject_values(
+    renderer, values_list, lambda = 0, to_vox = FALSE
+  ))
   stats <- rendered$details$subject_stats
   expect_true(all(vapply(stats, function(x) !is.null(x$plan_entropy), logical(1))))
   expect_true(rendered$details$plan_entropy_mean > 0)
+  expect_identical(renderer$subject_weighting, "equal_subject")
+  expect_equal(renderer$weights, c(1, 1))
+  expect_identical(renderer$eligibility$status, "ineligible")
+  expect_identical(rendered$metadata$status, "descriptive")
+  expect_false(rendered$metadata$inferential)
+  expect_error(
+    dkge_infer_aligned(rendered, n_perm = 100),
+    "aligned_maps",
+    class = "dkge_aligned_maps_error"
+  )
+})
+
+test_that("legacy Sinkhorn mapper and renderer fail closed on nonconvergence", {
+  points <- rbind(c(0, 0, 0), c(1, 0, 0), c(3, 0, 0))
+  anchors <- rbind(c(0, 0, 0), c(2, 0, 0), c(5, 0, 0))
+  mapper <- dkge_mapper(
+    "sinkhorn", epsilon = 1e-6, max_iter = 1L, tol = 1e-14,
+    lambda_xyz = 1, lambda_feat = 0, sigx = 1
+  )
+  expect_error(
+    suppressWarnings(fit_mapper(
+      mapper, subj_points = points, anchor_points = anchors
+    )),
+    "numerically invalid|did not converge|marginal",
+    class = "dkge_alignment_numerical_error"
+  )
+
+  fit_stub <- structure(
+    list(Btil = list(matrix(0, 2, 1)), weights = 99),
+    class = "dkge"
+  )
+  expect_error(
+    suppressWarnings(dkge_build_renderer(
+      fit_stub,
+      centroids = list(points),
+      anchors = anchors,
+      mapper = mapper
+    )),
+    "numerically invalid|did not converge|marginal",
+    class = "dkge_alignment_numerical_error"
+  )
 })

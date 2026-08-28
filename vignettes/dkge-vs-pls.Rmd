@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 library(ggplot2)
 
@@ -235,7 +237,7 @@ table.dkge-vs-pls td {
     <tr>
       <th scope="row">Cross-validation</th>
       <td>Classical neuroimaging workflows commonly use permutation for LV significance and bootstrap for salience stability; predictive cross-validation can be added but is not the same estimand.</td>
-      <td>LOSO / K-fold cross-fitting (`dkge_contrast`), analytic approximations, parametric or bootstrap inference with cached transports.</td>
+      <td>LOSO / K-fold cross-fitting (`dkge_contrast`); typed aligned-map inference and bootstrap with validated correspondence receipts. Rank-truncated cohort-trained routes are labelled approximate and require explicit opt-in.</td>
     </tr>
     <tr>
       <th scope="row">Transport / alignment</th>
