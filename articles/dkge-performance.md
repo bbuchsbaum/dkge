@@ -73,10 +73,10 @@ knitr::kable(performance, digits = 5)
 
 | stage | mapper   | seconds_per_call |
 |:------|:---------|-----------------:|
-| fit   | kNN      |          0.00080 |
-| fit   | Sinkhorn |          0.00410 |
-| apply | kNN      |          0.00013 |
-| apply | Sinkhorn |          0.00022 |
+| fit   | kNN      |          0.00070 |
+| fit   | Sinkhorn |          0.00350 |
+| apply | kNN      |          0.00010 |
+| apply | Sinkhorn |          0.00018 |
 
 ![Log-scale bar chart comparing mapper fit and apply time for
 k-nearest-neighbour and Sinkhorn

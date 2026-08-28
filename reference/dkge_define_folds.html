@@ -86,6 +86,7 @@ splits, run-based partitions, and custom user-defined assignments.</p>
 <span>  assignments <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  align <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  partition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"exact"</span>, <span class="st">"repeated"</span>, <span class="st">"partial"</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -123,7 +124,16 @@ splits, run-based partitions, and custom user-defined assignments.</p>
 
 
 <dt id="arg-align">align<a class="anchor" aria-label="anchor" href="#arg-align"></a></dt>
-<dd><p>Logical; if TRUE (default) compute Procrustes alignment/consensus when folds are evaluated.</p></dd>
+<dd><p>Logical; if <code>TRUE</code>, compute Procrustes alignment/consensus when
+folds are evaluated. The default is <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-partition">partition<a class="anchor" aria-label="anchor" href="#arg-partition"></a></dt>
+<dd><p>Contract for custom assessment sets. <code>"exact"</code> (default)
+requires a nonoverlapping partition covering every subject. <code>"repeated"</code>
+permits overlap but requires full coverage. <code>"partial"</code> permits incomplete
+coverage but remains nonoverlapping. Subject-collapsing consumers still
+require exactly one assessment per subject.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

@@ -185,6 +185,7 @@ fit_kernel <- dkge(bundle,
                    cpca_blocks = 1:2,
                    cpca_part = "both",
                    rank = 3)
+#> Warning: Requested rank 3 exceeds effective rank 2. Reducing to 2 components.
 round(fit_kernel$cpca$evals_design[1:3], 3)
 #> [1] 3273  819    0
 round(fit_kernel$cpca$evals_resid[1:3], 3)

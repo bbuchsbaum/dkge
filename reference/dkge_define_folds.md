@@ -16,6 +16,7 @@ dkge_define_folds(
   assignments = NULL,
   seed = NULL,
   align = FALSE,
+  partition = c("exact", "repeated", "partial"),
   ...
 )
 ```
@@ -56,8 +57,16 @@ dkge_define_folds(
 
 - align:
 
-  Logical; if TRUE (default) compute Procrustes alignment/consensus when
-  folds are evaluated.
+  Logical; if `TRUE`, compute Procrustes alignment/consensus when folds
+  are evaluated. The default is `FALSE`.
+
+- partition:
+
+  Contract for custom assessment sets. `"exact"` (default) requires a
+  nonoverlapping partition covering every subject. `"repeated"` permits
+  overlap but requires full coverage. `"partial"` permits incomplete
+  coverage but remains nonoverlapping. Subject-collapsing consumers
+  still require exactly one assessment per subject.
 
 - ...:
 

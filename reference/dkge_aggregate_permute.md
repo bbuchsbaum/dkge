@@ -129,6 +129,9 @@ statistics because the unaligned component sign is arbitrary;
 `"greater"` remains the natural choice for the non-negative
 `"singular_value"` statistic. Bootstrap resampling keeps alignment
 because the observed fit is a legitimate reference for a CI.
+Rank-deficient draws are retained: unavailable built-in components
+contribute zero, while alignment metadata records the source and
+reference ranks and flags the deficiency.
 
 ## Examples
 

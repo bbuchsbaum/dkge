@@ -168,7 +168,7 @@ near_preflight$summary
 #> [1] 0.05
 near_preflight$pairs
 #>   contrast1 contrast2 query_correlation input_correlation collision
-#> 1   effect1   effect2              0.98          2.89e-17      TRUE
+#> 1   effect1   effect2              0.98          2.55e-17      TRUE
 ```
 
 This is a practical collision, not a null-space failure.
@@ -199,14 +199,14 @@ merged_preflight$estimability
 #>                contrast              status support_fraction null_fraction
 #> 1               effect1 partially_estimable         5.00e-01           0.5
 #> 2               effect2 partially_estimable         5.00e-01           0.5
-#> 3 effect1_minus_effect2                null         2.47e-32           1.0
+#> 3 effect1_minus_effect2                null         2.57e-32           1.0
 #>   query_norm
 #> 1   3.54e-01
 #> 2   3.54e-01
-#> 3   1.00e-16
+#> 3   1.01e-16
 merged_preflight$pairs[merged_preflight$pairs$collision, ]
 #>   contrast1 contrast2 query_correlation input_correlation collision
-#> 1   effect1   effect2                 1          2.89e-17      TRUE
+#> 1   effect1   effect2                 1          2.55e-17      TRUE
 ```
 
 [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md)

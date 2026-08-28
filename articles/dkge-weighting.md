@@ -349,12 +349,12 @@ comp_weighted <- suppressWarnings(dkge_component_stats(
 data.frame(equal = head(comp_equal$summary$mean),
            size_weighted = head(comp_weighted$summary$mean))
 #>    equal size_weighted
-#> 1 -0.712        -0.723
-#> 2 -1.662        -1.655
-#> 3 -0.714        -0.742
-#> 4  0.494         0.544
-#> 5  4.677         4.478
-#> 6  0.837         1.603
+#> 1  0.712         0.723
+#> 2  1.662         1.655
+#> 3  0.714         0.742
+#> 4 -0.494        -0.544
+#> 5 -4.677        -4.478
+#> 6 -0.837        -1.603
 ```
 
 This deprecated component helper is descriptive only: it has no p-values

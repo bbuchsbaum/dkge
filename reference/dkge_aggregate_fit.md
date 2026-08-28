@@ -41,8 +41,9 @@ print(x, ...)
 
 - rank:
 
-  Number of components to retain. Requests larger than
-  `min(nrow(Y), ncol(Y))` are capped with a message.
+  Number of components to retain. Requests larger than the data/kernel
+  cap are capped with a message. A zero-signal transformed moment
+  returns an honest rank-zero fit.
 
 - center:
 
@@ -91,6 +92,11 @@ Object of class `dkge_aggregate_fit`. Notable fields:
 - eig_values:
 
   Full length-q eigenvalue spectrum of `Chat`.
+
+- kernel_rank,moment_rank,effective_rank:
+
+  Numerical support ranks for the aggregate kernel, transformed moment,
+  and retained fit.
 
 - Chat:
 

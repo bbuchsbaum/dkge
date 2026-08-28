@@ -110,8 +110,9 @@ root and Moore–Penrose inverse root: null directions stay at zero.</p></dd>
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
-<dd><p>Number of components to retain. Requests larger than
-<code>min(nrow(Y), ncol(Y))</code> are capped with a message.</p></dd>
+<dd><p>Number of components to retain. Requests larger than the
+data/kernel cap are capped with a message. A zero-signal transformed
+moment returns an honest rank-zero fit.</p></dd>
 
 
 <dt id="arg-center">center<a class="anchor" aria-label="anchor" href="#arg-center"></a></dt>
@@ -152,6 +153,10 @@ components and are no longer sorted.</p></dd>
 
 <dt>eig_values</dt>
 <dd><p>Full length-q eigenvalue spectrum of <code>Chat</code>.</p></dd>
+
+<dt>kernel_rank,moment_rank,effective_rank</dt>
+<dd><p>Numerical support ranks for
+the aggregate kernel, transformed moment, and retained fit.</p></dd>
 
 <dt>Chat</dt>
 <dd><p>\(K^{1/2} Y_c Y_c^\top K^{1/2}\). Both <code>Chat</code> and

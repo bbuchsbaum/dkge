@@ -128,7 +128,7 @@ cls <- dkge_classify(
   targets = targets,
   method  = "lda",     # "lda" (default) or "logit"
   mode    = "cell_cross",
-  n_perm  = 99,        # coarse permutation resolution for this example
+  n_perm  = 0,         # descriptive cross-validated decoding
   seed    = 99
 )
 print(cls)
@@ -137,9 +137,8 @@ print(cls)
 #> Targets: 1
 #> Classifier: lda
 #> Metrics: accuracy, logloss
-#> Permutations: 99
+#> Permutations: 0
 #>   cond: accuracy=1.000, logloss=0.000
-#>     accuracy p=0.010, logloss p=0.010
 ```
 
 The result is a `dkge_classification` object. Each entry of `$results`
@@ -191,26 +190,53 @@ Convert to a tidy data frame for plotting or downstream analysis:
 df <- as.data.frame(cls)
 head(df)
 #>   target   metric        value p_value n_perm
-#> 1   cond accuracy 1.000000e+00    0.01     99
-#> 2   cond  logloss 9.999779e-13    0.01     99
+#> 1   cond accuracy 1.000000e+00      NA      0
+#> 2   cond  logloss 9.999779e-13      NA      0
 ```
 
 ### Permutation p-values
 
-When `n_perm > 0`, each target gets an empirical p-value from the
-sign-flip max-T permutation distribution:
+The descriptive fit above deliberately sets `n_perm = 0`, so its
+p-values are `NULL`:
 
 ``` r
 
 res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
-#> accuracy  logloss 
-#>     0.01     0.01
+#> NULL
 ```
 
-With 99 permutations and the plus-one correction, the smallest
-attainable p-value is (1/(99+1)=0.01). A value at that boundary means
-none of the sampled permutations was as extreme; it does not provide
-finer resolution than 0.01.
+For an inferential fit, preselect one scalar penalty independently and
+provide a callback that reruns the complete data-dependent
+representation and classifier for every randomized label vector. The
+callback must return finite named metrics:
+
+``` r
+
+full_recompute <- function(labels, row_data, target, fit, fold_assignments,
+                           method, mode, lambda, metric, class_weights,
+                           standardize_within_fold) {
+  # Rebuild the fit, rank choice, folds, target representation, and classifier
+  # from `labels`, then return every metric requested in `metric`.
+  list(metrics = recomputed_metrics)
+}
+
+cls_perm <- dkge_classify(
+  fit,
+  targets = targets,
+  method = "lda",
+  mode = "cell_cross",
+  lambda = 1e-3,       # selected independently of these outcomes
+  metric = "accuracy",
+  n_perm = 199,
+  seed = 99,
+  control = list(randomization_recompute = full_recompute)
+)
+```
+
+With 199 permutations and the plus-one correction, the smallest
+attainable p-value is $`1/(199+1)=0.005`$. A value at that boundary
+means none of the sampled permutations was as extreme; it does not
+provide finer resolution.
 
 ### Subject-level predictions
 
@@ -254,11 +280,11 @@ diag_fold1$class_counts_test   # observed class counts in test set
 The `mode` argument controls how the group basis is applied at test
 time:
 
-| Mode | Basis used | Use case |
+| Mode | Basis used | Supported claim |
 |----|----|----|
-| `"cell"` | Global `fit$U` | Fast; mild basis-step leakage — `fit$U` saw all subjects |
-| `"cell_cross"` | Fold-specific LOSO `U_fold` | Basis and classifier refit per subject fold |
-| `"delta"` | Global `fit$U` + subject labels | Subject-level binary test; requires `y` argument |
+| `"cell"` | Global `fit$U` | Transductive performance within this cohort; the basis saw held-out subjects |
+| `"cell_cross"` | Fold-specific LOSO `U_fold` | Prospective held-out-subject performance |
+| `"delta"` | Fold-specific basis + subject labels | Prospective held-out-subject binary test; requires `y` |
 
 `"auto"` (default) selects `"cell"` for within-subject targets and
 `"delta"` for between-subject targets.
@@ -268,7 +294,7 @@ shown here for syntax rather than run:
 
 ``` r
 
-# Refit the basis without each held-out subject.
+# Cross-fitted representation for a prospective generalisation claim.
 cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
 ```
 
@@ -313,25 +339,25 @@ automatically:
 cls_multi <- dkge_classify(fit_multi,
                            targets = W_runs,   # plain matrix dispatch
                            mode = "cell_cross",
-                           n_perm  = 49,
+                           n_perm  = 0,
                            seed    = 101)
 
 res_multi <- cls_multi$results[[1]]
 res_multi$metrics
 #>     accuracy      logloss 
-#> 1.000000e+00 9.999779e-13
+#> 1.000000e+00 1.168582e-12
 as.data.frame(cls_multi)
 #>    target   metric        value p_value n_perm
-#> 1 target1 accuracy 1.000000e+00    0.02     49
-#> 2 target1  logloss 9.999779e-13    0.02     49
+#> 1 target1 accuracy 1.000000e+00      NA      0
+#> 2 target1  logloss 1.168582e-12      NA      0
 ```
 
 Run averaging happens inside the weight matrix, so each fold observes
-one pattern per condition. Because this call also uses
-`mode = "cell_cross"`, both the basis and classifier exclude the
-held-out subject. This guards against the specific basis-reuse leakage
-described above; it does not by itself establish transportability to a
-new scanner, acquisition protocol, or population.
+one pattern per condition. Because this call uses `mode = "cell_cross"`,
+both the basis and classifier exclude the held-out subject. This example
+is descriptive; an inferential run must use the full-recomputation
+contract above. Cross-fitting does not by itself establish
+transportability to a new scanner, acquisition protocol, or population.
 
 ## Hyperdesign inputs and fold bridges
 
@@ -381,9 +407,14 @@ methodological consistency.
 sufficient. Use `method = "logit"` with `class_weights = "balanced"`
 when experimental conditions have unequal numbers of trials.
 
-**Permutation testing.** Increase `n_perm` for precise p-values near
-significance thresholds. Set `n_perm = 0` during exploratory analysis to
-skip the permutation loop.
+**Permutation testing.** Whenever `n_perm > 0`, supply one externally
+preselected positive scalar `lambda`. Observed-data `lambda_grid` and
+`lambda_fun` selection remain descriptive-only: freezing their selected
+value across permutations would not reproduce the tested procedure under
+the null. For `cell` and `cell_cross`, `control$randomization_recompute`
+must also rebuild the fit, rank choice, folds, representation, and
+classifier for every randomized label vector. Set `n_perm = 0` for
+descriptive decoding.
 
 **Functional alignment.** When subjects have different voxel grids or
 parcel systems, fit correspondence from an eligible functional feature

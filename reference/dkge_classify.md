@@ -117,7 +117,12 @@ dkge_classify(
   `lambda_grid` (numeric vector of candidate penalties) and `lambda_fun`
   (function returning a lambda per target/fold with signature
   `function(target, fold, method, default)`). Defaults to `NULL`,
-  leaving the standard `lambda` behavior unchanged.
+  leaving the standard `lambda` behavior unchanged. Data-dependent
+  selectors are descriptive-only: when `n_perm > 0`, supply one
+  externally preselected positive scalar `lambda`. Cell and cell-cross
+  permutations additionally require `randomization_recompute`, a
+  callback that rebuilds the complete representation and returns finite
+  named metrics for each randomized label vector.
 
 - blocks:
 

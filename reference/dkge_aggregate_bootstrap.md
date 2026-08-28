@@ -2,7 +2,9 @@
 
 Resamples subjects with replacement, recomputes aggregate rows, refits
 the aggregate decomposition, aligns components, and evaluates the
-statistic.
+statistic. Rank-deficient draws are retained: unavailable built-in
+components and component maps contribute zero, and their alignment
+metadata is marked `rank_deficient` rather than aborting the bootstrap.
 
 ## Usage
 

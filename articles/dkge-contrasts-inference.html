@@ -254,7 +254,7 @@ estimable, but their queries are already almost the same:</p>
 <span><span class="co">#&gt; [1] 0.05</span></span>
 <span><span class="va">near_preflight</span><span class="op">$</span><span class="va">pairs</span></span>
 <span><span class="co">#&gt;   contrast1 contrast2 query_correlation input_correlation collision</span></span>
-<span><span class="co">#&gt; 1   effect1   effect2              0.98          2.89e-17      TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   effect1   effect2              0.98          2.55e-17      TRUE</span></span></code></pre></div>
 <p>This is a practical collision, not a null-space failure.
 <code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code> emits the same warning automatically and
 stores the summary under <code>metadata$kernel_query_summary</code>.</p>
@@ -279,14 +279,14 @@ queries are identical, and the intended difference lies wholly in
 <span><span class="co">#&gt;                contrast              status support_fraction null_fraction</span></span>
 <span><span class="co">#&gt; 1               effect1 partially_estimable         5.00e-01           0.5</span></span>
 <span><span class="co">#&gt; 2               effect2 partially_estimable         5.00e-01           0.5</span></span>
-<span><span class="co">#&gt; 3 effect1_minus_effect2                null         2.47e-32           1.0</span></span>
+<span><span class="co">#&gt; 3 effect1_minus_effect2                null         2.57e-32           1.0</span></span>
 <span><span class="co">#&gt;   query_norm</span></span>
 <span><span class="co">#&gt; 1   3.54e-01</span></span>
 <span><span class="co">#&gt; 2   3.54e-01</span></span>
-<span><span class="co">#&gt; 3   1.00e-16</span></span>
+<span><span class="co">#&gt; 3   1.01e-16</span></span>
 <span><span class="va">merged_preflight</span><span class="op">$</span><span class="va">pairs</span><span class="op">[</span><span class="va">merged_preflight</span><span class="op">$</span><span class="va">pairs</span><span class="op">$</span><span class="va">collision</span>, <span class="op">]</span></span>
 <span><span class="co">#&gt;   contrast1 contrast2 query_correlation input_correlation collision</span></span>
-<span><span class="co">#&gt; 1   effect1   effect2                 1          2.89e-17      TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   effect1   effect2                 1          2.55e-17      TRUE</span></span></code></pre></div>
 <p><code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code> errors for the null contrast rather than
 returning a plausible zero map. For partly represented contrasts it
 warns and stores both tables in

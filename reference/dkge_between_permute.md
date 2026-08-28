@@ -13,7 +13,7 @@ permutation remains available as a legacy approximate method.
 dkge_between_permute(
   object,
   terms = NULL,
-  method = c("freedman_lane", "rotation"),
+  method = NULL,
   B = 999L,
   blocks = NULL,
   seed = NULL,
@@ -39,9 +39,10 @@ dkge_between_permute(
 
 - method:
 
-  Resampling method. `"rotation"` uses Haar rotations in the orthogonal
-  complement of the reduced design; `"freedman_lane"` permutes
-  reduced-model residual rows.
+  Resampling method, which must be chosen explicitly. `"rotation"` uses
+  Haar rotations in the orthogonal complement of the reduced design;
+  `"freedman_lane"` permutes reduced-model residual rows. Neither
+  qualified method is a scientifically neutral default.
 
 - B:
 

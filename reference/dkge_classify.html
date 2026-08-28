@@ -180,7 +180,12 @@ is enabled automatically for <code>mode = "cell_cross"</code> and disabled other
 entries: <code>lambda_grid</code> (numeric vector of candidate penalties) and
 <code>lambda_fun</code> (function returning a lambda per target/fold with signature
 <code>function(target, fold, method, default)</code>). Defaults to <code>NULL</code>, leaving the
-standard <code>lambda</code> behavior unchanged.</p></dd>
+standard <code>lambda</code> behavior unchanged. Data-dependent selectors are
+descriptive-only: when <code>n_perm &gt; 0</code>, supply one externally preselected
+positive scalar <code>lambda</code>. Cell and cell-cross permutations additionally
+require <code>randomization_recompute</code>, a callback that rebuilds the complete
+representation and returns finite named metrics for each randomized label
+vector.</p></dd>
 
 
 <dt id="arg-blocks">blocks<a class="anchor" aria-label="anchor" href="#arg-blocks"></a></dt>

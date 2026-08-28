@@ -265,6 +265,7 @@ effects.</p>
 <span>                   cpca_blocks <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,</span>
 <span>                   cpca_part <span class="op">=</span> <span class="st">"both"</span>,</span>
 <span>                   rank <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Requested rank 3 exceeds effective rank 2. Reducing to 2 components.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_kernel</span><span class="op">$</span><span class="va">cpca</span><span class="op">$</span><span class="va">evals_design</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 3273  819    0</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit_kernel</span><span class="op">$</span><span class="va">cpca</span><span class="op">$</span><span class="va">evals_resid</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>

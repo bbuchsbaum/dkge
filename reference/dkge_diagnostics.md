@@ -33,7 +33,7 @@ fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 #> Warning: Argument 'kernel' is deprecated; use 'K' instead.
 diag <- dkge_diagnostics(fit)
 names(diag)
-#> [1] "variance"      "weights"       "rank"          "q"            
-#> [5] "kernel"        "n_subjects"    "voxel_weights" "weight_spec"  
-#> [9] "spatial"      
+#>  [1] "variance"      "weights"       "rank"          "q"            
+#>  [5] "kernel"        "spectral"      "n_subjects"    "voxel_weights"
+#>  [9] "weight_spec"   "spatial"      
 ```

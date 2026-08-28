@@ -199,7 +199,7 @@ class-specific pattern vectors for the downstream classifier.</p>
 <span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
 <span>  method  <span class="op">=</span> <span class="st">"lda"</span>,     <span class="co"># "lda" (default) or "logit"</span></span>
 <span>  mode    <span class="op">=</span> <span class="st">"cell_cross"</span>,</span>
-<span>  n_perm  <span class="op">=</span> <span class="fl">99</span>,        <span class="co"># coarse permutation resolution for this example</span></span>
+<span>  n_perm  <span class="op">=</span> <span class="fl">0</span>,         <span class="co"># descriptive cross-validated decoding</span></span>
 <span>  seed    <span class="op">=</span> <span class="fl">99</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cls</span><span class="op">)</span></span>
@@ -208,9 +208,8 @@ class-specific pattern vectors for the downstream classifier.</p>
 <span><span class="co">#&gt; Targets: 1</span></span>
 <span><span class="co">#&gt; Classifier: lda</span></span>
 <span><span class="co">#&gt; Metrics: accuracy, logloss</span></span>
-<span><span class="co">#&gt; Permutations: 99</span></span>
-<span><span class="co">#&gt;   cond: accuracy=1.000, logloss=0.000</span></span>
-<span><span class="co">#&gt;     accuracy p=0.010, logloss p=0.010</span></span></code></pre></div>
+<span><span class="co">#&gt; Permutations: 0</span></span>
+<span><span class="co">#&gt;   cond: accuracy=1.000, logloss=0.000</span></span></code></pre></div>
 <p>The result is a <code>dkge_classification</code> object. Each entry
 of <code>$results</code> corresponds to one target:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -246,28 +245,52 @@ log-loss.</p>
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">cls</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   target   metric        value p_value n_perm</span></span>
-<span><span class="co">#&gt; 1   cond accuracy 1.000000e+00    0.01     99</span></span>
-<span><span class="co">#&gt; 2   cond  logloss 9.999779e-13    0.01     99</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   cond accuracy 1.000000e+00      NA      0</span></span>
+<span><span class="co">#&gt; 2   cond  logloss 9.999779e-13      NA      0</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="permutation-p-values">Permutation p-values<a class="anchor" aria-label="anchor" href="#permutation-p-values"></a>
 </h3>
-<p>When <code>n_perm &gt; 0</code>, each target gets an empirical
-p-value from the sign-flip max-T permutation distribution:</p>
+<p>The descriptive fit above deliberately sets <code>n_perm = 0</code>,
+so its p-values are <code>NULL</code>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">p_values</span>    <span class="co"># named numeric vector per metric (NULL when n_perm = 0)</span></span>
-<span><span class="co">#&gt; accuracy  logloss </span></span>
-<span><span class="co">#&gt;     0.01     0.01</span></span></code></pre></div>
-<p>With 99 permutations and the plus-one correction, the smallest
-attainable p-value is (1/(99+1)=0.01). A value at that boundary means
-none of the sampled permutations was as extreme; it does not provide
-finer resolution than 0.01.</p>
+<span><span class="co">#&gt; NULL</span></span></code></pre></div>
+<p>For an inferential fit, preselect one scalar penalty independently
+and provide a callback that reruns the complete data-dependent
+representation and classifier for every randomized label vector. The
+callback must return finite named metrics:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">full_recompute</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">labels</span>, <span class="va">row_data</span>, <span class="va">target</span>, <span class="va">fit</span>, <span class="va">fold_assignments</span>,</span>
+<span>                           <span class="va">method</span>, <span class="va">mode</span>, <span class="va">lambda</span>, <span class="va">metric</span>, <span class="va">class_weights</span>,</span>
+<span>                           <span class="va">standardize_within_fold</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Rebuild the fit, rank choice, folds, target representation, and classifier</span></span>
+<span>  <span class="co"># from `labels`, then return every metric requested in `metric`.</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>metrics <span class="op">=</span> <span class="va">recomputed_metrics</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">cls_perm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit</span>,</span>
+<span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"lda"</span>,</span>
+<span>  mode <span class="op">=</span> <span class="st">"cell_cross"</span>,</span>
+<span>  lambda <span class="op">=</span> <span class="fl">1e-3</span>,       <span class="co"># selected independently of these outcomes</span></span>
+<span>  metric <span class="op">=</span> <span class="st">"accuracy"</span>,</span>
+<span>  n_perm <span class="op">=</span> <span class="fl">199</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">99</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>randomization_recompute <span class="op">=</span> <span class="va">full_recompute</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>With 199 permutations and the plus-one correction, the smallest
+attainable p-value is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>199</mn><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>0.005</mn></mrow><annotation encoding="application/x-tex">1/(199+1)=0.005</annotation></semantics></math>.
+A value at that boundary means none of the sampled permutations was as
+extreme; it does not provide finer resolution.</p>
 </div>
 <div class="section level3">
 <h3 id="subject-level-predictions">Subject-level predictions<a class="anchor" aria-label="anchor" href="#subject-level-predictions"></a>
 </h3>
 <p>Individual predictions and fold assignments live in
 <code>$row_data</code>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">row_data</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"subject_label"</span>, <span class="st">"class_label"</span>, <span class="st">"fold"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   subject_label class_label fold</span></span>
 <span><span class="co">#&gt; 1          sub1           1    1</span></span>
@@ -284,7 +307,7 @@ finer resolution than 0.01.</p>
 </h3>
 <p>Confusion matrices and class counts per fold are in
 <code>res$diagnostics$folds</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">diag_fold1</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">folds</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">diag_fold1</span><span class="op">$</span><span class="va">confusion</span>           <span class="co"># confusion matrix for fold 1</span></span>
 <span><span class="co">#&gt;    </span></span>
@@ -301,35 +324,37 @@ finer resolution than 0.01.</p>
 </h2>
 <p>The <code>mode</code> argument controls how the group basis is
 applied at test time:</p>
-<table style="width:100%;" class="table">
+<table class="table">
 <colgroup>
-<col width="22%">
-<col width="40%">
-<col width="37%">
+<col width="17%">
+<col width="32%">
+<col width="50%">
 </colgroup>
 <thead><tr class="header">
 <th>Mode</th>
 <th>Basis used</th>
-<th>Use case</th>
+<th>Supported claim</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>"cell"</code></td>
 <td>Global <code>fit$U</code>
 </td>
-<td>Fast; mild basis-step leakage — <code>fit$U</code> saw all
+<td>Transductive performance within this cohort; the basis saw held-out
 subjects</td>
 </tr>
 <tr class="even">
 <td><code>"cell_cross"</code></td>
 <td>Fold-specific LOSO <code>U_fold</code>
 </td>
-<td>Basis and classifier refit per subject fold</td>
+<td>Prospective held-out-subject performance</td>
 </tr>
 <tr class="odd">
 <td><code>"delta"</code></td>
-<td>Global <code>fit$U</code> + subject labels</td>
-<td>Subject-level binary test; requires <code>y</code> argument</td>
+<td>Fold-specific basis + subject labels</td>
+<td>Prospective held-out-subject binary test; requires
+<code>y</code>
+</td>
 </tr>
 </tbody>
 </table>
@@ -338,8 +363,8 @@ within-subject targets and <code>"delta"</code> for between-subject
 targets.</p>
 <p>The strict route refits the basis for every held-out subject, so it
 is shown here for syntax rather than run:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Refit the basis without each held-out subject.</span></span>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Cross-fitted representation for a prospective generalisation claim.</span></span>
 <span><span class="va">cls_strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span><span class="va">fit</span>, targets <span class="op">=</span> <span class="va">targets</span>, mode <span class="op">=</span> <span class="st">"cell_cross"</span>, n_perm <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -349,7 +374,7 @@ is shown here for syntax rather than run:</p>
 scanner runs), stack the run-specific effects as extra rows in the
 design matrix and supply a weight matrix that combines them into a
 single class pattern.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 4 effects: A_run1, A_run2, B_run1, B_run2</span></span>
 <span><span class="va">make_subject_multi</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
@@ -374,28 +399,28 @@ single class pattern.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">W_runs</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span></span></code></pre></div>
 <p>A plain matrix is accepted directly as <code>targets</code> — DKGE
 wraps it automatically:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cls_multi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span><span class="va">fit_multi</span>,</span>
 <span>                           targets <span class="op">=</span> <span class="va">W_runs</span>,   <span class="co"># plain matrix dispatch</span></span>
 <span>                           mode <span class="op">=</span> <span class="st">"cell_cross"</span>,</span>
-<span>                           n_perm  <span class="op">=</span> <span class="fl">49</span>,</span>
+<span>                           n_perm  <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>                           seed    <span class="op">=</span> <span class="fl">101</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">res_multi</span> <span class="op">&lt;-</span> <span class="va">cls_multi</span><span class="op">$</span><span class="va">results</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">res_multi</span><span class="op">$</span><span class="va">metrics</span></span>
 <span><span class="co">#&gt;     accuracy      logloss </span></span>
-<span><span class="co">#&gt; 1.000000e+00 9.999779e-13</span></span>
+<span><span class="co">#&gt; 1.000000e+00 1.168582e-12</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">cls_multi</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    target   metric        value p_value n_perm</span></span>
-<span><span class="co">#&gt; 1 target1 accuracy 1.000000e+00    0.02     49</span></span>
-<span><span class="co">#&gt; 2 target1  logloss 9.999779e-13    0.02     49</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 target1 accuracy 1.000000e+00      NA      0</span></span>
+<span><span class="co">#&gt; 2 target1  logloss 1.168582e-12      NA      0</span></span></code></pre></div>
 <p>Run averaging happens inside the weight matrix, so each fold observes
-one pattern per condition. Because this call also uses
+one pattern per condition. Because this call uses
 <code>mode = "cell_cross"</code>, both the basis and classifier exclude
-the held-out subject. This guards against the specific basis-reuse
-leakage described above; it does not by itself establish
-transportability to a new scanner, acquisition protocol, or
-population.</p>
+the held-out subject. This example is descriptive; an inferential run
+must use the full-recomputation contract above. Cross-fitting does not
+by itself establish transportability to a new scanner, acquisition
+protocol, or population.</p>
 </div>
 <div class="section level2">
 <h2 id="hyperdesign-inputs-and-fold-bridges">Hyperdesign inputs and fold bridges<a class="anchor" aria-label="anchor" href="#hyperdesign-inputs-and-fold-bridges"></a>
@@ -408,7 +433,7 @@ altering the core solvers.</p>
 <p>The block below is illustrative and does not run here: it needs the
 <code>multidesign</code> package and a hyperdesign object you supply
 yourself.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">multidesign</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">hd</span>     <span class="op">&lt;-</span> <span class="fu">make_demo_hyperdesign</span><span class="op">(</span><span class="op">)</span>                <span class="co"># user-supplied helper</span></span>
@@ -443,10 +468,16 @@ methodological consistency.</p>
 fast and usually sufficient. Use <code>method = "logit"</code> with
 <code>class_weights = "balanced"</code> when experimental conditions
 have unequal numbers of trials.</p>
-<p><strong>Permutation testing.</strong> Increase <code>n_perm</code>
-for precise p-values near significance thresholds. Set
-<code>n_perm = 0</code> during exploratory analysis to skip the
-permutation loop.</p>
+<p><strong>Permutation testing.</strong> Whenever
+<code>n_perm &gt; 0</code>, supply one externally preselected positive
+scalar <code>lambda</code>. Observed-data <code>lambda_grid</code> and
+<code>lambda_fun</code> selection remain descriptive-only: freezing
+their selected value across permutations would not reproduce the tested
+procedure under the null. For <code>cell</code> and
+<code>cell_cross</code>, <code>control$randomization_recompute</code>
+must also rebuild the fit, rank choice, folds, representation, and
+classifier for every randomized label vector. Set
+<code>n_perm = 0</code> for descriptive decoding.</p>
 <p><strong>Functional alignment.</strong> When subjects have different
 voxel grids or parcel systems, fit correspondence from an eligible
 functional feature channel and use

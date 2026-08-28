@@ -74,10 +74,6 @@ dkge_transport_to_medoid_sinkhorn_cpp(
   Integer index of the fixed reference subject (1-based). This argument
   does not select or certify a medoid.
 
-- medoid:
-
-  Deprecated name for `reference_subject`.
-
 - lambda_emb, lambda_spa:
 
   Cost weights for embedding and spatial terms.
@@ -107,6 +103,10 @@ dkge_transport_to_medoid_sinkhorn_cpp(
   [`dkge_prepare_transport()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_transport.md).
   Cached operators are reused only after every structural input is
   fingerprint-validated.
+
+- medoid:
+
+  Deprecated name for `reference_subject`.
 
 - return_plans:
 
