@@ -75,9 +75,10 @@
 
 * Numerical-rank decisions now use one scale-equivariant transformed-moment
   tolerance across full fits, folds, LOSO, CV, and aggregate fits. Zero-signal
-  aggregates report rank zero; ridge remains inside the kernel range; fold
-  weight dimensions and custom assessment partitions fail closed instead of
-  recycling or silently duplicating subjects.
+  aggregates report rank zero, and rank-deficient resamples contribute exact
+  zeros for unavailable components instead of aborting; ridge remains inside
+  the kernel range; fold weight dimensions and custom assessment partitions
+  fail closed instead of recycling or silently duplicating subjects.
 * Scalar permutation and transport controls are validated before coercion.
   Sinkhorn solves only on positive mass support, rejects malformed native warm
   starts, and re-expands structural zero rows and columns. Classification

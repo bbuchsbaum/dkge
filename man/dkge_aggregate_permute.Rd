@@ -93,6 +93,9 @@ sign-ambiguous component statistics because the unaligned component sign
 is arbitrary; \code{"greater"} remains the natural choice for the non-negative
 \code{"singular_value"} statistic. Bootstrap resampling keeps alignment
 because the observed fit is a legitimate reference for a CI.
+Rank-deficient draws are retained: unavailable built-in components
+contribute zero, while alignment metadata records the source and reference
+ranks and flags the deficiency.
 }
 \examples{
 set.seed(1)

@@ -1086,6 +1086,9 @@ dkge_aggregate_align <- function(reference,
 #' is arbitrary; `"greater"` remains the natural choice for the non-negative
 #' `"singular_value"` statistic. Bootstrap resampling keeps alignment
 #' because the observed fit is a legitimate reference for a CI.
+#' Rank-deficient draws are retained: unavailable built-in components
+#' contribute zero, while alignment metadata records the source and reference
+#' ranks and flags the deficiency.
 #'
 #' @return Object of class `dkge_aggregate_permutation`. `observed` and `null`
 #'   hold signed statistics; `p` is computed according to `alternative`.
@@ -1213,6 +1216,77 @@ dkge_aggregate_permute <- function(target,
   ref
 }
 
+# A resample can have less transformed-moment rank than the observed fit. Such
+# draws are part of the resampling distribution, not errors to discard. Align
+# the estimable components, represent absent reference components by zero
+# cosine, and keep the fitted rank honest.
+.dkge_aggregate_resample_align <- function(reference, fit) {
+  source_rank <- fit$rank
+  aligned <- if (source_rank == 0L) {
+    out <- fit
+    out$alignment <- list(
+      method = "rank-zero",
+      R = matrix(numeric(0), 0L, 0L),
+      cosines = numeric(0),
+      near_tie = FALSE,
+      singular_gaps = numeric(0),
+      rank = 0L
+    )
+    out
+  } else {
+    dkge_aggregate_align(reference, fit)
+  }
+
+  reference_rank <- reference$rank
+  missing_rank <- max(0L, reference_rank - aligned$rank)
+  if (missing_rank > 0L) {
+    aligned$alignment$cosines <- c(
+      aligned$alignment$cosines, rep(0, missing_rank)
+    )
+  }
+  if (length(aligned$alignment$cosines)) {
+    names(aligned$alignment$cosines) <-
+      colnames(reference$U)[seq_along(aligned$alignment$cosines)]
+  }
+  aligned$alignment$source_rank <- source_rank
+  aligned$alignment$reference_rank <- reference_rank
+  aligned$alignment$rank_deficient <- source_rank < reference_rank
+  aligned
+}
+
+# Built-in component statistics have a canonical value of zero when that
+# component is absent from a rank-deficient resample. User functions still see
+# the honest fit and remain responsible for their own rank-zero policy.
+.dkge_aggregate_resample_stat <- function(fit, statistic, stat_args) {
+  if (!is.function(statistic)) {
+    component <- stat_args$component %||% 1L
+    if (component > fit$rank) return(0)
+  }
+  do.call(
+    dkge_aggregate_stat,
+    c(list(fit = fit, statistic = statistic), stat_args)
+  )
+}
+
+# Resampling summaries have the observed component dimension. Pad components
+# that are unavailable in a draw with exact zeros while retaining the draw's
+# honest rank in its alignment metadata.
+.dkge_aggregate_pad_resample_components <- function(x, reference) {
+  x <- as.matrix(x)
+  reference_rank <- reference$rank
+  if (ncol(x) == reference_rank) return(x)
+  if (ncol(x) > reference_rank) {
+    stop("A resampled aggregate matrix exceeds the reference rank.",
+         call. = FALSE)
+  }
+  out <- matrix(
+    0, nrow(x), reference_rank,
+    dimnames = list(rownames(x), colnames(reference$U)[seq_len(reference_rank)])
+  )
+  if (ncol(x) > 0L) out[, seq_len(ncol(x))] <- x
+  out
+}
+
 # Every resample must reproduce the observed aggregate row set: the kernel and
 # the reference basis are both indexed by it. Checking here turns an opaque
 # "Kernel dimnames must match aggregate row IDs" failure -- possibly hundreds of
@@ -1263,9 +1337,8 @@ dkge_aggregate_permute <- function(target,
                                 rank = reference$rank, center = center)
     # Alignment is diagnostic only: the statistic is taken on the unaligned
     # refit so the null is not attracted to the observed subspace.
-    alignment <- dkge_aggregate_align(reference, fit_b)$alignment
-    list(stat = do.call(dkge_aggregate_stat,
-                        c(list(fit = fit_b, statistic = statistic), stat_args)),
+    alignment <- .dkge_aggregate_resample_align(reference, fit_b)$alignment
+    list(stat = .dkge_aggregate_resample_stat(fit_b, statistic, stat_args),
          alignment = alignment)
   }
 }
@@ -1288,18 +1361,27 @@ dkge_aggregate_permute <- function(target,
     .dkge_aggregate_check_row_ids(target_b, row_ids, "bootstrap")
     fit_b <- dkge_aggregate_fit(target_b, K = reference$K,
                                 rank = reference$rank, center = center)
-    fit_b <- dkge_aggregate_align(reference, fit_b)
+    fit_b <- .dkge_aggregate_resample_align(reference, fit_b)
     list(
-      stat = do.call(dkge_aggregate_stat,
-                     c(list(fit = fit_b, statistic = statistic), stat_args)),
+      stat = .dkge_aggregate_resample_stat(fit_b, statistic, stat_args),
       alignment = fit_b$alignment,
       contrast = if (want_contrast) {
-        .dkge_aggregate_component_contrasts(fit_b, component_contrasts,
-                                            scale = component_scale)
+        .dkge_aggregate_pad_resample_components(
+          .dkge_aggregate_component_contrasts(
+            fit_b, component_contrasts, scale = component_scale
+          ),
+          reference
+        )
       } else {
         NULL
       },
-      scores_feature = if (want_features) fit_b$scores_feature else NULL
+      scores_feature = if (want_features) {
+        .dkge_aggregate_pad_resample_components(
+          fit_b$scores_feature, reference
+        )
+      } else {
+        NULL
+      }
     )
   }
 }
@@ -1360,6 +1442,9 @@ dkge_aggregate_permute <- function(target,
 #'
 #' Resamples subjects with replacement, recomputes aggregate rows, refits the
 #' aggregate decomposition, aligns components, and evaluates the statistic.
+#' Rank-deficient draws are retained: unavailable built-in components and
+#' component maps contribute zero, and their alignment metadata is marked
+#' `rank_deficient` rather than aborting the bootstrap.
 #'
 #' Resampling is **stratified by default**: when `strata` is `NULL` and the
 #' target has subject-level `group_vars`, subjects are resampled with

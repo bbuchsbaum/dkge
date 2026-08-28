@@ -101,6 +101,9 @@ excludes zero, or \code{NA} for the non-negative \code{"singular_value"} statist
 \description{
 Resamples subjects with replacement, recomputes aggregate rows, refits the
 aggregate decomposition, aligns components, and evaluates the statistic.
+Rank-deficient draws are retained: unavailable built-in components and
+component maps contribute zero, and their alignment metadata is marked
+\code{rank_deficient} rather than aborting the bootstrap.
 }
 \details{
 Resampling is \strong{stratified by default}: when \code{strata} is \code{NULL} and the

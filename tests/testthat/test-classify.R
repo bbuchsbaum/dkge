@@ -124,13 +124,18 @@ test_that("classification permutations require fixed selection and recomputation
   calls <- 0L
   recompute <- function(metric, ...) {
     calls <<- calls + 1L
-    stats::setNames(rep(0.5, length(metric)), metric)
+    c(extra_diagnostic = 99, brier = 0.25, accuracy = 0.75)
   }
   classified <- dkge_classify(
-    fixture$fit, targets = ~ A, n_perm = 2L, lambda = 0.1,
+    fixture$fit, targets = ~ A, metric = c("accuracy", "brier"),
+    n_perm = 2L, lambda = 0.1,
     control = list(randomization_recompute = recompute), seed = 12
   )
   expect_equal(calls, 2L)
+  expect_equal(classified$results[[1]]$permutations[, "accuracy"],
+               rep(0.75, 2L))
+  expect_equal(classified$results[[1]]$permutations[, "brier"],
+               rep(0.25, 2L))
   expect_identical(classified$lambda_selection, "preselected_external")
   expect_identical(classified$randomization_exactness,
                    "user_supplied_pipeline_recompute")
