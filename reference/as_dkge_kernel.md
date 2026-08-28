@@ -1,8 +1,8 @@
 # Convert to a DKGE design kernel
 
 Coerce arbitrary objects into a DKGE kernel bundle. The default method
-preserves existing behaviour by accepting matrices or list objects with
-a \`\$K\` component and optional metadata.
+preserves existing behavior by accepting matrices or list objects with a
+`$K` component and optional metadata.
 
 ## Usage
 
@@ -22,12 +22,13 @@ as_dkge_kernel(x, ...)
 
 ## Value
 
-List with entries \`K\` (q x q matrix) and optional \`info\`
+List with entries `K` (q x q matrix) and optional `info`
 
 ## See also
 
-\`vignette("dkge-classification", package = "dkge")\` for a worked
-example that uses these generics to integrate hyperdesign inputs.
+[`vignette("dkge-classification", package = "dkge")`](https://bbuchsbaum.github.io/dkge/articles/dkge-classification.md)
+for a worked example that uses these generics to integrate hyperdesign
+inputs.
 
 ## Examples
 

@@ -17,11 +17,11 @@ dkge_anchor_contrast_from_direction(
 
 - anchors:
 
-  Matrix of anchor coordinates (\`L x d\`).
+  Matrix of anchor coordinates (`L x d`).
 
 - direction:
 
-  Numeric vector (length \`d\`) describing a linear probe in the shared
+  Numeric vector (length `d`) describing a linear probe in the shared
   feature space.
 
 - sigma:
@@ -30,11 +30,12 @@ dkge_anchor_contrast_from_direction(
 
 - normalize:
 
-  Logical; L2-normalise the resulting contrast.
+  Logical; L2-normalize the resulting contrast.
 
 ## Value
 
-Numeric vector of length \`L\` suitable for \[dkge_contrast()\].
+Numeric vector of length `L` suitable for
+[`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
 
 ## Examples
 

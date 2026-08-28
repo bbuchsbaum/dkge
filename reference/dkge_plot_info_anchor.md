@@ -12,11 +12,13 @@ dkge_plot_info_anchor(info_haufe = NULL, info_loco = NULL, top = 20)
 
 - info_haufe:
 
-  Result from \`dkge_info_map_haufe()\`.
+  Result from
+  [`dkge_info_map_haufe()`](https://bbuchsbaum.github.io/dkge/reference/dkge_info_map_haufe.md).
 
 - info_loco:
 
-  Result from \`dkge_info_map_loco()\`.
+  Result from
+  [`dkge_info_map_loco()`](https://bbuchsbaum.github.io/dkge/reference/dkge_info_map_loco.md).
 
 - top:
 

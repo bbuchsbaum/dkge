@@ -1,8 +1,8 @@
 # Apply helper with optional parallelism
 
-Wraps \`lapply()\` with an optional future.apply backend so callers can
-enable \`parallel = TRUE\` without repeating boilerplate dependency
-checks.
+Wraps [`lapply()`](https://rdrr.io/r/base/lapply.html) with an optional
+future.apply backend so callers can enable `parallel = TRUE` without
+repeating boilerplate dependency checks.
 
 ## Usage
 
@@ -22,7 +22,8 @@ checks.
 
 - parallel:
 
-  Logical; if \`TRUE\`, uses \`future.apply::future_lapply()\`.
+  Logical; if `TRUE`, uses
+  [`future.apply::future_lapply()`](https://future.apply.futureverse.org/reference/future_lapply.html).
 
 - ...:
 
@@ -30,4 +31,5 @@ checks.
 
 ## Value
 
-List of results matching \`lapply()\` semantics.
+List of results matching
+[`lapply()`](https://rdrr.io/r/base/lapply.html) semantics.

@@ -10,4 +10,5 @@ dkge_weights_auto()
 
 ## Value
 
-\`dkge_weights()\` object with k-energy precision combination.
+[`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
+object with k-energy precision combination.

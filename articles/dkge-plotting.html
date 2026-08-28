@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="Plotting DKGE Fits">
+<meta name="description" content="Read a fitted DKGE model through its scree, salience, contribution, and stability panels, and know what each one does not establish.
+">
+<meta property="og:description" content="Read a fitted DKGE model through its scree, salience, contribution, and stability panels, and know what each one does not establish.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,19 +93,22 @@
       <h1>Plotting DKGE Fits</h1>
                         <h4 data-toc-skip class="author">DKGE Team</h4>
             
-            <h4 data-toc-skip class="date">2026-08-21</h4>
+            <h4 data-toc-skip class="date">2026-08-28</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-plotting.Rmd" class="external-link"><code>vignettes/dkge-plotting.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-plotting.Rmd" class="external-link"><code>vignettes/dkge-plotting.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-plotting.Rmd</code></div>
     </div>
 
     
     
-<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>This vignette shows how to inspect one DKGE fit without mistaking a
-polished figure for statistical evidence. We will plot its
-eigenspectrum, effect saliences, subject contributions, and subspace
-sensitivity. Each panel answers a descriptive question; none supplies a
-p-value or validates the scientific model on its own.</p>
+<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>You have a fitted DKGE model and want to see what it found. Four
+panels answer that, each a descriptive question about the fit: how much
+variation was retained, which effects define a component, whether one
+subject dominates, and how stable the subspace is under refitting. None
+supplies a p-value or validates the scientific model on its own, and a
+polished figure is easy to mistake for evidence that it does.</p>
+<p>You need a fitted <code>dkge</code> object. This page builds one from
+a small simulation so that every panel is reproducible.</p>
 <div class="section level2">
 <h2 id="prerequisites">Prerequisites<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
 </h2>
@@ -105,22 +116,19 @@ p-value or validates the scientific model on its own.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
-<p>The information-map plotting functions provide enhanced labeling
-capabilities by optionally utilizing the <code>ggrepel</code> package to
-annotate top anchors with non-overlapping text placement. When
-<code>ggrepel</code> is not available in your environment, the code
-gracefully falls back to standard base text labels to ensure
-functionality is maintained.</p>
+<p><code>ggplot2</code> and <code>patchwork</code> are required.
+<code>ggrepel</code> is optional: the information-map functions label
+top anchors with it when it is installed, and with base text
+otherwise.</p>
 </div>
 <div class="section level2">
 <h2 id="simulate-a-toy-dataset">Simulate a toy dataset<a class="anchor" aria-label="anchor" href="#simulate-a-toy-dataset"></a>
 </h2>
-<p>We begin by generating a small synthetic dataset manually. Each
-subject has a diagonal design matrix (one column per effect), and we add
-modest signal plus noise so the latent components are recoverable but
-not trivial. Using this construction keeps the vignette self-contained
-and avoids dependencies on specialised simulators while still providing
-deterministic ground truth for the plots.</p>
+<p>Each subject gets a diagonal design matrix, one column per effect,
+plus modest signal and noise so the latent components are recoverable
+without being trivial. <code><a href="../reference/dkge_sim_toy.html">dkge_sim_toy()</a></code> is not used here
+because the plots need deterministic ground truth for a fixed
+four-effect design.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fl">4L</span>   <span class="co"># number of effects</span></span>
 <span><span class="va">P</span> <span class="op">&lt;-</span> <span class="fl">30L</span>  <span class="co"># clusters (voxels) per subject</span></span>
@@ -142,7 +150,7 @@ deterministic ground truth for the plots.</p>
 <h2 id="auxiliary-objects">Auxiliary objects<a class="anchor" aria-label="anchor" href="#auxiliary-objects"></a>
 </h2>
 <p>To explain the stability plot’s input contract, we create perturbed
-versions of the fitted rank-three basis and re-orthonormalise them in
+versions of the fitted rank-three basis and re-orthonormalize them in
 the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>-metric.
 These are controlled sensitivity perturbations, not cross-validation
@@ -168,39 +176,45 @@ that precedes those attribution methods.</p>
 <div class="section level3">
 <h3 id="scree">Scree<a class="anchor" aria-label="anchor" href="#scree"></a>
 </h3>
+<p>The scree plot shows each retained component’s share of the fitted
+variation. The marked rank below is chosen for illustration; in an
+analysis you would obtain it from <code><a href="../reference/dkge_cv_rank_loso.html">dkge_cv_rank_loso()</a></code> or
+<code><a href="../reference/dkge_cv_kernel_rank.html">dkge_cv_kernel_rank()</a></code> rather than by eye.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># For illustrative purposes we annotate the scree at component 3.</span></span>
-<span><span class="co"># In a real analysis you would obtain this optimal rank from dkge_cv_rank_loso()</span></span>
-<span><span class="co"># or dkge_cv_kernel_rank() cross-validation procedures.</span></span>
-<span><span class="va">one_se_pick</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
+<code class="sourceCode R"><span><span class="va">one_se_pick</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
 <span><span class="fu"><a href="../reference/dkge_plot_scree.html">dkge_plot_scree</a></span><span class="op">(</span><span class="va">fit</span>, one_se_pick <span class="op">=</span> <span class="va">one_se_pick</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-plotting_files/figure-html/scree-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-plotting_files/figure-html/scree-1.png" class="r-plt" alt="Scree plot of fitted variation with the illustrative rank-three selection marked." width="90%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="effect-space-loadings">Effect-space loadings<a class="anchor" aria-label="anchor" href="#effect-space-loadings"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/dkge_plot_effect_loadings.html">dkge_plot_effect_loadings</a></span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, zscore <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-plotting_files/figure-html/loadings-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-plotting_files/figure-html/loadings-1.png" class="r-plt" alt="Heatmap of standardized effect-space saliences for three DKGE components." width="90%" style="display: block; margin: auto;"></p>
+<p>Rows are effects, columns are components. Read down a column: effects
+with similar color and magnitude move together in that component, and
+effects with opposite colors define a contrast-like pattern. Because
+<code>zscore = TRUE</code> standardizes loadings within each effect,
+compare cells along a row rather than across rows; the display shows
+where each effect is expressed, not how large its raw loading is.</p>
 </div>
 <div class="section level3">
 <h3 id="subject-contributions">Subject contributions<a class="anchor" aria-label="anchor" href="#subject-contributions"></a>
 </h3>
 <p><code><a href="../reference/dkge_plot_subject_contrib.html">dkge_plot_subject_contrib()</a></code> returns two linked panels.
-The left panel simply visualises the subject-level weights that were
-used while fitting the model (<code>fit$weights</code>). Those weights
-depend on the <code>w_method</code> argument passed to
-<code><a href="../reference/dkge.html">dkge()</a></code>: in this vignette we deliberately chose
-<code>w_method = "none"</code>, so each subject keeps unit weight and
-the bars are all equal to one. Switching to <code>"mfa_sigma1"</code> or
-<code>"energy"</code> would display the corresponding MFA-style or
-energy-based weighting actually used in the eigensolve. The heatmap on
+The left panel shows the subject-level weights used while fitting the
+model (<code>fit$weights</code>). Those weights depend on the
+<code>w_method</code> argument passed to <code><a href="../reference/dkge.html">dkge()</a></code>. This fit
+uses <code>w_method = "mfa_sigma1"</code>, the MFA-style default, so the
+bars vary around one: a subject whose block carries a large leading
+singular value is downweighted. <code>w_method = "none"</code> would
+give every subject unit weight and a flat row of bars. The heatmap on
 the right shows how much norm (“energy”) each subject contributes to the
 selected components after those weights have been applied.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">contrib</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_plot_subject_contrib.html">dkge_plot_subject_contrib</a></span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">contrib</span><span class="op">$</span><span class="va">weights</span> <span class="op">+</span> <span class="va">contrib</span><span class="op">$</span><span class="va">energy</span> <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-plotting_files/figure-html/contrib-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-plotting_files/figure-html/contrib-1.png" class="r-plt" alt="Linked bar and heatmap panels showing subject fitting weights and component contribution energy." width="90%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="subspace-stability">Subspace stability<a class="anchor" aria-label="anchor" href="#subspace-stability"></a>
@@ -215,7 +229,7 @@ subspace, whereas large excursions highlight folds or components that
 deviate materially.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/dkge_plot_subspace_stability.html">dkge_plot_subspace_stability</a></span><span class="op">(</span><span class="va">bases</span>, K <span class="op">=</span> <span class="va">fit</span><span class="op">[[</span><span class="st">'K'</span><span class="op">]</span><span class="op">]</span>, labels <span class="op">=</span> <span class="va">base_labels</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-plotting_files/figure-html/stability-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-plotting_files/figure-html/stability-1.png" class="r-plt" alt="Principal-angle stability curves comparing four perturbed bases with the consensus basis." width="90%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -229,7 +243,7 @@ deviate materially.</p>
 <span>                consensus <span class="op">=</span> <span class="va">fit</span><span class="op">[[</span><span class="st">'U'</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                base_labels <span class="op">=</span> <span class="va">base_labels</span>,</span>
 <span>                top <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-plotting_files/figure-html/suite-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-plotting_files/figure-html/suite-1.png" class="r-plt" alt="Dashboard combining scree, effect saliences, subject contributions, and subspace stability diagnostics." width="90%" style="display: block; margin: auto;"></p>
 <p><code><a href="../reference/dkge_plot_suite.html">dkge_plot_suite()</a></code> arranges the available panels and
 leaves the attribution row empty when Haufe/LOCO results are absent.
 Before reporting the dashboard, replace the sensitivity perturbations
@@ -249,7 +263,7 @@ numerical diagnostic that produced it.</p>
 <span>                height <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
+<h2 id="what-these-panels-do-and-do-not-establish">What these panels do and do not establish<a class="anchor" aria-label="anchor" href="#what-these-panels-do-and-do-not-establish"></a>
 </h2>
 <p>Use the scree plot to describe retained variation, the salience
 heatmap to name effect directions, the contribution panels to detect
@@ -257,6 +271,21 @@ subject dominance, and principal angles to summarize refit sensitivity.
 Save the figure only after the objects behind those panels come from the
 analysis being reported. Visual coherence improves communication; it
 does not upgrade descriptive diagnostics into inferential evidence.</p>
+</div>
+<div class="section level2">
+<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../articles/dkge-components.html">vignette("dkge-components")</a></code> reads the same saliences as
+scientific claims rather than as panels.</li>
+<li>
+<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> is the page that
+supplies the evidence these panels deliberately do not.</li>
+<li>
+<code><a href="../articles/dkge-dense-rendering.html">vignette("dkge-dense-rendering")</a></code> maps a component into
+a shared brain space once you have one worth mapping.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

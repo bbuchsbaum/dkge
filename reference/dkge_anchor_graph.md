@@ -22,27 +22,29 @@ dkge_anchor_graph(
 
 - k:
 
-  Number of neighbours used in the graph (default 10).
+  Number of neighbors used in the graph (default 10).
 
 - sigma:
 
-  Optional Gaussian length-scale (mm). If \`NULL\`, the \`adjoin\`
-  defaults are used.
+  Optional Gaussian length-scale (mm). If `NULL`, the `adjoin` defaults
+  are used.
 
 - weight_mode:
 
-  Edge weighting scheme passed to \[adjoin::graph_weights()\]. Defaults
-  to \`"heat"\`.
+  Edge weighting scheme passed to
+  [`adjoin::graph_weights()`](https://rdrr.io/pkg/adjoin/man/graph_weights.html).
+  Defaults to `"heat"`.
 
 - type:
 
-  Graph symmetrisation strategy (see \[adjoin::graph_weights()\]);
-  \`"mutual"\` helps enforce symmetry.
+  Graph symmetrisation strategy (see
+  [`adjoin::graph_weights()`](https://rdrr.io/pkg/adjoin/man/graph_weights.html));
+  `"mutual"` helps enforce symmetry.
 
 ## Value
 
-A list containing the neighbour graph, sparse adjacency \`W\`, degree
-matrix \`D\`, and Laplacian \`L\`.
+A list containing the neighbor graph, sparse adjacency `W`, degree
+matrix `D`, and Laplacian `L`.
 
 ## Examples
 

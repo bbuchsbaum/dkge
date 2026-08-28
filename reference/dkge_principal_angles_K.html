@@ -24,30 +24,34 @@ or resampled DKGE fits after K-Procrustes alignment diagnostics."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +66,7 @@ or resampled DKGE fits after K-Procrustes alignment diagnostics."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Principal angles between two DKGE bases in the K metric</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-plot.R" class="external-link"><code>R/dkge-plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-plot.R" class="external-link"><code>R/dkge-plot.R</code></a></small>
       <div class="d-none name"><code>dkge_principal_angles_K.Rd</code></div>
     </div>
 
@@ -82,7 +86,7 @@ or resampled DKGE fits after K-Procrustes alignment diagnostics.</p>
 
 
 <dl><dt id="arg-u-u-">U1, U2<a class="anchor" aria-label="anchor" href="#arg-u-u-"></a></dt>
-<dd><p>Basis matrices with the same row dimension as `K`. Columns need
+<dd><p>Basis matrices with the same row dimension as <code>K</code>. Columns need
 not be K-orthonormal.</p></dd>
 
 
@@ -91,8 +95,8 @@ not be K-orthonormal.</p></dd>
 
 
 <dt id="arg-orthonormalize">orthonormalize<a class="anchor" aria-label="anchor" href="#arg-orthonormalize"></a></dt>
-<dd><p>Logical; K-orthonormalize `U1` and `U2` first
-(default `TRUE`).</p></dd>
+<dd><p>Logical; K-orthonormalize <code>U1</code> and <code>U2</code> first
+(default <code>TRUE</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -101,22 +105,22 @@ not be K-orthonormal.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Principal angles are a property of the *subspaces* spanned by `U1` and `U2`,
+    <p>Principal angles are a property of the <em>subspaces</em> spanned by <code>U1</code> and <code>U2</code>,
 not of the particular bases used to represent them. Both inputs are therefore
 reduced to an ordinary Euclidean basis of \(K^{1/2} U\) via
-<code>svd(K^{1/2} U)</code> (the internal helper `.dkge_k_span_basis()`) before
+<code>svd(K^{1/2} U)</code> (the internal helper <code>.dkge_k_span_basis()</code>) before
 the cosines \(\sigma_i(Q_1^\top Q_2)\) are formed, so any two bases of
-the same subspace (for example `U` and `2 * U`) return angles of zero. Set
-`orthonormalize = FALSE` only when the inputs are already known to satisfy
+the same subspace (for example <code>U</code> and <code>2 * U</code>) return angles of zero. Set
+<code>orthonormalize = FALSE</code> only when the inputs are already known to satisfy
 \(U^\top K U = I\); the singular values are otherwise not cosines and the
 clamp to \([0, 1]\) would silently report perfect alignment.</p>
 <p>The returned vector has one entry per shared dimension, ordered from the
 smallest angle (most aligned direction) to the largest. Rank-deficient inputs
 are truncated to the subspace they actually span, so the length is
-`min(rank_K(U1), rank_K(U2))`, which can be smaller than
-`min(ncol(U1), ncol(U2))`; a basis of numerical rank 0 is an error rather
-than a fabricated subspace. With `orthonormalize = FALSE` the inputs are
-taken at face value and all `min(ncol(U1), ncol(U2))` singular values are
+<code>min(rank_K(U1), rank_K(U2))</code>, which can be smaller than
+<code>min(ncol(U1), ncol(U2))</code>; a basis of numerical rank 0 is an error rather
+than a fabricated subspace. With <code>orthonormalize = FALSE</code> the inputs are
+taken at face value and all <code>min(ncol(U1), ncol(U2))</code> singular values are
 returned.</p>
     </div>
 

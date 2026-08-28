@@ -22,25 +22,26 @@ dkge_targets(
 
 - fit:
 
-  dkge object containing \`kernel_info\$map\` metadata.
+  dkge object containing `kernel_info$map` metadata.
 
 - spec:
 
-  Target specification. Accepts a formula (e.g. \`~ A + B + A:B\`), a
+  Target specification. Accepts a formula (e.g. `~ A + B + A:B`), a
   character vector of term labels, the string "fullcell", or an existing
-  list of \`dkge_target\` objects (returned unchanged).
+  list of `dkge_target` objects (returned unchanged).
 
 - residualize:
 
-  Logical; if \`TRUE\` (default) residualise higher-order targets
-  against previously constructed lower-order targets.
+  Logical; if `TRUE` (default) residualise higher-order targets against
+  previously constructed lower-order targets.
 
 - collapse:
 
   Optional named list describing how to collapse factors that do not
-  appear in a target. Each entry may be \`"mean"\`, \`list(method =
-  "mean", window = 3:8)\`, or a numeric vector of length equal to the
-  number of levels providing custom weights (automatically normalised).
+  appear in a target. Each entry may be `"mean"`,
+  `list(method = "mean", window = 3:8)`, or a numeric vector of length
+  equal to the number of levels providing custom weights (automatically
+  normalized).
 
 - scope:
 
@@ -49,14 +50,14 @@ dkge_targets(
 
 - restrict_factors:
 
-  Optional character vector restricting the factors used when \`spec =
-  "fullcell"\`. When \`NULL\`, all factors are used.
+  Optional character vector restricting the factors used when
+  `spec = "fullcell"`. When `NULL`, all factors are used.
 
 ## Value
 
-List of objects with class \`dkge_target\`. Each target contains
-\`name\`, \`factors\`, \`labels\`, \`weight_matrix\`, \`indicator\`,
-\`residualized\`, \`collapse\`, and \`scope\` fields.
+List of objects with class `dkge_target`. Each target contains `name`,
+`factors`, `labels`, `weight_matrix`, `indicator`, `residualized`,
+`collapse`, and `scope` fields.
 
 ## Examples
 

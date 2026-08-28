@@ -1,6 +1,12 @@
 # Aggregate anchor fields with optional Laplacian smoothing
 
-Aggregate anchor fields with optional Laplacian smoothing
+This is a post-fit rendering operation: it smooths an already
+transported anchor average and does not change the DKGE basis,
+components, or held-out subject fields. To place a spatial penalty
+inside the fitted solution, use
+[`dkge_spatial_regularizer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_spatial_regularizer.md)
+through the `spatial` argument of
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
 
 ## Usage
 
@@ -12,7 +18,7 @@ dkge_anchor_aggregate(anchor_list, subj_weights = NULL, L = NULL, lambda = 0)
 
 - anchor_list:
 
-  List of anchor-valued vectors (length \`Q\`).
+  List of anchor-valued vectors (length `Q`).
 
 - subj_weights:
 
@@ -24,13 +30,12 @@ dkge_anchor_aggregate(anchor_list, subj_weights = NULL, L = NULL, lambda = 0)
 
 - lambda:
 
-  Non-negative smoothing parameter. \`0\` disables smoothing.
+  Non-negative smoothing parameter. `0` disables smoothing.
 
 ## Value
 
-A list with the smoothed field \`y\`, the raw weighted mean \`ybar\`,
-\`coverage\` (weighted contribution counts), and placeholder \`ess\`
-values.
+A list with the smoothed field `y`, the raw weighted mean `ybar`,
+`coverage` (weighted contribution counts), and placeholder `ess` values.
 
 ## Examples
 

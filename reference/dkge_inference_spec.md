@@ -8,7 +8,8 @@ Inference specification helper
 dkge_inference_spec(
   B = 2000L,
   tail = c("two.sided", "greater", "less"),
-  center = "mean"
+  center = c("mean", "median", "none"),
+  allow_approximate_alignment = FALSE
 )
 ```
 
@@ -24,12 +25,19 @@ dkge_inference_spec(
 
 - center:
 
-  Location statistic for permutations. Only \`"mean"\` is implemented by
-  the beta inference service.
+  Location statistic. Only `"mean"` is supported. Legacy `"median"` and
+  `"none"` values now fail at construction because the downstream max-T
+  statistic is a studentized mean.
+
+- allow_approximate_alignment:
+
+  Logical; explicitly permit inference from an estimator or fitted
+  alignment labelled `"approximate"`. The default is fail-closed;
+  ineligible states are never permitted.
 
 ## Value
 
-Object with class \`dkge_inference_spec\`.
+Object with class `dkge_inference_spec`.
 
 ## Examples
 

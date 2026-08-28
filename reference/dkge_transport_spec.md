@@ -1,9 +1,12 @@
-# Transport specification helper
+# Legacy descriptive transport specification helper
 
-Builds a validated transport configuration that can be passed to
-\[dkge_pipeline()\] or transport utilities. The helper enforces basic
-argument checks and provides sensible defaults for Sinkhorn-based
-mapping.
+Builds a validated descriptive transport configuration for
+[`dkge_pipeline()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pipeline.md).
+Pipeline transport cannot enter inference. New functional alignment
+workflows should use
+[`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md)
+or
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md).
 
 ## Usage
 
@@ -23,7 +26,6 @@ dkge_transport_spec(
   lambda_size = 0,
   value_type = c("intensive", "extensive"),
   warm_start = TRUE,
-  provenance = NULL,
   ...
 )
 ```
@@ -40,7 +42,10 @@ dkge_transport_spec(
 
 - medoid:
 
-  Integer index of the medoid subject (default 1).
+  Legacy integer reference-subject index (default 1). This field fixes a
+  support; it does not perform or certify medoid selection. New
+  functional-alignment workflows should use
+  [`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md).
 
 - method:
 
@@ -81,18 +86,12 @@ dkge_transport_spec(
 
 - value_type:
 
-  Semantics of transported values: \`"intensive"\` preserves constant
-  fields; \`"extensive"\` preserves the sum of source totals.
+  Semantics of transported values: `"intensive"` preserves constant
+  fields; `"extensive"` preserves the sum of source totals.
 
 - warm_start:
 
   Reuse converged Sinkhorn duals for identical problems.
-
-- provenance:
-
-  Optional \[dkge_transport_provenance()\] declaration. When omitted,
-  loading-derived transport is marked descriptive and \[dkge_infer()\]
-  will reject it rather than assume inferential validity.
 
 - ...:
 
@@ -101,7 +100,7 @@ dkge_transport_spec(
 
 ## Value
 
-Object with class \`dkge_transport_spec\`.
+Object with class `dkge_transport_spec`.
 
 ## Examples
 

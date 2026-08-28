@@ -30,13 +30,13 @@ dkge_align_effects(
 
 - K_list:
 
-  List of per-subject symmetric kernels; \`K_list\[\[s\]\]\` has
-  dimensions \`\|O_s\| x \|O_s\|\`.
+  List of per-subject symmetric kernels; `K_list[[s]]` has dimensions
+  `|O_s| x |O_s|`.
 
 - effects:
 
-  List of character vectors. \`effects\[\[s\]\]\` gives the effect IDs
-  associated with the rows and columns of \`K_list\[\[s\]\]\`.
+  List of character vectors. `effects[[s]]` gives the effect IDs
+  associated with the rows and columns of `K_list[[s]]`.
 
 - subject_ids:
 
@@ -68,7 +68,7 @@ dkge_align_effects(
 
 - ensure_psd:
 
-  Logical; when \`TRUE\` (default) project pooled and completed matrices
+  Logical; when `TRUE` (default) project pooled and completed matrices
   to the PSD cone.
 
 - psd_tol:
@@ -93,33 +93,41 @@ dkge_align_effects(
 
 - prior_weight:
 
-  Blend factor in \[0, 1\] applied to \`effect_prior\` when available.
+  Blend factor in `[0, 1]` applied to `effect_prior` when available.
 
 - verbose:
 
-  Logical; emit messages when \`TRUE\`.
+  Logical; emit messages when `TRUE`.
 
 ## Value
 
-When \`folds = NULL\`, a list with fields - \`K_aligned\`: list of
-aligned \`n x n\` kernels per subject - \`effect_ids\`: character vector
-of shared effect IDs - \`G\`: pooled training kernel (when applicable) -
-\`obs_mask\`: list of logical vectors indicating observed effects per
-subject - \`pair_counts\`: integer matrix of training coverage per
-effect pair - \`coverage\`: data frame summarising training coverage per
-effect - \`mode\`: completion mode used.
+When `folds = NULL`, a list with fields
 
-When folds are supplied, returns \`list(folds = list(...))\` where each
-fold entry includes the same fields along with \`train_idx\` and
-\`test_idx\`.
+- `K_aligned`: list of aligned `n x n` kernels per subject
+
+- `effect_ids`: character vector of shared effect IDs
+
+- `G`: pooled training kernel (when applicable)
+
+- `obs_mask`: list of logical vectors indicating observed effects per
+  subject
+
+- `pair_counts`: integer matrix of training coverage per effect pair
+
+- `coverage`: data frame summarizing training coverage per effect
+
+- `mode`: completion mode used.
+
+When folds are supplied, returns `list(folds = list(...))` where each
+fold entry includes the same fields along with `train_idx` and
+`test_idx`.
 
 ## Details
 
-The \`folds\` argument accepts: \`NULL\` (single context), a
-\`dkge_folds\` object, a data frame with columns \`subject\` and
-\`fold\`, or a list whose elements name the held-out subjects.
-Fold-specific results are returned under \`result\$folds\[\[f\]\]\` with
-training/test indices attached.
+The `folds` argument accepts: `NULL` (single context), a `dkge_folds`
+object, a data frame with columns `subject` and `fold`, or a list whose
+elements name the held-out subjects. Fold-specific results are returned
+under `result$folds[[f]]` with training/test indices attached.
 
 ## Examples
 

@@ -20,30 +20,34 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -58,7 +62,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Freeze a DKGE fit into a compact model for prediction</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-predict.R" class="external-link"><code>R/dkge-predict.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-predict.R" class="external-link"><code>R/dkge-predict.R</code></a></small>
       <div class="d-none name"><code>dkge_freeze.Rd</code></div>
     </div>
 
@@ -81,7 +85,9 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>list with U, K, R and class 'dkge_model'</p>
+    <p>A <code>dkge_model</code> list with <code>U</code>, <code>K</code>, <code>R</code>, effect labels, and any
+spatial specification/provenance needed to rebuild sparse factors for new
+subjects. Training-subject factorization objects are omitted.</p>
     </div>
 
     <div class="section level2">
@@ -95,11 +101,11 @@
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $U</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>              [,1]        [,2]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  0.826322086 0.903668379</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]  0.031522415 0.009575469</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] -1.277794194 1.169044492</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,]  0.061535214 0.005058690</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5,]  0.002274033 0.005972575</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] -0.826322303 0.903668181</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -0.031522406 0.009575458</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,]  1.277793914 1.169044798</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] -0.061535214 0.005058685</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] -0.002274041 0.005972561</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $K</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  A            B1            B2          A:B1          A:B2</span>
@@ -119,6 +125,12 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $effects</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "A"    "B1"   "B2"   "A:B1" "A:B2"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $spatial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $subject_ids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "sub01" "sub02" "sub03"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dkge_model"</span>

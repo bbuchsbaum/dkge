@@ -1,7 +1,7 @@
-# Write a group map as NIfTI using a medoid label image
+# Write a group map as NIfTI using a reference label image
 
-Paints medoid-level values onto the reference parcellation and either
-returns a \`neuroim2::BrainVolume\` or writes it to disk.
+Paints reference-support values onto the reference parcellation and
+either returns a `neuroim2::BrainVolume` or writes it to disk.
 
 ## Usage
 
@@ -18,12 +18,13 @@ dkge_write_group_map(
 
 - group_values:
 
-  Numeric vector of medoid-cluster values (length Q). When named,
+  Numeric vector of reference-cluster values (length Q). When named,
   entries are matched to label IDs before fallback to positional order.
 
 - medoid_labels:
 
-  A \`neuroim2::BrainVolume\` containing integer medoid labels.
+  A `neuroim2::BrainVolume` containing integer reference labels. The
+  argument name is retained for compatibility.
 
 - label_table:
 
@@ -31,13 +32,13 @@ dkge_write_group_map(
 
 - out_file:
 
-  Optional output path (\`.nii\` or \`.nii.gz\`). When \`NULL\`, the
-  painted volume is returned without writing to disk.
+  Optional output path (`.nii` or `.nii.gz`). When `NULL`, the painted
+  volume is returned without writing to disk.
 
 ## Value
 
-Either the output path (when \`out_file\` is supplied) or a
-\`neuroim2::BrainVolume\`.
+Either the output path (when `out_file` is supplied) or a
+`neuroim2::BrainVolume`.
 
 ## Examples
 

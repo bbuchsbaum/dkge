@@ -27,40 +27,40 @@ dkge_regress(
 
 - fit:
 
-  A \`dkge\` object containing an effect-space basis (\`fit\$U\`).
+  A `dkge` object containing an effect-space basis (`fit$U`).
 
 - Y:
 
-  Numeric matrix of shape \`(#effects) x (#outputs)\` with row names
-  that identify the effects/items to be modelled.
+  Numeric matrix of shape `(#effects) x (#outputs)` with row names that
+  identify the effects/items to be modeled.
 
 - effect_ids:
 
   Optional character vector of effect identifiers to include (defaults
-  to \`rownames(Y)\`).
+  to `rownames(Y)`).
 
 - folds:
 
-  Optional list giving held-out effect IDs for each fold. When \`NULL\`,
+  Optional list giving held-out effect IDs for each fold. When `NULL`,
   random K-fold splits are generated.
 
 - k:
 
-  Number of folds to create when \`folds\` is \`NULL\` (default \`5\`).
+  Number of folds to create when `folds` is `NULL` (default `5`).
 
 - features:
 
   Either the string "effects" (use the fitted DKGE effect embeddings) or
-  a custom function \`function(fit, ids, ctx)\` returning a matrix of
+  a custom function `function(fit, ids, ctx)` returning a matrix of
   predictors for the supplied effect IDs. The function may use the
-  optional \`ctx\` argument to receive fold-specific context objects.
+  optional `ctx` argument to receive fold-specific context objects.
 
 - engine:
 
   Regression engine. One of "glmnet" (default ridge multi-output
   regression), "lm" (ordinary least squares solved jointly across
-  outputs), or a list with \`fit\`/\`predict\` closures: \`list(fit =
-  function(X, Y) {...}, predict = function(model, X) {...})\`.
+  outputs), or a list with `fit`/`predict` closures:
+  `list(fit = function(X, Y) \{...\}, predict = function(model, X) \{...\})`.
 
 - alpha:
 
@@ -69,7 +69,7 @@ dkge_regress(
 
 - standardize:
 
-  Logical; when \`TRUE\` (default) the glmnet engine standardises
+  Logical; when `TRUE` (default) the glmnet engine standardises
   predictors internally.
 
 - seed:
@@ -78,14 +78,14 @@ dkge_regress(
 
 - return_models:
 
-  Logical; when \`TRUE\`, attach the fitted model for each fold to the
+  Logical; when `TRUE`, attach the fitted model for each fold to the
   returned object.
 
 ## Value
 
-An object of class \`"dkge_regress"\` containing predictions (\`pred\`),
-observed targets (\`truth\`), fold assignments (\`folds\`), summary
-metrics (\`metrics\`), and optionally the per-fold models (\`models\`).
+An object of class `"dkge_regress"` containing predictions (`pred`),
+observed targets (`truth`), fold assignments (`folds`), summary metrics
+(`metrics`), and optionally the per-fold models (`models`).
 
 ## Examples
 

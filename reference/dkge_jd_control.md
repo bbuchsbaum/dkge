@@ -43,7 +43,7 @@ dkge_jd_control(
 
 - linesearch:
 
-  Logical; when \`TRUE\` perform Armijo backtracking.
+  Logical; when `TRUE` perform Armijo backtracking.
 
 - armijo:
 
@@ -51,7 +51,7 @@ dkge_jd_control(
 
 - verbose:
 
-  Logical; emit per-iteration progress when \`TRUE\`.
+  Logical; emit per-iteration progress when `TRUE`.
 
 - record:
 

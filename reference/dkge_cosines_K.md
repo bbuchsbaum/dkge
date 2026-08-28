@@ -12,11 +12,11 @@ dkge_cosines_K(U, V, K)
 
 - U:
 
-  Matrix with \`q\` rows.
+  Matrix with `q` rows.
 
 - V:
 
-  Matrix with \`q\` rows.
+  Matrix with `q` rows.
 
 - K:
 
@@ -24,4 +24,4 @@ dkge_cosines_K(U, V, K)
 
 ## Value
 
-Numeric vector of singular values in \[0, 1\].
+Numeric vector of singular values in `[0, 1]`.

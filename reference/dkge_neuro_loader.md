@@ -1,7 +1,7 @@
 # Build a streaming loader backed by neuroim2 objects
 
-The returned loader exposes \`n()\`, \`X(s)\`, \`B(s)\`, and
-\`Omega(s)\` methods compatible with streaming DKGE fits.
+The returned loader exposes `n()`, `X(s)`, `B(s)`, and `Omega(s)`
+methods compatible with streaming DKGE fits.
 
 ## Usage
 
@@ -13,18 +13,21 @@ dkge_neuro_loader(design_objs, bv_list, labels_list = NULL, omega_fun = NULL)
 
 - design_objs:
 
-  List of design matrices or \`fmridesign\` objects.
+  List of design matrices or `fmridesign` objects.
 
 - bv_list:
 
-  List of \`neuroim2::NeuroVec\` objects, \`ClusteredNeuroVec\` objects,
-  or file paths readable by \`neuroim2::read_vec()\`.
+  List of
+  [`neuroim2::NeuroVec`](https://bbuchsbaum.github.io/neuroim2/reference/NeuroVec-class.html)
+  objects, `ClusteredNeuroVec` objects, or file paths readable by
+  [`neuroim2::read_vec()`](https://bbuchsbaum.github.io/neuroim2/reference/read_vec.html).
 
 - labels_list:
 
-  List of \`neuroim2::NeuroVol\` label volumes (same length as
-  \`bv_list\`). Can be NULL if bv_list contains ClusteredNeuroVec
-  objects.
+  List of
+  [`neuroim2::NeuroVol`](https://bbuchsbaum.github.io/neuroim2/reference/NeuroVol.html)
+  label volumes (same length as `bv_list`). Can be NULL if bv_list
+  contains ClusteredNeuroVec objects.
 
 - omega_fun:
 

@@ -16,7 +16,9 @@ dkge_freeze(fit)
 
 ## Value
 
-list with U, K, R and class 'dkge_model'
+A `dkge_model` list with `U`, `K`, `R`, effect labels, and any spatial
+specification/provenance needed to rebuild sparse factors for new
+subjects. Training-subject factorization objects are omitted.
 
 ## Examples
 
@@ -30,11 +32,11 @@ model <- dkge_freeze(fit)
 print(model)
 #> $U
 #>              [,1]        [,2]
-#> [1,]  0.826322086 0.903668379
-#> [2,]  0.031522415 0.009575469
-#> [3,] -1.277794194 1.169044492
-#> [4,]  0.061535214 0.005058690
-#> [5,]  0.002274033 0.005972575
+#> [1,] -0.826322303 0.903668181
+#> [2,] -0.031522406 0.009575458
+#> [3,]  1.277793914 1.169044798
+#> [4,] -0.061535214 0.005058685
+#> [5,] -0.002274041 0.005972561
 #> 
 #> $K
 #>                  A            B1            B2          A:B1          A:B2
@@ -54,6 +56,12 @@ print(model)
 #> 
 #> $effects
 #> [1] "A"    "B1"   "B2"   "A:B1" "A:B2"
+#> 
+#> $spatial
+#> NULL
+#> 
+#> $subject_ids
+#> [1] "sub01" "sub02" "sub03"
 #> 
 #> attr(,"class")
 #> [1] "dkge_model"

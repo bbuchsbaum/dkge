@@ -24,30 +24,34 @@ cell, each column is a DKGE latent variable."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +66,7 @@ cell, each column is a DKGE latent variable."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>DKGE component saliences in effect space</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-plot.R" class="external-link"><code>R/dkge-plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-plot.R" class="external-link"><code>R/dkge-plot.R</code></a></small>
       <div class="d-none name"><code>dkge_component_saliences.Rd</code></div>
     </div>
 
@@ -87,7 +91,7 @@ cell, each column is a DKGE latent variable.</p>
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>Fitted `dkge` object.</p></dd>
+<dd><p>Fitted <code>dkge</code> object.</p></dd>
 
 
 <dt id="arg-comps">comps<a class="anchor" aria-label="anchor" href="#arg-comps"></a></dt>
@@ -95,14 +99,14 @@ cell, each column is a DKGE latent variable.</p>
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
-<dd><p>Optional within-component display scaling. `"raw"` leaves
-saliences on their original scale, `"unit"` rescales each component to unit
-K-norm of the underlying latent vector (see Details), and `"zscore"`
+<dd><p>Optional within-component display scaling. <code>"raw"</code> leaves
+saliences on their original scale, <code>"unit"</code> rescales each component to unit
+K-norm of the underlying latent vector (see Details), and <code>"zscore"</code>
 z-scores each component across effects.</p></dd>
 
 
 <dt id="arg-long">long<a class="anchor" aria-label="anchor" href="#arg-long"></a></dt>
-<dd><p>Logical; return a tidy long data frame when `TRUE`, otherwise a
+<dd><p>Logical; return a tidy long data frame when <code>TRUE</code>, otherwise a
 numeric effects-by-components matrix.</p></dd>
 
 </dl></div>
@@ -112,13 +116,13 @@ numeric effects-by-components matrix.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The salience matrix is exactly \(K U[, comps]\). Because `fit$U` is
+    <p>The salience matrix is exactly \(K U[, comps]\). Because <code>fit$U</code> is
 K-orthonormal (\(U^\top K U = I\)), each salience column already has unit
-norm in the metric dual to `K`, i.e.
-\(s_j^\top K^{-1} s_j = u_j^\top K u_j = 1\). `scale = "unit"` therefore
-divides column `j` by \(\sqrt{u_j^\top K u_j}\) and is a no-op for a
+norm in the metric dual to <code>K</code>, i.e.
+\(s_j^\top K^{-1} s_j = u_j^\top K u_j = 1\). <code>scale = "unit"</code> therefore
+divides column <code>j</code> by \(\sqrt{u_j^\top K u_j}\) and is a no-op for a
 well-formed fit; it is retained so that hand-assembled or perturbed bases are
-put back on a comparable footing. It deliberately does **not** divide by the
+put back on a comparable footing. It deliberately does <strong>not</strong> divide by the
 Euclidean norm, which would distort the K geometry.</p>
     </div>
 
@@ -131,19 +135,19 @@ Euclidean norm, which would distort the K geometry.</p>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="dkge.html">dkge</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">dkge_component_saliences</span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   effect component component_id      salience</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A       LV1            1  0.6022807855</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     B1       LV1            1 -0.0105409164</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     B2       LV1            1  0.3896172538</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   A:B1       LV1            1 -0.0028486683</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   A:B2       LV1            1 -0.0003776993</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6      A       LV2            2 -0.5506129871</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      A       LV1            1  0.6022804200</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     B1       LV1            1 -0.0105408410</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     B2       LV1            1  0.3896175384</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   A:B1       LV1            1 -0.0028486656</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   A:B2       LV1            1 -0.0003776917</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      A       LV2            2 -0.5506133917</span>
 <span class="r-in"><span><span class="fu">dkge_component_saliences</span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span>, long <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                LV1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A     0.6022807855</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> B1   -0.0105409164</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> B2    0.3896172538</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A:B1 -0.0028486683</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> A:B2 -0.0003776993</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A     0.6022804200</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B1   -0.0105408410</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B2    0.3896175384</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A:B1 -0.0028486656</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> A:B2 -0.0003776917</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

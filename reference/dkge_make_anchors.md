@@ -28,12 +28,12 @@ dkge_make_anchors(
 
 - n_anchor:
 
-  Target number of anchors when deriving them from \`xyz\`.
+  Target number of anchors when deriving them from `xyz`.
 
 - method:
 
-  Selection strategy when deriving anchors. \`"kmeans"\` (default) uses
-  k-means centroids, \`"sample"\` performs a uniform subsample.
+  Selection strategy when deriving anchors. `"kmeans"` (default) uses
+  k-means centroids, `"sample"` performs a uniform subsample.
 
 - seed:
 

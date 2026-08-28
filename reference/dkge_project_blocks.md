@@ -12,7 +12,7 @@ dkge_project_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - B_list:
 
@@ -20,7 +20,7 @@ dkge_project_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 
 - Omega_list:
 
-  Optional list of spatial weights aligned with \`B_list\`.
+  Optional list of spatial weights aligned with `B_list`.
 
 - w:
 

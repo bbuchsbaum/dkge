@@ -6,21 +6,29 @@ experimental designs, supports cross-validated contrasts, and provides
 transport utilities for mapping parcellated fields onto common anchor or
 voxel representations.
 
-## Key capabilities
+## What it does
 
-- **Flexible design kernels** – encode factorial structure, smoothness,
-  and interactions to control how effects align across subjects.
-- **Robust contrasts and inference** – LOSO/K-fold cross-fitting,
-  analytic approximations, and bootstrap utilities for medoid or voxel
-  maps.
-- **Transport & rendering** – barycentric kNN and C++-accelerated
-  Sinkhorn mappers with warm starts, anchor graph smoothing, and voxel
-  decoders.
-- **Classifier localisation** – cross-fitted latent classifiers with
-  decoder, Haufe, and LOCO maps for bias-aware whole-brain
-  interpretation.
-- **Component interpretability** – convenience helpers for projecting
-  new data, rotating components, and summarising variance explained.
+- **Design kernels** encode factorial structure, effect-space
+  smoothness, and interactions, which control how effects align across
+  subjects.
+- **Model-level spatial regularization** uses sparse graph-Laplacian
+  solves to smooth subject fields inside the pooled moment, so the
+  spatial prior can change the learned basis as well as its
+  reconstructed maps.
+- **Contrasts and inference** use leave-one-subject-out (LOSO) or K-fold
+  cross-fitting. Rank-truncated cohort-trained inference is labelled
+  approximate and requires explicit opt-in; aligned-map bootstraps
+  require typed correspondence provenance.
+- **Functional alignment and rendering** use typed independent response
+  signatures, auditable reference selection, or an iterative group
+  template to map subject fields onto one identified support. A subject
+  is a *medoid* only when selected by a stated criterion; a bare MNI
+  grid supplies coordinates, not functional correspondence. Rendering is
+  downstream of alignment.
+- **Classifier localization** cross-fits latent classifiers and returns
+  decoder, Haufe, and LOCO maps.
+- **Component interpretation** projects new data, rotates components,
+  and summarizes variance explained.
 
 ## Installation
 
@@ -52,15 +60,43 @@ scores <- dkge_project_btil(fit, fit$Btil)
 str(scores, max.level = 1)
 ```
 
-See the vignettes for full workflows:
+Start with
+[`vignette("dkge")`](https://bbuchsbaum.github.io/dkge/articles/dkge.md),
+then
+[`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md).
+The full set:
 
-- [`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md)
-- [`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md)
-- [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
-- [`vignette("dkge-dense-rendering")`](https://bbuchsbaum.github.io/dkge/articles/dkge-dense-rendering.md)
-- [`vignette("dkge-components")`](https://bbuchsbaum.github.io/dkge/articles/dkge-components.md)
-- [`vignette("dkge-performance")`](https://bbuchsbaum.github.io/dkge/articles/dkge-performance.md)
-- [`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
+**Start here** —
+[`vignette("dkge")`](https://bbuchsbaum.github.io/dkge/articles/dkge.md),
+[`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md),
+[`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
+
+**Core analysis** —
+[`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md),
+[`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md),
+[`vignette("dkge-components")`](https://bbuchsbaum.github.io/dkge/articles/dkge-components.md),
+[`vignette("dkge-classification")`](https://bbuchsbaum.github.io/dkge/articles/dkge-classification.md)
+
+**Study designs** —
+[`vignette("dkge-partial-effect-spaces")`](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md),
+[`vignette("dkge-unbalanced-trialwise")`](https://bbuchsbaum.github.io/dkge/articles/dkge-unbalanced-trialwise.md),
+[`vignette("dkge-between-subjects")`](https://bbuchsbaum.github.io/dkge/articles/dkge-between-subjects.md)
+
+**Weighting** —
+[`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md),
+[`vignette("dkge-adaptive-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-adaptive-weighting.md)
+
+**Spatial mapping** —
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md),
+[`vignette("dkge-spatial-regularization")`](https://bbuchsbaum.github.io/dkge/articles/dkge-spatial-regularization.md),
+[`vignette("dkge-dense-rendering")`](https://bbuchsbaum.github.io/dkge/articles/dkge-dense-rendering.md),
+[`vignette("dkge-anchors")`](https://bbuchsbaum.github.io/dkge/articles/dkge-anchors.md),
+[`vignette("dkge-performance")`](https://bbuchsbaum.github.io/dkge/articles/dkge-performance.md)
+
+**Extras** —
+[`vignette("dkge-plotting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-plotting.md),
+[`vignette("dkge-cpca")`](https://bbuchsbaum.github.io/dkge/articles/dkge-cpca.md),
+[`vignette("dkge-vs-pls")`](https://bbuchsbaum.github.io/dkge/articles/dkge-vs-pls.md)
 
 ## Helper constructors
 
@@ -73,12 +109,12 @@ lists.
 ``` r
 
 kernel <- diag(nrow(betas[[1]]))
-transport <- dkge_transport_spec(
-  centroids = centroids,
-  sizes = sizes,
-  medoid = 2
+contrasts <- c(1, -1, 0, 0)
+inference <- dkge_inference_spec(
+  B = 1000,
+  tail = "two.sided",
+  allow_approximate_alignment = TRUE
 )
-inference <- dkge_inference_spec(B = 1000, tail = "two.sided")
 cls_spec <- dkge_classification_spec(targets = ~ condition, method = "lda")
 
 results <- dkge_pipeline(
@@ -86,11 +122,23 @@ results <- dkge_pipeline(
   designs = designs,
   kernel = kernel,
   contrasts = contrasts,
-  transport = transport,
   inference = inference,
   classification = cls_spec
 )
 ```
+
+The opt-in is explicit because the rank-truncated latent span is
+estimated from the same cohort. The returned inference object labels
+that estimator `"approximate"`; omit the opt-in to fail closed. All
+requested contrasts and support locations share one max-T family.
+
+For cross-subject functional correspondence, use the typed
+[`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md)
+/
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md)
+workflow in
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md);
+the pipeline does not infer a functional mapping from coordinates alone.
 
 To score new subjects without manually assembling `B_list`, use
 [`dkge_predict_subjects()`](https://bbuchsbaum.github.io/dkge/reference/dkge_predict_subjects.md):
@@ -108,22 +156,10 @@ tracker](https://github.com/bbuchsbaum/dkge/issues).
 
 ## Development
 
-- Pull requests are encouraged; please accompany user-facing changes
-  with tests and documentation.
-- For large feature work, open an issue to discuss design choices before
-  implementation.
-- `Authors@R` is the canonical author/maintainer record; legacy `Author`
-  and `Maintainer` fields are intentionally omitted.
-- Core metadata has no mutable `Remotes` field. The two direct non-CRAN
-  imports are resolvable from the bbuchsbaum R-universe, while release
-  workflows pin the complete hard non-CRAN dependency closure to the
-  exact Git SHAs recorded in `tools/release/noncran-lock.csv`.
-- The optional `neuralign` integration is declared under `Enhances` and
-  tested in a separate pinned workflow; it is not part of core
-  installation or check resolution.
-- The independent Sinkhorn oracle is a deterministic dense R
-  implementation in the test suite, so the numerical gate does not
-  disappear when an experimental transport package is unavailable.
+Pull requests are encouraged. See
+[CONTRIBUTING.md](https://bbuchsbaum.github.io/dkge/CONTRIBUTING.md) for
+packaging conventions, the architecture map, and how to propose changes
+to it.
 
 ## License
 

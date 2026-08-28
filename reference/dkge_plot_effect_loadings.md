@@ -12,7 +12,7 @@ dkge_plot_effect_loadings(fit, comps = NULL, zscore = FALSE)
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - comps:
 

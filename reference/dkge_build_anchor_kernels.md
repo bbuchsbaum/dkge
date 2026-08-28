@@ -2,8 +2,8 @@
 
 Projects per-subject item kernels onto a shared anchor basis derived
 from a pooled training feature set inside each cross-validation fold.
-The resulting aligned kernels all have dimension \`L x L\` with
-identical ordering.
+The resulting aligned kernels all have dimension `L x L` with identical
+ordering.
 
 ## Usage
 
@@ -30,18 +30,18 @@ dkge_build_anchor_kernels(
 
 - features_list:
 
-  List of length \`S\`; element \`s\` is an \`n_s x d\` feature matrix
-  for subject \`s\`.
+  List of length `S`; element `s` is an `n_s x d` feature matrix for
+  subject `s`.
 
 - K_item_list:
 
-  List of length \`S\`; element \`s\` is an \`n_s x n_s\` PSD item
-  kernel aligned with \`features_list\[\[s\]\]\`.
+  List of length `S`; element `s` is an `n_s x n_s` PSD item kernel
+  aligned with `features_list[[s]]`.
 
 - folds:
 
-  Optional fold specification. Accepts \`NULL\` (single context), a list
-  of held-out subject indices, or a \`dkge_folds\` object.
+  Optional fold specification. Accepts `NULL` (single context), a list
+  of held-out subject indices, or a `dkge_folds` object.
 
 - L:
 
@@ -49,8 +49,8 @@ dkge_build_anchor_kernels(
 
 - method:
 
-  Anchor selection strategy (\`"kcenter"\`, \`"kmeanspp"\`,
-  \`"random"\`, or \`"dkpp"\`).
+  Anchor selection strategy (`"kcenter"`, `"kmeanspp"`, `"random"`, or
+  `"dkpp"`).
 
 - seed:
 
@@ -58,19 +58,19 @@ dkge_build_anchor_kernels(
 
 - sigma:
 
-  Optional bandwidth; when \`NULL\`, fold-specific heuristics are used.
+  Optional bandwidth; when `NULL`, fold-specific heuristics are used.
 
 - rho:
 
-  Fraction used by the DPP stage when \`method = "dkpp"\`.
+  Fraction used by the DPP stage when `method = "dkpp"`.
 
 - fill:
 
-  Completion strategy for \`method = "dkpp"\`.
+  Completion strategy for `method = "dkpp"`.
 
 - center:
 
-  Logical; when \`TRUE\`, subtract column means of the feature response
+  Logical; when `TRUE`, subtract column means of the feature response
   matrix before forming the projection.
 
 - whiten:
@@ -83,13 +83,13 @@ dkge_build_anchor_kernels(
 
 - unit_trace:
 
-  Logical; trace-normalise each subject kernel to maintain comparable
+  Logical; trace-normalize each subject kernel to maintain comparable
   scale.
 
 - item_weights:
 
-  Optional list of numeric vectors providing per-item weights (\`length
-  == n_s\`).
+  Optional list of numeric vectors providing per-item weights
+  (`length == n_s`).
 
 ## Value
 

@@ -25,4 +25,4 @@ dkge_cpca_split_chat(Chat, T, K)
 
 ## Value
 
-List with \`Chat_design\`, \`Chat_resid\`, and the projector \`P_hat\`.
+List with `Chat_design`, `Chat_resid`, and the projector `P_hat`.

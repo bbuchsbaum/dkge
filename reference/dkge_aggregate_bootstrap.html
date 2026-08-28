@@ -22,30 +22,34 @@ aggregate decomposition, aligns components, and evaluates the statistic."></head
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -60,7 +64,7 @@ aggregate decomposition, aligns components, and evaluates the statistic."></head
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Bootstrap aggregate targets over subjects</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-aggregate.R" class="external-link"><code>R/dkge-aggregate.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-aggregate.R" class="external-link"><code>R/dkge-aggregate.R</code></a></small>
       <div class="d-none name"><code>dkge_aggregate_bootstrap.Rd</code></div>
     </div>
 
@@ -100,12 +104,12 @@ aggregate decomposition, aligns components, and evaluates the statistic.</p>
 
 
 <dl><dt id="arg-target">target<a class="anchor" aria-label="anchor" href="#arg-target"></a></dt>
-<dd><p>A `dkge_aggregate_target`.</p></dd>
+<dd><p>A <code>dkge_aggregate_target</code>.</p></dd>
 
 
 <dt id="arg-k">K<a class="anchor" aria-label="anchor" href="#arg-k"></a></dt>
-<dd><p>Optional aggregate-row design kernel. See [dkge_aggregate_fit()] for
-the row-space convention (`q` = number of aggregate rows).</p></dd>
+<dd><p>Optional aggregate-row design kernel. See <code><a href="dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code> for
+the row-space convention (<code>q</code> = number of aggregate rows).</p></dd>
 
 
 <dt id="arg-statistic">statistic<a class="anchor" aria-label="anchor" href="#arg-statistic"></a></dt>
@@ -120,7 +124,7 @@ the row-space convention (`q` = number of aggregate rows).</p></dd>
 <dd><p>Optional subject-level strata for within-stratum bootstrap:
 either a vector with one entry per source subject, or the name of a column
 in the subject data. Defaults to the interaction of
-`target$group_vars`. Explicit strata **must** nest within `group_vars`
+<code>target$group_vars</code>. Explicit strata <strong>must</strong> nest within <code>group_vars</code>
 (each stratum lies inside a single group level) and are rejected up front
 otherwise: a coarser or cross-cutting stratification can draw a resample in
 which an entire group level is absent, which changes the aggregate row set
@@ -129,26 +133,26 @@ checked against the observed row set.</p></dd>
 
 
 <dt id="arg-rank-center">rank, center<a class="anchor" aria-label="anchor" href="#arg-rank-center"></a></dt>
-<dd><p>Passed to [dkge_aggregate_fit()].</p></dd>
+<dd><p>Passed to <code><a href="dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code>.</p></dd>
 
 
 <dt id="arg-component">component<a class="anchor" aria-label="anchor" href="#arg-component"></a></dt>
-<dd><p>Component index passed to [dkge_aggregate_stat()] for the
-built-in statistics. It is a formal argument rather than part of `...`
-because R's partial matching would otherwise bind a `component =` argument
-to `component_scale`/`component_contrasts`. User-supplied statistic
+<dd><p>Component index passed to <code><a href="dkge_aggregate_stat.html">dkge_aggregate_stat()</a></code> for the
+built-in statistics. It is a formal argument rather than part of <code>...</code>
+because R's partial matching would otherwise bind a <code>component =</code> argument
+to <code>component_scale</code>/<code>component_contrasts</code>. User-supplied statistic
 functions do not receive it.</p></dd>
 
 
 <dt id="arg-conf">conf<a class="anchor" aria-label="anchor" href="#arg-conf"></a></dt>
 <dd><p>Confidence level for the interval. Quantiles use
-`stats::quantile(..., type = 6)` (Weibull plotting positions), which is
+<code>stats::quantile(..., type = 6)</code> (Weibull plotting positions), which is
 slightly wider than the default type 7 in small samples.</p></dd>
 
 
 <dt id="arg-interval">interval<a class="anchor" aria-label="anchor" href="#arg-interval"></a></dt>
-<dd><p>`"percentile"` uses the bootstrap quantiles directly.
-`"basic"` is the reflection interval
+<dd><p><code>"percentile"</code> uses the bootstrap quantiles directly.
+<code>"basic"</code> is the reflection interval
 \((2\hat\theta - q_{1-\alpha/2},\; 2\hat\theta - q_{\alpha/2})\),
 which recentres a biased top singular value around the observed
 statistic.</p></dd>
@@ -161,22 +165,22 @@ summarize each aligned component in every bootstrap draw.</p></dd>
 
 <dt id="arg-component-scale">component_scale<a class="anchor" aria-label="anchor" href="#arg-component-scale"></a></dt>
 <dd><p>Whether component contrasts are applied to
-singular-value-scaled cell scores (`"score"`) or raw saliences
-(`"salience"`).</p></dd>
+singular-value-scaled cell scores (<code>"score"</code>) or raw saliences
+(<code>"salience"</code>).</p></dd>
 
 
 <dt id="arg-return-features">return_features<a class="anchor" aria-label="anchor" href="#arg-return-features"></a></dt>
-<dd><p>Logical; if `TRUE`, accumulate aligned
+<dd><p>Logical; if <code>TRUE</code>, accumulate aligned
 feature-space component maps across bootstrap draws and return streaming
-mean, SD, and bootstrap-ratio z maps (`observed / bootstrap SD`, the
+mean, SD, and bootstrap-ratio z maps (<code>observed / bootstrap SD</code>, the
 standard PLS bootstrap ratio).</p></dd>
 
 
 <dt id="arg-parallel">parallel<a class="anchor" aria-label="anchor" href="#arg-parallel"></a></dt>
-<dd><p>Logical; if `TRUE`, evaluate draws with
-`future.apply::future_lapply()`. Bootstrap indices are drawn up front in
+<dd><p>Logical; if <code>TRUE</code>, evaluate draws with
+<code><a href="https://future.apply.futureverse.org/reference/future_lapply.html" class="external-link">future.apply::future_lapply()</a></code>. Bootstrap indices are drawn up front in
 the calling RNG stream, so results are identical for either setting of
-`parallel` given the same `seed`.</p></dd>
+<code>parallel</code> given the same <code>seed</code>.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
@@ -184,31 +188,31 @@ the calling RNG stream, so results are identical for either setting of
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to [dkge_aggregate_stat()]. Every
-other setting is a named formal, so a misspelled argument (`sed = 1` for
-`seed = 1`) lands here and is reported as an error whenever `statistic` is
-one of the built-ins; `...` reaches only user-supplied statistic functions.</p></dd>
+<dd><p>Additional arguments passed to <code><a href="dkge_aggregate_stat.html">dkge_aggregate_stat()</a></code>. Every
+other setting is a named formal, so a misspelled argument (<code>sed = 1</code> for
+<code>seed = 1</code>) lands here and is reported as an error whenever <code>statistic</code> is
+one of the built-ins; <code>...</code> reaches only user-supplied statistic functions.</p></dd>
 
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A `dkge_aggregate_bootstrap` object to print.</p></dd>
+<dd><p>A <code>dkge_aggregate_bootstrap</code> object to print.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Object of class `dkge_aggregate_bootstrap`. `observed` and
-  `statistics` are signed. `interval` is the requested bootstrap interval
-  of the signed statistic. `excludes_zero` reports whether that interval
-  excludes zero, or `NA` for the non-negative `"singular_value"` statistic
-  (the comparison is uninformative there).</p>
+    <p>Object of class <code>dkge_aggregate_bootstrap</code>. <code>observed</code> and
+<code>statistics</code> are signed. <code>interval</code> is the requested bootstrap interval
+of the signed statistic. <code>excludes_zero</code> reports whether that interval
+excludes zero, or <code>NA</code> for the non-negative <code>"singular_value"</code> statistic
+(the comparison is uninformative there).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Resampling is **stratified by default**: when `strata` is `NULL` and the
-target has subject-level `group_vars`, subjects are resampled with
-replacement *within* `interaction(subject_data[target$group_vars])`, so every
+    <p>Resampling is <strong>stratified by default</strong>: when <code>strata</code> is <code>NULL</code> and the
+target has subject-level <code>group_vars</code>, subjects are resampled with
+replacement <em>within</em> <code>interaction(subject_data[target$group_vars])</code>, so every
 draw preserves the observed group sizes and the aggregate row set. Pass
-`strata` explicitly (a vector, or the name of a column in the subject data)
+<code>strata</code> explicitly (a vector, or the name of a column in the subject data)
 to stratify differently; a stratum with a single subject contributes that
 subject to every draw, which is reported with a warning.</p>
     </div>

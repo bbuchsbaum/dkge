@@ -20,30 +20,34 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -58,7 +62,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Fit a Design-Kernel Group Embedding (DKGE) model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-fit.R" class="external-link"><code>R/dkge-fit.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-fit.R" class="external-link"><code>R/dkge-fit.R</code></a></small>
       <div class="d-none name"><code>dkge_fit.Rd</code></div>
     </div>
 
@@ -91,7 +95,8 @@
 <span>  effect_weights <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  debias <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"analytic"</span>, <span class="st">"split_half"</span><span class="op">)</span>,</span>
 <span>  missingness <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"rescale"</span>, <span class="st">"mask"</span>, <span class="st">"shrink"</span><span class="op">)</span>,</span>
-<span>  miss_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  miss_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  spatial <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -100,34 +105,35 @@
 
 
 <dl><dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
-<dd><p>`dkge_data` bundle (preferred) or a list of subject beta matrices.</p></dd>
+<dd><p><code>dkge_data</code> bundle (preferred) or a list of subject beta matrices.</p></dd>
 
 
 <dt id="arg-designs">designs<a class="anchor" aria-label="anchor" href="#arg-designs"></a></dt>
-<dd><p>Per-subject design matrices (ignored when `data` already carries
-them). Columns must align with the effects encoded by `K`.</p></dd>
+<dd><p>Per-subject design matrices (ignored when <code>data</code> already carries
+them). Columns must align with the effects encoded by <code>K</code>.</p></dd>
 
 
 <dt id="arg-k">K<a class="anchor" aria-label="anchor" href="#arg-k"></a></dt>
 <dd><p>qxq design kernel in effect space. Supply either a raw matrix or the
-list returned by [design_kernel()].</p></dd>
+list returned by <code><a href="design_kernel.html">design_kernel()</a></code>.</p></dd>
 
 
 <dt id="arg-omega-list">Omega_list<a class="anchor" aria-label="anchor" href="#arg-omega-list"></a></dt>
 <dd><p>Optional per-subject spatial reliabilities/weights. Each
-element may be `NULL` (no extra weighting), a numeric vector of length
-`P_s` (diagonal weights for clusters/voxels), or a full `P_s x P_s` matrix
+element may be <code>NULL</code> (no extra weighting), a numeric vector of length
+<code>P_s</code> (diagonal weights for clusters/voxels), or a full <code>P_s x P_s</code> matrix
 specifying custom covariance. These weights are applied both when
 accumulating the compressed covariance and when computing MFA/energy block
-normalisation.</p></dd>
+normalization. With <code>spatial</code>, the Laplacian solve precedes this metric.</p></dd>
 
 
 <dt id="arg-w-method">w_method<a class="anchor" aria-label="anchor" href="#arg-w-method"></a></dt>
-<dd><p>Subject-level weighting scheme.
-* `"mfa_sigma1"` (default): inverse squared leading singular value of
-  \(K^{1/2} Btil_s \Omega_s^{1/2}\) (Multiple Factor Analysis scaling).
-* `"energy"`: inverse Frobenius norm squared of the same block.
-* `"none"`: disable block scaling (all weights = 1).</p></dd>
+<dd><p>Subject-level weighting scheme.</p><ul><li><p><code>"mfa_sigma1"</code> (default): inverse squared leading singular value of
+\(K^{1/2} Btil_s H_s^{T} \Omega_s^{1/2}\) (Multiple Factor Analysis
+scaling), with \(H_s = I\) when spatial regularization is absent.</p></li>
+<li><p><code>"energy"</code>: inverse Frobenius norm squared of the same block.</p></li>
+<li><p><code>"none"</code>: disable block scaling (all weights = 1).</p></li>
+</ul></dd>
 
 
 <dt id="arg-w-tau">w_tau<a class="anchor" aria-label="anchor" href="#arg-w-tau"></a></dt>
@@ -144,27 +150,27 @@ weights, 1 forces equal weighting.</p></dd>
 
 
 <dt id="arg-keep-x">keep_X<a class="anchor" aria-label="anchor" href="#arg-keep-x"></a></dt>
-<dd><p>Logical; when `TRUE`, store the concatenated training matrix
+<dd><p>Logical; when <code>TRUE</code>, store the concatenated training matrix
 used to build the multiblock projection (can be large). Only available
-when the fit is an exact `block_biprojector`; q-space moments have no
+when the fit is an exact <code>block_biprojector</code>; q-space moments have no
 matching subject-by-voxel factor.</p></dd>
 
 
 <dt id="arg-cpca-blocks">cpca_blocks<a class="anchor" aria-label="anchor" href="#arg-cpca-blocks"></a></dt>
 <dd><p>Optional integer vector specifying which effect rows span
-the CPCA design subspace. Ignored when `cpca_part = "none"` or when
-`cpca_T` is provided.</p></dd>
+the CPCA design subspace. Ignored when <code>cpca_part = "none"</code> or when
+<code>cpca_T</code> is provided.</p></dd>
 
 
 <dt id="arg-cpca-t">cpca_T<a class="anchor" aria-label="anchor" href="#arg-cpca-t"></a></dt>
 <dd><p>Optional qxq0 matrix giving the CPCA design basis explicitly.
-When supplied it overrides `cpca_blocks`.</p></dd>
+When supplied it overrides <code>cpca_blocks</code>.</p></dd>
 
 
 <dt id="arg-cpca-part">cpca_part<a class="anchor" aria-label="anchor" href="#arg-cpca-part"></a></dt>
-<dd><p>Which CPCA-filtered component to estimate: `"none"` (default)
-performs the standard DKGE fit; `"design"` uses only the CPCA design part;
-`"resid"` uses the residual part; `"both"` fits the design part but also
+<dd><p>Which CPCA-filtered component to estimate: <code>"none"</code> (default)
+performs the standard DKGE fit; <code>"design"</code> uses only the CPCA design part;
+<code>"resid"</code> uses the residual part; <code>"both"</code> fits the design part but also
 stores the residual basis for inspection.</p></dd>
 
 
@@ -174,16 +180,16 @@ eigen-decomposition.</p></dd>
 
 
 <dt id="arg-weights">weights<a class="anchor" aria-label="anchor" href="#arg-weights"></a></dt>
-<dd><p>Either `NULL` (default) to apply the weighting scheme specified
-by `w_method`, or a [`dkge_weights()`] specification controlling additional
+<dd><p>Either <code>NULL</code> (default) to apply the weighting scheme specified
+by <code>w_method</code>, or a <code><a href="dkge_weights.html">dkge_weights()</a></code> specification controlling additional
 voxel/anchor-level weighting. When supplied, it must inherit from
-`dkge_weights` and is resolved via [dkge_weights()].</p></dd>
+<code>dkge_weights</code> and is resolved via <code><a href="dkge_weights.html">dkge_weights()</a></code>.</p></dd>
 
 
 <dt id="arg-solver">solver<a class="anchor" aria-label="anchor" href="#arg-solver"></a></dt>
-<dd><p>Solver used for the q-space problem. `"pooled"` keeps the
-original eigen-decomposition; `"jd"` performs joint diagonalisation using
-[dkge_jd_control()] settings.</p></dd>
+<dd><p>Solver used for the q-space problem. <code>"pooled"</code> keeps the
+original eigen-decomposition; <code>"jd"</code> performs joint diagonalisation using
+<code><a href="dkge_jd_control.html">dkge_jd_control()</a></code> settings.</p></dd>
 
 
 <dt id="arg-jd-control">jd_control<a class="anchor" aria-label="anchor" href="#arg-jd-control"></a></dt>
@@ -203,64 +209,71 @@ the whitened \(K^{1/2}\) metric (qxq matrix).</p></dd>
 
 <dt id="arg-effect-scaling">effect_scaling<a class="anchor" aria-label="anchor" href="#arg-effect-scaling"></a></dt>
 <dd><p>Effect-space scaling applied before accumulating the
-compressed covariance. `"pooled_design"` (default) multiplies each subject
+compressed covariance. <code>"pooled_design"</code> (default) multiplies each subject
 beta/effect matrix by the pooled design Cholesky factor, preserving the
-original GLM-beta behaviour. `"none"` leaves rows on their input scale and
+original GLM-beta behavior. <code>"none"</code> leaves rows on their input scale and
 uses an identity contrast ruler, which is appropriate when rows already have
 a common absolute interpretation such as AUC minus chance.</p></dd>
 
 
 <dt id="arg-effect-weights">effect_weights<a class="anchor" aria-label="anchor" href="#arg-effect-weights"></a></dt>
-<dd><p>Optional [dkge_effect_weights()] specification. Count,
-explicit precision, or DerSimonian-Laird `"random_effects"` weighting is
+<dd><p>Optional <code><a href="dkge_effect_weights.html">dkge_effect_weights()</a></code> specification. Count,
+explicit precision, or DerSimonian-Laird <code>"random_effects"</code> weighting is
 applied to raw q-space effect moments before the pooled ruler and design
 kernel mix effect rows. Random-effects fits are q-space-only.</p></dd>
 
 
 <dt id="arg-debias">debias<a class="anchor" aria-label="anchor" href="#arg-debias"></a></dt>
-<dd><p>Finite-trial noise treatment. `"none"` preserves the observed
-second moment. `"analytic"` subtracts
-`noise_trace * effect_noise_cov` for each subject before pooling; these
-sufficient statistics are produced by [dkge_trial_subject()].
-`"split_half"` uses the symmetrized cross-product of two independently
-estimated trial halves and requires `dkge_trial_subject(split = ...)`.</p></dd>
+<dd><p>Finite-trial noise treatment. <code>"none"</code> preserves the observed
+second moment. <code>"analytic"</code> subtracts
+<code>noise_trace * effect_noise_cov</code> for each subject before pooling; these
+sufficient statistics are produced by <code><a href="dkge_trial_subject.html">dkge_trial_subject()</a></code>.
+<code>"split_half"</code> uses the symmetrized cross-product of two independently
+estimated trial halves and requires <code>dkge_trial_subject(split = ...)</code>.</p></dd>
 
 
 <dt id="arg-missingness">missingness<a class="anchor" aria-label="anchor" href="#arg-missingness"></a></dt>
 <dd><p>Partial-effect coverage policy used when subjects do not
-all observe the same effect rows. `"none"` keeps the raw zero-filled union
-accumulation, `"rescale"` divides entries by observed pair counts,
-`"mask"` zeros under-covered entries, and `"shrink"` blends rescaled entries
+all observe the same effect rows. <code>"none"</code> keeps the raw zero-filled union
+accumulation, <code>"rescale"</code> divides entries by observed pair counts,
+<code>"mask"</code> zeros under-covered entries, and <code>"shrink"</code> blends rescaled entries
 toward the diagonal according to coverage. These policies operate on raw
 q-space effect moments before the pooled ruler and design kernel mix rows.
-When `effect_weights` is active, `"none"`/`"mask"` scale the
+When <code>effect_weights</code> is active, <code>"none"</code>/<code>"mask"</code> scale the
 precision-weighted per-pair mean by observed subject mass
 \(\sum_s a_s w_s 1[\mathrm{obs}_s]\) (equal to the full cohort mass
-only under complete coverage), `"rescale"` returns that per-pair mean,
-and `"mask"`/`"shrink"` threshold on the effective pair count `$pair_ess`
-instead of the raw `$pair_counts`. Under unit precision, equal subject
-weights, **and full coverage** these coincide with the unweighted
+only under complete coverage), <code>"rescale"</code> returns that per-pair mean,
+and <code>"mask"</code>/<code>"shrink"</code> threshold on the effective pair count <code>$pair_ess</code>
+instead of the raw <code>$pair_counts</code>. Under unit precision, equal subject
+weights, <strong>and full coverage</strong> these coincide with the unweighted
 policies; under partial coverage they keep the effect-weighted mean on
 the observed-mass scale rather than mean-imputing absent subjects.</p></dd>
 
 
 <dt id="arg-miss-args">miss_args<a class="anchor" aria-label="anchor" href="#arg-miss-args"></a></dt>
-<dd><p>List of arguments for `missingness`. Known fields are
-`min_pairs` (used by `"mask"` and `"shrink"`) and `gamma` (used by
-`"shrink"`). Unknown names are an error.</p></dd>
+<dd><p>List of arguments for <code>missingness</code>. Known fields are
+<code>min_pairs</code> (used by <code>"mask"</code> and <code>"shrink"</code>) and <code>gamma</code> (used by
+<code>"shrink"</code>). Unknown names are an error.</p></dd>
+
+
+<dt id="arg-spatial">spatial<a class="anchor" aria-label="anchor" href="#arg-spatial"></a></dt>
+<dd><p>Optional model-level spatial regularizer created by
+<code><a href="dkge_spatial_regularizer.html">dkge_spatial_regularizer()</a></code>. The same sparse Laplacian resolvent is used
+in the fitted moment, held-out folds, components, contrasts, and
+prediction. <code>lambda = 0</code> is exactly the unsmoothed model.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A fitted `dkge` object. Exact unregularized pooled moments
-  additionally inherit from `multiblock_biprojector` and advertise physical
-  block loadings `$v`. Pair-normalized, missingness-transformed, debiased,
-  ridged, CPCA, and JD fits inherit from `dkge_qspace` instead, set `$v`
-  and `$X_concat` to `NULL`, and expose only the coherent q-space
-  eigensystem. `$representation` records which contract applies.
-  The object also records `$effect_moment`, `$pair_weight`, `$pair_ess`, and
-  `$moment_diagnostics` for auditing reliability weighting and any negative
-  spectral mass introduced by debiasing.</p>
+    <p>A fitted <code>dkge</code> object. Exact factorizable pooled moments
+additionally inherit from <code>multiblock_biprojector</code> and advertise physical
+block loadings <code>$v</code>. Pair-normalized, missingness-transformed, debiased,
+ridged, CPCA, and JD fits inherit from <code>dkge_qspace</code> instead, set <code>$v</code>
+and <code>$X_concat</code> to <code>NULL</code>, and expose only the coherent q-space
+eigensystem. <code>$representation</code> records which contract applies.
+The object also records <code>$effect_moment</code>, <code>$pair_weight</code>, <code>$pair_ess</code>, and
+<code>$moment_diagnostics</code> for auditing reliability weighting and any negative
+spectral mass introduced by debiasing.</p>
     </div>
 
     <div class="section level2">

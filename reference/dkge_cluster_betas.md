@@ -12,7 +12,9 @@ dkge_cluster_betas(bv, x_mat, labels)
 
 - bv:
 
-  A \`neuroim2::NeuroVec\` object containing 4D time-series data.
+  A
+  [`neuroim2::NeuroVec`](https://bbuchsbaum.github.io/neuroim2/reference/NeuroVec-class.html)
+  object containing 4D time-series data.
 
 - x_mat:
 
@@ -20,7 +22,9 @@ dkge_cluster_betas(bv, x_mat, labels)
 
 - labels:
 
-  A \`neuroim2::NeuroVol\` object with cluster label assignments.
+  A
+  [`neuroim2::NeuroVol`](https://bbuchsbaum.github.io/neuroim2/reference/NeuroVol.html)
+  object with cluster label assignments.
 
 ## Value
 

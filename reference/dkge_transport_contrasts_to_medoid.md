@@ -1,6 +1,12 @@
-# Transport subject contrasts to a medoid parcellation
+# Transport subject contrasts to a medoid parcellation (deprecated)
 
-Transport subject contrasts to a medoid parcellation
+`dkge_transport_contrasts_to_medoid()` is retained for one migration
+cycle. It preserves the legacy descriptive/fold-safe behavior where
+safe, while current cache-provenance checks still fail closed. New
+analyses should use
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md),
+which requires typed features and an auditable reference-selection
+channel.
 
 ## Usage
 
@@ -16,7 +22,9 @@ dkge_transport_contrasts_to_medoid(
   mapper = NULL,
   method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
   transport_cache = NULL,
-  provenance = NULL,
+  reference_selection = NULL,
+  alignment_features = NULL,
+  alignment_mode = c("fold_safe", "independent", "contrast_orthogonal", "descriptive"),
   ...
 )
 ```
@@ -25,58 +33,57 @@ dkge_transport_contrasts_to_medoid(
 
 - fit:
 
-  A \`dkge\` object used to compute the contrasts.
+  A fitted `dkge` object.
 
 - contrast_obj:
 
-  A \`dkge_contrasts\` result.
+  Cross-fitted contrasts from
+  [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
 
 - medoid:
 
-  Integer index of the reference subject (1-based).
+  Legacy integer reference-subject index.
 
 - centroids:
 
-  List of subject cluster centroids (each P_s x 3 matrix).
+  Named subject centroid matrices, or `NULL` to use `fit`.
 
 - loadings:
 
-  Optional list of subject loadings (P_s x r).
+  Optional legacy loose loading matrices.
 
 - betas:
 
-  Optional list of subject betas used to recompute loadings.
+  Optional legacy beta matrices used to derive loadings.
 
 - sizes:
 
-  Optional list of cluster masses.
+  Optional subject parcel masses.
 
 - mapper:
 
-  Optional mapper specification created by \[dkge_mapper_spec()\].
+  Fixed mapper specification.
 
 - method:
 
-  Mapper strategy (\`"sinkhorn"\`, \`"ridge"\`, or \`"ols"\`). The
-  legacy \`"sinkhorn_cpp"\` name is a deprecated alias for
-  \`"sinkhorn"\`.
+  Legacy mapper strategy.
 
 - transport_cache:
 
-  Optional cache from \[dkge_prepare_transport()\]. When supplied,
-  cached operators are reused for every contrast.
+  Optional exactly matching fitted alignment.
 
-- provenance:
+- reference_selection:
 
-  Optional transport provenance declaration. Descriptive loading-derived
-  transport is recorded when omitted.
+  Optional typed selection object supported by the migration shim.
+
+- alignment_features:
+
+  Typed functional features.
+
+- alignment_mode:
+
+  Legacy feature-provenance mode.
 
 - ...:
 
-  Additional parameters passed when building the default mapper
-  specification.
-
-## Value
-
-Named list of transport results (one per contrast) with an attached
-\`cache\` element for reuse.
+  Mapper parameters used only when `mapper` is shorthand.

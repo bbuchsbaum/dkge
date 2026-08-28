@@ -1,9 +1,11 @@
 # Fit DKGE using feature-anchored subject kernels
 
 Projects item-level kernels onto a shared anchor basis (via
-\[dkge_build_anchor_kernels()\]) and reuses \[dkge_fit_from_kernels()\]
+[`dkge_build_anchor_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_build_anchor_kernels.md))
+and reuses
+[`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md)
 to enter the DKGE pipeline. Anchor provenance, coverage diagnostics, and
-subject item counts are stored in the resulting \`dkge\` object.
+subject item counts are stored in the resulting `dkge` object.
 
 ## Usage
 
@@ -22,36 +24,37 @@ dkge_anchor_fit(
 
 - features_list:
 
-  List of subject feature matrices (\`n_s x d\` each).
+  List of subject feature matrices (`n_s x d` each).
 
 - K_item_list:
 
-  List of subject item kernels (\`n_s x n_s\` each).
+  List of subject item kernels (`n_s x n_s` each).
 
 - folds:
 
-  Optional fold specification passed to \[dkge_build_anchor_kernels()\].
+  Optional fold specification passed to
+  [`dkge_build_anchor_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_build_anchor_kernels.md).
 
 - anchors:
 
-  Named list overriding anchor-building defaults (\`L\`, \`method\`,
-  \`rho\`, \`fill\`, \`seed\`, \`sigma\`, \`center\`, \`whiten\`,
-  \`eps\`, \`unit_trace\`, \`item_weights\`).
+  Named list overriding anchor-building defaults (`L`, `method`, `rho`,
+  `fill`, `seed`, `sigma`, `center`, `whiten`, `eps`, `unit_trace`,
+  `item_weights`).
 
 - design_kernel:
 
-  Optional design kernel forwarded to \[dkge_fit_from_kernels()\].
+  Optional design kernel forwarded to
+  [`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md).
   Defaults to the identity.
 
 - dkge_args:
 
   Named list of additional arguments forwarded to
-  \[dkge_fit_from_kernels()\].
+  [`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md).
 
 ## Value
 
-A \`dkge\` fit with anchor provenance under
-\`fit\$provenance\$anchors\`.
+A `dkge` fit with anchor provenance under `fit$provenance$anchors`.
 
 ## Examples
 

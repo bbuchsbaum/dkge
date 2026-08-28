@@ -1,26 +1,13 @@
-# Range-space roots for a positive-semidefinite kernel
+# Positive-semidefinite kernel roots
 
-Computes the true symmetric square root and the Moore-Penrose inverse
-square root. Eigenvalues at or below the applied absolute-plus-relative
-tolerance remain exactly zero; null directions are never jittered into
-the metric.
+Positive-semidefinite kernel roots
 
 ## Usage
 
 ``` r
-kernel_roots(
-  K,
-  jitter = NULL,
-  absolute_tolerance = .Machine$double.xmin,
-  relative_tolerance = 1e-08
-)
+kernel_roots(K, jitter = 0, tol = 1e-10)
 
-dkge_kernel_roots(
-  K,
-  jitter = NULL,
-  absolute_tolerance = .Machine$double.xmin,
-  relative_tolerance = 1e-08
-)
+dkge_kernel_roots(K, jitter = 0, tol = 1e-10)
 ```
 
 ## Arguments
@@ -31,19 +18,17 @@ dkge_kernel_roots(
 
 - jitter:
 
-  Deprecated absolute truncation threshold. When supplied it is used as
-  \`absolute_tolerance\`; eigenvalues below it are discarded, not raised
-  to it.
+  Optional non-negative diagonal regularization added explicitly to `K`
+  before computing roots. The default, zero, preserves an exact null
+  space. Use a positive value only when changing the kernel geometry is
+  scientifically intended.
 
-- absolute_tolerance:
+- tol:
 
-  Non-negative absolute spectral tolerance.
-
-- relative_tolerance:
-
-  Non-negative tolerance relative to the largest kernel eigenvalue.
+  Relative eigentolerance used to define numerical support.
 
 ## Value
 
-List with \`Khalf\`, \`Kihalf\`, eigenvalues, eigenvectors, numerical
-rank/nullity, retained range, and the applied tolerances.
+List with the exact square root, Moore–Penrose inverse square root,
+eigenstructure, support projectors, numerical rank diagnostics,
+participation-ratio effective rank, and leading-eigenvalue share.

@@ -12,7 +12,7 @@ dkge_plot_subject_contrib(fit, comps = NULL)
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - comps:
 
@@ -20,7 +20,7 @@ dkge_plot_subject_contrib(fit, comps = NULL)
 
 ## Value
 
-List with \`weights\` and \`energy\` ggplots.
+List with `weights` and `energy` ggplots.
 
 ## Examples
 

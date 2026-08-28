@@ -26,30 +26,34 @@ cross-fitting remains leak-free."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -64,7 +68,7 @@ cross-fitting remains leak-free."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Create a DKGE voxel-weight specification</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-weights.R" class="external-link"><code>R/dkge-weights.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-weights.R" class="external-link"><code>R/dkge-weights.R</code></a></small>
       <div class="d-none name"><code>dkge_weights.Rd</code></div>
     </div>
 
@@ -98,82 +102,82 @@ cross-fitting remains leak-free.</p>
 <dl><dt id="arg-prior">prior<a class="anchor" aria-label="anchor" href="#arg-prior"></a></dt>
 <dd><p>Optional prior weights: numeric vector of length V, logical mask,
 integer indices, or ROI labels (factor/character/integer of length V) per voxel. Helpers
-[dkge_weights_prior_mask()] and [dkge_weights_prior_roi()] ease construction.</p></dd>
+<code><a href="dkge_weights_prior_mask.html">dkge_weights_prior_mask()</a></code> and <code><a href="dkge_weights_prior_roi.html">dkge_weights_prior_roi()</a></code> ease construction.</p></dd>
 
 
 <dt id="arg-adapt">adapt<a class="anchor" aria-label="anchor" href="#arg-adapt"></a></dt>
-<dd><p>Adaptive weighting rule, one of `"none"`, `"kenergy"`,
-`"precision"`, `"kenergy_prec"`, or `"reliability"`.  The `"reliability"`
+<dd><p>Adaptive weighting rule, one of <code>"none"</code>, <code>"kenergy"</code>,
+<code>"precision"</code>, <code>"kenergy_prec"</code>, or <code>"reliability"</code>.  The <code>"reliability"</code>
 rule computes split-half squared inter-run correlation per voxel and
-requires `B_list2` (a second run of beta matrices, one per subject).</p></dd>
+requires <code>B_list2</code> (a second run of beta matrices, one per subject).</p></dd>
 
 
 <dt id="arg-b-list-">B_list2<a class="anchor" aria-label="anchor" href="#arg-b-list-"></a></dt>
-<dd><p>Optional second-run beta list (same structure as `B_list` used
-at fit time): one `q x V` matrix per subject.  Required when
-`adapt = "reliability"`.  Per-voxel reliability is estimated as the squared
+<dd><p>Optional second-run beta list (same structure as <code>B_list</code> used
+at fit time): one <code>q x V</code> matrix per subject.  Required when
+<code>adapt = "reliability"</code>.  Per-voxel reliability is estimated as the squared
 Pearson correlation of cross-subject mean activations between run 1 and
 run 2.</p></dd>
 
 
 <dt id="arg-combine">combine<a class="anchor" aria-label="anchor" href="#arg-combine"></a></dt>
-<dd><p>How prior and adaptive sources combine: `"product"` (default),
-`"sum"`, `"override_adapt"`, or `"prefer_prior"`.</p></dd>
+<dd><p>How prior and adaptive sources combine: <code>"product"</code> (default),
+<code>"sum"</code>, <code>"override_adapt"</code>, or <code>"prefer_prior"</code>.</p></dd>
 
 
 <dt id="arg-mix">mix<a class="anchor" aria-label="anchor" href="#arg-mix"></a></dt>
-<dd><p>Numeric in [0,1] controlling the relative influence of the adaptive
-component. Interpreted in log-space for `combine = "product"`.</p></dd>
+<dd><p>Numeric in <code>[0, 1]</code> controlling the relative influence of the adaptive
+component. Interpreted in log-space for <code>combine = "product"</code>.</p></dd>
 
 
 <dt id="arg-shrink">shrink<a class="anchor" aria-label="anchor" href="#arg-shrink"></a></dt>
-<dd><p>List with fields `alpha` (shrink towards uniform), `winsor`
-(upper quantile cap), `normalize` (`"mean"` or `"sum"`), and optional
-`roi_smooth = TRUE` to median-smooth within ROIs.</p></dd>
+<dd><p>List with fields <code>alpha</code> (shrink towards uniform), <code>winsor</code>
+(upper quantile cap), <code>normalize</code> (<code>"mean"</code> or <code>"sum"</code>), and optional
+<code>roi_smooth = TRUE</code> to median-smooth within ROIs.</p></dd>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>Either `"fold"` (default: compute adapt weights from training
-subjects within each fold) or `"subject"` (per-subject adaptive weights
+<dd><p>Either <code>"fold"</code> (default: compute adapt weights from training
+subjects within each fold) or <code>"subject"</code> (per-subject adaptive weights
 averaged for fold pooling).</p></dd>
 
 
 <dt id="arg-k-weight">k_weight<a class="anchor" aria-label="anchor" href="#arg-k-weight"></a></dt>
-<dd><p>Optional effect-space kernel for k-energy rules. When `NULL`
-we reuse the kernel stored in the fit, with optional factor `collapse`.</p></dd>
+<dd><p>Optional effect-space kernel for k-energy rules. When <code>NULL</code>
+we reuse the kernel stored in the fit, with optional factor <code>collapse</code>.</p></dd>
 
 
 <dt id="arg-collapse">collapse<a class="anchor" aria-label="anchor" href="#arg-collapse"></a></dt>
 <dd><p>Optional list describing factor collapses (e.g.,
-`list(time = "mean")` or `list(time = list(method = "mean", window = 3:8))`).</p></dd>
+<code>list(time = "mean")</code> or <code>list(time = list(method = "mean", window = 3:8))</code>).</p></dd>
 
 
 <dt id="arg-roi">roi<a class="anchor" aria-label="anchor" href="#arg-roi"></a></dt>
-<dd><p>Optional ROI labels used when `shrink$roi_smooth = TRUE`.</p></dd>
+<dd><p>Optional ROI labels used when <code>shrink$roi_smooth = TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Object of class `"dkge_weights"`.</p>
+    <p>Object of class <code>"dkge_weights"</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="combine-modes">Combine modes<a class="anchor" aria-label="anchor" href="#combine-modes"></a></h2>
 
 
-<dl><dt>`"product"`</dt>
+<dl><dt><code>"product"</code></dt>
 <dd><p>Geometric mean of prior and adaptive weights, blended
-    in log-space by `mix` (default). Smooth and robust.</p></dd>
+in log-space by <code>mix</code> (default). Smooth and robust.</p></dd>
 
-  <dt>`"sum"`</dt>
-<dd><p>Linear mixture: `(1 - mix) * prior + mix * adaptive`.</p></dd>
+<dt><code>"sum"</code></dt>
+<dd><p>Linear mixture: <code>(1 - mix) * prior + mix * adaptive</code>.</p></dd>
 
-  <dt>`"override_adapt"`</dt>
+<dt><code>"override_adapt"</code></dt>
 <dd><p>Adaptive weight is used wherever it is finite and
-    positive; falls back to prior otherwise. Adaptive takes priority.</p></dd>
+positive; falls back to prior otherwise. Adaptive takes priority.</p></dd>
 
-  <dt>`"prefer_prior"`</dt>
+<dt><code>"prefer_prior"</code></dt>
 <dd><p>Prior weight is used wherever it is finite and
-    positive; falls back to adaptive otherwise. Prior takes priority.</p></dd>
+positive; falls back to adaptive otherwise. Prior takes priority.</p></dd>
 
 
 </dl></div>

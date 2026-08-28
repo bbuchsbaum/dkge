@@ -35,12 +35,13 @@ print(x, ...)
 
 - target:
 
-  A \`dkge_aggregate_target\`.
+  A `dkge_aggregate_target`.
 
 - K:
 
-  Optional aggregate-row design kernel. See \[dkge_aggregate_fit()\] for
-  the row-space convention (\`q\` = number of aggregate rows).
+  Optional aggregate-row design kernel. See
+  [`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md)
+  for the row-space convention (`q` = number of aggregate rows).
 
 - statistic:
 
@@ -54,39 +55,40 @@ print(x, ...)
 
   Optional subject-level strata for within-stratum bootstrap: either a
   vector with one entry per source subject, or the name of a column in
-  the subject data. Defaults to the interaction of
-  \`target\$group_vars\`. Explicit strata \*\*must\*\* nest within
-  \`group_vars\` (each stratum lies inside a single group level) and are
-  rejected up front otherwise: a coarser or cross-cutting stratification
-  can draw a resample in which an entire group level is absent, which
-  changes the aggregate row set and fails against the fixed observed
-  kernel. Every draw is additionally checked against the observed row
-  set.
+  the subject data. Defaults to the interaction of `target$group_vars`.
+  Explicit strata **must** nest within `group_vars` (each stratum lies
+  inside a single group level) and are rejected up front otherwise: a
+  coarser or cross-cutting stratification can draw a resample in which
+  an entire group level is absent, which changes the aggregate row set
+  and fails against the fixed observed kernel. Every draw is
+  additionally checked against the observed row set.
 
 - rank, center:
 
-  Passed to \[dkge_aggregate_fit()\].
+  Passed to
+  [`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md).
 
 - component:
 
-  Component index passed to \[dkge_aggregate_stat()\] for the built-in
-  statistics. It is a formal argument rather than part of \`...\`
-  because R's partial matching would otherwise bind a \`component =\`
-  argument to \`component_scale\`/\`component_contrasts\`. User-supplied
-  statistic functions do not receive it.
+  Component index passed to
+  [`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md)
+  for the built-in statistics. It is a formal argument rather than part
+  of `...` because R's partial matching would otherwise bind a
+  `component =` argument to `component_scale`/`component_contrasts`.
+  User-supplied statistic functions do not receive it.
 
 - conf:
 
   Confidence level for the interval. Quantiles use
-  \`stats::quantile(..., type = 6)\` (Weibull plotting positions), which
+  `stats::quantile(..., type = 6)` (Weibull plotting positions), which
   is slightly wider than the default type 7 in small samples.
 
 - interval:
 
-  \`"percentile"\` uses the bootstrap quantiles directly. \`"basic"\` is
-  the reflection interval \\(2\hat\theta - q\_{1-\alpha/2},\\
-  2\hat\theta - q\_{\alpha/2})\\, which recentres a biased top singular
-  value around the observed statistic.
+  `"percentile"` uses the bootstrap quantiles directly. `"basic"` is the
+  reflection interval \\(2\hat\theta - q\_{1-\alpha/2},\\ 2\hat\theta -
+  q\_{\alpha/2})\\, which recentres a biased top singular value around
+  the observed statistic.
 
 - component_contrasts:
 
@@ -96,21 +98,22 @@ print(x, ...)
 - component_scale:
 
   Whether component contrasts are applied to singular-value-scaled cell
-  scores (\`"score"\`) or raw saliences (\`"salience"\`).
+  scores (`"score"`) or raw saliences (`"salience"`).
 
 - return_features:
 
-  Logical; if \`TRUE\`, accumulate aligned feature-space component maps
+  Logical; if `TRUE`, accumulate aligned feature-space component maps
   across bootstrap draws and return streaming mean, SD, and
-  bootstrap-ratio z maps (\`observed / bootstrap SD\`, the standard PLS
+  bootstrap-ratio z maps (`observed / bootstrap SD`, the standard PLS
   bootstrap ratio).
 
 - parallel:
 
-  Logical; if \`TRUE\`, evaluate draws with
-  \`future.apply::future_lapply()\`. Bootstrap indices are drawn up
-  front in the calling RNG stream, so results are identical for either
-  setting of \`parallel\` given the same \`seed\`.
+  Logical; if `TRUE`, evaluate draws with
+  [`future.apply::future_lapply()`](https://future.apply.futureverse.org/reference/future_lapply.html).
+  Bootstrap indices are drawn up front in the calling RNG stream, so
+  results are identical for either setting of `parallel` given the same
+  `seed`.
 
 - seed:
 
@@ -118,33 +121,33 @@ print(x, ...)
 
 - ...:
 
-  Additional arguments passed to \[dkge_aggregate_stat()\]. Every other
-  setting is a named formal, so a misspelled argument (\`sed = 1\` for
-  \`seed = 1\`) lands here and is reported as an error whenever
-  \`statistic\` is one of the built-ins; \`...\` reaches only
+  Additional arguments passed to
+  [`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md).
+  Every other setting is a named formal, so a misspelled argument
+  (`sed = 1` for `seed = 1`) lands here and is reported as an error
+  whenever `statistic` is one of the built-ins; `...` reaches only
   user-supplied statistic functions.
 
 - x:
 
-  A \`dkge_aggregate_bootstrap\` object to print.
+  A `dkge_aggregate_bootstrap` object to print.
 
 ## Value
 
-Object of class \`dkge_aggregate_bootstrap\`. \`observed\` and
-\`statistics\` are signed. \`interval\` is the requested bootstrap
-interval of the signed statistic. \`excludes_zero\` reports whether that
-interval excludes zero, or \`NA\` for the non-negative
-\`"singular_value"\` statistic (the comparison is uninformative there).
+Object of class `dkge_aggregate_bootstrap`. `observed` and `statistics`
+are signed. `interval` is the requested bootstrap interval of the signed
+statistic. `excludes_zero` reports whether that interval excludes zero,
+or `NA` for the non-negative `"singular_value"` statistic (the
+comparison is uninformative there).
 
 ## Details
 
-Resampling is \*\*stratified by default\*\*: when \`strata\` is \`NULL\`
-and the target has subject-level \`group_vars\`, subjects are resampled
-with replacement \*within\*
-\`interaction(subject_data\[target\$group_vars\])\`, so every draw
-preserves the observed group sizes and the aggregate row set. Pass
-\`strata\` explicitly (a vector, or the name of a column in the subject
-data) to stratify differently; a stratum with a single subject
+Resampling is **stratified by default**: when `strata` is `NULL` and the
+target has subject-level `group_vars`, subjects are resampled with
+replacement *within* `interaction(subject_data[target$group_vars])`, so
+every draw preserves the observed group sizes and the aggregate row set.
+Pass `strata` explicitly (a vector, or the name of a column in the
+subject data) to stratify differently; a stratum with a single subject
 contributes that subject to every draw, which is reported with a
 warning.
 

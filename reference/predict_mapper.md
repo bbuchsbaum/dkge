@@ -12,7 +12,8 @@ predict_mapper(mapping, new_source_vals, ...)
 
 - mapping:
 
-  Mapping object returned by \[fit_mapper()\].
+  Mapping object returned by
+  [`fit_mapper()`](https://bbuchsbaum.github.io/dkge/reference/fit_mapper.md).
 
 - new_source_vals:
 

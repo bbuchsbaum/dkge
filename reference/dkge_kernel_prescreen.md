@@ -1,7 +1,8 @@
 # Kernel alignment pre-screening
 
 Ranks candidate kernels by their alignment with the pooled design-space
-covariance produced by \[dkge_pooled_cov_q()\].
+covariance produced by
+[`dkge_pooled_cov_q()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pooled_cov_q.md).
 
 ## Usage
 
@@ -21,8 +22,7 @@ dkge_kernel_prescreen(K_grid, C, normalize_k = TRUE, top_k = 3)
 
 - normalize_k:
 
-  Logical; if \`TRUE\`, kernels are scaled to unit trace before
-  alignment.
+  Logical; if `TRUE`, kernels are scaled to unit trace before alignment.
 
 - top_k:
 
@@ -30,7 +30,7 @@ dkge_kernel_prescreen(K_grid, C, normalize_k = TRUE, top_k = 3)
 
 ## Value
 
-Data frame sorted by decreasing alignment; the \`top\` attribute carries
+Data frame sorted by decreasing alignment; the `top` attribute carries
 the names of the retained kernels.
 
 ## Examples

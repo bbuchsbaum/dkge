@@ -1,6 +1,8 @@
-# Construct a transport service
+# Construct a legacy descriptive transport service
 
-Construct a transport service
+Pipeline transport services are retained for descriptive migration
+output. They cannot be composed with inference; use the typed
+reference-oriented alignment workflow for inferential maps.
 
 ## Usage
 
@@ -12,7 +14,7 @@ dkge_transport_service(spec = NULL, ...)
 
 - spec:
 
-  Transport specification (list or \`dkge_transport_spec\`).
+  Transport specification (list or `dkge_transport_spec`).
 
 - ...:
 
@@ -20,7 +22,7 @@ dkge_transport_service(spec = NULL, ...)
 
 ## Value
 
-Object of class \`dkge_transport_service\`.
+Object of class `dkge_transport_service`.
 
 ## Examples
 

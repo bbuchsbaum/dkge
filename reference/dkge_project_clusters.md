@@ -5,14 +5,14 @@ Project multiple cluster/voxel vectors
 ## Usage
 
 ``` r
-dkge_project_clusters(fit, B, omega_vec = NULL, w = 1)
+dkge_project_clusters(fit, B, omega_vec = NULL, w = 1, subject = NULL)
 ```
 
 ## Arguments
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - B:
 
@@ -25,6 +25,11 @@ dkge_project_clusters(fit, B, omega_vec = NULL, w = 1)
 - w:
 
   Optional subject weight.
+
+- subject:
+
+  Optional training-subject index or id used to select a
+  subject-specific spatial operator.
 
 ## Value
 

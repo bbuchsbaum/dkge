@@ -20,30 +20,34 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -61,6 +65,22 @@
     </div>
 
     <div class="section level2">
+      <h2 id="concepts">Concepts<a class="anchor" aria-label="anchor" href="#concepts"></a></h2>
+
+      <div class="section-desc"><p>Definitions for the terms the rest of the documentation uses</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="dkge-glossary.html">dkge-glossary</a></code>
+
+        </dt>
+        <dd>DKGE glossary</dd>
+      </dl></div><div class="section level2">
       <h2 id="workflow-start-here">Workflow — start here<a class="anchor" aria-label="anchor" href="#workflow-start-here"></a></h2>
 
       <div class="section-desc"><p>Primary functions for fitting, contrasting, classifying, and predicting</p></div>
@@ -79,10 +99,31 @@
 
         <dt>
 
+          <code><a href="print.dkge.html">print(<i>&lt;dkge&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print a fitted DKGE model</dd>
+
+        <dt>
+
           <code><a href="dkge_contrast.html">dkge_contrast()</a></code>
 
         </dt>
         <dd>Compute DKGE contrasts with cross-fitting</dd>
+
+        <dt>
+
+          <code><a href="dkge_contrast_diagnostics.html">dkge_contrast_diagnostics()</a></code>
+
+        </dt>
+        <dd>Diagnose whether a kernel can represent planned contrasts</dd>
+
+        <dt>
+
+          <code><a href="dkge_component_contrasts.html">dkge_component_contrasts()</a></code>
+
+        </dt>
+        <dd>Construct contrasts that isolate fitted DKGE components</dd>
 
         <dt>
 
@@ -124,7 +165,7 @@
           <code><a href="dkge_bootstrap_projected.html">dkge_bootstrap_projected()</a></code>
 
         </dt>
-        <dd>Subject-level projection bootstrap in medoid space</dd>
+        <dd>Subject-level projection bootstrap on a reference support</dd>
 
         <dt>
 
@@ -132,6 +173,127 @@
 
         </dt>
         <dd>Multiplier bootstrap in the design space (q-space)</dd>
+      </dl></div><div class="section level2">
+      <h2 id="functional-alignment">Functional alignment<a class="anchor" aria-label="anchor" href="#functional-alignment"></a></h2>
+
+      <div class="section-desc"><p>Typed correspondence, reference support, group templates, inference, and rendering</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="dkge_alignment_features.html">dkge_alignment_features()</a></code>
+
+        </dt>
+        <dd>Construct over-ranked functional-alignment features</dd>
+
+        <dt>
+
+          <code><a href="dkge_alignment_feature_control.html">dkge_alignment_feature_control()</a></code>
+
+        </dt>
+        <dd>Numerical gates for functional-alignment features</dd>
+
+        <dt>
+
+          <code><a href="dkge_residualize_alignment_features.html">dkge_residualize_alignment_features()</a></code>
+
+        </dt>
+        <dd>Remove a contrast family from functional features conditionally</dd>
+
+        <dt>
+
+          <code><a href="dkge_alignment_eligibility.html">dkge_alignment_eligibility()</a></code>
+
+        </dt>
+        <dd>Classify inferential eligibility of a fitted alignment</dd>
+
+        <dt>
+
+          <code><a href="dkge_select_reference_subject.html">dkge_select_reference_subject()</a></code>
+
+        </dt>
+        <dd>Select an auditable reference subject for functional alignment</dd>
+
+        <dt>
+
+          <code><a href="dkge_reference_support.html">dkge_reference_support()</a></code>
+
+        </dt>
+        <dd>Define the identified support on which aligned maps are represented</dd>
+
+        <dt>
+
+          <code><a href="dkge_prepare_alignment.html">dkge_prepare_alignment()</a></code>
+
+        </dt>
+        <dd>Prepare a reference-oriented fitted alignment</dd>
+
+        <dt>
+
+          <code><a href="dkge_transport_contrasts_to_reference.html">dkge_transport_contrasts_to_reference()</a></code>
+
+        </dt>
+        <dd>Align cross-fitted contrasts to an identified reference support</dd>
+
+        <dt>
+
+          <code><a href="dkge_functional_template.html">dkge_functional_template()</a></code>
+
+        </dt>
+        <dd>Attach functional template features to a reference support</dd>
+
+        <dt>
+
+          <code><a href="dkge_fit_functional_template.html">dkge_fit_functional_template()</a></code>
+
+        </dt>
+        <dd>Fit an iterative group functional template on fixed support</dd>
+
+        <dt>
+
+          <code><a href="dkge_align_to_template.html">dkge_align_to_template()</a></code>
+
+        </dt>
+        <dd>Apply a fitted functional template to subject-level values</dd>
+
+        <dt>
+
+          <code><a href="dkge_aligned_maps.html">dkge_aligned_maps()</a></code>
+
+        </dt>
+        <dd>Store descriptive subject-by-support maps</dd>
+
+        <dt>
+
+          <code><a href="dkge_infer_aligned.html">dkge_infer_aligned()</a></code>
+
+        </dt>
+        <dd>Group inference on already aligned subject maps</dd>
+
+        <dt>
+
+          <code><a href="dkge_renderer.html">dkge_renderer()</a></code>
+
+        </dt>
+        <dd>Construct a renderer for an identified reference support</dd>
+
+        <dt>
+
+          <code><a href="dkge_render_aligned.html">dkge_render_aligned()</a></code>
+
+        </dt>
+        <dd>Render aligned maps or an existing support-level statistic</dd>
+
+        <dt>
+
+          <code><a href="dkge_paint_reference_map.html">dkge_paint_reference_map()</a></code>
+
+        </dt>
+        <dd>Paint values defined on an identified reference support</dd>
       </dl></div><div class="section level2">
       <h2 id="advanced-model-construction">Advanced — model construction<a class="anchor" aria-label="anchor" href="#advanced-model-construction"></a></h2>
 
@@ -162,6 +324,13 @@
 
         </dt>
         <dd>Fit DKGE from precomputed subject effect kernels</dd>
+
+        <dt>
+
+          <code><a href="dkge_spatial_regularizer.html">dkge_spatial_regularizer()</a></code>
+
+        </dt>
+        <dd>Construct a model-level DKGE spatial regularizer</dd>
 
         <dt>
 
@@ -214,52 +383,45 @@
 
         <dt>
 
-          <code><a href="dkge_transport_provenance.html">dkge_transport_provenance()</a></code>
-
-        </dt>
-        <dd>Declare the provenance of an inferential transport operator</dd>
-
-        <dt>
-
           <code><a href="dkge_transport_spec.html">dkge_transport_spec()</a></code>
 
         </dt>
-        <dd>Transport specification helper</dd>
-
-        <dt>
-
-          <code><a href="dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code>
-
-        </dt>
-        <dd>Transport subject contrasts to a medoid parcellation</dd>
+        <dd>Legacy descriptive transport specification helper</dd>
 
         <dt>
 
           <code><a href="dkge_transport_loadings_to_medoid.html">dkge_transport_loadings_to_medoid()</a></code>
 
         </dt>
-        <dd>Transport component loadings to a medoid parcellation</dd>
+        <dd>Transport component loadings for legacy descriptive display</dd>
 
         <dt>
 
-          <code><a href="dkge_transport_to_medoid_sinkhorn.html">dkge_transport_to_medoid_sinkhorn()</a></code> <code><a href="dkge_transport_to_medoid_sinkhorn.html">dkge_transport_to_medoid_sinkhorn_cpp()</a></code>
+          <code><a href="dkge_transport_to_medoid_sinkhorn.html">dkge_transport_to_medoid_sinkhorn()</a></code>
 
         </dt>
-        <dd>Transport cluster values to a medoid via entropic Sinkhorn OT</dd>
+        <dd>Transport cluster values to a medoid (deprecated)</dd>
+
+        <dt>
+
+          <code><a href="dkge_transport_to_reference_sinkhorn.html">dkge_transport_to_reference_sinkhorn()</a></code> <code><a href="dkge_transport_to_reference_sinkhorn.html">dkge_transport_to_medoid_sinkhorn_cpp()</a></code>
+
+        </dt>
+        <dd>Low-level descriptive Sinkhorn transport to a reference subject</dd>
 
         <dt>
 
           <code><a href="dkge_transport_to_voxels.html">dkge_transport_to_voxels()</a></code>
 
         </dt>
-        <dd>Transport DKGE quantities directly to voxel space</dd>
+        <dd>Descriptively transport DKGE quantities directly to voxel space</dd>
 
         <dt>
 
           <code><a href="dkge_transport_service.html">dkge_transport_service()</a></code>
 
         </dt>
-        <dd>Construct a transport service</dd>
+        <dd>Construct a legacy descriptive transport service</dd>
 
         <dt>
 
@@ -389,6 +551,13 @@
 
         <dt>
 
+          <code><a href="dkge_cv_spatial_grid.html">dkge_cv_spatial_grid()</a></code>
+
+        </dt>
+        <dd>LOSO selection of spatial regularization strength</dd>
+
+        <dt>
+
           <code><a href="dkge_cv_train_latent_classifier.html">dkge_cv_train_latent_classifier()</a></code>
 
         </dt>
@@ -477,6 +646,29 @@
 
         </dt>
         <dd>Refit a DKGE object with a new voxel-weight specification</dd>
+      </dl></div><div class="section level2">
+      <h2 id="deprecated-medoid-compatibility">Deprecated medoid compatibility<a class="anchor" aria-label="anchor" href="#deprecated-medoid-compatibility"></a></h2>
+
+      <div class="section-desc"><p>One-cycle shims retained while users migrate to reference-oriented APIs</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code>
+
+        </dt>
+        <dd>Transport subject contrasts to a medoid parcellation (deprecated)</dd>
+
+        <dt>
+
+          <code><a href="dkge_paint_medoid_map.html">dkge_paint_medoid_map()</a></code>
+
+        </dt>
+        <dd>Paint medoid values back to a label volume (deprecated)</dd>
       </dl></div><div class="section level2">
       <h2 id="aggregate-cell-mean-decomposition">Aggregate (cell-mean) decomposition<a class="anchor" aria-label="anchor" href="#aggregate-cell-mean-decomposition"></a></h2>
 
@@ -587,14 +779,14 @@
           <code><a href="dkge_build_renderer.html">dkge_build_renderer()</a></code>
 
         </dt>
-        <dd>Prepare reusable rendering objects for a fitted DKGE model</dd>
+        <dd>Prepare a legacy descriptive renderer (deprecated)</dd>
 
         <dt>
 
           <code><a href="dkge_render_subject_values.html">dkge_render_subject_values()</a></code>
 
         </dt>
-        <dd>Render per-subject values to anchors and voxels</dd>
+        <dd>Render values with a legacy descriptive renderer (deprecated)</dd>
 
         <dt>
 
@@ -773,7 +965,7 @@
           <code><a href="kernel_roots.html">kernel_roots()</a></code> <code><a href="kernel_roots.html">dkge_kernel_roots()</a></code>
 
         </dt>
-        <dd>Range-space roots for a positive-semidefinite kernel</dd>
+        <dd>Positive-semidefinite kernel roots</dd>
 
         <dt>
 
@@ -994,14 +1186,14 @@
           <code><a href="dkge_diagnostics.html">dkge_diagnostics()</a></code>
 
         </dt>
-        <dd>Summarise DKGE diagnostics</dd>
+        <dd>Summarize DKGE diagnostics</dd>
 
         <dt>
 
           <code><a href="dkge_component_stats.html">dkge_component_stats()</a></code> <code><a href="dkge_component_stats.html">dkge_write_component_stats()</a></code>
 
         </dt>
-        <dd>Component-level consensus statistics</dd>
+        <dd>Deprecated descriptive component consensus</dd>
 
         <dt>
 
@@ -1089,13 +1281,6 @@
 
         <dt>
 
-          <code><a href="dkge_paint_medoid_map.html">dkge_paint_medoid_map()</a></code>
-
-        </dt>
-        <dd>Paint medoid cluster values back to a label volume</dd>
-
-        <dt>
-
           <code><a href="theme_dkge.html">theme_dkge()</a></code>
 
         </dt>
@@ -1136,14 +1321,14 @@
           <code><a href="dkge_component_stats.html">dkge_component_stats()</a></code> <code><a href="dkge_component_stats.html">dkge_write_component_stats()</a></code>
 
         </dt>
-        <dd>Component-level consensus statistics</dd>
+        <dd>Deprecated descriptive component consensus</dd>
 
         <dt>
 
           <code><a href="dkge_write_group_map.html">dkge_write_group_map()</a></code>
 
         </dt>
-        <dd>Write a group map as NIfTI using a medoid label image</dd>
+        <dd>Write a group map as NIfTI using a reference label image</dd>
 
         <dt>
 
@@ -1207,83 +1392,6 @@
 
         </dt>
         <dd>Print method for dkge_inference</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_between_permutation.html">print(<i>&lt;dkge_between_permutation&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print between-subject permutation results</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_between_rrr.html">print(<i>&lt;dkge_between_rrr&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a between-subject reduced-rank regression fit</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_classification.html">print(<i>&lt;dkge_classification&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print DKGE classification results</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_classification_spec.html">print(<i>&lt;dkge_classification_spec&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a classification specification</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_contrast_validated.html">print(<i>&lt;dkge_contrast_validated&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print validated DKGE contrasts</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_inference_spec.html">print(<i>&lt;dkge_inference_spec&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print an inference specification</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_regress.html">print(<i>&lt;dkge_regress&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print cross-validated regression results</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_subject_model.html">print(<i>&lt;dkge_subject_model&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a subject-level model specification</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_target.html">print(<i>&lt;dkge_target&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a DKGE target</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_transport_spec.html">print(<i>&lt;dkge_transport_spec&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a transport specification</dd>
-
-        <dt>
-
-          <code><a href="print.dkge_weights.html">print(<i>&lt;dkge_weights&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a DKGE weight specification</dd>
 
         <dt>
 

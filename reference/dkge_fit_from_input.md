@@ -2,7 +2,8 @@
 
 Dispatches to the appropriate preprocessing pipeline (anchors, raw
 betas, etc.) before invoking the DKGE core. Currently supports anchor
-descriptors created via \[dkge_input_anchor()\].
+descriptors created via
+[`dkge_input_anchor()`](https://bbuchsbaum.github.io/dkge/reference/dkge_input_anchor.md).
 
 ## Usage
 
@@ -20,16 +21,16 @@ dkge_fit_from_input(input, ...)
 
 - input:
 
-  Object inheriting from \`dkge_input\`.
+  Object inheriting from `dkge_input`.
 
 - ...:
 
   Additional arguments merged into the DKGE fitting call (these are
-  interpreted as DKGE core options, e.g. \`w_method\`).
+  interpreted as DKGE core options, e.g. `w_method`).
 
 ## Value
 
-A fitted \`dkge\` object.
+A fitted `dkge` object.
 
 ## Examples
 

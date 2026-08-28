@@ -20,7 +20,8 @@ dkge_classification_spec(
 
 - targets:
 
-  Target specification accepted by \[dkge_classify()\].
+  Target specification accepted by
+  [`dkge_classify()`](https://bbuchsbaum.github.io/dkge/reference/dkge_classify.md).
 
 - method:
 
@@ -40,18 +41,19 @@ dkge_classification_spec(
 
 - mode:
 
-  Decoding mode passed to \[dkge_classify()\]: "auto" selects
-  automatically, "cell" uses a transductive global-basis embedding,
-  "cell_cross" uses prospective cross-fitted per-cell embeddings, and
-  "delta" uses pairwise deltas.
+  Decoding mode passed to
+  [`dkge_classify()`](https://bbuchsbaum.github.io/dkge/reference/dkge_classify.md):
+  "auto" selects automatically, "cell" uses per-cell embeddings,
+  "cell_cross" uses cross-validated per-cell embeddings, and "delta"
+  uses pairwise deltas.
 
 - ...:
 
-  Additional fields stored on the spec (e.g., \`n_perm\`, \`scope\`).
+  Additional fields stored on the spec (e.g., `n_perm`, `scope`).
 
 ## Value
 
-Object with class \`dkge_classification_spec\`.
+Object with class `dkge_classification_spec`.
 
 ## Examples
 

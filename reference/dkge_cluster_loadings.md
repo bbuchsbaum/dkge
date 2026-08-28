@@ -14,8 +14,8 @@ dkge_cluster_loadings(fit)
 
 - fit:
 
-  Fitted object of class \`dkge\` containing \`Btil\`, \`K\`, and \`U\`.
+  Fitted object of class `dkge` containing `Btil`, `K`, and `U`.
 
 ## Value
 
-A list of \`P_s x r\` matrices of cluster loadings.
+A list of `P_s x r` matrices of cluster loadings.

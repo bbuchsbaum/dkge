@@ -14,7 +14,7 @@ dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL, subject = NULL)
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - B_s:
 
@@ -23,7 +23,7 @@ dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL, subject = NULL)
 - Omega_s:
 
   Optional weights (vector length P or PxP matrix) matching the columns
-  of \`B_s\`.
+  of `B_s`.
 
 - w_s:
 
@@ -32,9 +32,8 @@ dkge_transform_block(fit, B_s, Omega_s = NULL, w_s = NULL, subject = NULL)
 - subject:
 
   Optional training-subject index or id. Required when the fit carries
-  non-trivial voxel weights, so the matching
-  \`fit\$voxel_weights_subject\` / \`fit\$voxel_weights\` profile can be
-  applied.
+  non-trivial voxel weights, so the matching `fit$voxel_weights_subject`
+  / `fit$voxel_weights` profile can be applied.
 
 ## Value
 

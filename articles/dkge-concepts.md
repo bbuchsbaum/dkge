@@ -12,7 +12,25 @@ transport, start with
 and
 [`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md).
 
+The decomposition is easiest to understand as a sequence:
+
+``` text
+subject beta blocks -> small effect-by-effect moments -> pooled raw moment -> design/kernel geometry -> components
+```
+
+The first arrow summarizes spatial covariation within each subject. The
+middle step combines subjects. Only then does the design kernel say
+which directions in effect space should count as nearby or important.
+This ordering is why missingness and precision must be handled before
+the kernel transform.
+
 ## What enters the decomposition?
+
+Terms used throughout this page and the rest of the suite are defined in
+`?dkge-glossary`: effect space, design kernel, salience, cross-fitting,
+reference support, functional correspondence, template, aligned subject
+rows, inference, rendering, medoid, transport, and the estimand each
+analysis targets.
 
 For subject $`s`$, let $`B_s`$ be the `q` by `P_s` beta matrix. In the
 simplest unweighted case, its raw effect-space moment is
@@ -37,6 +55,12 @@ DKGE eigendecomposes $`\widehat C`$, then maps its retained eigenvectors
 back through $`K^{-1/2}`$ to obtain the group basis $`U`$. The columns
 of $`U`$ are K-orthonormal: $`U^\top K U = I`$.
 
+In plain language, (M) records which effects tend to have large spatial
+patterns together. (R) puts subjects’ design estimates on a common
+ruler. (K) defines the scientific geometry among effect directions. The
+eigensolve then finds a small set of directions that summarize the
+transformed moment.
+
 You can inspect each stage on a fitted object:
 
 ``` r
@@ -57,6 +81,20 @@ c(
 #>                   5                   5                   2
 ```
 
+The three matrices below make the transformation concrete. Each panel
+has its own color scale because the scientific question is the pattern
+within a matrix, not equality of raw numerical ranges across stages.
+
+![Three heatmaps showing the pooled raw effect moment, the design
+kernel, and the transformed moment used for the
+eigendecomposition.](dkge-concepts_files/figure-html/moment-panels-1.png)
+
+The left panel comes from the data; the middle panel encodes the chosen
+design geometry; the right panel is the matrix actually decomposed. A
+strong pattern in the right panel is therefore a joint consequence of
+empirical covariance and modeling choices, not a feature discovered
+independently of the kernel.
+
 **Input:** subject effect moments.
 
 **Output:** a low-rank basis in the kernel metric.
@@ -68,10 +106,10 @@ or project a prespecified contrast with
 
 ## What does the kernel change?
 
-The kernel is a metric, not a fixed set of component directions. It
-changes which effect-space directions count as large or smooth during
-the eigensolve; the empirical moment still determines the fitted
-components.
+The kernel sets the metric. Component directions are estimated under it:
+the kernel changes which effect-space directions count as large or
+smooth during the eigensolve; the empirical moment still determines the
+fitted components.
 
 An identity kernel is the essential baseline. It applies no
 kernel-imposed coupling among effects, although the full subject-level
@@ -148,7 +186,9 @@ be chosen and reported, not used as silent repairs.
 
 See
 [`vignette("dkge-partial-effect-spaces")`](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md)
-for the runnable workflow and
+for the coverage contract,
+[`vignette("dkge-unbalanced-trialwise")`](https://bbuchsbaum.github.io/dkge/articles/dkge-unbalanced-trialwise.md)
+for the runnable workflow, and
 [`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
 for the distinction among effect, subject, spatial, and transport
 weights.
@@ -164,7 +204,7 @@ outcome.
 | Component diagnostics | How much fitted variation is retained, and how sensitive is the subspace to refitting choices? | eigenspectrum, identity comparison, [`dkge_plot_subspace_stability()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_subspace_stability.md) | inferential reliability or that a particular contrast is non-zero |
 | Aggregate component inference | Is a prespecified aggregate component statistic unusual under its resampling null? | [`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md), [`dkge_aggregate_bootstrap()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_bootstrap.md) | validity for the subject-wise q-space fit or an untested contrast |
 | Contrast | Does a prespecified effect-space contrast produce a reproducible field? | `dkge_contrast(method = "loso")`, bootstrap or analytic contrast inference | spatial localization without transport and multiplicity control |
-| Feature | Where is a component or contrast expressed after alignment? | [`dkge_component_stats()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_stats.md), [`dkge_transport_contrasts_to_medoid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_medoid.md) | that the latent direction was selected without bias |
+| Feature | Where is a prespecified contrast expressed after identified alignment? | [`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md), [`dkge_infer_aligned()`](https://bbuchsbaum.github.io/dkge/reference/dkge_infer_aligned.md) | that the latent direction was selected without bias or that an approximate alignment is exact |
 | Between-subject term | Is a subject-level covariate associated with a named multivariate target? | [`dkge_between_rrr()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_rrr.md), [`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md) | a test of the DKGE component itself, or a causal effect without identification assumptions |
 
 For population claims, the subject is the resampling unit. Clusters,
@@ -182,6 +222,40 @@ questions; use the branch that matches the estimand.
 Likewise, a contrast can describe a controlled model comparison in
 observational data without identifying a causal effect. Causal language
 requires design and identification assumptions outside DKGE itself.
+
+## How the pieces fit together
+
+A DKGE analysis moves through four stages, and each one has a public
+entry point:
+
+1.  **Harmonize** subject data with
+    [`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
+    and
+    [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md),
+    so every subject’s beta rows carry the same effect labels.
+2.  **Fit** a group embedding with
+    [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md),
+    which compresses to effect space and solves for the shared basis
+    under the design kernel.
+3.  **Cross-fit** a prespecified contrast with
+    [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md),
+    so no subject’s own data shapes the basis used to score it.
+4.  **Align** the resulting fields onto an identified support with typed
+    functional features,
+    [`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md),
+    and
+    [`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md).
+
+The effect-space basis, reference support, fitted correspondence,
+functional template, aligned subject rows, group inference, and renderer
+are distinct objects. In particular, a coordinate grid has no functional
+mapping until features have been learned on it. See
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md).
+
+[`dkge_pipeline()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pipeline.md)
+runs all four in one call. `CONTRIBUTING.md` in the package repository
+carries the implementation map for contributors: which source file owns
+each stage, and the rules for changing them.
 
 ## What should you decide before fitting?
 
@@ -209,20 +283,10 @@ Use this sequence:
 7.  **Transport only with defensible features.** Record coordinates,
     masses, mapper diagnostics, and reference choice.
 
-## See also
-
-- [`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md)
-  — end-to-end pipeline
-- [`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md)
-  — kernel construction and CV-based selection
-- [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
-  — LOSO, analytic, and bootstrap inference details
-- [`vignette("dkge-components")`](https://bbuchsbaum.github.io/dkge/articles/dkge-components.md)
-  — component interpretation and rotation
-- [`vignette("dkge-vs-pls")`](https://bbuchsbaum.github.io/dkge/articles/dkge-vs-pls.md)
-  — detailed comparison with classical PLSC
-- [`vignette("dkge-between-subjects")`](https://bbuchsbaum.github.io/dkge/articles/dkge-between-subjects.md)
-  — subject-level RRR and permutation tests
-- [`vignette("dkge-partial-effect-spaces")`](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md)
-  — partial cell coverage, effect-precision weighting, and trialwise
-  debiasing
+The next practical pages are
+[`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md)
+for kernel construction,
+[`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
+for contrast uncertainty, and
+[`vignette("dkge-between-subjects")`](https://bbuchsbaum.github.io/dkge/articles/dkge-between-subjects.md)
+for subject-level associations.

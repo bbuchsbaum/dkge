@@ -1,7 +1,8 @@
 # Compute per-component variance explained
 
 Returns the standard deviation, variance, and cumulative variance
-explained by the DKGE components extracted in \[dkge_fit()\].
+explained by the DKGE components extracted in
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
 
 ## Usage
 
@@ -13,7 +14,7 @@ dkge_variance_explained(fit, relative_to = c("kept", "total"))
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - relative_to:
 
@@ -22,8 +23,8 @@ dkge_variance_explained(fit, relative_to = c("kept", "total"))
 
 ## Value
 
-Data frame with columns \`component\`, \`sdev\`, \`variance\`,
-\`prop_var\`, and \`cum_prop_var\`.
+Data frame with columns `component`, `sdev`, `variance`, `prop_var`, and
+`cum_prop_var`.
 
 ## Examples
 
@@ -35,7 +36,7 @@ toy <- dkge_sim_toy(
 fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 #> Warning: Argument 'kernel' is deprecated; use 'K' instead.
 dkge_variance_explained(fit)
-#>   component      sdev  variance  prop_var cum_prop_var
-#> 1         1 10.506306 110.38246 0.5383834    0.5383834
-#> 2         2  9.728478  94.64328 0.4616166    1.0000000
+#>   component      sdev variance  prop_var cum_prop_var
+#> 1         1 10.506317 110.3827 0.5383836    0.5383836
+#> 2         2  9.728484  94.6434 0.4616164    1.0000000
 ```

@@ -26,8 +26,7 @@ dkge_one_se(scores, param_col = "param", metric_col = "score")
 
 ## Value
 
-List with \`best\`, \`pick\`, and \`summary\` table of mean/se by
-parameter.
+List with `best`, `pick`, and `summary` table of mean/se by parameter.
 
 ## Examples
 

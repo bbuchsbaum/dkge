@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="Between-Subject Multivariate Modeling">
+<meta name="description" content="Ask whether group, trait, or covariate effects are distributed across a brain-derived feature vector per subject.
+">
+<meta property="og:description" content="Ask whether group, trait, or covariate effects are distributed across a brain-derived feature vector per subject.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,7 +93,7 @@
       <h1>Between-Subject Multivariate Modeling</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-between-subjects.Rmd" class="external-link"><code>vignettes/dkge-between-subjects.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-between-subjects.Rmd" class="external-link"><code>vignettes/dkge-between-subjects.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-between-subjects.Rmd</code></div>
     </div>
 
@@ -97,6 +105,12 @@ across that vector. The between-subject DKGE layer fits one supervised
 multivariate model and returns a coefficient map and a resampling test
 for each model term. The features may be component scores, transported
 parcels, or any common-space subject-by-feature matrix.</p>
+<p>This layer exists because within-subject and between-subject
+questions are not interchangeable. A task contrast asks how conditions
+differ <em>inside</em> a subject. A group or trait model asks why a
+common brain representation differs <em>across</em> subjects. Treating
+group as if every subject observed both group levels would use the wrong
+experimental unit.</p>
 <p>The workflow has three steps:</p>
 <ol style="list-style-type: decimal">
 <li>build a subject-by-feature target with
@@ -110,6 +124,10 @@ parcels, or any common-space subject-by-feature matrix.</p>
 <code><a href="../reference/dkge_between_permute.html">dkge_between_permute()</a></code>
 </li>
 </ol>
+<pre class="text"><code>one common-space row per subject (Y) + subject metadata (X) -&gt; distributed coefficient map (B) -&gt; term-level resampling test</code></pre>
+<p>The first example is the shortest path. The residual-rotation and
+calibration sections explain when its p-values are defensible; they are
+reference material you can return to after the object flow is clear.</p>
 <div class="section level2">
 <h2 id="what-does-the-second-level-model-estimate">What does the second-level model estimate?<a class="anchor" aria-label="anchor" href="#what-does-the-second-level-model-estimate"></a>
 </h2>
@@ -117,16 +135,16 @@ parcels, or any common-space subject-by-feature matrix.</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><mi>X</mi><mi>B</mi><mo>+</mo><mi>E</mi><mo>,</mo><mspace width="2.0em"></mspace><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">k</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>B</mi><mo stretchy="false" form="postfix">)</mo><mo>≤</mo><mi>r</mi></mrow><annotation encoding="application/x-tex">
 Y = X B + E, \qquad \mathrm{rank}(B) \le r
 </annotation></semantics></math></p>
-<p>Here <code>Y</code> is a subject-by-feature matrix, <code>X</code> is
-the subject-level design matrix, and <code>B</code> contains distributed
-coefficient maps for your terms of interest.</p>
+<p><code>Y</code> is a subject-by-feature matrix, <code>X</code> is the
+subject-level design, and <code>B</code> holds the distributed effects
+the model estimates.</p>
 </div>
 <div class="section level2">
 <h2 id="how-do-you-fit-a-direct-subject-by-feature-matrix">How do you fit a direct subject-by-feature matrix?<a class="anchor" aria-label="anchor" href="#how-do-you-fit-a-direct-subject-by-feature-matrix"></a>
 </h2>
 <p>In the simplest case you already have a common-space matrix with one
 row per subject.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">subject_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  subject_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"s"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">18</span><span class="op">)</span>,</span>
 <span>  group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"patient"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">9</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -147,16 +165,24 @@ row per subject.</p>
 <span><span class="va">target</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_make_target.html">dkge_make_target</a></span><span class="op">(</span>Y <span class="op">=</span> <span class="va">Y</span><span class="op">)</span></span>
 <span><span class="va">fit_between</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_between_rrr.html">dkge_between_rrr</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">design</span>, rank <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>You can inspect the fitted term map directly.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/dkge_term_map.html">dkge_term_map</a></span><span class="op">(</span><span class="va">fit_between</span>, <span class="st">"grouppatient:trait"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">interaction_map</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_term_map.html">dkge_term_map</a></span><span class="op">(</span><span class="va">fit_between</span>, <span class="st">"grouppatient:trait"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">interaction_map</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; feature1 feature2 feature3 feature4 feature5 feature6 </span></span>
 <span><span class="co">#&gt;     1.94     1.02    -0.01    -0.99    -1.89    -0.96</span></span></code></pre></div>
+<p><img src="dkge-between-subjects_files/figure-html/quick-term-map-plot-1.png" class="r-plt" alt="Bar chart comparing the planted and estimated group-by-trait coefficient across six features." width="700"></p>
+<p>The alternating positive and negative coefficients are the result to
+interpret. Rank one does not mean “one significant feature”; it means
+the multivariate coefficient matrix is constrained to one shared
+response direction. The term-level resampling test below asks whether
+restoring this whole distributed pattern improves fit beyond the reduced
+model.</p>
 <p>For an unweighted, single-block model with a scientifically
 defensible Gaussian row-sphericity assumption, request a residual-space
 rotation test. The <code>terms</code> argument controls which formula
 terms are tested; it does not refit a different full model for each
 term.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">perm_between</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_between_permute.html">dkge_between_permute</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit_between</span>,</span>
 <span>  terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"group"</span>, <span class="st">"trait"</span>, <span class="st">"group:trait"</span><span class="op">)</span>,</span>
@@ -172,10 +198,11 @@ term.</p>
 <span><span class="co">#&gt; group             group 5.040060e-07 0.99       0.99</span></span>
 <span><span class="co">#&gt; trait             trait 2.163909e-03 0.63       0.63</span></span>
 <span><span class="co">#&gt; group:trait group:trait 4.263363e+00 0.01       0.01</span></span></code></pre></div>
+<p><img src="dkge-between-subjects_files/figure-html/quick-permutation-plot-1.png" class="r-plt" alt="Point plot of adjusted resampling p-values for group, trait, and group-by-trait terms." width="700"></p>
 <p>The global statistic is the reduction in residual sum of squares when
 the tested term is restored to the reduced model. Both methods refit at
-the same fitted rank (<code>object$rank</code>). Freedman–Lane has an
-extra caveat: if dropping the tested term lowers the reduced model’s
+the same fitted rank (<code>fit_between$rank</code>). Freedman–Lane has
+an extra caveat: if dropping the tested term lowers the reduced model’s
 estimable rank below that value, the reduced fit is clipped while the
 full fit is not, so the statistic also absorbs that rank difference.
 Rotation does not clip — the reduced design stays in <code>Q0</code> and
@@ -211,7 +238,7 @@ matrix-normal null with independent, homoscedastic subject rows. It is
 only approximate for heteroscedastic, clustered, or non-Gaussian subject
 errors. The result records that contract rather than asking you to
 remember it:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">perm_between</span><span class="op">$</span><span class="va">resampling_assumptions</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                                                                       exact_under </span></span>
 <span><span class="co">#&gt; "matrix-normal null with independent homoscedastic subject rows and arbitrary feature covariance" </span></span>
@@ -355,13 +382,14 @@ assumptions or recover the unadjusted power gap.</p>
 <div class="section level2">
 <h2 id="how-do-you-build-the-target-from-a-dkge-fit">How do you build the target from a DKGE fit?<a class="anchor" aria-label="anchor" href="#how-do-you-build-the-target-from-a-dkge-fit"></a>
 </h2>
-<p>The more DKGE-native path is to let DKGE construct the subject
-representation first, then model subjects in that common target
-space.</p>
-<p>This example starts from heterogeneous subject maps, fits DKGE,
-transports one contrast to a medoid subject, and then applies the
-between-subject model.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>The DKGE-native path builds the subject representation first, then
+models subjects in that space rather than in raw feature space.</p>
+<p>This example starts from heterogeneous subject maps, fits DKGE, uses
+a separate simulated acquisition to identify functional correspondence,
+selects a reference support, and models the aligned subject rows. The
+reference is a display/support choice, not a privileged source of
+truth.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_sim_toy.html">dkge_sim_toy</a></span><span class="op">(</span></span>
 <span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, phase <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  active_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"phase"</span><span class="op">)</span>,</span>
@@ -381,35 +409,62 @@ between-subject model.</p>
 <span>  <span class="va">X</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="va">centroids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">B</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">B</span><span class="op">)</span> <span class="op">*</span> <span class="fl">3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">B</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">centroids</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span></span>
+<span></span>
+<span><span class="va">alignment_toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_sim_toy.html">dkge_sim_toy</a></span><span class="op">(</span></span>
+<span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, phase <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  active_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"phase"</span><span class="op">)</span>,</span>
+<span>  S <span class="op">=</span> <span class="fl">6</span>,</span>
+<span>  P <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">3</span>, <span class="fl">6</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span>,</span>
+<span>  snr <span class="op">=</span> <span class="fl">6</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">10</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">alignment_betas</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">alignment_toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="kw">function</span><span class="op">(</span><span class="va">B</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">B</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">effects</span></span>
+<span>  <span class="va">B</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">alignment_betas</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span></span>
 <span></span>
 <span><span class="va">fit_dkge</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_fit.html">dkge_fit</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/dkge_data.html">dkge_data</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, designs <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, subject_ids <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span><span class="op">)</span>,</span>
 <span>  K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>,</span>
 <span>  rank <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">transport</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_transport_spec.html">dkge_transport_spec</a></span><span class="op">(</span></span>
-<span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
-<span>  medoid <span class="op">=</span> <span class="fl">1L</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"sinkhorn"</span>,</span>
-<span>  epsilon <span class="op">=</span> <span class="fl">0.1</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="st">"condition"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="st">"condition"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">contrast</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">effects</span></span>
 <span></span>
-<span><span class="va">transported_target</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_make_target.html">dkge_make_target</a></span><span class="op">(</span></span>
+<span><span class="va">contrast_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_contrast.html">dkge_contrast</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit_dkge</span>, <span class="va">contrast</span>, method <span class="op">=</span> <span class="st">"loso"</span>, align <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">alignment_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_alignment_features.html">dkge_alignment_features</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit_dkge</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"transported_maps"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="va">contrast</span>,</span>
-<span>  transport <span class="op">=</span> <span class="va">transport</span>,</span>
-<span>  crossfit <span class="op">=</span> <span class="st">"analytic"</span></span>
+<span>  <span class="va">contrast_result</span>,</span>
+<span>  independent_betas <span class="op">=</span> <span class="va">alignment_betas</span>,</span>
+<span>  independent_data_hash <span class="op">=</span> <span class="st">"between-subjects-independent-acquisition"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">mapped</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_transport_contrasts_to_reference.html">dkge_transport_contrasts_to_reference</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit_dkge</span>,</span>
+<span>  <span class="va">contrast_result</span>,</span>
+<span>  alignment_features <span class="op">=</span> <span class="va">alignment_features</span>,</span>
+<span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
+<span>  selection_method <span class="op">=</span> <span class="st">"geometry_only"</span>,</span>
+<span>  mapper <span class="op">=</span> <span class="fu"><a href="../reference/dkge_mapper_spec.html">dkge_mapper_spec</a></span><span class="op">(</span><span class="st">"sinkhorn"</span>, epsilon <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">transported_target</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_make_target.html">dkge_make_target</a></span><span class="op">(</span></span>
+<span>  type <span class="op">=</span> <span class="st">"matrix"</span>,</span>
+<span>  Y <span class="op">=</span> <span class="va">mapped</span><span class="op">[[</span><span class="st">"condition"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">subj_values</span>,</span>
+<span>  subject_ids <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span>,</span>
+<span>  provenance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    source <span class="op">=</span> <span class="st">"dkge_aligned_maps"</span>,</span>
+<span>    alignment_status <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">mapped</span>, <span class="st">"aligned_maps"</span><span class="op">)</span><span class="op">$</span><span class="va">eligibility</span><span class="op">$</span><span class="va">status</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">transported_target</span><span class="op">$</span><span class="va">Y</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 6 4</span></span></code></pre></div>
 <p>Now the second-level model looks the same as before.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">subject_meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  subject_id <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span>,</span>
 <span>  group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"control"</span>, <span class="st">"control"</span>, <span class="st">"patient"</span>, <span class="st">"patient"</span>, <span class="st">"patient"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -428,9 +483,9 @@ between-subject model.</p>
 <span></span>
 <span><span class="va">perm_transport</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"term"</span>, <span class="st">"p"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;                    term    p</span></span>
-<span><span class="co">#&gt; group             group 0.76</span></span>
-<span><span class="co">#&gt; trait             trait 0.78</span></span>
-<span><span class="co">#&gt; group:trait group:trait 1.00</span></span></code></pre></div>
+<span><span class="co">#&gt; group             group 0.94</span></span>
+<span><span class="co">#&gt; trait             trait 0.50</span></span>
+<span><span class="co">#&gt; group:trait group:trait 0.40</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="what-should-you-inspect-after-fitting">What should you inspect after fitting?<a class="anchor" aria-label="anchor" href="#what-should-you-inspect-after-fitting"></a>
@@ -447,10 +502,9 @@ the term-specific map</li>
 <code>perm_transport$summary</code> gives a global multivariate
 resampling test for each term</li>
 </ul>
-<p>If you asked for featurewise inference,
+<p>With featurewise inference requested,
 <code>perm_between$feature_tests[["group:trait"]]</code> adds
-per-feature statistics and adjusted p-values in the same target
-space.</p>
+per-feature statistics alongside the omnibus test.</p>
 <p>Report the target construction, fitted rank, tested term, resampling
 method, number of resamples, exchangeability assumptions, and
 multiplicity adjustment. Do not describe a term-level p-value as
@@ -460,9 +514,11 @@ evidence that every feature in its map is individually significant.</p>
 <h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
 </h2>
 <p>Use <code>type = "component_scores"</code> in
-<code><a href="../reference/dkge_make_target.html">dkge_make_target()</a></code> when you want a compact latent target,
-and use <code>type = "transported_maps"</code> when spatial
-interpretation in a common map space matters. See
+<code><a href="../reference/dkge_make_target.html">dkge_make_target()</a></code> when you want a compact latent target.
+When spatial interpretation in a common map space matters, fit alignment
+explicitly and wrap its aligned rows as the matrix target, as above. See
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code> for held-out
+functional reference selection and template fitting, and
 <code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> for within-subject
 contrast inference. For cohorts with partial or unbalanced effect grids,
 first see <code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> for the

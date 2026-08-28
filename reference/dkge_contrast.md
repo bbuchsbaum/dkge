@@ -17,6 +17,7 @@ dkge_contrast(
   verbose = FALSE,
   align = TRUE,
   transport = NULL,
+  collinearity_tol = 0.05,
   ...
 )
 ```
@@ -25,7 +26,9 @@ dkge_contrast(
 
 - fit:
 
-  A \`dkge\` object from \[dkge_fit()\] or \[dkge()\]
+  A `dkge` object from
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+  or [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md)
 
 - contrasts:
 
@@ -40,7 +43,8 @@ dkge_contrast(
 - folds:
 
   For method="kfold", either an integer K for random folds, or a list
-  defining custom fold assignments (see \[dkge_define_folds()\])
+  defining custom fold assignments (see
+  [`dkge_define_folds()`](https://bbuchsbaum.github.io/dkge/reference/dkge_define_folds.md))
 
 - ridge:
 
@@ -48,8 +52,9 @@ dkge_contrast(
 
 - parallel:
 
-  Logical; if TRUE uses \`future.apply::future_lapply()\` for
-  per-subject work (requires the future.apply package)
+  Logical; if TRUE uses
+  [`future.apply::future_lapply()`](https://future.apply.futureverse.org/reference/future_lapply.html)
+  for per-subject work (requires the future.apply package)
 
 - verbose:
 
@@ -64,10 +69,18 @@ dkge_contrast(
 
   Optional list describing how to transport subject-level contrasts to a
   shared reference parcellation. Supply either explicit transport
-  matrices via \`transforms\`/\`matrices\`, or configuration for the
-  medoid/atlas transport helpers (e.g., \`method\`, \`centroids\`,
-  \`medoid\`). When provided, the resulting transport bundle is stored
-  under \`metadata\$transport\` for downstream reuse.
+  matrices via `transforms`/`matrices`, or configuration for the
+  medoid/atlas transport helpers (e.g., `method`, `centroids`,
+  `medoid`). When provided, the resulting transport bundle is stored
+  under `metadata$transport` for downstream reuse.
+
+- collinearity_tol:
+
+  Relative angular tolerance used to flag distinct input contrasts whose
+  kernel-transformed queries are practically proportional. The default
+  `0.05` flags absolute query correlations of at least `0.95`; use
+  `NULL` to disable this warning. This is deliberately separate from the
+  much smaller null-space tolerance used for estimability.
 
 - ...:
 
@@ -75,38 +88,55 @@ dkge_contrast(
 
 ## Value
 
-A list with class \`dkge_contrasts\` containing: - \`values\`: Named
-list of contrast values (one P_s vector per subject per contrast) -
-\`method\`: Cross-fitting method used - \`contrasts\`: Input contrast
-specifications - \`metadata\`: Method-specific metadata (fold
-assignments, bases, etc.)
+A list with class `dkge_contrasts` containing:
+
+- `values`: Named list of contrast values (one P_s vector per subject
+  per contrast)
+
+- `method`: Cross-fitting method used
+
+- `contrasts`: Input contrast specifications
+
+- `metadata`: Method-specific metadata (fold assignments, bases, etc.)
 
 ## Details
 
 This function provides a unified interface to three cross-fitting
 strategies:
 
-1\. \*\*LOSO\*\* (\`method = "loso"\`): Recomputes the basis excluding
-each subject, then projects that subject's data. This is the gold
-standard for unbiased estimation but requires S eigen-decompositions.
+1.  **LOSO** (`method = "loso"`): Recomputes the basis excluding each
+    subject, then projects that subject's data. This is the gold
+    standard for unbiased estimation but requires S
+    eigen-decompositions.
 
-2\. \*\*K-fold\*\* (\`method = "kfold"\`): Splits data into K folds,
-recomputes basis excluding each fold, projects held-out data. More
-efficient than LOSO while maintaining good bias properties. Supports
-time-based, run-based, or custom fold definitions.
+2.  **K-fold** (`method = "kfold"`): Splits data into K folds,
+    recomputes basis excluding each fold, projects held-out data. More
+    efficient than LOSO while maintaining good bias properties. Supports
+    time-based, run-based, or custom fold definitions.
 
-3\. \*\*Analytic\*\* (\`method = "analytic"\`): Uses first-order
-eigenvalue perturbation theory to approximate the LOSO solution without
-full recomputation. Fast but may be less accurate when subjects have
-high leverage.
+3.  **Analytic** (`method = "analytic"`): Uses first-order eigenvalue
+    perturbation theory to approximate the LOSO solution without full
+    recomputation. Fast but may be less accurate when subjects have high
+    leverage.
 
 All methods work entirely in the qxq design space and respect the
-K-metric throughout. Multiple contrasts can be evaluated simultaneously
-for efficiency.
+K-metric throughout. A semidefinite kernel defines a quotient effect
+space: `dkge_contrast()` errors when a contrast lies wholly in
+`null(K)`, warns when only part of a contrast is represented, and
+reports transformed-query collisions in `metadata$kernel_query_pairs`.
+Multiple contrasts can be evaluated simultaneously for efficiency.
+
+Exact fold replay currently supports fits made with `solver = "pooled"`
+and `cpca_part = "none"`. CPCA and joint-diagonalization fits fail
+closed for all three methods; DKGE does not replace their fitted
+estimator with an ordinary pooled eigensolve while calling the result
+cross-fitted.
 
 ## See also
 
-\[dkge_loso_contrast()\], \[dkge_define_folds()\], \[dkge_infer()\]
+[`dkge_loso_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_loso_contrast.md),
+[`dkge_define_folds()`](https://bbuchsbaum.github.io/dkge/reference/dkge_define_folds.md),
+[`dkge_infer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_infer.md)
 
 ## Examples
 

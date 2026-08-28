@@ -25,8 +25,11 @@ dkge_run_service(service, ...)
 
 - service:
 
-  A service object created by \`dkge_contrast_service()\`,
-  \`dkge_inference_service()\`, or \`dkge_transport_service()\`
+  A service object created by
+  [`dkge_contrast_service()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast_service.md),
+  [`dkge_inference_service()`](https://bbuchsbaum.github.io/dkge/reference/dkge_inference_service.md),
+  or
+  [`dkge_transport_service()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_service.md)
 
 - ...:
 

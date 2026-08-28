@@ -20,30 +20,34 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -65,61 +69,70 @@
       <div class="section-desc"></div>
 
       <dl><dt><a href="dkge.html">Getting Started with DKGE</a></dt>
-        <dd>
+        <dd><p>Fit a first DKGE model from per-subject GLM betas, read its components, and find the page that answers your next question.</p>
         </dd><dt><a href="dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></dt>
-        <dd>
+        <dd><p>Take subject beta matrices to a shared map: fit, read components, obtain held-out contrast fields, and transport them to one parcellation.</p>
+        </dd><dt><a href="dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></dt>
+        <dd><p>Separate what DKGE estimates from what you may claim about it, and decide the estimand before fitting.</p>
       </dd></dl></div>
     <div class="section ">
       <h3>Core analysis</h3>
       <div class="section-desc"></div>
 
       <dl><dt><a href="dkge-design-kernels.html">Design Kernels and Model Tuning</a></dt>
-        <dd>
-        </dd><dt><a href="dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></dt>
-        <dd>
-        </dd><dt><a href="dkge-classification.html">Classification with DKGE</a></dt>
-        <dd>
+        <dd><p>Choose a design kernel that states a scientific belief, and compare candidates on held-out subjects rather than on fit.</p>
+        </dd><dt><a href="dkge-contrasts-inference.html">Contrasts and Inference</a></dt>
+        <dd><p>Build a prespecified contrast, evaluate it out of sample with LOSO, and choose between the analytic and bootstrap routes to inference.</p>
         </dd><dt><a href="dkge-components.html">Components and Interpretability</a></dt>
-        <dd>
+        <dd><p>Read a fitted component in effect space and on shared clusters, and rotate or project it without treating description as inference.</p>
+        </dd><dt><a href="dkge-classification.html">Classification with DKGE</a></dt>
+        <dd><p>Cross-validate a latent classifier on DKGE components, choose between cell and cell_cross modes, and read the decoding result honestly.</p>
+      </dd></dl></div>
+    <div class="section ">
+      <h3>Study design extensions</h3>
+      <div class="section-desc"></div>
+
+      <dl><dt><a href="dkge-partial-effect-spaces.html">Partial Effect Spaces</a></dt>
+        <dd><p>Declare a partial global effect grid, align subject-local rows to it, and choose a coverage policy before any fit.</p>
+        </dd><dt><a href="dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></dt>
+        <dd><p>Fit an unbalanced 3 x 5 x 4 trialwise design with count weighting, analytic debiasing, and a split-half alternative.</p>
         </dd><dt><a href="dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></dt>
-        <dd>
-        </dd><dt><a href="dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></dt>
-        <dd>
-        </dd><dt><a href="dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></dt>
-        <dd>
+        <dd><p>Ask whether group, trait, or covariate effects are distributed across a brain-derived feature vector per subject.</p>
       </dd></dl></div>
     <div class="section ">
       <h3>Weighting</h3>
       <div class="section-desc"></div>
 
       <dl><dt><a href="dkge-weighting.html">Weighting Strategies in DKGE</a></dt>
-        <dd>
+        <dd><p>Separate location metrics, model-level spatial regularization, subject weights, and transport masses, and see which object each one changes.</p>
         </dd><dt><a href="dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></dt>
-        <dd>
+        <dd><p>Define, inspect, and structurally check a training-fold voxel weighting rule with <code><a href="../reference/dkge_weights.html">dkge_weights()</a></code>.</p>
       </dd></dl></div>
     <div class="section ">
       <h3>Spatial mapping</h3>
       <div class="section-desc"></div>
 
-      <dl><dt><a href="dkge-dense-rendering.html">Transport and Dense Rendering</a></dt>
+      <dl><dt><a href="dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></dt>
+        <dd><p>Build a graph Laplacian with adjoin, let smoothing change the fitted DKGE solution, tune its strength on raw held-out fields, and carry it into inference.</p>
+        </dd><dt><a href="dkge-dense-rendering.html">Transport and Dense Rendering</a></dt>
+        <dd><p>Transport subject-specific cluster values onto a shared anchor space and render them as a dense field.</p>
+        </dd><dt><a href="dkge-functional-alignment.html">Functional alignment across subjects</a></dt>
         <dd>
         </dd><dt><a href="dkge-anchors.html">Feature-Anchored DKGE</a></dt>
-        <dd>
-        </dd><dt><a href="dkge-performance.html">Mapper Customisation and Performance</a></dt>
-        <dd>
+        <dd><p>Align subjects whose items differ by using feature anchors instead of a shared discrete effect grid.</p>
+        </dd><dt><a href="dkge-performance.html">Mapper Customization and Performance</a></dt>
+        <dd><p>Choose and cache a spatial mapper, or add your own, when transport dominates runtime.</p>
       </dd></dl></div>
     <div class="section ">
       <h3>Extras</h3>
       <div class="section-desc"></div>
 
       <dl><dt><a href="dkge-plotting.html">Plotting DKGE Fits</a></dt>
-        <dd>
+        <dd><p>Read a fitted DKGE model through its scree, salience, contribution, and stability panels, and know what each one does not establish.</p>
         </dd><dt><a href="dkge-cpca.html">CPCA Filtering</a></dt>
-        <dd>
+        <dd><p>Split the compressed covariance into design-aligned and residual parts before eigendecomposition.</p>
         </dd><dt><a href="dkge-vs-pls.html">DKGE versus Partial Least Squares</a></dt>
-        <dd>
-        </dd><dt><a href="dkge-architecture.html">DKGE Architecture Guide</a></dt>
-        <dd>
+        <dd><p>Compare DKGE with PLS on estimand, input contract, and inference route rather than on accuracy.</p>
       </dd></dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -20,12 +20,12 @@ dkge_plot_component_contrast_scores(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - basis:
 
   Optional custom q-by-m matrix. Row names, when present, are matched to
-  \`fit\$effects\`.
+  `fit$effects`.
 
 - comps:
 
@@ -37,21 +37,21 @@ dkge_plot_component_contrast_scores(
 
 - coding:
 
-  Contrast coding for automatically built factorial bases: \`"sum"\`,
-  \`"helmert"\`, or \`"poly"\`.
+  Contrast coding for automatically built factorial bases: `"sum"`,
+  `"helmert"`, or `"poly"`.
 
 - normalize:
 
   Column scaling applied to automatically built bases, including the
   identity fallback used when the fit carries no design-cell metadata:
-  \`"unit_K"\` (default) gives every column unit K-norm, \\\sqrt{c^\top
-  K c} = 1\\; \`"unit_l2"\` gives unit Euclidean norm; and \`"none"\`
-  leaves the coding matrix unscaled. User-supplied \`basis\` matrices
-  are never rescaled.
+  `"unit_K"` (default) gives every column unit K-norm, \\\sqrt{c^\top K
+  c} = 1\\; `"unit_l2"` gives unit Euclidean norm; and `"none"` leaves
+  the coding matrix unscaled. User-supplied `basis` matrices are never
+  rescaled.
 
 - type:
 
-  Plot type: \`"heatmap"\` for compact comparison, \`"bars"\` for a
+  Plot type: `"heatmap"` for compact comparison, `"bars"` for a
   component-by-component coordinate plot.
 
 ## Value

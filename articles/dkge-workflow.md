@@ -12,6 +12,18 @@ centroids with your own. If `q by P_s` and “design kernel” are not yet
 familiar, begin with
 [`vignette("dkge")`](https://bbuchsbaum.github.io/dkge/articles/dkge.md).
 
+The workflow has two coordinate systems. The fit and contrast are
+defined in the shared **effect space**; the final map is defined in a
+shared **spatial space**. Keeping those stages separate is the central
+organizing idea:
+
+``` text
+validate inputs -> optionally regularize spatial fields inside the fit -> fit in effect space -> name a contrast -> cross-fit subject fields -> transport to one map
+```
+
+Each section below ends by naming the object you now have and the
+operation that becomes valid next.
+
 ## What are the inputs?
 
 We use a 2 by 3 factorial design with a planted condition and load
@@ -37,12 +49,22 @@ names.
 [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md)
 validates that contract and preserves subject IDs.
 
+![Bar chart showing that all six subjects share five effects but have
+different numbers of
+clusters.](dkge-workflow_files/figure-html/input-shapes-1.png)
+
+The bars differ because each subject has a different spatial partition.
+The dashed line marks the five-row effect dimension that is common to
+every beta matrix. DKGE can pool information along that common dimension
+without pretending that cluster 7 in one subject is cluster 7 in
+another.
+
 ``` r
 
-data_bundle <- dkge_data(
+bundle <- dkge_data(
   toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids
 )
-c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+c(subjects = length(bundle$subject_ids), effects = bundle$q)
 #> subjects  effects 
 #>        6        5
 ```
@@ -52,19 +74,32 @@ effects or have very unequal cell precision, stop here and read
 [`vignette("dkge-partial-effect-spaces")`](https://bbuchsbaum.github.io/dkge/articles/dkge-partial-effect-spaces.md)
 first.
 
+If unsmoothed beta columns need a spatial prior, define it before
+fitting with
+[`dkge_spatial_regularizer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_spatial_regularizer.md)
+and pass it through `spatial =`. Although DKGE’s eigensolve is in effect
+space, the regularized beta fields change the pooled effect-space moment
+and can therefore change the learned basis. This is not the same as
+smoothing a rendered map after fitting; see
+[`vignette("dkge-spatial-regularization")`](https://bbuchsbaum.github.io/dkge/articles/dkge-spatial-regularization.md)
+for graph construction, held-out selection of `lambda`, and inference
+boundaries.
+
 ## What is the baseline fit?
 
-Start with an identity kernel. It retains the GLM/design scaling but
-adds no kernel-imposed similarity between effects.
+Start with an identity kernel and no spatial regularizer. It retains the
+GLM/design scaling but adds neither kernel-imposed similarity between
+effects nor graph-imposed similarity between spatial units.
 
 ``` r
 
-K_identity <- diag(data_bundle$q)
-fit_identity <- dkge(data_bundle, K = K_identity, rank = 2, w_method = "none")
+K_identity <- diag(bundle$q)
+fit_identity <- dkge(bundle, K = K_identity, rank = 2, w_method = "none")
 dkge_plot_scree(fit_identity)
 ```
 
-![](dkge-workflow_files/figure-html/fit-identity-1.png)
+![Scree plot for the two-component identity-kernel baseline
+fit.](dkge-workflow_files/figure-html/fit-identity-1.png)
 
 This fit returns a two-column group basis `fit_identity$U`. The scree
 plot describes variation represented by those components; it does not
@@ -85,7 +120,7 @@ weighting so the comparison isolates the kernel change.
 
 ``` r
 
-fit_structured <- dkge(data_bundle, K = toy$K, rank = 2, w_method = "none")
+fit_structured <- dkge(bundle, K = toy$K, rank = 2, w_method = "none")
 
 comparison <- data.frame(
   component = 1:2,
@@ -97,6 +132,10 @@ round(comparison, 3)
 #> 1         1    0.599       0.58
 #> 2         2    0.401       0.42
 ```
+
+![Grouped bar chart comparing variance proportions for identity and
+structured design-kernel
+fits.](dkge-workflow_files/figure-html/compare-kernel-variance-1.png)
 
 Compare the retained subspaces as well as the scree values. Because the
 bases use a kernel metric, a raw
@@ -132,7 +171,9 @@ you actually want to estimate.
 dkge_plot_effect_loadings(fit_structured, comps = 1:2)
 ```
 
-![](dkge-workflow_files/figure-html/show-effect-loadings-1.png)
+![Heatmap of effect-space saliences for the first two components under
+the structured design
+kernel.](dkge-workflow_files/figure-html/show-effect-loadings-1.png)
 
 The heatmap displays $`K U`$: effect-space saliences, not voxel
 coefficients. Look for coherent relative patterns within a component. Do
@@ -146,7 +187,7 @@ the coordinate for the planted condition term.
 
 ``` r
 
-condition_contrast <- numeric(data_bundle$q)
+condition_contrast <- numeric(bundle$q)
 condition_contrast[toy$active_cols$condition] <- 1
 
 condition_loso <- dkge_contrast(
@@ -189,31 +230,19 @@ centroids <- lapply(seq_along(toy$B_list), function(s) {
 })
 ```
 
-Use the ridge mapper for a dependency-light example and select subject 1
-as the reference parcellation:
+These coordinates are enough for geometry-only resampling, but this
+synthetic example contains no independent functional acquisition from
+which to identify parcel correspondence. It therefore stops before
+feature-level group alignment rather than silently treating subject 1 or
+a bare grid as functional truth.
 
-``` r
-
-transported <- dkge_transport_contrasts_to_medoid(
-  fit_structured,
-  condition_loso,
-  medoid = 1,
-  centroids = centroids,
-  method = "ridge"
-)
-dim(transported$condition$subj_values)
-#> [1]  6 16
-```
-
-The returned matrix has subjects in rows and reference clusters in
-columns; `transported$condition$value` is its across-subject median on
-the medoid parcellation. The attached `attr(transported, "cache")` can
-be reused for other contrasts or resampling.
-
-Transport quality depends on the features, masses, mapper, and reference
-choice. Inspect mapper diagnostics and repeat defensible sensitivity
-analyses; a successful matrix multiplication is not evidence that
-parcels are biologically homologous.
+For the complete path—independent kernel-image features, held-out
+reference selection, a group functional template, aligned subject rows,
+inference, and rendering—continue with
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md).
+The key output there is an `S` by `Q` matrix for each contrast: subjects
+are the inference units, and columns are locations on one identified
+support.
 
 ## What should you save and report?
 
@@ -224,7 +253,8 @@ For a reproducible analysis, retain:
   and the chosen rank;
 - the identity-versus-structured comparison;
 - cross-fitting folds or LOSO specification;
-- cluster coordinates, masses, mapper settings, medoid choice, and
+- cluster coordinates, masses, typed feature provenance, mapper
+  settings, reference-selection criterion, template trajectory, and
   transport diagnostics; and
 - the inference unit and multiplicity procedure for every reported
   claim.
@@ -234,6 +264,7 @@ Continue with
 for the fitted moment and inference levels,
 [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
 for uncertainty, and
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md)
+for cross-subject correspondence.
 [`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
-for the distinct roles of spatial, effect, subject, and transport
-weights.
+distinguishes spatial, effect, subject, and transport weights.

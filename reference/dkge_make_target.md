@@ -38,14 +38,13 @@ dkge_make_target(
 
 - fit:
 
-  Optional \`dkge\` object used to derive DKGE targets.
+  Optional `dkge` object used to derive DKGE targets.
 
 - type:
 
-  Target type. \`"matrix"\` wraps a supplied matrix,
-  \`"component_scores"\` averages subject component expressions, and
-  \`"transported_maps"\` builds a common-space matrix from contrast
-  values.
+  Target type. `"matrix"` wraps a supplied matrix, `"component_scores"`
+  averages subject component expressions, and `"transported_maps"`
+  builds a common-space matrix from contrast values.
 
 - Y:
 
@@ -53,15 +52,15 @@ dkge_make_target(
 
 - contrast:
 
-  Optional DKGE contrast used when \`type = "transported_maps"\`.
+  Optional DKGE contrast used when `type = "transported_maps"`.
 
 - contrast_obj:
 
-  Optional precomputed \`dkge_contrasts\` object.
+  Optional precomputed `dkge_contrasts` object.
 
 - transport:
 
-  Optional \`dkge_transport_spec\` used for transported maps.
+  Optional `dkge_transport_spec` used for transported maps.
 
 - values:
 
@@ -73,11 +72,11 @@ dkge_make_target(
 
 - centroids, sizes, medoid, mapper:
 
-  Transport inputs overriding \`transport\`.
+  Transport inputs overriding `transport`.
 
 - crossfit:
 
-  Cross-fitting method used when computing \`contrast\`.
+  Cross-fitting method used when computing `contrast`.
 
 - feature_ids, subject_ids:
 
@@ -85,11 +84,11 @@ dkge_make_target(
 
 - coverage:
 
-  Optional coverage matrix/vector aligned with \`Y\`.
+  Optional coverage matrix/vector aligned with `Y`.
 
 - precision:
 
-  Optional precision matrix/vector aligned with \`Y\`.
+  Optional precision matrix/vector aligned with `Y`.
 
 - subject_weights:
 
@@ -113,4 +112,4 @@ dkge_make_target(
 
 ## Value
 
-Object of class \`dkge_target\`.
+Object of class `dkge_target`.

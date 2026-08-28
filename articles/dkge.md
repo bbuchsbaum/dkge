@@ -16,7 +16,25 @@ kernel. It returns a low-dimensional group basis in effect space plus
 subject-level cluster values that can be cross-fitted and, when
 coordinates are available, transported to a common parcellation.
 
-## Can you fit a complete example?
+The reason for the extra machinery is the mismatch between what is
+common and what is not. Experimental effects have the same meaning
+across subjects, but their clusters often do not line up. DKGE learns
+the shared representation in the small, common effect space first;
+spatial alignment is postponed until you have a scientifically named
+component or contrast to map.
+
+``` text
+subject beta matrices       shared effect space       subject fields       common map
+  q x P1, q x P2, ...   ->     q x rank basis      ->  P1, P2, ...    ->  reference P
+  different clusters          same effects              cross-fitted          transported
+```
+
+On this page you will make one fit, read its leading components, and
+obtain a held-out contrast field. That is the shortest useful DKGE path.
+The spatial transport step appears on the next page because it requires
+coordinates and a separate alignment assumption.
+
+## What does the first fit accomplish?
 
 The package includes a simulator with known factorial structure. Here
 the planted signal involves two main effects in a 2 by 3 design. Each
@@ -43,7 +61,9 @@ fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 dkge_plot_scree(fit)
 ```
 
-![](dkge_files/figure-html/fit-example-1.png)
+![Scree plot showing the proportion and cumulative share of fitted
+variation for two DKGE
+components.](dkge_files/figure-html/fit-example-1.png)
 
 The bars show each retained component’s share of the fitted q-space
 variation; the line is cumulative. This is a descriptive summary of the
@@ -52,7 +72,10 @@ fitted latent space, not a significance test.
 ## What does a component express?
 
 Inspect the design-weighted saliences, $`K U`$, before mapping anything
-back to space. Rows are effects and columns are components.
+back to space. Rows are effects and columns are components: a salience
+says how much a named design effect contributes to a component, in the
+kernel’s metric. See `?dkge-glossary` for this and the other terms the
+documentation leans on.
 
 ``` r
 
@@ -69,6 +92,22 @@ Large positive and negative entries identify the effect directions
 associated with each component. Component signs are arbitrary, so
 interpret relative patterns rather than treating the sign itself as
 scientifically meaningful.
+
+The same values are easier to scan as a heatmap:
+
+``` r
+
+dkge_plot_effect_loadings(fit, comps = 1:2)
+```
+
+![Heatmap of design-effect saliences for the first two DKGE
+components.](dkge_files/figure-html/salience-heatmap-1.png)
+
+Read down a column. Effects with similar color and magnitude move
+together in that component; effects with opposite colors define a
+contrast-like pattern. The heatmap tells you *what the component
+combines*. It does not yet tell you where that pattern lies in the brain
+or whether it is reliable in a population.
 
 **Next operation:** use `dkge_plot_effect_loadings(fit)` for a heatmap,
 or move to a prespecified effect contrast.
@@ -105,11 +144,19 @@ a population p-value, spatial multiplicity correction, or causal
 interpretation. Those require an inference procedure matched to the
 claim and an experimental design that supports the interpretation.
 
-**Next operation:** if clusters differ across subjects, transport the
-contrast with
-[`dkge_transport_contrasts_to_medoid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_medoid.md).
-If they already share a common index, `as.matrix(condition_loso)` stacks
-them directly.
+At this point the object journey has reached the third box in the
+diagram: `condition_loso` holds one field per subject, but the field
+lengths and cluster identities can still differ. The next step is
+therefore alignment, not averaging.
+
+**Next operation:** if clusters differ across subjects, identify a
+functional feature channel and use
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md).
+If they already share a genuinely corresponding index,
+`as.matrix(condition_loso)` stacks them directly. Coordinates alone do
+not establish that correspondence; the complete, executable workflow is
+in
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md).
 
 ## What must your real data look like?
 
@@ -136,8 +183,8 @@ subjects <- Map(
   function(beta, design, id) dkge_subject(beta, design = design, id = id),
   toy$B_list, toy$X_list, toy$subject_ids
 )
-data_bundle <- dkge_data(subjects)
-c(subjects = length(data_bundle$subject_ids), effects = data_bundle$q)
+bundle <- dkge_data(subjects)
+c(subjects = length(bundle$subject_ids), effects = bundle$q)
 #> subjects  effects 
 #>        5        5
 ```

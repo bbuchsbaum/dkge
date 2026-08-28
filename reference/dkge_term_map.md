@@ -12,7 +12,7 @@ dkge_term_map(object, term, contrast = NULL, drop = TRUE)
 
 - object:
 
-  A \`dkge_between_rrr\` object.
+  A `dkge_between_rrr` object.
 
 - term:
 
@@ -21,7 +21,7 @@ dkge_term_map(object, term, contrast = NULL, drop = TRUE)
 - contrast:
 
   Optional numeric contrast over model-matrix columns. When supplied,
-  \`term\` is used only as a label.
+  `term` is used only as a label.
 
 - drop:
 

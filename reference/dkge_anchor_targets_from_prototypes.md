@@ -1,8 +1,10 @@
 # Assemble anchor targets from prototype sets
 
 Convenience helper that stacks calls to
-\[dkge_anchor_contrast_from_prototypes()\] so the resulting matrix can
-be fed directly to \[dkge_classify()\] as a weight specification.
+[`dkge_anchor_contrast_from_prototypes()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_contrast_from_prototypes.md)
+so the resulting matrix can be fed directly to
+[`dkge_classify()`](https://bbuchsbaum.github.io/dkge/reference/dkge_classify.md)
+as a weight specification.
 
 ## Usage
 
@@ -20,33 +22,33 @@ dkge_anchor_targets_from_prototypes(
 
 - anchors:
 
-  Matrix of anchor coordinates (\`L x d\`).
+  Matrix of anchor coordinates (`L x d`).
 
 - prototypes:
 
   Named list whose elements are matrices (rows = prototypes in the same
-  feature space as \`anchors\`). List names become class labels.
+  feature space as `anchors`). List names become class labels.
 
 - negatives:
 
   Optional named list of matrices providing negative prototypes per
-  class (matched by name). When \`NULL\`, classes are contrasted against
+  class (matched by name). When `NULL`, classes are contrasted against
   the origin.
 
 - sigma:
 
   Optional bandwidth passed to
-  \[dkge_anchor_contrast_from_prototypes()\]. Defaults to the per-class
-  median heuristic.
+  [`dkge_anchor_contrast_from_prototypes()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_contrast_from_prototypes.md).
+  Defaults to the per-class median heuristic.
 
 - normalize:
 
   Logical indicator forwarded to
-  \[dkge_anchor_contrast_from_prototypes()\].
+  [`dkge_anchor_contrast_from_prototypes()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_contrast_from_prototypes.md).
 
 ## Value
 
-Matrix with one row per class and \`nrow(anchors)\` columns.
+Matrix with one row per class and `nrow(anchors)` columns.
 
 ## Examples
 

@@ -18,7 +18,7 @@ dkge_anchor_contrast_from_prototypes(
 
 - anchors:
 
-  Matrix of anchor coordinates (\`L x d\`).
+  Matrix of anchor coordinates (`L x d`).
 
 - positives:
 
@@ -35,11 +35,12 @@ dkge_anchor_contrast_from_prototypes(
 
 - normalize:
 
-  Logical; L2-normalise the resulting contrast.
+  Logical; L2-normalize the resulting contrast.
 
 ## Value
 
-Numeric vector of length \`L\` suitable for \[dkge_contrast()\].
+Numeric vector of length `L` suitable for
+[`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
 
 ## Examples
 

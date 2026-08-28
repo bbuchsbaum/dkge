@@ -25,6 +25,7 @@ dkge_bootstrap_analytic(
   voxel_operator = NULL,
   perturb_tol = 0.2,
   gap_tol = 1e-06,
+  allow_approximate_alignment = FALSE,
   ...
 )
 ```
@@ -33,11 +34,12 @@ dkge_bootstrap_analytic(
 
 - fit:
 
-  A fitted \`dkge\` object.
+  A fitted `dkge` object.
 
 - contrasts:
 
-  Contrast specification accepted by \[dkge_contrast()\].
+  Contrast specification accepted by
+  [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
 
 - B:
 
@@ -45,7 +47,9 @@ dkge_bootstrap_analytic(
 
 - scheme:
 
-  Multiplier distribution (\`"poisson"\`, \`"exp"\`, or \`"bayes"\`).
+  Multiplier distribution (`"poisson"`, `"exp"`, or `"bayes"`). Poisson
+  draws are conditioned on at least one positive subject multiplier, so
+  every bootstrap replicate contains a non-empty resampled cohort.
 
 - ridge:
 
@@ -53,12 +57,14 @@ dkge_bootstrap_analytic(
 
 - align:
 
-  Logical; when \`TRUE\` the resampled bases are aligned to the baseline
+  Logical; when `TRUE` the resampled bases are aligned to the baseline
   basis via K-Procrustes before contrasts are evaluated.
 
 - allow_reflection:
 
-  Passed to \[dkge_procrustes_K()\] when aligning bases.
+  Passed to
+  [`dkge_procrustes_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_procrustes_K.md)
+  when aligning bases.
 
 - seed:
 
@@ -66,24 +72,27 @@ dkge_bootstrap_analytic(
 
 - transport_cache:
 
-  Optional cache from \[dkge_prepare_transport()\].
+  Required typed fitted alignment object produced by
+  [`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md).
+  Untyped/legacy caches and automatic full-fit correspondence are
+  refused.
 
 - mapper:
 
-  Mapper specification used when a cache is not supplied.
+  Deprecated; automatic mapper fitting is no longer permitted.
 
 - centroids:
 
-  Optional centroids overriding those stored on the fit.
+  Deprecated; correspondence must be supplied through `transport_cache`.
 
 - sizes:
 
-  Optional list of cluster weights passed to
-  \[dkge_prepare_transport()\].
+  Deprecated compatibility argument; correspondence and masses must
+  already be fixed in `transport_cache`.
 
 - medoid:
 
-  Medoid index used during transport.
+  Deprecated compatibility argument.
 
 - voxel_operator:
 
@@ -100,12 +109,25 @@ dkge_bootstrap_analytic(
   Minimum eigen-gap tolerated (in absolute value) before triggering a
   fallback to the full eigensolve.
 
+- allow_approximate_alignment:
+
+  Permit a typed alignment labelled approximate. Descriptive/ineligible
+  alignment is always refused.
+
 - ...:
 
-  Additional arguments forwarded to \[dkge_prepare_transport()\] when
-  the transport cache needs to be built.
+  Deprecated compatibility arguments; ignored.
 
 ## Value
 
-Same structure as \[dkge_bootstrap_qspace()\] with additional metadata
-on the number of fallbacks used.
+Same structure as
+[`dkge_bootstrap_qspace()`](https://bbuchsbaum.github.io/dkge/reference/dkge_bootstrap_qspace.md)
+with additional metadata on the number of fallbacks used.
+
+## Details
+
+As in
+[`dkge_bootstrap_qspace()`](https://bbuchsbaum.github.io/dkge/reference/dkge_bootstrap_qspace.md),
+stored fit weights affect only the reweighted pooled moment. Subject
+maps are aggregated with an equal-subject base estimand using the
+bootstrap multipliers alone.

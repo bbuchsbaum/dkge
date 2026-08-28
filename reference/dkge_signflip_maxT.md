@@ -3,8 +3,9 @@
 Computes cluster-wise one-sample t-statistics across subjects on
 transported values (SxQ matrix), and calibrates p-values by the
 max-\|t\| distribution under random subject-wise sign flips (symmetric
-null). This does not re-estimate DKGE, leveraging LOSO independence of
-each subject's value.
+null). The helper conditions on the supplied matrix and is exact only
+when that complete matrix is jointly row-sign invariant. It does not
+establish that an upstream adaptive DKGE estimator has this property.
 
 ## Usage
 
@@ -12,9 +13,8 @@ each subject's value.
 dkge_signflip_maxT(
   Y,
   B = 2000,
-  center = "mean",
-  tail = c("two.sided", "greater", "less"),
-  flips = NULL
+  center = c("mean", "median"),
+  tail = c("two.sided", "greater", "less")
 )
 ```
 
@@ -22,8 +22,8 @@ dkge_signflip_maxT(
 
 - Y:
 
-  SxQ matrix of subject values on the medoid parcellation
-  (rows=subjects, cols=clusters)
+  SxQ matrix of aligned subject values on one identified reference
+  support (rows = subjects, columns = support locations).
 
 - B:
 
@@ -31,25 +31,18 @@ dkge_signflip_maxT(
 
 - center:
 
-  Location statistic. The beta API supports only \`"mean"\`, matching
-  the one-sample t statistic used for observed and randomized data.
+  "mean" or "median" for the location statistic (t uses mean)
 
 - tail:
 
   "two.sided" \| "greater" \| "less"
 
-- flips:
-
-  Optional precomputed S-by-B matrix of -1/+1 signs. This is an advanced
-  reproducibility hook used to make serial and parallel execution
-  consume exactly the same randomization descriptors.
-
 ## Value
 
-A list with fields: \`stat\` (Q-vector of observed t-statistics), \`p\`
-(Q-vector of max-T family-wise-error adjusted p-values), \`p_unadj\`
-(Q-vector of per-column unadjusted permutation p-values), \`maxnull\`
-(B-vector of permutation maximum statistics), and \`flips\` (S-by-B sign
-matrix). Statistic and p-value names follow \`colnames(Y)\` (or stable
-\`feature\*\` defaults); flip rows follow \`rownames(Y)\` (or
-\`subject\*\` defaults).
+A list with fields: `stat` (Q-vector of observed t-statistics), `p`
+(Q-vector of max-T family-wise-error adjusted p-values), `p_unadj`
+(Q-vector of per-column unadjusted permutation p-values), `maxnull`
+(B-vector of permutation maximum statistics), and `flips` (S-by-B sign
+matrix). Statistic and p-value names follow `colnames(Y)` (or stable
+`feature*` defaults); flip rows follow `rownames(Y)` (or `subject*`
+defaults).

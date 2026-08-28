@@ -75,12 +75,12 @@ dkge_design_kernel(
 
 - include_intercept:
 
-  Logical; if TRUE adds a small identity ridge (controlled by \`rho0\`)
-  to keep the kernel full rank (default TRUE).
+  Logical; if TRUE adds a small identity ridge (controlled by `rho0`) to
+  keep the kernel full rank (default TRUE).
 
 - rho0:
 
-  Non-negative scalar ridge weight added when \`include_intercept\` is
+  Non-negative scalar ridge weight added when `include_intercept` is
   TRUE (default 1e-8).
 
 - basis:
@@ -91,13 +91,13 @@ dkge_design_kernel(
 - contrasts:
 
   Optional named list of per-factor contrast matrices used when
-  \`basis="effect"\`. Defaults to sum-to-zero contrasts for discrete
+  `basis="effect"`. Defaults to sum-to-zero contrasts for discrete
   factors and a single column of ones for continuous factors.
 
 - block_structure:
 
   Optional ordering of effect blocks (names matching terms). If NULL,
-  uses the order of \`terms\`.
+  uses the order of `terms`.
 
 - block_factors:
 
@@ -113,15 +113,15 @@ dkge_design_kernel(
 
 - jitter:
 
-  Small diagonal jitter added to \`K_cell\` for numerical stability
+  Small diagonal jitter added to `K_cell` for numerical stability
   (default 1e-8).
 
 ## Value
 
-A list with elements \`K\` (kernel in requested basis), \`K_cell\`
-(always returned), and \`info\` containing metadata such as factor/term
-names, mapping matrix, block indices, explicit cell/effect coordinate
-spaces, and the labels on each coordinate axis.
+A list with elements `K` (kernel in requested basis), `K_cell` (always
+returned), and `info` containing metadata such as factor/term names,
+mapping matrix, block indices, explicit cell/effect coordinate spaces,
+and the labels on each coordinate axis.
 
 ## Examples
 

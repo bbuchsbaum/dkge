@@ -12,7 +12,7 @@ dkge_inference_service(spec = NULL, ...)
 
 - spec:
 
-  Inference specification (list or \`dkge_inference_spec\`).
+  Inference specification (list or `dkge_inference_spec`).
 
 - ...:
 
@@ -20,7 +20,7 @@ dkge_inference_service(spec = NULL, ...)
 
 ## Value
 
-Object of class \`dkge_inference_service\`.
+Object of class `dkge_inference_service`.
 
 ## Examples
 

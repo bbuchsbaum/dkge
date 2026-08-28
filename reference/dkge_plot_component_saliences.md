@@ -17,7 +17,7 @@ dkge_plot_component_saliences(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - comps:
 
@@ -25,15 +25,15 @@ dkge_plot_component_saliences(
 
 - scale:
 
-  Optional within-component display scaling. \`"raw"\` leaves saliences
-  on their original scale, \`"unit"\` rescales each component to unit
-  K-norm of the underlying latent vector (see Details), and \`"zscore"\`
-  z-scores each component across effects.
+  Optional within-component display scaling. `"raw"` leaves saliences on
+  their original scale, `"unit"` rescales each component to unit K-norm
+  of the underlying latent vector (see Details), and `"zscore"` z-scores
+  each component across effects.
 
 - type:
 
-  Plot type. \`"heatmap"\` is the most general view; \`"profile"\` draws
-  one line per component across ordered effect rows.
+  Plot type. `"heatmap"` is the most general view; `"profile"` draws one
+  line per component across ordered effect rows.
 
 ## Value
 

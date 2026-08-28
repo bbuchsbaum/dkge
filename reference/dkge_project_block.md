@@ -9,7 +9,7 @@ components.
 ## Usage
 
 ``` r
-dkge_project_btil(fit, Btil)
+dkge_project_btil(fit, Btil, subject = NULL)
 
 dkge_project_block(
   fit,
@@ -25,11 +25,17 @@ dkge_project_block(
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - Btil:
 
-  Either a qxP matrix or a list of such matrices (e.g. \`fit\$Btil\`).
+  Either a qxP matrix or a list of such matrices (e.g. `fit$Btil`).
+
+- subject:
+
+  Optional training-subject index or id for a single matrix. Required
+  when the fit uses subject-specific spatial regularization. A list is
+  matched to fitted subjects positionally.
 
 - s:
 
@@ -42,7 +48,7 @@ dkge_project_block(
 - Omega_s:
 
   Optional weights (vector length P or PxP matrix) matching the columns
-  of \`B_s\`.
+  of `B_s`.
 
 - w_s:
 
@@ -50,14 +56,15 @@ dkge_project_block(
 
 - least_squares:
 
-  Logical; pass to \[multivarious::project_block()\].
+  Logical; pass to
+  [`multivarious::project_block()`](https://bbuchsbaum.github.io/multivarious/reference/project_block.html).
 
 ## Value
 
-List of Pxrank matrices; returns a single matrix when \`Btil\` is a
+List of Pxrank matrices; returns a single matrix when `Btil` is a
 matrix.
 
-Projection scores (qxrank) restricted to block \`s\`.
+Projection scores (qxrank) restricted to block `s`.
 
 ## Functions
 

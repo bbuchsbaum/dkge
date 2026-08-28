@@ -15,13 +15,12 @@ dkge_project_clusters_to_latent(fit)
 
 - fit:
 
-  Fitted object of class \`dkge\` containing \`Btil\`, \`K\`, and \`U\`.
+  Fitted object of class `dkge` containing `Btil`, `K`, and `U`.
 
 ## Value
 
-A list of length \`S\` (number of subjects). Element \`s\` is a \`P_s x
-r\` matrix holding the latent representation of subject \`s\`'s
-clusters.
+A list of length `S` (number of subjects). Element `s` is a `P_s x r`
+matrix holding the latent representation of subject `s`'s clusters.
 
 ## Examples
 

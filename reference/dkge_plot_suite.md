@@ -29,7 +29,7 @@ dkge_plot_suite(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - one_se_pick:
 
@@ -58,11 +58,13 @@ dkge_plot_suite(
 
 - info_haufe:
 
-  Optional result from \[dkge_info_map_haufe()\].
+  Optional result from
+  [`dkge_info_map_haufe()`](https://bbuchsbaum.github.io/dkge/reference/dkge_info_map_haufe.md).
 
 - info_loco:
 
-  Optional result from \[dkge_info_map_loco()\].
+  Optional result from
+  [`dkge_info_map_loco()`](https://bbuchsbaum.github.io/dkge/reference/dkge_info_map_loco.md).
 
 - top:
 

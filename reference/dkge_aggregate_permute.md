@@ -32,12 +32,13 @@ print(x, ...)
 
 - target:
 
-  A \`dkge_aggregate_target\`.
+  A `dkge_aggregate_target`.
 
 - K:
 
-  Optional aggregate-row design kernel. See \[dkge_aggregate_fit()\] for
-  the row-space convention (\`q\` = number of aggregate rows).
+  Optional aggregate-row design kernel. See
+  [`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md)
+  for the row-space convention (`q` = number of aggregate rows).
 
 - statistic:
 
@@ -49,37 +50,40 @@ print(x, ...)
 
 - group_vars:
 
-  Subject-level labels to permute. Defaults to \`target\$group_vars\`,
-  and must include all of \`target\$group_vars\`.
+  Subject-level labels to permute. Defaults to `target$group_vars`, and
+  must include all of `target$group_vars`.
 
 - rank, center:
 
-  Passed to \[dkge_aggregate_fit()\].
+  Passed to
+  [`dkge_aggregate_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_fit.md).
 
 - component:
 
-  Component index passed to \[dkge_aggregate_stat()\] for the built-in
-  statistics. It is a formal argument rather than part of \`...\`
-  because R's partial matching would otherwise bind a \`component =\`
-  argument to \`component_scale\`/\`component_contrasts\`. User-supplied
-  statistic functions do not receive it.
+  Component index passed to
+  [`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md)
+  for the built-in statistics. It is a formal argument rather than part
+  of `...` because R's partial matching would otherwise bind a
+  `component =` argument to `component_scale`/`component_contrasts`.
+  User-supplied statistic functions do not receive it.
 
 - alternative:
 
-  Direction of the permutation p-value. \`"two.sided"\` (the default)
-  compares \`abs(null)\` to \`abs(observed)\`, which is the appropriate
+  Direction of the permutation p-value. `"two.sided"` (the default)
+  compares `abs(null)` to `abs(observed)`, which is the appropriate
   choice for the signed contrast statistics returned by
-  \[dkge_aggregate_stat()\] because the component sign is arbitrary.
-  \`"greater"\`/\`"less"\` compare the signed values, and \`"greater"\`
-  is the natural choice for a non-negative statistic such as
-  \`"singular_value"\`.
+  [`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md)
+  because the component sign is arbitrary. `"greater"`/`"less"` compare
+  the signed values, and `"greater"` is the natural choice for a
+  non-negative statistic such as `"singular_value"`.
 
 - parallel:
 
-  Logical; if \`TRUE\`, evaluate draws with
-  \`future.apply::future_lapply()\`. Permutation indices are drawn up
-  front in the calling RNG stream, so results are identical for either
-  setting of \`parallel\` given the same \`seed\`.
+  Logical; if `TRUE`, evaluate draws with
+  [`future.apply::future_lapply()`](https://future.apply.futureverse.org/reference/future_lapply.html).
+  Permutation indices are drawn up front in the calling RNG stream, so
+  results are identical for either setting of `parallel` given the same
+  `seed`.
 
 - seed:
 
@@ -87,42 +91,44 @@ print(x, ...)
 
 - ...:
 
-  Additional arguments passed to \[dkge_aggregate_stat()\]. Every other
-  setting is a named formal, so a misspelled argument (\`sed = 1\` for
-  \`seed = 1\`) lands here and is reported as an error whenever
-  \`statistic\` is one of the built-ins; \`...\` reaches only
+  Additional arguments passed to
+  [`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md).
+  Every other setting is a named formal, so a misspelled argument
+  (`sed = 1` for `seed = 1`) lands here and is reported as an error
+  whenever `statistic` is one of the built-ins; `...` reaches only
   user-supplied statistic functions.
 
 - x:
 
-  A \`dkge_aggregate_permutation\` object to print.
+  A `dkge_aggregate_permutation` object to print.
 
 ## Value
 
-Object of class \`dkge_aggregate_permutation\`. \`observed\` and
-\`null\` hold signed statistics; \`p\` is computed according to
-\`alternative\`.
+Object of class `dkge_aggregate_permutation`. `observed` and `null` hold
+signed statistics; `p` is computed according to `alternative`.
 
 ## Details
 
 Because a permuted subject label changes which aggregate row each
-subject contributes to, \`group_vars\` must cover every subject-level
-variable that defines the aggregate rows (\`target\$group_vars\`).
+subject contributes to, `group_vars` must cover every subject-level
+variable that defines the aggregate rows (`target$group_vars`).
 Permuting a strict subset would let the joint set of row keys change
 from draw to draw, so it is rejected up front rather than failing
 partway through the run.
 
-Null draws are evaluated \*\*unaligned\*\*. Aligning every permutation
-to the observed fit shrinks component statistics (aligned \\sv_1 =
+Null draws are evaluated **unaligned**. Aligning every permutation to
+the observed fit shrinks component statistics (aligned \\sv_1 =
 \sqrt{\sum_k d_k^2 R\_{k1}^2} \le d_1\\) and invalidates the null at
-rank greater than one. \[dkge_aggregate_align()\] is still run so that
-\`alignment_summary\` can flag weak or near-tied components, but that
-rotation is diagnostic only and is not passed to
-\[dkge_aggregate_stat()\]. \`"two.sided"\` is the right default for
-sign-ambiguous component statistics because the unaligned component sign
-is arbitrary; \`"greater"\` remains the natural choice for the
-non-negative \`"singular_value"\` statistic. Bootstrap resampling keeps
-alignment because the observed fit is a legitimate reference for a CI.
+rank greater than one.
+[`dkge_aggregate_align()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_align.md)
+is still run so that `alignment_summary` can flag weak or near-tied
+components, but that rotation is diagnostic only and is not passed to
+[`dkge_aggregate_stat()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_stat.md).
+`"two.sided"` is the right default for sign-ambiguous component
+statistics because the unaligned component sign is arbitrary;
+`"greater"` remains the natural choice for the non-negative
+`"singular_value"` statistic. Bootstrap resampling keeps alignment
+because the observed fit is a legitimate reference for a CI.
 
 ## Examples
 

@@ -1,15 +1,20 @@
 # Freedman-Lane permutations for DKGE (scaffold)
 
 This function orchestrates Freedman-Lane permutations at the
-\*time-series\* level: for each subject, fit the reduced model (without
+*time-series* level: for each subject, fit the reduced model (without
 the effect of interest), permute residuals, reconstruct surrogate data,
 refit the full GLM to get B\* betas, then re-run DKGE LOSO to obtain a
 group statistic (e.g., max-\|t\| over medoid clusters). It requires the
 caller to provide three adapter functions (or rely on
-'fmrireg'/'neuroim2'): - fit_glm(Y_s, X_s, X0_s) -\> list(beta = qxP,
-beta0 = q0xP, resid = TxP) - resample_resid(resid_s) -\> resid_s\* (TxP)
-\[permute or phase-randomize per run\] - transport_and_stat(B_list,
-X_list, K, c) -\> scalar (e.g., max-\|t\|)
+'fmrireg'/'neuroim2'):
+
+- fit_glm(Y_s, X_s, X0_s) -\> list(beta = qxP, beta0 = q0xP, resid =
+  TxP)
+
+- resample_resid(resid_s) -\> resid_s\* (TxP) (permute or
+  phase-randomize per run)
+
+- transport_and_stat(B_list, X_list, K, c) -\> scalar (e.g., max-\|t\|)
 
 ## Usage
 

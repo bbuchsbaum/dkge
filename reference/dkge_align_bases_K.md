@@ -30,7 +30,7 @@ dkge_align_bases_K(
 
 - allow_reflection:
 
-  logical passed to \`dkge_procrustes_K\`
+  logical passed to `dkge_procrustes_K`
 
 - weights:
 

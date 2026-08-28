@@ -1,11 +1,12 @@
 # Build a trialwise DKGE subject from feature chunks
 
-Reduces successive \`T x P_block\` trialwise matrices without retaining
-a full \`T x P\` response matrix. The shared trial design and error
-model are applied to every block, and the resulting q-space coefficients
-and per-feature residual statistics are concatenated into one
-\[dkge_subject()\] record. The returned object retains one \`T x q\`
-design and one \`q x P\` beta matrix.
+Reduces successive `T x P_block` trialwise matrices without retaining a
+full `T x P` response matrix. The shared trial design and error model
+are applied to every block, and the resulting q-space coefficients and
+per-feature residual statistics are concatenated into one
+[`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md)
+record. The returned object retains one `T x q` design and one `q x P`
+beta matrix.
 
 ## Usage
 
@@ -32,14 +33,14 @@ dkge_trial_subject_chunks(
 
 - chunks:
 
-  Either a list of numeric \`T x P_block\` matrices or a function called
-  as \`chunks(i)\` that returns the next matrix and returns \`NULL\`
-  after the last block. A function source is the memory-bounded path.
+  Either a list of numeric `T x P_block` matrices or a function called
+  as `chunks(i)` that returns the next matrix and returns `NULL` after
+  the last block. A function source is the memory-bounded path.
 
 - design:
 
-  Numeric \`T x q\` second-stage design matrix. This may be a one-hot
-  cell design or a general full-rank basis design.
+  Numeric `T x q` second-stage design matrix. This may be a one-hot cell
+  design or a general full-rank basis design.
 
 - id:
 
@@ -47,27 +48,27 @@ dkge_trial_subject_chunks(
 
 - omega:
 
-  Optional final voxel/parcel weighting of length total \`P\`, or a
-  total-\`P\` square matrix. It is applied only after all chunks are
+  Optional final voxel/parcel weighting of length total `P`, or a
+  total-`P` square matrix. It is applied only after all chunks are
   reduced.
 
 - effect_precision:
 
-  Optional direct q-vector of effect precisions, or \`"split_half"\` to
+  Optional direct q-vector of effect precisions, or `"split_half"` to
   derive bounded effect precision from the stored halves with
-  \[dkge_split_effect_precision()\].
+  [`dkge_split_effect_precision()`](https://bbuchsbaum.github.io/dkge/reference/dkge_split_effect_precision.md).
 
 - trial_covariance:
 
-  Optional symmetric positive-definite \`T x T\` relative covariance of
-  trial errors. Mutually exclusive with \`trial_precision\`.
+  Optional symmetric positive-definite `T x T` relative covariance of
+  trial errors. Mutually exclusive with `trial_precision`.
 
 - trial_precision:
 
-  Optional symmetric positive-definite \`T x T\` trial precision, or a
-  function mapping a \`T x k\` matrix to its precision-weighted
+  Optional symmetric positive-definite `T x T` trial precision, or a
+  function mapping a `T x k` matrix to its precision-weighted
   counterpart. A function is materialised only in trial space for
-  validation; no \`P x P\` matrix is formed.
+  validation; no `P x P` matrix is formed.
 
 - effect_noise_cov:
 
@@ -77,20 +78,20 @@ dkge_trial_subject_chunks(
 
 - split:
 
-  Optional split-half sufficient statistic. \`"within_cell"\`
+  Optional split-half sufficient statistic. `"within_cell"`
   deterministically balances trials within each one-hot cell;
-  \`"alternate"\` alternates all trial rows; \`"run"\` assigns whole
-  runs to halves; and \`"explicit"\` uses \`split_labels\`. Both
-  half-designs must remain full rank.
+  `"alternate"` alternates all trial rows; `"run"` assigns whole runs to
+  halves; and `"explicit"` uses `split_labels`. Both half-designs must
+  remain full rank.
 
 - split_labels:
 
   Optional length-T vector containing exactly two explicit half labels.
-  Supplying it selects \`split = "explicit"\`.
+  Supplying it selects `split = "explicit"`.
 
 - run_labels:
 
-  Optional length-T run labels. With \`split = "run"\`, whole runs are
+  Optional length-T run labels. With `split = "run"`, whole runs are
   assigned deterministically to halves. With another split mode, these
   labels are used to audit whether the halves are run-disjoint.
 
@@ -110,9 +111,9 @@ dkge_trial_subject_chunks(
 
 ## Value
 
-A \`dkge_subject\` with the sufficient statistics needed by fitting. The
+A `dkge_subject` with the sufficient statistics needed by fitting. The
 full trialwise response and the reconstructible q-by-P effect score
-(\`effect_information
+(`effect_information %*% beta`) are not stored.
 
 ## Examples
 

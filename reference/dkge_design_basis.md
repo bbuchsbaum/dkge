@@ -24,12 +24,12 @@ dkge_design_basis(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - basis:
 
   Optional custom q-by-m matrix. Row names, when present, are matched to
-  \`fit\$effects\`.
+  `fit$effects`.
 
 - include_intercept:
 
@@ -37,30 +37,30 @@ dkge_design_basis(
 
 - coding:
 
-  Contrast coding for automatically built factorial bases: \`"sum"\`,
-  \`"helmert"\`, or \`"poly"\`.
+  Contrast coding for automatically built factorial bases: `"sum"`,
+  `"helmert"`, or `"poly"`.
 
 - normalize:
 
   Column scaling applied to automatically built bases, including the
   identity fallback used when the fit carries no design-cell metadata:
-  \`"unit_K"\` (default) gives every column unit K-norm, \\\sqrt{c^\top
-  K c} = 1\\; \`"unit_l2"\` gives unit Euclidean norm; and \`"none"\`
-  leaves the coding matrix unscaled. User-supplied \`basis\` matrices
-  are never rescaled.
+  `"unit_K"` (default) gives every column unit K-norm, \\\sqrt{c^\top K
+  c} = 1\\; `"unit_l2"` gives unit Euclidean norm; and `"none"` leaves
+  the coding matrix unscaled. User-supplied `basis` matrices are never
+  rescaled.
 
 ## Value
 
-A numeric matrix with attributes \`term\` and \`source\`.
+A numeric matrix with attributes `term` and `source`.
 
 ## Details
 
 Basis columns are scored against saliences through \\C^\top K U\\, so
 the comparability of coordinates across columns is governed by the K
 metric, not by Euclidean length. Normalizing to unit Euclidean norm
-(\`"unit_l2"\`) leaves columns with different K-norms — a grand-mean
+(`"unit_l2"`) leaves columns with different K-norms — a grand-mean
 column is typically inflated relative to interaction columns purely by
-the metric — which is why \`"unit_K"\` is the default.
+the metric — which is why `"unit_K"` is the default.
 
 ## Examples
 

@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="DKGE Concepts: What Is Estimated and What Can Be Claimed?">
+<meta name="description" content="Separate what DKGE estimates from what you may claim about it, and decide the estimand before fitting.
+">
+<meta property="og:description" content="Separate what DKGE estimates from what you may claim about it, and decide the estimand before fitting.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,7 +93,7 @@
       <h1>DKGE Concepts: What Is Estimated and What Can Be Claimed?</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-concepts.Rmd" class="external-link"><code>vignettes/dkge-concepts.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-concepts.Rmd" class="external-link"><code>vignettes/dkge-concepts.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-concepts.Rmd</code></div>
     </div>
 
@@ -99,9 +107,21 @@ and which level of evidence your next procedure can support.</p>
 <p>This page supplies that mental model. For runnable setup and spatial
 transport, start with <code><a href="../articles/dkge.html">vignette("dkge")</a></code> and
 <code><a href="../articles/dkge-workflow.html">vignette("dkge-workflow")</a></code>.</p>
+<p>The decomposition is easiest to understand as a sequence:</p>
+<pre class="text"><code>subject beta blocks -&gt; small effect-by-effect moments -&gt; pooled raw moment -&gt; design/kernel geometry -&gt; components</code></pre>
+<p>The first arrow summarizes spatial covariation within each subject.
+The middle step combines subjects. Only then does the design kernel say
+which directions in effect space should count as nearby or important.
+This ordering is why missingness and precision must be handled before
+the kernel transform.</p>
 <div class="section level2">
 <h2 id="what-enters-the-decomposition">What enters the decomposition?<a class="anchor" aria-label="anchor" href="#what-enters-the-decomposition"></a>
 </h2>
+<p>Terms used throughout this page and the rest of the suite are defined
+in <code>?dkge-glossary</code>: effect space, design kernel, salience,
+cross-fitting, reference support, functional correspondence, template,
+aligned subject rows, inference, rendering, medoid, transport, and the
+estimand each analysis targets.</p>
 <p>For subject
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
 let
@@ -137,8 +157,13 @@ The columns of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>U</mi><annotation encoding="application/x-tex">U</annotation></semantics></math>
 are K-orthonormal:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>U</mi><mi>⊤</mi></msup><mi>K</mi><mi>U</mi><mo>=</mo><mi>I</mi></mrow><annotation encoding="application/x-tex">U^\top K U = I</annotation></semantics></math>.</p>
+<p>In plain language, (M) records which effects tend to have large
+spatial patterns together. (R) puts subjects’ design estimates on a
+common ruler. (K) defines the scientific geometry among effect
+directions. The eigensolve then finds a small set of directions that
+summarize the transformed moment.</p>
 <p>You can inspect each stage on a fitted object:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_sim_toy.html">dkge_sim_toy</a></span><span class="op">(</span></span>
 <span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, load <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  active_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"load"</span><span class="op">)</span>,</span>
@@ -153,6 +178,15 @@ are K-orthonormal:
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;             effects    transformed_rows retained_components </span></span>
 <span><span class="co">#&gt;                   5                   5                   2</span></span></code></pre></div>
+<p>The three matrices below make the transformation concrete. Each panel
+has its own color scale because the scientific question is the pattern
+within a matrix, not equality of raw numerical ranges across stages.</p>
+<p><img src="dkge-concepts_files/figure-html/moment-panels-1.png" class="r-plt" alt="Three heatmaps showing the pooled raw effect moment, the design kernel, and the transformed moment used for the eigendecomposition." width="90%" style="display: block; margin: auto;"></p>
+<p>The left panel comes from the data; the middle panel encodes the
+chosen design geometry; the right panel is the matrix actually
+decomposed. A strong pattern in the right panel is therefore a joint
+consequence of empirical covariance and modeling choices, not a feature
+discovered independently of the kernel.</p>
 <p><strong>Input:</strong> subject effect moments.</p>
 <p><strong>Output:</strong> a low-rank basis in the kernel metric.</p>
 <p><strong>Next operation:</strong> inspect
@@ -163,10 +197,10 @@ contrast with <code><a href="../reference/dkge_contrast.html">dkge_contrast()</a
 <div class="section level2">
 <h2 id="what-does-the-kernel-change">What does the kernel change?<a class="anchor" aria-label="anchor" href="#what-does-the-kernel-change"></a>
 </h2>
-<p>The kernel is a metric, not a fixed set of component directions. It
-changes which effect-space directions count as large or smooth during
-the eigensolve; the empirical moment still determines the fitted
-components.</p>
+<p>The kernel sets the metric. Component directions are estimated under
+it: the kernel changes which effect-space directions count as large or
+smooth during the eigensolve; the empirical moment still determines the
+fitted components.</p>
 <p>An identity kernel is the essential baseline. It applies no
 kernel-imposed coupling among effects, although the full subject-level
 fit still uses GLM effect rows and, by default, the pooled design ruler
@@ -174,7 +208,7 @@ fit still uses GLM effect rows and, by default, the pooled design ruler
 A structured kernel regularizes the fit toward directions favored by its
 factor, ordinal, or block structure.</p>
 <p>Fit both versions on the same data:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span></span>
 <span>  <span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">K</span><span class="op">)</span><span class="op">)</span>, rank <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  w_method <span class="op">=</span> <span class="st">"none"</span></span>
@@ -193,7 +227,7 @@ factor, ordinal, or block structure.</p>
 <span><span class="co">#&gt; 1         1    0.615      0.568</span></span>
 <span><span class="co">#&gt; 2         2    0.385      0.432</span></span></code></pre></div>
 <p>Compare retained subspaces in the structured metric:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">angles</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_principal_angles_K.html">dkge_principal_angles_K</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit_identity</span><span class="op">$</span><span class="va">U</span>, <span class="va">fit_structured</span><span class="op">$</span><span class="va">U</span>, <span class="va">fit_structured</span><span class="op">$</span><span class="va">K</span></span>
 <span><span class="op">)</span></span>
@@ -240,8 +274,10 @@ Policies such as <code>missingness = "rescale"</code> or
 <code>"shrink"</code> change the estimand; they must be chosen and
 reported, not used as silent repairs.</p>
 <p>See <code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> for the
-runnable workflow and <code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> for the
-distinction among effect, subject, spatial, and transport weights.</p>
+coverage contract, <code><a href="../articles/dkge-unbalanced-trialwise.html">vignette("dkge-unbalanced-trialwise")</a></code>
+for the runnable workflow, and <code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code>
+for the distinction among effect, subject, spatial, and transport
+weights.</p>
 </div>
 <div class="section level2">
 <h2 id="which-claim-does-each-analysis-support">Which claim does each analysis support?<a class="anchor" aria-label="anchor" href="#which-claim-does-each-analysis-support"></a>
@@ -295,12 +331,14 @@ contrast inference</td>
 </tr>
 <tr class="even">
 <td>Feature</td>
-<td>Where is a component or contrast expressed after alignment?</td>
+<td>Where is a prespecified contrast expressed after identified
+alignment?</td>
 <td>
-<code><a href="../reference/dkge_component_stats.html">dkge_component_stats()</a></code>,
-<code><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code>
+<code><a href="../reference/dkge_transport_contrasts_to_reference.html">dkge_transport_contrasts_to_reference()</a></code>,
+<code><a href="../reference/dkge_infer_aligned.html">dkge_infer_aligned()</a></code>
 </td>
-<td>that the latent direction was selected without bias</td>
+<td>that the latent direction was selected without bias or that an
+approximate alignment is exact</td>
 </tr>
 <tr class="odd">
 <td>Between-subject term</td>
@@ -328,6 +366,40 @@ questions; use the branch that matches the estimand.</p>
 <p>Likewise, a contrast can describe a controlled model comparison in
 observational data without identifying a causal effect. Causal language
 requires design and identification assumptions outside DKGE itself.</p>
+</div>
+<div class="section level2">
+<h2 id="how-the-pieces-fit-together">How the pieces fit together<a class="anchor" aria-label="anchor" href="#how-the-pieces-fit-together"></a>
+</h2>
+<p>A DKGE analysis moves through four stages, and each one has a public
+entry point:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Harmonize</strong> subject data with
+<code><a href="../reference/dkge_subject.html">dkge_subject()</a></code> and <code><a href="../reference/dkge_data.html">dkge_data()</a></code>, so every
+subject’s beta rows carry the same effect labels.</li>
+<li>
+<strong>Fit</strong> a group embedding with <code><a href="../reference/dkge.html">dkge()</a></code>,
+which compresses to effect space and solves for the shared basis under
+the design kernel.</li>
+<li>
+<strong>Cross-fit</strong> a prespecified contrast with
+<code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code>, so no subject’s own data shapes the basis
+used to score it.</li>
+<li>
+<strong>Align</strong> the resulting fields onto an identified
+support with typed functional features,
+<code><a href="../reference/dkge_prepare_alignment.html">dkge_prepare_alignment()</a></code>, and
+<code><a href="../reference/dkge_transport_contrasts_to_reference.html">dkge_transport_contrasts_to_reference()</a></code>.</li>
+</ol>
+<p>The effect-space basis, reference support, fitted correspondence,
+functional template, aligned subject rows, group inference, and renderer
+are distinct objects. In particular, a coordinate grid has no functional
+mapping until features have been learned on it. See
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>.</p>
+<p><code><a href="../reference/dkge_pipeline.html">dkge_pipeline()</a></code> runs all four in one call.
+<code>CONTRIBUTING.md</code> in the package repository carries the
+implementation map for contributors: which source file owns each stage,
+and the rules for changing them.</p>
 </div>
 <div class="section level2">
 <h2 id="what-should-you-decide-before-fitting">What should you decide before fitting?<a class="anchor" aria-label="anchor" href="#what-should-you-decide-before-fitting"></a>
@@ -362,32 +434,11 @@ level.</li>
 <strong>Transport only with defensible features.</strong> Record
 coordinates, masses, mapper diagnostics, and reference choice.</li>
 </ol>
-</div>
-<div class="section level2">
-<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
-</h2>
-<ul>
-<li>
-<code><a href="../articles/dkge-workflow.html">vignette("dkge-workflow")</a></code> — end-to-end pipeline</li>
-<li>
-<code><a href="../articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code> — kernel construction
-and CV-based selection</li>
-<li>
-<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> — LOSO, analytic,
-and bootstrap inference details</li>
-<li>
-<code><a href="../articles/dkge-components.html">vignette("dkge-components")</a></code> — component interpretation
-and rotation</li>
-<li>
-<code><a href="../articles/dkge-vs-pls.html">vignette("dkge-vs-pls")</a></code> — detailed comparison with
-classical PLSC</li>
-<li>
-<code><a href="../articles/dkge-between-subjects.html">vignette("dkge-between-subjects")</a></code> — subject-level RRR
-and permutation tests</li>
-<li>
-<code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> — partial cell
-coverage, effect-precision weighting, and trialwise debiasing</li>
-</ul>
+<p>The next practical pages are
+<code><a href="../articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code> for kernel construction,
+<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> for contrast
+uncertainty, and <code><a href="../articles/dkge-between-subjects.html">vignette("dkge-between-subjects")</a></code> for
+subject-level associations.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

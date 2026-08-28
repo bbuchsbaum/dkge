@@ -24,30 +24,34 @@ index via Nyström, shrinkage, or intersection."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +66,7 @@ index via Nyström, shrinkage, or intersection."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Align effect kernels across subjects with partial overlap</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-align-effects.R" class="external-link"><code>R/dkge-align-effects.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-align-effects.R" class="external-link"><code>R/dkge-align-effects.R</code></a></small>
       <div class="d-none name"><code>dkge_align_effects.Rd</code></div>
     </div>
 
@@ -98,13 +102,13 @@ index via Nyström, shrinkage, or intersection.</p>
 
 
 <dl><dt id="arg-k-list">K_list<a class="anchor" aria-label="anchor" href="#arg-k-list"></a></dt>
-<dd><p>List of per-subject symmetric kernels; `K_list[[s]]` has
-dimensions `|O_s| x |O_s|`.</p></dd>
+<dd><p>List of per-subject symmetric kernels; <code>K_list[[s]]</code> has
+dimensions <code>|O_s| x |O_s|</code>.</p></dd>
 
 
 <dt id="arg-effects">effects<a class="anchor" aria-label="anchor" href="#arg-effects"></a></dt>
-<dd><p>List of character vectors. `effects[[s]]` gives the effect IDs
-associated with the rows and columns of `K_list[[s]]`.</p></dd>
+<dd><p>List of character vectors. <code>effects[[s]]</code> gives the effect IDs
+associated with the rows and columns of <code>K_list[[s]]</code>.</p></dd>
 
 
 <dt id="arg-subject-ids">subject_ids<a class="anchor" aria-label="anchor" href="#arg-subject-ids"></a></dt>
@@ -136,7 +140,7 @@ the training kernels.</p></dd>
 
 
 <dt id="arg-ensure-psd">ensure_psd<a class="anchor" aria-label="anchor" href="#arg-ensure-psd"></a></dt>
-<dd><p>Logical; when `TRUE` (default) project pooled and completed
+<dd><p>Logical; when <code>TRUE</code> (default) project pooled and completed
 matrices to the PSD cone.</p></dd>
 
 
@@ -161,34 +165,33 @@ zero-coverage entries of the group kernel.</p></dd>
 
 
 <dt id="arg-prior-weight">prior_weight<a class="anchor" aria-label="anchor" href="#arg-prior-weight"></a></dt>
-<dd><p>Blend factor in [0, 1] applied to `effect_prior` when
+<dd><p>Blend factor in <code>[0, 1]</code> applied to <code>effect_prior</code> when
 available.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>Logical; emit messages when `TRUE`.</p></dd>
+<dd><p>Logical; emit messages when <code>TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>When `folds = NULL`, a list with fields
-  - `K_aligned`: list of aligned `n x n` kernels per subject
-  - `effect_ids`: character vector of shared effect IDs
-  - `G`: pooled training kernel (when applicable)
-  - `obs_mask`: list of logical vectors indicating observed effects per
-    subject
-  - `pair_counts`: integer matrix of training coverage per effect pair
-  - `coverage`: data frame summarising training coverage per effect
-  - `mode`: completion mode used.</p>
-<p>When folds are supplied, returns `list(folds = list(...))` where each fold
-  entry includes the same fields along with `train_idx` and `test_idx`.</p>
+    <p>When <code>folds = NULL</code>, a list with fields</p><ul><li><p><code>K_aligned</code>: list of aligned <code>n x n</code> kernels per subject</p></li>
+<li><p><code>effect_ids</code>: character vector of shared effect IDs</p></li>
+<li><p><code>G</code>: pooled training kernel (when applicable)</p></li>
+<li><p><code>obs_mask</code>: list of logical vectors indicating observed effects per
+subject</p></li>
+<li><p><code>pair_counts</code>: integer matrix of training coverage per effect pair</p></li>
+<li><p><code>coverage</code>: data frame summarizing training coverage per effect</p></li>
+<li><p><code>mode</code>: completion mode used.</p></li>
+</ul><p>When folds are supplied, returns <code>list(folds = list(...))</code> where each fold
+entry includes the same fields along with <code>train_idx</code> and <code>test_idx</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The `folds` argument accepts: `NULL` (single context), a `dkge_folds` object,
-a data frame with columns `subject` and `fold`, or a list whose elements name
+    <p>The <code>folds</code> argument accepts: <code>NULL</code> (single context), a <code>dkge_folds</code> object,
+a data frame with columns <code>subject</code> and <code>fold</code>, or a list whose elements name
 the held-out subjects. Fold-specific results are returned under
-`result$folds[[f]]` with training/test indices attached.</p>
+<code>result$folds[[f]]</code> with training/test indices attached.</p>
     </div>
 
     <div class="section level2">

@@ -1,6 +1,6 @@
 # Null-coalescing helper
 
-Returns \`b\` when \`a\` is \`NULL\`, otherwise returns \`a\`.
+Returns `b` when `a` is `NULL`, otherwise returns `a`.
 
 ## Usage
 
@@ -12,8 +12,8 @@ a %||% b
 
 - a:
 
-  Primary value tested for \`NULL\`.
+  Primary value tested for `NULL`.
 
 - b:
 
-  Fallback value returned when \`a\` is \`NULL\`.
+  Fallback value returned when `a` is `NULL`.

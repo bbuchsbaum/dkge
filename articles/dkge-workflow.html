@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="DKGE Workflow: From Subject Betas to a Shared Map">
+<meta name="description" content="Take subject beta matrices to a shared map: fit, read components, obtain held-out contrast fields, and transport them to one parcellation.
+">
+<meta property="og:description" content="Take subject beta matrices to a shared map: fit, read components, obtain held-out contrast fields, and transport them to one parcellation.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,7 +93,7 @@
       <h1>DKGE Workflow: From Subject Betas to a Shared Map</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-workflow.Rmd" class="external-link"><code>vignettes/dkge-workflow.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-workflow.Rmd" class="external-link"><code>vignettes/dkge-workflow.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-workflow.Rmd</code></div>
     </div>
 
@@ -100,13 +108,20 @@ one reference parcellation.</p>
 is self-contained; replace the beta matrices, design matrices, and
 centroids with your own. If <code>q by P_s</code> and “design kernel”
 are not yet familiar, begin with <code><a href="../articles/dkge.html">vignette("dkge")</a></code>.</p>
+<p>The workflow has two coordinate systems. The fit and contrast are
+defined in the shared <strong>effect space</strong>; the final map is
+defined in a shared <strong>spatial space</strong>. Keeping those stages
+separate is the central organizing idea:</p>
+<pre class="text"><code>validate inputs -&gt; optionally regularize spatial fields inside the fit -&gt; fit in effect space -&gt; name a contrast -&gt; cross-fit subject fields -&gt; transport to one map</code></pre>
+<p>Each section below ends by naming the object you now have and the
+operation that becomes valid next.</p>
 <div class="section level2">
 <h2 id="what-are-the-inputs">What are the inputs?<a class="anchor" aria-label="anchor" href="#what-are-the-inputs"></a>
 </h2>
 <p>We use a 2 by 3 factorial design with a planted condition and load
 signal. Six subjects have different numbers of clusters, which is the
 reason transport is needed later.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_sim_toy.html">dkge_sim_toy</a></span><span class="op">(</span></span>
 <span>  factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, load <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  active_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"load"</span><span class="op">)</span>,</span>
@@ -120,27 +135,43 @@ reason transport is needed later.</p>
 subject-specific cluster counts. In real data, beta-row names must match
 design-column names. <code><a href="../reference/dkge_data.html">dkge_data()</a></code> validates that contract
 and preserves subject IDs.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">data_bundle</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_data.html">dkge_data</a></span><span class="op">(</span></span>
+<p><img src="dkge-workflow_files/figure-html/input-shapes-1.png" class="r-plt" alt="Bar chart showing that all six subjects share five effects but have different numbers of clusters." width="90%" style="display: block; margin: auto;"></p>
+<p>The bars differ because each subject has a different spatial
+partition. The dashed line marks the five-row effect dimension that is
+common to every beta matrix. DKGE can pool information along that common
+dimension without pretending that cluster 7 in one subject is cluster 7
+in another.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bundle</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_data.html">dkge_data</a></span><span class="op">(</span></span>
 <span>  <span class="va">toy</span><span class="op">$</span><span class="va">B_list</span>, designs <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">X_list</span>, subject_ids <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">subject_ids</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>subjects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">data_bundle</span><span class="op">$</span><span class="va">subject_ids</span><span class="op">)</span>, effects <span class="op">=</span> <span class="va">data_bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>subjects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">bundle</span><span class="op">$</span><span class="va">subject_ids</span><span class="op">)</span>, effects <span class="op">=</span> <span class="va">bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
 <span><span class="co">#&gt; subjects  effects </span></span>
 <span><span class="co">#&gt;        6        5</span></span></code></pre></div>
 <p><strong>Next operation:</strong> fit a low-rank group basis. If your
 subjects lack effects or have very unequal cell precision, stop here and
 read <code><a href="../articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code> first.</p>
+<p>If unsmoothed beta columns need a spatial prior, define it before
+fitting with <code><a href="../reference/dkge_spatial_regularizer.html">dkge_spatial_regularizer()</a></code> and pass it through
+<code>spatial =</code>. Although DKGE’s eigensolve is in effect space,
+the regularized beta fields change the pooled effect-space moment and
+can therefore change the learned basis. This is not the same as
+smoothing a rendered map after fitting; see
+<code><a href="../articles/dkge-spatial-regularization.html">vignette("dkge-spatial-regularization")</a></code> for graph
+construction, held-out selection of <code>lambda</code>, and inference
+boundaries.</p>
 </div>
 <div class="section level2">
 <h2 id="what-is-the-baseline-fit">What is the baseline fit?<a class="anchor" aria-label="anchor" href="#what-is-the-baseline-fit"></a>
 </h2>
-<p>Start with an identity kernel. It retains the GLM/design scaling but
-adds no kernel-imposed similarity between effects.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">K_identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">data_bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
-<span><span class="va">fit_identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">data_bundle</span>, K <span class="op">=</span> <span class="va">K_identity</span>, rank <span class="op">=</span> <span class="fl">2</span>, w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
+<p>Start with an identity kernel and no spatial regularizer. It retains
+the GLM/design scaling but adds neither kernel-imposed similarity
+between effects nor graph-imposed similarity between spatial units.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">K_identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="va">fit_identity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">bundle</span>, K <span class="op">=</span> <span class="va">K_identity</span>, rank <span class="op">=</span> <span class="fl">2</span>, w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/dkge_plot_scree.html">dkge_plot_scree</a></span><span class="op">(</span><span class="va">fit_identity</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-workflow_files/figure-html/fit-identity-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-workflow_files/figure-html/fit-identity-1.png" class="r-plt" alt="Scree plot for the two-component identity-kernel baseline fit." width="90%" style="display: block; margin: auto;"></p>
 <p>This fit returns a two-column group basis
 <code>fit_identity$U</code>. The scree plot describes variation
 represented by those components; it does not establish their reliability
@@ -157,8 +188,8 @@ signal. A real analysis would construct this object explicitly with
 <code><a href="../reference/design_kernel.html">design_kernel()</a></code> and prespecify the included terms. Both
 fits disable subject block weighting so the comparison isolates the
 kernel change.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_structured</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">data_bundle</span>, K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span>, w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_structured</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">bundle</span>, K <span class="op">=</span> <span class="va">toy</span><span class="op">$</span><span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span>, w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  component <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,</span>
@@ -169,10 +200,11 @@ kernel change.</p>
 <span><span class="co">#&gt;   component identity structured</span></span>
 <span><span class="co">#&gt; 1         1    0.599       0.58</span></span>
 <span><span class="co">#&gt; 2         2    0.401       0.42</span></span></code></pre></div>
+<p><img src="dkge-workflow_files/figure-html/compare-kernel-variance-1.png" class="r-plt" alt="Grouped bar chart comparing variance proportions for identity and structured design-kernel fits." width="90%" style="display: block; margin: auto;"></p>
 <p>Compare the retained subspaces as well as the scree values. Because
 the bases use a kernel metric, a raw <code><a href="https://rdrr.io/pkg/Matrix/man/matmult-methods.html" class="external-link">crossprod()</a></code> is not a
 valid rotation comparison.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">angles</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_principal_angles_K.html">dkge_principal_angles_K</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit_identity</span><span class="op">$</span><span class="va">U</span>, <span class="va">fit_structured</span><span class="op">$</span><span class="va">U</span>, <span class="va">fit_structured</span><span class="op">$</span><span class="va">K</span></span>
 <span><span class="op">)</span></span>
@@ -192,9 +224,9 @@ specify the contrast you actually want to estimate.</p>
 <div class="section level2">
 <h2 id="which-effect-directions-define-the-components">Which effect directions define the components?<a class="anchor" aria-label="anchor" href="#which-effect-directions-define-the-components"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/dkge_plot_effect_loadings.html">dkge_plot_effect_loadings</a></span><span class="op">(</span><span class="va">fit_structured</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="dkge-workflow_files/figure-html/show-effect-loadings-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="dkge-workflow_files/figure-html/show-effect-loadings-1.png" class="r-plt" alt="Heatmap of effect-space saliences for the first two components under the structured design kernel." width="90%" style="display: block; margin: auto;"></p>
 <p>The heatmap displays
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">K U</annotation></semantics></math>:
 effect-space saliences, not voxel coefficients. Look for coherent
@@ -206,8 +238,8 @@ arbitrary sign across independent fits without alignment.</p>
 </h2>
 <p>Build the contrast in fitted effect order. Here the simulator
 identifies the coordinate for the planted condition term.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">condition_contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">data_bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">condition_contrast</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">bundle</span><span class="op">$</span><span class="va">q</span><span class="op">)</span></span>
 <span><span class="va">condition_contrast</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">active_cols</span><span class="op">$</span><span class="va">condition</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
 <span><span class="va">condition_loso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_contrast.html">dkge_contrast</a></span><span class="op">(</span></span>
@@ -239,32 +271,23 @@ stacking or performing feature-level group inference.</p>
 a common coordinate system. The synthetic coordinates below exist only
 to demonstrate the interface; their resulting map has no anatomical
 interpretation.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">centroids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">toy</span><span class="op">$</span><span class="va">B_list</span><span class="op">[[</span><span class="va">s</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">s</span> <span class="op">/</span> <span class="fl">100</span>, <span class="va">p</span><span class="op">)</span>, z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<p>Use the ridge mapper for a dependency-light example and select
-subject 1 as the reference parcellation:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">transported</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid</a></span><span class="op">(</span></span>
-<span>  <span class="va">fit_structured</span>,</span>
-<span>  <span class="va">condition_loso</span>,</span>
-<span>  medoid <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"ridge"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">transported</span><span class="op">$</span><span class="va">condition</span><span class="op">$</span><span class="va">subj_values</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1]  6 16</span></span></code></pre></div>
-<p>The returned matrix has subjects in rows and reference clusters in
-columns; <code>transported$condition$value</code> is its across-subject
-median on the medoid parcellation. The attached
-<code>attr(transported, "cache")</code> can be reused for other
-contrasts or resampling.</p>
-<p>Transport quality depends on the features, masses, mapper, and
-reference choice. Inspect mapper diagnostics and repeat defensible
-sensitivity analyses; a successful matrix multiplication is not evidence
-that parcels are biologically homologous.</p>
+<p>These coordinates are enough for geometry-only resampling, but this
+synthetic example contains no independent functional acquisition from
+which to identify parcel correspondence. It therefore stops before
+feature-level group alignment rather than silently treating subject 1 or
+a bare grid as functional truth.</p>
+<p>For the complete path—independent kernel-image features, held-out
+reference selection, a group functional template, aligned subject rows,
+inference, and rendering—continue with
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>. The key output there
+is an <code>S</code> by <code>Q</code> matrix for each contrast:
+subjects are the inference units, and columns are locations on one
+identified support.</p>
 </div>
 <div class="section level2">
 <h2 id="what-should-you-save-and-report">What should you save and report?<a class="anchor" aria-label="anchor" href="#what-should-you-save-and-report"></a>
@@ -277,7 +300,8 @@ matrix;</li>
 and the chosen rank;</li>
 <li>the identity-versus-structured comparison;</li>
 <li>cross-fitting folds or LOSO specification;</li>
-<li>cluster coordinates, masses, mapper settings, medoid choice, and
+<li>cluster coordinates, masses, typed feature provenance, mapper
+settings, reference-selection criterion, template trajectory, and
 transport diagnostics; and</li>
 <li>the inference unit and multiplicity procedure for every reported
 claim.</li>
@@ -285,7 +309,8 @@ claim.</li>
 <p>Continue with <code><a href="../articles/dkge-concepts.html">vignette("dkge-concepts")</a></code> for the fitted
 moment and inference levels,
 <code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> for uncertainty, and
-<code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> for the distinct roles of
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code> for cross-subject
+correspondence. <code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> distinguishes
 spatial, effect, subject, and transport weights.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

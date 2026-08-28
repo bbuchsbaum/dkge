@@ -1,12 +1,13 @@
 # Simulate toy DKGE datasets with known factorial structure
 
-Generates subject-level beta matrices \\B_s\\ (\`q x P_s\`) in effect
+Generates subject-level beta matrices \\B_s\\ (`q x P_s`) in effect
 space with user-selected active design terms, controlled signal-to-noise
 ratio (SNR), and per-subject noise levels. The routine also returns the
 per-subject design 'rulers' (typically identity matrices) and the design
 kernel \\K\\ so the synthetic dataset can be fed directly to
-\[dkge_fit()\]. Components are planted inside chosen effect blocks, then
-\\K\\-orthonormalised to provide a ground truth subspace.
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
+Components are planted inside chosen effect blocks, then
+\\K\\-orthonormalized to provide a ground truth subspace.
 
 ## Usage
 
@@ -30,18 +31,19 @@ dkge_sim_toy(
 - factors:
 
   Named list describing the experimental factors (as for
-  \[design_kernel()\]), e.g. \`list(A = list(L = 2), B = list(L = 3))\`.
+  [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md)),
+  e.g. `list(A = list(L = 2), B = list(L = 3))`.
 
 - terms:
 
   Optional list of character vectors specifying which terms to include
   in the kernel. Defaults to the full factorial set used by
-  \[design_kernel()\].
+  [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md).
 
 - active_terms:
 
-  Character vector of term names to activate (e.g., \`c("A", "B",
-  "A:B")\`). These must be present in the kernel.
+  Character vector of term names to activate (e.g.,
+  `c("A", "B", "A:B")`). These must be present in the kernel.
 
 - r_per_term:
 
@@ -54,17 +56,17 @@ dkge_sim_toy(
 
 - P:
 
-  Either a single integer (clusters/voxels per subject) or a
-  length-\`S\` integer vector.
+  Either a single integer (clusters/voxels per subject) or a length-`S`
+  integer vector.
 
 - snr:
 
   Target Frobenius SNR (signal / noise) per subject. Scalar or
-  length-\`S\`.
+  length-`S`.
 
 - noise_scales:
 
-  Optional length-\`S\` multipliers applied to the noise standard
+  Optional length-`S` multipliers applied to the noise standard
   deviation for each subject.
 
 - seed:
@@ -73,7 +75,7 @@ dkge_sim_toy(
 
 - contrasts_type:
 
-  Factor-contrast system, one of \`"helmert"\` or \`"sum"\`.
+  Factor-contrast system, one of `"helmert"` or `"sum"`.
 
 ## Value
 
@@ -81,7 +83,7 @@ A list with the following entries:
 
 - B_list:
 
-  List of \`q x P_s\` beta matrices.
+  List of `q x P_s` beta matrices.
 
 - X_list:
 
@@ -89,19 +91,20 @@ A list with the following entries:
 
 - K:
 
-  \`q x q\` design kernel.
+  `q x q` design kernel.
 
 - info:
 
-  Design metadata returned by \[design_kernel()\].
+  Design metadata returned by
+  [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md).
 
 - U_true:
 
-  Ground-truth \`q x r_true\` component basis (\\K\\-orthonormal).
+  Ground-truth `q x r_true` component basis (\\K\\-orthonormal).
 
 - M_list:
 
-  Per-subject spatial patterns (\`P_s x r_true\`).
+  Per-subject spatial patterns (`P_s x r_true`).
 
 - active_cols:
 
@@ -115,8 +118,8 @@ A list with the following entries:
 ## Details
 
 Construction follows the model \$\$B_s = U\_{true} M_s^\top + E_s,\$\$
-where \`U_true\` lies inside the requested design-term blocks, \`M_s\`
-encodes the subject-specific spatial loadings, and \`E_s\` is Gaussian
+where `U_true` lies inside the requested design-term blocks, `M_s`
+encodes the subject-specific spatial loadings, and `E_s` is Gaussian
 noise adjusted to hit the requested Frobenius SNR.
 
 ## Examples

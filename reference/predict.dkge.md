@@ -1,7 +1,9 @@
 # Predict contrasts for new subjects using a DKGE fit
 
-S3 front-end that forwards to \[dkge_predict()\] while accepting
-\`newdata\` lists with \`betas\`/\`B_list\` and \`contrasts\` entries.
+S3 front-end that forwards to
+[`dkge_predict()`](https://bbuchsbaum.github.io/dkge/reference/dkge_predict.md)
+while accepting `newdata` lists with `betas`/`B_list` and `contrasts`
+entries.
 
 ## Usage
 
@@ -17,16 +19,18 @@ predict(object, newdata = NULL, ...)
 
 - object:
 
-  A \`dkge\` fit.
+  A `dkge` fit.
 
 - newdata:
 
-  Optional list with elements \`betas\`/\`B_list\` and \`contrasts\`.
+  Optional list with elements `betas`/`B_list` and `contrasts`.
 
 - ...:
 
-  Additional arguments passed to \[dkge_predict()\].
+  Additional arguments passed to
+  [`dkge_predict()`](https://bbuchsbaum.github.io/dkge/reference/dkge_predict.md).
 
 ## Value
 
-Output of \[dkge_predict()\].
+Output of
+[`dkge_predict()`](https://bbuchsbaum.github.io/dkge/reference/dkge_predict.md).

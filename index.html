@@ -12,8 +12,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <script src="extra.js"></script><meta property="og:title" content="Design-Kernel Group Embedding for Cluster-Level fMRI">
-<meta name="description" content="Implements Design-Kernel Group Embedding (DKGE) for design-aware cluster-level fMRI analysis. Provides streaming and memory-light estimators, leave-one-subject-out cross-fitting, kernel-based design alignment, and optimal transport to medoid parcellations. Integrates with neuroimaging toolkits such as neuroim2, fmridesign, and fmriAR.">
-<meta property="og:description" content="Implements Design-Kernel Group Embedding (DKGE) for design-aware cluster-level fMRI analysis. Provides streaming and memory-light estimators, leave-one-subject-out cross-fitting, kernel-based design alignment, and optimal transport to medoid parcellations. Integrates with neuroimaging toolkits such as neuroim2, fmridesign, and fmriAR.">
+<meta name="description" content="Implements Design-Kernel Group Embedding (DKGE) for design-aware cluster-level fMRI analysis. Provides streaming and memory-light estimators, leave-one-subject-out cross-fitting, kernel-based design alignment, and provenance-checked functional alignment to identified reference supports, group functional templates, and optimal transport. Integrates with neuroimaging toolkits such as neuroim2, fmridesign, and fmriAR.">
+<meta property="og:description" content="Implements Design-Kernel Group Embedding (DKGE) for design-aware cluster-level fMRI analysis. Provides streaming and memory-light estimators, leave-one-subject-out cross-fitting, kernel-based design alignment, and provenance-checked functional alignment to identified reference supports, group functional templates, and optimal transport. Integrates with neuroimaging toolkits such as neuroim2, fmridesign, and fmriAR.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -38,30 +38,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -85,19 +89,21 @@
 
 <p>Design-Kernel Group Embedding (DKGE) turns subject-level GLM outputs into a shared, design-aware latent space. It preserves the structure of experimental designs, supports cross-validated contrasts, and provides transport utilities for mapping parcellated fields onto common anchor or voxel representations.</p>
 <div class="section level2">
-<h2 id="key-capabilities">Key capabilities<a class="anchor" aria-label="anchor" href="#key-capabilities"></a>
+<h2 id="what-it-does">What it does<a class="anchor" aria-label="anchor" href="#what-it-does"></a>
 </h2>
 <ul>
 <li>
-<strong>Flexible design kernels</strong> – encode factorial structure, smoothness, and interactions to control how effects align across subjects.</li>
+<strong>Design kernels</strong> encode factorial structure, effect-space smoothness, and interactions, which control how effects align across subjects.</li>
 <li>
-<strong>Robust contrasts and inference</strong> – LOSO/K-fold cross-fitting, analytic approximations, and bootstrap utilities for medoid or voxel maps.</li>
+<strong>Model-level spatial regularization</strong> uses sparse graph-Laplacian solves to smooth subject fields inside the pooled moment, so the spatial prior can change the learned basis as well as its reconstructed maps.</li>
 <li>
-<strong>Transport &amp; rendering</strong> – barycentric kNN and C++-accelerated Sinkhorn mappers with warm starts, anchor graph smoothing, and voxel decoders.</li>
+<strong>Contrasts and inference</strong> use leave-one-subject-out (LOSO) or K-fold cross-fitting. Rank-truncated cohort-trained inference is labelled approximate and requires explicit opt-in; aligned-map bootstraps require typed correspondence provenance.</li>
 <li>
-<strong>Classifier localisation</strong> – cross-fitted latent classifiers with decoder, Haufe, and LOCO maps for bias-aware whole-brain interpretation.</li>
+<strong>Functional alignment and rendering</strong> use typed independent response signatures, auditable reference selection, or an iterative group template to map subject fields onto one identified support. A subject is a <em>medoid</em> only when selected by a stated criterion; a bare MNI grid supplies coordinates, not functional correspondence. Rendering is downstream of alignment.</li>
 <li>
-<strong>Component interpretability</strong> – convenience helpers for projecting new data, rotating components, and summarising variance explained.</li>
+<strong>Classifier localization</strong> cross-fits latent classifiers and returns decoder, Haufe, and LOCO maps.</li>
+<li>
+<strong>Component interpretation</strong> projects new data, rotates components, and summarizes variance explained.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -125,16 +131,13 @@
 <span><span class="co"># project subjects into component space</span></span>
 <span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_project_block.html">dkge_project_btil</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">fit</span><span class="op">$</span><span class="va">Btil</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">scores</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
-<p>See the vignettes for full workflows:</p>
-<ul>
-<li><code><a href="articles/dkge-workflow.html">vignette("dkge-workflow")</a></code></li>
-<li><code><a href="articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code></li>
-<li><code><a href="articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code></li>
-<li><code><a href="articles/dkge-dense-rendering.html">vignette("dkge-dense-rendering")</a></code></li>
-<li><code><a href="articles/dkge-components.html">vignette("dkge-components")</a></code></li>
-<li><code><a href="articles/dkge-performance.html">vignette("dkge-performance")</a></code></li>
-<li><code><a href="articles/dkge-weighting.html">vignette("dkge-weighting")</a></code></li>
-</ul>
+<p>Start with <code><a href="articles/dkge.html">vignette("dkge")</a></code>, then <code><a href="articles/dkge-workflow.html">vignette("dkge-workflow")</a></code>. The full set:</p>
+<p><strong>Start here</strong> — <code><a href="articles/dkge.html">vignette("dkge")</a></code>, <code><a href="articles/dkge-workflow.html">vignette("dkge-workflow")</a></code>, <code><a href="articles/dkge-concepts.html">vignette("dkge-concepts")</a></code></p>
+<p><strong>Core analysis</strong> — <code><a href="articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code>, <code><a href="articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code>, <code><a href="articles/dkge-components.html">vignette("dkge-components")</a></code>, <code><a href="articles/dkge-classification.html">vignette("dkge-classification")</a></code></p>
+<p><strong>Study designs</strong> — <code><a href="articles/dkge-partial-effect-spaces.html">vignette("dkge-partial-effect-spaces")</a></code>, <code><a href="articles/dkge-unbalanced-trialwise.html">vignette("dkge-unbalanced-trialwise")</a></code>, <code><a href="articles/dkge-between-subjects.html">vignette("dkge-between-subjects")</a></code></p>
+<p><strong>Weighting</strong> — <code><a href="articles/dkge-weighting.html">vignette("dkge-weighting")</a></code>, <code><a href="articles/dkge-adaptive-weighting.html">vignette("dkge-adaptive-weighting")</a></code></p>
+<p><strong>Spatial mapping</strong> — <code><a href="articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>, <code><a href="articles/dkge-spatial-regularization.html">vignette("dkge-spatial-regularization")</a></code>, <code><a href="articles/dkge-dense-rendering.html">vignette("dkge-dense-rendering")</a></code>, <code><a href="articles/dkge-anchors.html">vignette("dkge-anchors")</a></code>, <code><a href="articles/dkge-performance.html">vignette("dkge-performance")</a></code></p>
+<p><strong>Extras</strong> — <code><a href="articles/dkge-plotting.html">vignette("dkge-plotting")</a></code>, <code><a href="articles/dkge-cpca.html">vignette("dkge-cpca")</a></code>, <code><a href="articles/dkge-vs-pls.html">vignette("dkge-vs-pls")</a></code></p>
 </div>
 <div class="section level2">
 <h2 id="helper-constructors">Helper constructors<a class="anchor" aria-label="anchor" href="#helper-constructors"></a>
@@ -142,12 +145,12 @@
 <p>DKGE now provides small helper constructors that validate common orchestration inputs. They shorten calls to <code><a href="reference/dkge_pipeline.html">dkge_pipeline()</a></code> and prediction helpers while keeping backward compatibility with raw lists.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">kernel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">betas</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">transport</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_transport_spec.html">dkge_transport_spec</a></span><span class="op">(</span></span>
-<span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
-<span>  sizes <span class="op">=</span> <span class="va">sizes</span>,</span>
-<span>  medoid <span class="op">=</span> <span class="fl">2</span></span>
+<span><span class="va">contrasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="va">inference</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_inference_spec.html">dkge_inference_spec</a></span><span class="op">(</span></span>
+<span>  B <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  tail <span class="op">=</span> <span class="st">"two.sided"</span>,</span>
+<span>  allow_approximate_alignment <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">inference</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_inference_spec.html">dkge_inference_spec</a></span><span class="op">(</span>B <span class="op">=</span> <span class="fl">1000</span>, tail <span class="op">=</span> <span class="st">"two.sided"</span><span class="op">)</span></span>
 <span><span class="va">cls_spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_classification_spec.html">dkge_classification_spec</a></span><span class="op">(</span>targets <span class="op">=</span> <span class="op">~</span> <span class="va">condition</span>, method <span class="op">=</span> <span class="st">"lda"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_pipeline.html">dkge_pipeline</a></span><span class="op">(</span></span>
@@ -155,10 +158,11 @@
 <span>  designs <span class="op">=</span> <span class="va">designs</span>,</span>
 <span>  kernel <span class="op">=</span> <span class="va">kernel</span>,</span>
 <span>  contrasts <span class="op">=</span> <span class="va">contrasts</span>,</span>
-<span>  transport <span class="op">=</span> <span class="va">transport</span>,</span>
 <span>  inference <span class="op">=</span> <span class="va">inference</span>,</span>
 <span>  classification <span class="op">=</span> <span class="va">cls_spec</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>The opt-in is explicit because the rank-truncated latent span is estimated from the same cohort. The returned inference object labels that estimator <code>"approximate"</code>; omit the opt-in to fail closed. All requested contrasts and support locations share one max-T family.</p>
+<p>For cross-subject functional correspondence, use the typed <code><a href="reference/dkge_prepare_alignment.html">dkge_prepare_alignment()</a></code> / <code><a href="reference/dkge_transport_contrasts_to_reference.html">dkge_transport_contrasts_to_reference()</a></code> workflow in <code><a href="articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>; the pipeline does not infer a functional mapping from coordinates alone.</p>
 <p>To score new subjects without manually assembling <code>B_list</code>, use <code><a href="reference/dkge_predict_subjects.html">dkge_predict_subjects()</a></code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dkge_predict_subjects.html">dkge_predict_subjects</a></span><span class="op">(</span><span class="va">fit</span>, betas <span class="op">=</span> <span class="va">new_subjects</span>, contrasts <span class="op">=</span> <span class="va">my_contrasts</span><span class="op">)</span></span></code></pre></div>
@@ -171,15 +175,7 @@
 <div class="section level2">
 <h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
 </h2>
-<ul>
-<li>Pull requests are encouraged; please accompany user-facing changes with tests and documentation.</li>
-<li>For large feature work, open an issue to discuss design choices before implementation.</li>
-<li>
-<code>Authors@R</code> is the canonical author/maintainer record; legacy <code>Author</code> and <code>Maintainer</code> fields are intentionally omitted.</li>
-<li>Core metadata has no mutable <code>Remotes</code> field. The two direct non-CRAN imports are resolvable from the bbuchsbaum R-universe, while release workflows pin the complete hard non-CRAN dependency closure to the exact Git SHAs recorded in <code>tools/release/noncran-lock.csv</code>.</li>
-<li>The optional <code>neuralign</code> integration is declared under <code>Enhances</code> and tested in a separate pinned workflow; it is not part of core installation or check resolution.</li>
-<li>The independent Sinkhorn oracle is a deterministic dense R implementation in the test suite, so the numerical gate does not disappear when an experimental transport package is unavailable.</li>
-</ul>
+<p>Pull requests are encouraged. See <a href="CONTRIBUTING.html">CONTRIBUTING.md</a> for packaging conventions, the architecture map, and how to propose changes to it.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -210,6 +206,12 @@
 </ul>
 </div>
 
+<div class="community">
+<h2 data-toc-skip>Community</h2>
+<ul class="list-unstyled">
+<li><a href="CONTRIBUTING.html">Contributing guide</a></li>
+</ul>
+</div>
 
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>

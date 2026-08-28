@@ -1,9 +1,20 @@
-# Unbalanced and Partial Effect Spaces
+# Partial Effect Spaces
 
 DKGE can represent one global effect space when subjects contribute
 different cells or estimate the same cells with very different trial
 counts. The output is still a common q-dimensional group basis, but
 three distinct problems must be handled separately:
+
+This page is for the case where the usual rectangular data picture is
+false. Perhaps controls and patients occupy different rows of a global
+grid, or every subject attempted the same factorial design but some
+cells have many more trials than others. If every subject has every
+effect with comparable precision, you do not need these controls; use
+[`vignette("dkge-workflow")`](https://bbuchsbaum.github.io/dkge/articles/dkge-workflow.md).
+
+The guiding rule is simple: **absence, imprecision, and estimation noise
+are not synonyms**. The rest of the vignette shows where each enters the
+fit.
 
 | Problem | What changes | DKGE mechanism |
 |----|----|----|
@@ -21,10 +32,19 @@ The key contract is:
 - [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md)
   aligns subject-local effect rows to the union of all effect labels.
 - Missing rows are rendered as zero rows in the aligned matrices.
-- The original observation pattern is retained as `observed_rows`,
-  `provenance$obs_mask`, and `provenance$pair_counts`.
+- The original observation pattern is retained on the returned bundle as
+  `observed_rows`, plus `obs_mask` and `pair_counts` under `provenance`.
 - `dkge_fit(missingness = ...)` controls how the partial coverage is
   handled when the q-space covariance is accumulated.
+
+``` text
+local observed rows -> global labelled grid -> coverage-aware raw moment -> precision/debiasing -> kernel transform
+```
+
+The first example isolates missing cells. The larger trialwise example
+then adds unequal precision and debiasing. Keeping those examples
+separate prevents one mechanism from appearing to solve all three
+problems.
 
 ## How do you declare a partial global grid?
 
@@ -111,11 +131,11 @@ subjects <- lapply(subject_info$group, make_subject_beta)
 betas <- lapply(subjects, `[[`, "B")
 designs <- lapply(subjects, `[[`, "X")
 
-dat <- dkge_data(betas, designs, subject_ids = subject_info$subject_id)
-dat$effects
+bundle_partial <- dkge_data(betas, designs, subject_ids = subject_info$subject_id)
+bundle_partial$effects
 #> [1] "control:A:low"  "control:A:high" "control:B:low"  "control:B:high"
 #> [5] "patient:A:low"  "patient:A:high" "patient:B:low"  "patient:B:high"
-dat$observed_rows
+bundle_partial$observed_rows
 #> [[1]]
 #> [1] 1 2 3 4
 #> 
@@ -127,7 +147,7 @@ dat$observed_rows
 #> 
 #> [[4]]
 #> [1] 5 6 7 8
-dat$provenance$pair_counts
+bundle_partial$provenance$pair_counts
 #>                control:A:low control:A:high control:B:low control:B:high
 #> control:A:low              2              2             2              2
 #> control:A:high             2              2             2              2
@@ -151,6 +171,14 @@ dat$provenance$pair_counts
 Controls observe rows 1-4 and patients observe rows 5-8. Cross-group row
 pairs have zero pair counts.
 
+![Binary heatmap showing that control subjects observe the first four
+global effect cells and patient subjects observe the last
+four.](dkge-partial-effect-spaces_files/figure-html/coverage-map-1.png)
+
+The empty half of each row is structural absence, not a measured beta of
+zero. The observation mask preserves that distinction after the aligned
+matrices are expanded to eight rows.
+
 ## How should partial coverage enter the fit?
 
 The default `missingness = "none"` preserves the historical zero-filled
@@ -169,8 +197,8 @@ choose a policy that uses the recorded coverage:
 
 ``` r
 
-fit <- dkge_fit(
-  dat,
+fit_partial <- dkge_fit(
+  bundle_partial,
   K = kernel,
   rank = 2,
   w_method = "none",
@@ -178,9 +206,9 @@ fit <- dkge_fit(
   miss_args = list(min_pairs = 1)
 )
 
-fit$missingness
+fit_partial$missingness
 #> [1] "mask"
-fit$pair_counts[1:4, 5:8]
+fit_partial$pair_counts[1:4, 5:8]
 #>                patient:A:low patient:A:high patient:B:low patient:B:high
 #> control:A:low              0              0             0              0
 #> control:A:high             0              0             0              0
@@ -224,222 +252,6 @@ max(abs(Khalf[1:4, 5:8]))
 #> [1] 0
 ```
 
-## How do you fit an unbalanced 3 x 5 x 4 trialwise design?
-
-Now consider a fully within-subject `condition x delay x response`
-design with 3, 5, and 4 levels: 60 possible cells per subject. The
-response is ordinal, and trial counts vary by subject and cell.
-[`dkge_effect_grid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_effect_grid.md)
-pins the global row order while
-[`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md)
-says that adjacent response levels are more similar than distant ones.
-
-``` r
-
-grid60 <- dkge_effect_grid(
-  factors = list(
-    condition = c("c1", "c2", "c3"),
-    delay = paste0("d", 1:5),
-    response = list(L = 4, type = "ordinal",
-                    levels = as.character(1:4), l = 1)
-  )
-)
-
-kernel60 <- design_kernel(
-  grid60,
-  terms = list(
-    "condition", "delay", "response",
-    c("condition", "delay"), c("condition", "response"),
-    c("delay", "response"), c("condition", "delay", "response")
-  ),
-  basis = "cell",
-  normalize = "unit_trace"
-)
-
-c(q = length(grid60$cell_labels), kernel_rows = nrow(kernel60$K))
-#>           q kernel_rows 
-#>          60          60
-```
-
-The trialwise constructor fits $`Y_s = X_s B_s + E_s`$ for each subject.
-It retains $`B_s`$, $`(X_s^\top X_s)^{-1}`$, residual variances, and
-one-hot cell counts, but not the full trial-by-feature response. Here
-every cell has at least three trials so that the within-cell split
-leaves both halves estimable.
-
-|     | total_trials | min_cell | median_cell | max_cell |
-|:----|-------------:|---------:|------------:|---------:|
-| s1  |          389 |        3 |           6 |       10 |
-| s2  |          406 |        3 |           7 |       10 |
-| s3  |          411 |        3 |           7 |       10 |
-| s4  |          392 |        3 |           7 |       10 |
-| s5  |          364 |        3 |           5 |       10 |
-
-Each subject contributes a different count profile, but all are aligned
-to the same 60 labels. The group fit below makes three choices explicit:
-
-1.  `effect_scaling = "none"` keeps cell means in their common beta
-    units rather than applying the pooled design ruler.
-2.  `effect_weights = dkge_effect_weights("count")` gives more influence
-    to better-estimated subject-by-cell rows.
-3.  `debias = "analytic"` subtracts the expected finite-trial noise
-    moment before pooling.
-
-`w_method = "none"` is deliberate in this diagnostic example: it
-isolates cell-level precision weighting and debiasing from the package’s
-default subject-level MFA scaling. It is not a general recommendation to
-disable subject weighting.
-
-``` r
-
-fit_analytic <- dkge_fit(
-  trial_data,
-  K = kernel60,
-  rank = 3,
-  w_method = "none",
-  effect_scaling = "none",
-  effect_weights = dkge_effect_weights("count"),
-  debias = "analytic",
-  missingness = "none"
-)
-
-fit_analytic$rank
-#> [1] 3
-```
-
-For cells $`c`$ and $`c'`$, count weighting uses pair reliability
-$`\sqrt{n_{sc} n_{sc'}}`$. DKGE first computes the precision-weighted
-mean for each pair, then restores the cohort scale. `fit$pair_ess` is
-Kish’s effective number of contributing subjects; it falls when one or
-two subjects dominate a cell pair even if every subject observed it.
-
-``` r
-
-pair_diagnostics <- data.frame(
-  diagnostic = c("minimum pair ESS", "maximum pair ESS",
-                 "negative raw-effect mass", "negative transformed mass"),
-  value = c(min(fit_analytic$pair_ess), max(fit_analytic$pair_ess),
-            fit_analytic$moment_diagnostics$effect$negative_mass,
-            fit_analytic$moment_diagnostics$transformed$negative_mass)
-)
-knitr::kable(pair_diagnostics, digits = 3)
-```
-
-| diagnostic                |   value |
-|:--------------------------|--------:|
-| minimum pair ESS          |   3.699 |
-| maximum pair ESS          |   4.997 |
-| negative raw-effect mass  | 145.840 |
-| negative transformed mass |   1.364 |
-
-### What exactly does debiasing change?
-
-Finite-trial noise can be addressed in either of two ways:
-
-- `debias = "analytic"` subtracts `noise_trace * (X'X)^{-1}` per
-  subject. The noise trace includes residual variance and any diagonal
-  spatial weights.
-- `debias = "split_half"` replaces the raw second moment with the
-  symmetrized cross-product of two stored half estimates. Independent
-  half-errors then have zero expected cross-product.
-
-The chunked constructor uses the same weighted analytic correction as
-the dense constructor. In particular, a non-unit spatial `omega` is
-included when the noise trace is reconstructed from per-feature residual
-variances; an unweighted cached trace is not reused as if it were
-already weighted.
-
-``` r
-
-set.seed(19411)
-X_chunk <- model.matrix(~ 0 + factor(rep(1:2, each = 6)))
-colnames(X_chunk) <- c("e1", "e2")
-omega_chunk <- c(0.2, 1, 3, 0.5)
-make_chunk_y <- function() {
-  truth <- matrix(c(1, -0.5, 0.25, 2, 0.4, -1, 0.7, 0.1), 2, 4)
-  Y <- X_chunk %*% truth +
-    matrix(rnorm(nrow(X_chunk) * 4, sd = 0.35), nrow(X_chunk), 4)
-  colnames(Y) <- paste0("v", 1:4)
-  Y
-}
-Y_chunk <- list(make_chunk_y(), make_chunk_y())
-dense_subjects <- lapply(seq_along(Y_chunk), function(s) {
-  dkge_trial_subject(Y_chunk[[s]], X_chunk, id = paste0("s", s),
-                     omega = omega_chunk)
-})
-chunked_subjects <- lapply(seq_along(Y_chunk), function(s) {
-  Y <- Y_chunk[[s]]
-  dkge_trial_subject_chunks(
-    list(Y[, 1:2, drop = FALSE], Y[, 3:4, drop = FALSE]),
-    X_chunk,
-    id = paste0("s", s),
-    omega = omega_chunk
-  )
-})
-K_chunk <- diag(2)
-dimnames(K_chunk) <- list(colnames(X_chunk), colnames(X_chunk))
-fit_dense <- dkge_fit(
-  dkge_data(dense_subjects), K = K_chunk, rank = 1,
-  w_method = "none", effect_scaling = "none", debias = "analytic"
-)
-fit_chunked <- dkge_fit(
-  dkge_data(chunked_subjects), K = K_chunk, rank = 1,
-  w_method = "none", effect_scaling = "none", debias = "analytic"
-)
-chunked_check <- data.frame(
-  weighted_noise_trace = sum(
-    omega_chunk * dense_subjects[[1]]$residual_variance
-  ),
-  max_abs_Chat_difference = max(abs(fit_dense$Chat - fit_chunked$Chat))
-)
-knitr::kable(chunked_check, digits = 12)
-```
-
-| weighted_noise_trace | max_abs_Chat_difference |
-|---------------------:|------------------------:|
-|            0.5501382 |                       0 |
-
-Because the subjects above stored within-cell halves, the alternative
-fit is runnable with the same data:
-
-``` r
-
-fit_split <- dkge_fit(
-  trial_data,
-  K = kernel60,
-  rank = 3,
-  w_method = "none",
-  effect_scaling = "none",
-  effect_weights = dkge_effect_weights("count"),
-  debias = "split_half"
-)
-
-c(analytic = fit_analytic$moment_diagnostics$effect$negative_mass,
-  split_half = fit_split$moment_diagnostics$effect$negative_mass)
-#>   analytic split_half 
-#>   145.8396   193.1882
-```
-
-Here the split-half estimate has more negative spectral mass (about 193
-versus 146), but that ordering is not a performance score. Both numbers
-diagnose the finite-sample indefiniteness of their respective moment
-estimators; choosing between them depends on whether the split errors
-are credibly independent and whether the analytic covariance model is
-credible.
-
-Analytic subtraction and pair normalization can produce an indefinite
-q-by-q estimate. DKGE therefore uses a symmetric eigendecomposition,
-retains the leading positive eigenpairs, and exposes negative spectral
-mass through `fit$moment_diagnostics`; an SVD would incorrectly turn
-negative directions into positive components.
-
-The constructor’s `split = "within_cell"` alternates trials within each
-cell; it does not prove that the two half-errors are independent. If
-runs, sessions, or temporal dependence define independence in your
-experiment, use an appropriately constructed split outside this
-convenience path or prefer the analytic estimator with a justified
-covariance model.
-
 ## Which contrasts are estimable within subject?
 
 Contrasts named after kernel terms are tagged with the term scope.
@@ -453,7 +265,7 @@ contrasts <- list(
   "group:task" = c(-task4, task4)
 )
 
-task_res <- dkge_contrast(fit, contrasts["task"], method = "loso", align = FALSE)
+task_res <- dkge_contrast(fit_partial, contrasts["task"], method = "loso", align = FALSE)
 knitr::kable(task_res$metadata$contrast_estimability)
 ```
 
@@ -475,7 +287,7 @@ and assess it with
 ``` r
 
 group_res <- dkge_contrast(
-  fit, contrasts[c("group", "group:task")],
+  fit_partial, contrasts[c("group", "group:task")],
   method = "loso", align = FALSE
 )
 #> Warning: Contrast(s) 'group', 'group:task' are between/mixed effects; loso
@@ -504,3 +316,14 @@ representations, continue with
 For a conceptual map of component-, contrast-, and feature-level claims,
 see
 [`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md).
+
+## Where to go next
+
+- [`vignette("dkge-unbalanced-trialwise")`](https://bbuchsbaum.github.io/dkge/articles/dkge-unbalanced-trialwise.md)
+  fits a 3 x 5 x 4 trialwise design on the contract this page defines.
+- [`vignette("dkge-between-subjects")`](https://bbuchsbaum.github.io/dkge/articles/dkge-between-subjects.md)
+  is the confirmatory route for the between and mixed contrasts named
+  above.
+- [`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
+  maps component-, contrast-, and feature-level claims onto what each
+  analysis supports.

@@ -1,7 +1,7 @@
 # DKGE minimal theme for ggplot2 outputs
 
 Produces a light-weight theme used by the DKGE plotting helpers. Adjust
-\`base_size\` / \`base_family\` to customise font size or typeface.
+`base_size` / `base_family` to customize font size or typeface.
 
 ## Usage
 

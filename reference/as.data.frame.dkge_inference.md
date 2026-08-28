@@ -13,7 +13,7 @@ as.data.frame(x, row.names = NULL, optional = FALSE, ...)
 
 - x:
 
-  A \`dkge_inference\` object
+  A `dkge_inference` object
 
 - row.names:
 
@@ -25,10 +25,11 @@ as.data.frame(x, row.names = NULL, optional = FALSE, ...)
 
 - ...:
 
-  Additional arguments passed to \[base::data.frame()\], including
-  \`stringsAsFactors\`
+  Additional arguments passed to
+  [`base::data.frame()`](https://rdrr.io/r/base/data.frame.html),
+  including `stringsAsFactors`
 
 ## Value
 
-Data frame with columns \`contrast\`, \`cluster\`, \`statistic\`,
-\`p_value\`, \`p_adjusted\`, and \`significant\`
+Data frame with columns `contrast`, `cluster`, `statistic`, `p_value`,
+`p_adjusted`, and `significant`

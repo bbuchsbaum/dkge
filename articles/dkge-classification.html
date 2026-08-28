@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="Classification with DKGE">
+<meta name="description" content="Cross-validate a latent classifier on DKGE components, choose between cell and cell_cross modes, and read the decoding result honestly.
+">
+<meta property="og:description" content="Cross-validate a latent classifier on DKGE components, choose between cell and cell_cross modes, and read the decoding result honestly.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,7 +93,7 @@
       <h1>Classification with DKGE</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-classification.Rmd" class="external-link"><code>vignettes/dkge-classification.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-classification.Rmd" class="external-link"><code>vignettes/dkge-classification.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-classification.Rmd</code></div>
     </div>
 
@@ -94,10 +102,16 @@
 <script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">12</span><span class="op">)</span></span></code></pre></div>
-<p>The DKGE classification helpers decode experimental conditions from
-subject-level effect patterns. This vignette follows one complete path:
-define the effect space, fit DKGE, specify the classes, and estimate
-held-out-subject performance.</p>
+<p>Use classification when the scientific question is predictive: can a
+condition label be recovered from a subject’s effect pattern when that
+subject was not used to train the decoder? This is different from asking
+whether a component explains much variation or whether a contrast is
+non-zero.</p>
+<p>This page follows one complete path:</p>
+<pre class="text"><code>factor definition -&gt; DKGE representation -&gt; class weight matrix -&gt; held-out predictions -&gt; accuracy and confusion</code></pre>
+<p>The weight matrix is the conceptual bridge. It says how named beta
+rows become the class patterns that the classifier sees; the decoder
+never infers that mapping from effect names by magic.</p>
 <p>There are two distinct cross-validation contracts. The default
 <code>mode = "auto"</code> uses subject-level folds but selects the
 faster <code>"cell"</code> path for within-subject targets; its
@@ -106,21 +120,22 @@ every subject. Use <code>mode = "cell_cross"</code> when the basis
 itself must also be re-estimated without each held-out subject. The
 primary example below uses that stricter end-to-end path.</p>
 <div class="section level2">
-<h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
+<h2 id="what-is-being-classified">What is being classified?<a class="anchor" aria-label="anchor" href="#what-is-being-classified"></a>
 </h2>
-<p>We define two experimental factors — condition (A vs B) and time (4
-time points) — and construct a design kernel that encodes their
+<p>We define two experimental factors—condition (A versus B) and four
+time points—and construct a design kernel that encodes their effect
 structure:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">factors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cond <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">kern</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/design_kernel.html">design_kernel</a></span><span class="op">(</span><span class="va">factors</span>, basis <span class="op">=</span> <span class="st">"effect"</span><span class="op">)</span></span>
 <span><span class="va">q</span>       <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">kern</span><span class="op">$</span><span class="va">K</span><span class="op">)</span>   <span class="co"># number of effect-coded columns</span></span>
 <span><span class="va">q</span></span>
 <span><span class="co">#&gt; [1] 7</span></span></code></pre></div>
 <p>We simulate 10 subjects, each with <code>q</code> design effects and
-60 voxels. A detectable signal distinguishing the two conditions is
-embedded in the condition contrast:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+60 voxels. A detectable condition signal is planted only in voxels 1–10.
+That artificial localization gives the example a visible ground truth;
+the remaining voxels are noise.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_subjects</span> <span class="op">&lt;-</span> <span class="fl">10L</span></span>
 <span><span class="va">v</span> <span class="op">&lt;-</span> <span class="fl">60L</span></span>
 <span></span>
@@ -138,26 +153,24 @@ embedded in the condition contrast:</p>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_subjects</span><span class="op">)</span>, <span class="va">make_subject</span><span class="op">)</span></span></code></pre></div>
+<p><img src="dkge-classification_files/figure-html/planted-signal-1.png" class="r-plt" alt="Line plot showing a positive planted condition signal in voxels one through ten and zero signal elsewhere." width="700"></p>
+<p>The signal plot describes the simulation, not the model output. The
+honest performance question remains whether a decoder trained without
+one subject can classify that held-out subject’s A and B patterns.</p>
 <p>Fit the DKGE model using the design kernel.
 <code><a href="../reference/design_kernel.html">design_kernel()</a></code> returns a list with <code>$K</code> (the
 q×q kernel matrix) and <code>$info</code> (factor metadata used by
 <code><a href="../reference/dkge_targets.html">dkge_targets()</a></code>):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">subjects</span>, K <span class="op">=</span> <span class="va">kern</span>, rank <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
-<span><span class="co">#&gt; Multiblock Bi-Projector object:</span></span>
-<span><span class="co">#&gt;   Projection matrix dimensions:  600 x 2 </span></span>
-<span><span class="co">#&gt;   Block indices:</span></span>
-<span><span class="co">#&gt;     Block 1: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60</span></span>
-<span><span class="co">#&gt;     Block 2: 61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120</span></span>
-<span><span class="co">#&gt;     Block 3: 121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180</span></span>
-<span><span class="co">#&gt;     Block 4: 181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240</span></span>
-<span><span class="co">#&gt;     Block 5: 241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300</span></span>
-<span><span class="co">#&gt;     Block 6: 301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360</span></span>
-<span><span class="co">#&gt;     Block 7: 361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380,381,382,383,384,385,386,387,388,389,390,391,392,393,394,395,396,397,398,399,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,419,420</span></span>
-<span><span class="co">#&gt;     Block 8: 421,422,423,424,425,426,427,428,429,430,431,432,433,434,435,436,437,438,439,440,441,442,443,444,445,446,447,448,449,450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480</span></span>
-<span><span class="co">#&gt;     Block 9: 481,482,483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540</span></span>
-<span><span class="co">#&gt;     Block 10: 541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,563,564,565,566,567,568,569,570,571,572,573,574,575,576,577,578,579,580,581,582,583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;dkge&gt;</span></span>
+<span><span class="co">#&gt;   Subjects: 10 </span></span>
+<span><span class="co">#&gt;   Effects: 7 </span></span>
+<span><span class="co">#&gt;   Rank: 2 </span></span>
+<span><span class="co">#&gt;   Subject weighting: mfa_sigma1 (tau = 0.3) </span></span>
+<span><span class="co">#&gt;   Weight range: 0.8058 to 1.1005 (median = 1.008, CV = 0.08452) </span></span>
+<span><span class="co">#&gt;   Effective subject mass: 9.936 of 10 usable</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="classification-targets">Classification targets<a class="anchor" aria-label="anchor" href="#classification-targets"></a>
@@ -166,7 +179,7 @@ q×q kernel matrix) and <code>$info</code> (factor metadata used by
 classification contrasts using the factor metadata stored in the kernel.
 Each term becomes a binary (or multi-class) decoding problem over the
 group embedding.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">targets</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_targets.html">dkge_targets</a></span><span class="op">(</span><span class="va">fit</span>, <span class="op">~</span> <span class="va">cond</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">targets</span><span class="op">)</span>                      <span class="co"># one target per formula term</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
@@ -180,13 +193,13 @@ class-specific pattern vectors for the downstream classifier.</p>
 <div class="section level2">
 <h2 id="cross-validated-decoding">Cross-validated decoding<a class="anchor" aria-label="anchor" href="#cross-validated-decoding"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cls</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit</span>,</span>
 <span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
 <span>  method  <span class="op">=</span> <span class="st">"lda"</span>,     <span class="co"># "lda" (default) or "logit"</span></span>
 <span>  mode    <span class="op">=</span> <span class="st">"cell_cross"</span>,</span>
-<span>  n_perm  <span class="op">=</span> <span class="fl">0</span>,         <span class="co"># descriptive cross-validated decoding</span></span>
+<span>  n_perm  <span class="op">=</span> <span class="fl">99</span>,        <span class="co"># coarse permutation resolution for this example</span></span>
 <span>  seed    <span class="op">=</span> <span class="fl">99</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cls</span><span class="op">)</span></span>
@@ -195,11 +208,12 @@ class-specific pattern vectors for the downstream classifier.</p>
 <span><span class="co">#&gt; Targets: 1</span></span>
 <span><span class="co">#&gt; Classifier: lda</span></span>
 <span><span class="co">#&gt; Metrics: accuracy, logloss</span></span>
-<span><span class="co">#&gt; Permutations: 0</span></span>
-<span><span class="co">#&gt;   cond: accuracy=1.000, logloss=0.000</span></span></code></pre></div>
+<span><span class="co">#&gt; Permutations: 99</span></span>
+<span><span class="co">#&gt;   cond: accuracy=1.000, logloss=0.000</span></span>
+<span><span class="co">#&gt;     accuracy p=0.010, logloss p=0.010</span></span></code></pre></div>
 <p>The result is a <code>dkge_classification</code> object. Each entry
 of <code>$results</code> corresponds to one target:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="va">cls</span><span class="op">$</span><span class="va">results</span><span class="op">[[</span><span class="st">"cond"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">mode</span>       <span class="co"># "cell_cross": the basis is refitted inside each fold</span></span>
 <span><span class="co">#&gt; [1] "cell_cross"</span></span>
@@ -210,7 +224,7 @@ of <code>$results</code> corresponds to one target:</p>
 condition patterns, with both the DKGE basis and classifier refit
 without the held-out subject. In this seeded simulation the planted
 condition signal yields:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">condition_accuracy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">metrics</span><span class="op">[[</span><span class="st">"accuracy"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">condition_log_loss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">metrics</span><span class="op">[[</span><span class="st">"logloss"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>accuracy <span class="op">=</span> <span class="va">condition_accuracy</span>, logloss <span class="op">=</span> <span class="va">condition_log_loss</span><span class="op">)</span></span>
@@ -219,50 +233,34 @@ condition signal yields:</p>
 <p>An accuracy of 1 means every held-out condition row was classified
 correctly in this deliberately strong toy example. It is not an estimate
 of performance on an external dataset.</p>
+<p>Accuracy is easier to interpret alongside the errors it
+summarizes:</p>
+<p><img src="dkge-classification_files/figure-html/confusion-plot-1.png" class="r-plt" alt="Confusion-matrix heatmap for held-out condition predictions." width="460.8"></p>
+<p>Rows are observed classes and columns are predictions. A strong
+diagonal means the held-out labels were recovered; off-diagonal counts
+reveal which classes are confused. For imbalanced classes, always pair
+this display with class counts and a metric such as balanced accuracy or
+log-loss.</p>
 <p>Convert to a tidy data frame for plotting or downstream analysis:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">cls</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   target   metric        value p_value n_perm</span></span>
-<span><span class="co">#&gt; 1   cond accuracy 1.000000e+00      NA      0</span></span>
-<span><span class="co">#&gt; 2   cond  logloss 9.999779e-13      NA      0</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   cond accuracy 1.000000e+00    0.01     99</span></span>
+<span><span class="co">#&gt; 2   cond  logloss 9.999779e-13    0.01     99</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="permutation-p-values">Permutation p-values<a class="anchor" aria-label="anchor" href="#permutation-p-values"></a>
 </h3>
-<p>The descriptive fit above deliberately sets <code>n_perm = 0</code>,
-so its p-values are <code>NULL</code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">p_values</span>    <span class="co"># named numeric vector per metric (NULL when n_perm = 0)</span></span>
-<span><span class="co">#&gt; NULL</span></span></code></pre></div>
-<p>For an inferential fit, preselect one scalar penalty independently
-and provide a callback that reruns the complete data-dependent
-representation and classifier for every randomized label vector. The
-callback must return finite named metrics:</p>
+<p>When <code>n_perm &gt; 0</code>, each target gets an empirical
+p-value from the sign-flip max-T permutation distribution:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">full_recompute</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">labels</span>, <span class="va">row_data</span>, <span class="va">target</span>, <span class="va">fit</span>, <span class="va">fold_assignments</span>,</span>
-<span>                           <span class="va">method</span>, <span class="va">mode</span>, <span class="va">lambda</span>, <span class="va">metric</span>, <span class="va">class_weights</span>,</span>
-<span>                           <span class="va">standardize_within_fold</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="co"># Rebuild the DKGE fit, rank choice, folds, target representation, and</span></span>
-<span>  <span class="co"># classifier from `labels`, then return all metrics requested in `metric`.</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>accuracy <span class="op">=</span> <span class="va">recomputed_accuracy</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">cls_perm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span></span>
-<span>  <span class="va">fit</span>,</span>
-<span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"lda"</span>,</span>
-<span>  mode <span class="op">=</span> <span class="st">"cell_cross"</span>,</span>
-<span>  lambda <span class="op">=</span> <span class="fl">1e-3</span>,       <span class="co"># selected independently of these outcomes</span></span>
-<span>  metric <span class="op">=</span> <span class="st">"accuracy"</span>,</span>
-<span>  n_perm <span class="op">=</span> <span class="fl">199</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">99</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>randomization_recompute <span class="op">=</span> <span class="va">full_recompute</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>With 199 permutations and the plus-one correction, the smallest
-attainable p-value is
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>199</mn><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>0.005</mn></mrow><annotation encoding="application/x-tex">1/(199+1)=0.005</annotation></semantics></math>.
-A value at that boundary means none of the sampled permutations was as
-extreme; it does not provide finer resolution.</p>
+<code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">p_values</span>    <span class="co"># named numeric vector per metric (NULL when n_perm = 0)</span></span>
+<span><span class="co">#&gt; accuracy  logloss </span></span>
+<span><span class="co">#&gt;     0.01     0.01</span></span></code></pre></div>
+<p>With 99 permutations and the plus-one correction, the smallest
+attainable p-value is (1/(99+1)=0.01). A value at that boundary means
+none of the sampled permutations was as extreme; it does not provide
+finer resolution than 0.01.</p>
 </div>
 <div class="section level3">
 <h3 id="subject-level-predictions">Subject-level predictions<a class="anchor" aria-label="anchor" href="#subject-level-predictions"></a>
@@ -303,45 +301,45 @@ extreme; it does not provide finer resolution.</p>
 </h2>
 <p>The <code>mode</code> argument controls how the group basis is
 applied at test time:</p>
-<table class="table">
+<table style="width:100%;" class="table">
 <colgroup>
-<col width="17%">
-<col width="32%">
-<col width="50%">
+<col width="22%">
+<col width="40%">
+<col width="37%">
 </colgroup>
 <thead><tr class="header">
 <th>Mode</th>
 <th>Basis used</th>
-<th>Supported claim</th>
+<th>Use case</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>"cell"</code></td>
 <td>Global <code>fit$U</code>
 </td>
-<td>Transductive performance within this cohort; the basis saw held-out
+<td>Fast; mild basis-step leakage — <code>fit$U</code> saw all
 subjects</td>
 </tr>
 <tr class="even">
 <td><code>"cell_cross"</code></td>
 <td>Fold-specific LOSO <code>U_fold</code>
 </td>
-<td>Prospective held-out-subject performance</td>
+<td>Basis and classifier refit per subject fold</td>
 </tr>
 <tr class="odd">
 <td><code>"delta"</code></td>
-<td>Fold-specific basis + subject labels</td>
-<td>Prospective held-out-subject binary test; requires
-<code>y</code>
-</td>
+<td>Global <code>fit$U</code> + subject labels</td>
+<td>Subject-level binary test; requires <code>y</code> argument</td>
 </tr>
 </tbody>
 </table>
 <p><code>"auto"</code> (default) selects <code>"cell"</code> for
 within-subject targets and <code>"delta"</code> for between-subject
 targets.</p>
+<p>The strict route refits the basis for every held-out subject, so it
+is shown here for syntax rather than run:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Cross-fitted representation for a prospective generalisation claim</span></span>
+<code class="sourceCode R"><span><span class="co"># Refit the basis without each held-out subject.</span></span>
 <span><span class="va">cls_strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span><span class="va">fit</span>, targets <span class="op">=</span> <span class="va">targets</span>, mode <span class="op">=</span> <span class="st">"cell_cross"</span>, n_perm <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -380,23 +378,24 @@ wraps it automatically:</p>
 <code class="sourceCode R"><span><span class="va">cls_multi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_classify.html">dkge_classify</a></span><span class="op">(</span><span class="va">fit_multi</span>,</span>
 <span>                           targets <span class="op">=</span> <span class="va">W_runs</span>,   <span class="co"># plain matrix dispatch</span></span>
 <span>                           mode <span class="op">=</span> <span class="st">"cell_cross"</span>,</span>
-<span>                           n_perm  <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>                           n_perm  <span class="op">=</span> <span class="fl">49</span>,</span>
 <span>                           seed    <span class="op">=</span> <span class="fl">101</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">res_multi</span> <span class="op">&lt;-</span> <span class="va">cls_multi</span><span class="op">$</span><span class="va">results</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">res_multi</span><span class="op">$</span><span class="va">metrics</span></span>
 <span><span class="co">#&gt;     accuracy      logloss </span></span>
-<span><span class="co">#&gt; 1.000000e+00 1.172934e-12</span></span>
+<span><span class="co">#&gt; 1.000000e+00 9.999779e-13</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">cls_multi</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    target   metric        value p_value n_perm</span></span>
-<span><span class="co">#&gt; 1 target1 accuracy 1.000000e+00      NA      0</span></span>
-<span><span class="co">#&gt; 2 target1  logloss 1.172934e-12      NA      0</span></span></code></pre></div>
-<p>Run averaging happens inside the weight matrix, so each prospective
-LOSO fold observes exactly one pattern per condition. This example is
-descriptive; an inferential run must use the full-recomputation contract
-shown above. Cross-fitting guards against basis-reuse leakage; it does
-not by itself establish transportability to a new scanner, acquisition
-protocol, or population.</p>
+<span><span class="co">#&gt; 1 target1 accuracy 1.000000e+00    0.02     49</span></span>
+<span><span class="co">#&gt; 2 target1  logloss 9.999779e-13    0.02     49</span></span></code></pre></div>
+<p>Run averaging happens inside the weight matrix, so each fold observes
+one pattern per condition. Because this call also uses
+<code>mode = "cell_cross"</code>, both the basis and classifier exclude
+the held-out subject. This guards against the specific basis-reuse
+leakage described above; it does not by itself establish
+transportability to a new scanner, acquisition protocol, or
+population.</p>
 </div>
 <div class="section level2">
 <h2 id="hyperdesign-inputs-and-fold-bridges">Hyperdesign inputs and fold bridges<a class="anchor" aria-label="anchor" href="#hyperdesign-inputs-and-fold-bridges"></a>
@@ -406,9 +405,11 @@ kernels and fold assignments through coercion S3 generics. Any object
 implementing <code><a href="../reference/as_dkge_kernel.html">as_dkge_kernel()</a></code> and
 <code><a href="../reference/as_dkge_folds.html">as_dkge_folds()</a></code> flows through the existing pipeline without
 altering the core solvers.</p>
+<p>The block below is illustrative and does not run here: it needs the
+<code>multidesign</code> package and a hyperdesign object you supply
+yourself.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Pseudocode — requires multidesign package and a user-defined hyperdesign object</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">multidesign</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">multidesign</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">hd</span>     <span class="op">&lt;-</span> <span class="fu">make_demo_hyperdesign</span><span class="op">(</span><span class="op">)</span>                <span class="co"># user-supplied helper</span></span>
 <span><span class="va">Kobj</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_dkge_kernel.html">as_dkge_kernel</a></span><span class="op">(</span><span class="va">hd</span>, basis <span class="op">=</span> <span class="st">"effect"</span><span class="op">)</span>   <span class="co"># list(K = ..., info = ...)</span></span>
@@ -442,23 +443,17 @@ methodological consistency.</p>
 fast and usually sufficient. Use <code>method = "logit"</code> with
 <code>class_weights = "balanced"</code> when experimental conditions
 have unequal numbers of trials.</p>
-<p><strong>Permutation testing.</strong> The beta inferential API
-requires one externally preselected positive scalar <code>lambda</code>
-whenever <code>n_perm &gt; 0</code>. Observed-data
-<code>lambda_grid</code> and <code>lambda_fun</code> selection remain
-available only with <code>n_perm = 0</code>; freezing their selected
-value across permutations would invalidate the randomization comparison.
-For <code>cell</code> and <code>cell_cross</code>,
-<code>control$randomization_recompute</code> must also rebuild the DKGE
-fit, rank choice, folds, representation, and classifier for each
-randomized label vector; the callback returns the requested named
-metrics. Increase <code>n_perm</code> for precise p-values near
-significance thresholds, and record how the fixed penalty was selected
-independently.</p>
-<p><strong>Spatial alignment.</strong> When subjects have different
-voxel grids, apply transport to a common medoid parcellation via
-<code><a href="../reference/dkge_transport_contrasts_to_medoid.html">dkge_transport_contrasts_to_medoid()</a></code> before
-classification.</p>
+<p><strong>Permutation testing.</strong> Increase <code>n_perm</code>
+for precise p-values near significance thresholds. Set
+<code>n_perm = 0</code> during exploratory analysis to skip the
+permutation loop.</p>
+<p><strong>Functional alignment.</strong> When subjects have different
+voxel grids or parcel systems, fit correspondence from an eligible
+functional feature channel and use
+<code><a href="../reference/dkge_transport_contrasts_to_reference.html">dkge_transport_contrasts_to_reference()</a></code> before
+classification. A bare MNI grid supplies display coordinates, not
+functional correspondence; see
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>.</p>
 <p><strong>Input caching.</strong> Keep <code>keep_inputs = TRUE</code>
 (default) to enable <code><a href="../reference/dkge_update_weights.html">dkge_update_weights()</a></code> without
 re-running the full fit.</p>

@@ -2,9 +2,11 @@
 
 Builds an input specification that projects subject item kernels onto a
 shared anchor basis before fitting DKGE. Use this object with
-\[dkge_fit_from_input()\] or supply it to \[dkge_pipeline()\] via the
-\`input\` argument. The descriptor is immutable; downstream calls may
-extend its \`dkge_args\` field with additional DKGE fitting options.
+[`dkge_fit_from_input()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_input.md)
+or supply it to
+[`dkge_pipeline()`](https://bbuchsbaum.github.io/dkge/reference/dkge_pipeline.md)
+via the `input` argument. The descriptor is immutable; downstream calls
+may extend its `dkge_args` field with additional DKGE fitting options.
 
 ## Usage
 
@@ -31,26 +33,28 @@ dkge_input_anchor(
 
 - folds:
 
-  Optional fold structure passed to \[dkge_build_anchor_kernels()\].
+  Optional fold structure passed to
+  [`dkge_build_anchor_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_build_anchor_kernels.md).
 
 - anchors:
 
   Optional list overriding anchor selection defaults (see
-  \[dkge_anchor_fit()\]).
+  [`dkge_anchor_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_fit.md)).
 
 - design_kernel:
 
-  Optional design kernel supplied to \[dkge_fit_from_kernels()\].
+  Optional design kernel supplied to
+  [`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md).
   Defaults to the identity in effect space.
 
 - dkge_args:
 
   Optional list of arguments forwarded to the DKGE fitter after anchor
-  kernels are constructed (e.g. \`w_method\`, \`cpca_part\`).
+  kernels are constructed (e.g. `w_method`, `cpca_part`).
 
 ## Value
 
-Object of class \`dkge_input_anchor\` (inherits from \`dkge_input\`).
+Object of class `dkge_input_anchor` (inherits from `dkge_input`).
 
 ## Examples
 

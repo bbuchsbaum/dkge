@@ -24,30 +24,34 @@ for cell-mean/PLS-bridge analyses, not subject-level DKGE inference."></head><bo
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +66,7 @@ for cell-mean/PLS-bridge analyses, not subject-level DKGE inference."></head><bo
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Fit a DKGE-regularized aggregate decomposition</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-aggregate.R" class="external-link"><code>R/dkge-aggregate.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-aggregate.R" class="external-link"><code>R/dkge-aggregate.R</code></a></small>
       <div class="d-none name"><code>dkge_aggregate_fit.Rd</code></div>
     </div>
 
@@ -90,39 +94,38 @@ for cell-mean/PLS-bridge analyses, not subject-level DKGE inference.</p>
 
 
 <dl><dt id="arg-target">target<a class="anchor" aria-label="anchor" href="#arg-target"></a></dt>
-<dd><p>A `dkge_aggregate_target` or row-by-feature numeric matrix.</p></dd>
+<dd><p>A <code>dkge_aggregate_target</code> or row-by-feature numeric matrix.</p></dd>
 
 
 <dt id="arg-k">K<a class="anchor" aria-label="anchor" href="#arg-k"></a></dt>
 <dd><p>Optional design kernel, or an object returned by
-[design_kernel()], for the *aggregate row* space. Note that `q` here is the
-number of aggregate rows (for example `group:task:measure` cells), not the
-number of subject-level GLM effects used elsewhere in the package: `K` must
-therefore be `nrow(target$Y)` by `nrow(target$Y)`. When `K` carries
+<code><a href="design_kernel.html">design_kernel()</a></code>, for the <em>aggregate row</em> space. Note that <code>q</code> here is the
+number of aggregate rows (for example <code>group:task:measure</code> cells), not the
+number of subject-level GLM effects used elsewhere in the package: <code>K</code> must
+therefore be <code>nrow(target$Y)</code> by <code>nrow(target$Y)</code>. When <code>K</code> carries
 dimnames they are matched against the aggregate row IDs; a kernel with only
 row names (or only column names) is validated and reordered on whichever
 labels are present. Rank-deficient PSD kernels keep a true square
-root: null directions stay at zero rather than receiving the jitter
-that [`.dkge_kernel_roots()`] uses for invertibility elsewhere.</p></dd>
+root and Moore–Penrose inverse root: null directions stay at zero.</p></dd>
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
 <dd><p>Number of components to retain. Requests larger than
-`min(nrow(Y), ncol(Y))` are capped with a message.</p></dd>
+<code>min(nrow(Y), ncol(Y))</code> are capped with a message.</p></dd>
 
 
 <dt id="arg-center">center<a class="anchor" aria-label="anchor" href="#arg-center"></a></dt>
 <dd><p>Centering applied to the aggregate matrix before fitting.
-The default `"none"` keeps the grand mean in the decomposition, which makes
+The default <code>"none"</code> keeps the grand mean in the decomposition, which makes
 the leading component largely a mean-level effect; under
-[dkge_aggregate_permute()] with `statistic = "singular_value"` that mean
+<code><a href="dkge_aggregate_permute.html">dkge_aggregate_permute()</a></code> with <code>statistic = "singular_value"</code> that mean
 survives subject-label permutation, so the resulting test has little power.
-Use `"grand"`/`"column"` centering, or a contrast statistic, when the
+Use <code>"grand"</code>/<code>"column"</code> centering, or a contrast statistic, when the
 question is about differences between aggregate rows.</p></dd>
 
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A `dkge_aggregate_fit` object to print.</p></dd>
+<dd><p>A <code>dkge_aggregate_fit</code> object to print.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -131,31 +134,31 @@ question is about differences between aggregate rows.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Object of class `dkge_aggregate_fit`. Notable fields:</p><dl><dt>U</dt>
+    <p>Object of class <code>dkge_aggregate_fit</code>. Notable fields:</p><dl><dt>U</dt>
 <dd><p>q x rank K-orthonormal row basis.</p></dd>
 
-    <dt>saliences</dt>
+<dt>saliences</dt>
 <dd><p><code>K %*% U</code>.</p></dd>
 
-    <dt>scores_feature</dt>
+<dt>scores_feature</dt>
 <dd><p>p x rank feature-space scores, <code>t(Yc) %*% saliences</code>.</p></dd>
 
-    <dt>singular_values</dt>
+<dt>singular_values</dt>
 <dd><p>Per-component energies,
-      <code>sqrt(colSums(scores_feature^2))</code>. For an unrotated fit these equal
-      <code>sqrt(eig_values[seq_len(rank)])</code> exactly; after
-      [dkge_aggregate_align()] they are the energies of the *rotated*
-      components and are no longer sorted.</p></dd>
+<code>sqrt(colSums(scores_feature^2))</code>. For an unrotated fit these equal
+<code>sqrt(eig_values[seq_len(rank)])</code> exactly; after
+<code><a href="dkge_aggregate_align.html">dkge_aggregate_align()</a></code> they are the energies of the <em>rotated</em>
+components and are no longer sorted.</p></dd>
 
-    <dt>eig_values</dt>
+<dt>eig_values</dt>
 <dd><p>Full length-q eigenvalue spectrum of <code>Chat</code>.</p></dd>
 
-    <dt>Chat</dt>
+<dt>Chat</dt>
 <dd><p>\(K^{1/2} Y_c Y_c^\top K^{1/2}\). Both <code>Chat</code> and
-      <code>eig_values</code> describe the data in the kernel metric and are
-      invariant to the component rotation applied by [dkge_aggregate_align()];
-      only <code>U</code>, <code>saliences</code>, <code>scores_feature</code>, and
-      <code>singular_values</code> are basis-dependent.</p></dd>
+<code>eig_values</code> describe the data in the kernel metric and are
+invariant to the component rotation applied by <code><a href="dkge_aggregate_align.html">dkge_aggregate_align()</a></code>;
+only <code>U</code>, <code>saliences</code>, <code>scores_feature</code>, and
+<code>singular_values</code> are basis-dependent.</p></dd>
 
 
 </dl></div>

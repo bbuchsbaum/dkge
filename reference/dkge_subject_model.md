@@ -2,7 +2,7 @@
 
 Wraps formula handling for subject-level DKGE analyses. The result owns
 the model matrix, term metadata, and subject identifiers used by
-\[dkge_between_rrr()\].
+[`dkge_between_rrr()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_rrr.md).
 
 ## Usage
 
@@ -21,7 +21,7 @@ dkge_subject_model(
 
 - formula:
 
-  A model formula such as \`~ group \* trait + age + sex\`.
+  A model formula such as `~ group * trait + age + sex`.
 
 - data:
 
@@ -29,29 +29,31 @@ dkge_subject_model(
 
 - subject_ids:
 
-  Optional subject identifiers aligned with \`data\` rows. Defaults to
-  the \`subject_id\` column when present, then \`rownames(data)\`, then
-  sequential IDs. Identifiers are stored as \`rownames\` of \`data\`
-  before \[stats::model.frame()\] so \`na.action = stats::na.omit\`
-  keeps IDs in sync with the retained rows.
+  Optional subject identifiers aligned with `data` rows. Defaults to the
+  `subject_id` column when present, then `rownames(data)`, then
+  sequential IDs. Identifiers are stored as `rownames` of `data` before
+  [`stats::model.frame()`](https://rdrr.io/r/stats/model.frame.html) so
+  `na.action = stats::na.omit` keeps IDs in sync with the retained rows.
 
 - nuisance:
 
   Optional character vector of term labels to treat as nuisance in
-  downstream inference. When \`dkge_between_permute(terms = NULL)\`,
-  these terms are excluded from the default test set.
+  downstream inference. When `dkge_between_permute(terms = NULL)`, these
+  terms are excluded from the default test set.
 
 - contrasts.arg:
 
-  Optional contrasts passed to \[stats::model.matrix()\].
+  Optional contrasts passed to
+  [`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html).
 
 - na.action:
 
-  NA handler for the model frame. Defaults to \[stats::na.fail()\].
+  NA handler for the model frame. Defaults to
+  [`stats::na.fail()`](https://rdrr.io/r/stats/na.fail.html).
 
 ## Value
 
-Object of class \`dkge_subject_model\`.
+Object of class `dkge_subject_model`.
 
 ## Examples
 

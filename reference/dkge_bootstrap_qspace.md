@@ -2,8 +2,14 @@
 
 Reweights subject contributions with i.i.d. multiplier weights,
 recomputes the tiny qxq eigendecomposition, and propagates contrasts to
-the medoid (and optionally voxel) space using cached transport
-operators.
+an identified reference (and optionally voxel) support using a validated
+typed fitted alignment. The cohort-trained truncated span makes this
+route approximate; callers must opt in with
+`allow_approximate_alignment = TRUE`. Fit-level MFA/energy weights act
+only on the reweighted pooled moment used to estimate each latent basis.
+The returned group map has an equal-subject base estimand: bootstrap
+multipliers resample subjects, but fit-level moment weights are not
+reused as second-level aggregation weights.
 
 ## Usage
 
@@ -23,6 +29,7 @@ dkge_bootstrap_qspace(
   sizes = NULL,
   medoid = 1L,
   voxel_operator = NULL,
+  allow_approximate_alignment = FALSE,
   ...
 )
 ```
@@ -31,11 +38,12 @@ dkge_bootstrap_qspace(
 
 - fit:
 
-  A fitted \`dkge\` object.
+  A fitted `dkge` object.
 
 - contrasts:
 
-  Contrast specification accepted by \[dkge_contrast()\].
+  Contrast specification accepted by
+  [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
 
 - B:
 
@@ -43,7 +51,9 @@ dkge_bootstrap_qspace(
 
 - scheme:
 
-  Multiplier distribution (\`"poisson"\`, \`"exp"\`, or \`"bayes"\`).
+  Multiplier distribution (`"poisson"`, `"exp"`, or `"bayes"`). Poisson
+  draws are conditioned on at least one positive subject multiplier, so
+  every bootstrap replicate contains a non-empty resampled cohort.
 
 - ridge:
 
@@ -51,12 +61,14 @@ dkge_bootstrap_qspace(
 
 - align:
 
-  Logical; when \`TRUE\` the resampled bases are aligned to the baseline
+  Logical; when `TRUE` the resampled bases are aligned to the baseline
   basis via K-Procrustes before contrasts are evaluated.
 
 - allow_reflection:
 
-  Passed to \[dkge_procrustes_K()\] when aligning bases.
+  Passed to
+  [`dkge_procrustes_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_procrustes_K.md)
+  when aligning bases.
 
 - seed:
 
@@ -64,33 +76,40 @@ dkge_bootstrap_qspace(
 
 - transport_cache:
 
-  Optional cache from \[dkge_prepare_transport()\].
+  Required typed fitted alignment object produced by
+  [`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md).
+  Untyped/legacy caches and automatic full-fit correspondence are
+  refused.
 
 - mapper:
 
-  Mapper specification used when a cache is not supplied.
+  Deprecated; automatic mapper fitting is no longer permitted.
 
 - centroids:
 
-  Optional centroids overriding those stored on the fit.
+  Deprecated; correspondence must be supplied through `transport_cache`.
 
 - sizes:
 
-  Optional list of cluster weights passed to
-  \[dkge_prepare_transport()\].
+  Deprecated compatibility argument; correspondence and masses must
+  already be fixed in `transport_cache`.
 
 - medoid:
 
-  Medoid index used during transport.
+  Deprecated compatibility argument.
 
 - voxel_operator:
 
   Optional matrix mapping medoid values to voxels.
 
+- allow_approximate_alignment:
+
+  Permit a typed alignment labelled approximate. Descriptive/ineligible
+  alignment is always refused.
+
 - ...:
 
-  Additional arguments forwarded to \[dkge_prepare_transport()\] when
-  the transport cache needs to be built.
+  Deprecated compatibility arguments; ignored.
 
 ## Value
 

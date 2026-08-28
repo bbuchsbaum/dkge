@@ -14,7 +14,8 @@ dkge_analytic_loso(fit, s, contrasts, tol = 1e-06, fallback = TRUE, ridge = 0)
 
 - fit:
 
-  A \`dkge\` object from \[dkge_fit()\]
+  A `dkge` object from
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
 
 - s:
 
@@ -38,10 +39,15 @@ dkge_analytic_loso(fit, s, contrasts, tol = 1e-06, fallback = TRUE, ridge = 0)
 
 ## Value
 
-List with fields: - \`v\`: Cluster contrast values for subject s -
-\`alpha\`: Contrast coordinates in latent space - \`basis\`:
-Approximated held-out basis U^(-s) - \`method\`: "analytic" or
-"fallback" if full eigen was used
+List with fields:
+
+- `v`: Cluster contrast values for subject s
+
+- `alpha`: Contrast coordinates in latent space
+
+- `basis`: Approximated held-out basis U^(-s)
+
+- `method`: "analytic" or "fallback" if full eigen was used
 
 ## Details
 
@@ -49,31 +55,42 @@ This function implements the first-order eigenvalue perturbation
 approximation described in the paper. For the held-out compressed
 covariance:
 
-Chat^(-s) ~ Chat - w_s S_s
+Delta_s = Chat^(-s) - Chat
 
-The eigenvalues and eigenvectors are updated using: - deltalambda_j =
--w_s v_j^T S_s v_j (eigenvalue shift) - deltav_j = -w_s Sum over k!=j of
-(v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
+where `Chat^(-s)` is formed with the same fold-local subject-weight
+normalization and shrinkage as exact LOSO. The eigenvalues and
+eigenvectors are updated using:
 
-This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r)
-operations where r is the rank. The approximation is accurate when: 1.
-Subject weights w_s are small (no single subject dominates) 2.
-Eigenvalue gaps are large (well-separated components) 3. The
-perturbation S_s is not aligned with transition regions
+- deltalambda_j = v_j^T Delta_s v_j (eigenvalue shift)
+
+- deltav_j = Sum over k!=j of (v_k^T Delta_s v_j)/(lambda_j - lambda_k)
+  v_k (eigenvector rotation)
+
+After the exact fold moment has been constructed, this replaces its
+O(q^3) eigen-decomposition with an O(q^2 r) first-order eigensystem
+update, where r is the rank. The approximation is accurate when:
+
+1.  The fold perturbation norm is small relative to the fitted
+    eigensystem
+
+2.  Eigenvalue gaps are large (well-separated components)
+
+3.  The resulting first-order rotation coefficients remain below the
+    gate
 
 When these conditions are violated (detected via condition number or
 eigenvalue gaps), the function can fall back to full
 eigen-decomposition.
 
 Fallback diagnostics use a closed reason vocabulary with this
-precedence: \`solver_not_pooled\`, \`pair_normalized_pooling\`,
-\`covariance_aware_moment\`, \`nonuniform_voxel_weights\`,
-\`missing_full_decomposition\`, \`dimension_mismatch\`, \`eigengap\`,
-and \`perturbation_magnitude\`. Structural reasons are checked before
-numerical perturbation thresholds, so a large perturbation cannot mask
-the more basic fact that the leave-one-out covariance is not a linear
-subtraction from the fitted pooled moment. A successful approximation
-reports \`analytic\`.
+precedence: `pair_normalized_pooling`, `covariance_aware_moment`,
+`nonuniform_voxel_weights`, `missing_full_decomposition`,
+`dimension_mismatch`, `eigengap`, and `perturbation_magnitude`.
+Structural reasons are checked before numerical perturbation thresholds,
+so a large perturbation cannot mask the more basic fact that the fitted
+moment does not support this approximation. The q-by-q perturbation
+itself is exact for the fold pooling contract; only its eigensystem
+update is first-order. A successful approximation reports `analytic`.
 
 ## References
 

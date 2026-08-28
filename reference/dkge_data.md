@@ -18,12 +18,12 @@ dkge_data(
 
 - betas:
 
-  List of subject records (matrices or \`dkge_subject\` objects)
+  List of subject records (matrices or `dkge_subject` objects)
 
 - designs:
 
-  Optional list of design matrices (ignored when \`betas\` already
-  contain subjects)
+  Optional list of design matrices (ignored when `betas` already contain
+  subjects)
 
 - omega:
 
@@ -37,14 +37,14 @@ dkge_data(
 
   Optional character vector pinning the global effect order. It must be
   a permutation of the effects observed across subjects (the union when
-  coverage is partial). Supply \`dkge_effect_grid()\$cell_labels\` here
-  so that the bundle, the design kernel, and the grid all index effects
+  coverage is partial). Supply `dkge_effect_grid()$cell_labels` here so
+  that the bundle, the design kernel, and the grid all index effects
   identically; without it the union is ordered by first appearance
-  across subjects, which depends on the order of \`betas\`.
+  across subjects, which depends on the order of `betas`.
 
 ## Value
 
-An object of class \`dkge_data\`
+An object of class `dkge_data`
 
 ## Examples
 

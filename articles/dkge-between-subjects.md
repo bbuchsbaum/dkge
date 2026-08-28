@@ -7,6 +7,13 @@ multivariate model and returns a coefficient map and a resampling test
 for each model term. The features may be component scores, transported
 parcels, or any common-space subject-by-feature matrix.
 
+This layer exists because within-subject and between-subject questions
+are not interchangeable. A task contrast asks how conditions differ
+*inside* a subject. A group or trait model asks why a common brain
+representation differs *across* subjects. Treating group as if every
+subject observed both group levels would use the wrong experimental
+unit.
+
 The workflow has three steps:
 
 1.  build a subject-by-feature target with
@@ -18,6 +25,14 @@ The workflow has three steps:
     and
     [`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md)
 
+``` text
+one common-space row per subject (Y) + subject metadata (X) -> distributed coefficient map (B) -> term-level resampling test
+```
+
+The first example is the shortest path. The residual-rotation and
+calibration sections explain when its p-values are defensible; they are
+reference material you can return to after the object flow is clear.
+
 ## What does the second-level model estimate?
 
 The between-subject model is a reduced-rank regression:
@@ -26,9 +41,8 @@ The between-subject model is a reduced-rank regression:
 Y = X B + E, \qquad \mathrm{rank}(B) \le r
 ```
 
-Here `Y` is a subject-by-feature matrix, `X` is the subject-level design
-matrix, and `B` contains distributed coefficient maps for your terms of
-interest.
+`Y` is a subject-by-feature matrix, `X` is the subject-level design, and
+`B` holds the distributed effects the model estimates.
 
 ## How do you fit a direct subject-by-feature matrix?
 
@@ -62,10 +76,22 @@ You can inspect the fitted term map directly.
 
 ``` r
 
-round(dkge_term_map(fit_between, "grouppatient:trait"), 2)
+interaction_map <- dkge_term_map(fit_between, "grouppatient:trait")
+round(interaction_map, 2)
 #> feature1 feature2 feature3 feature4 feature5 feature6 
 #>     1.94     1.02    -0.01    -0.99    -1.89    -0.96
 ```
+
+![Bar chart comparing the planted and estimated group-by-trait
+coefficient across six
+features.](dkge-between-subjects_files/figure-html/quick-term-map-plot-1.png)
+
+The alternating positive and negative coefficients are the result to
+interpret. Rank one does not mean “one significant feature”; it means
+the multivariate coefficient matrix is constrained to one shared
+response direction. The term-level resampling test below asks whether
+restoring this whole distributed pattern improves fit beyond the reduced
+model.
 
 For an unweighted, single-block model with a scientifically defensible
 Gaussian row-sphericity assumption, request a residual-space rotation
@@ -91,14 +117,18 @@ perm_between$summary[, c("term", "statistic", "p", "p_adjusted")]
 #> group:trait group:trait 4.263363e+00 0.01       0.01
 ```
 
+![Point plot of adjusted resampling p-values for group, trait, and
+group-by-trait
+terms.](dkge-between-subjects_files/figure-html/quick-permutation-plot-1.png)
+
 The global statistic is the reduction in residual sum of squares when
 the tested term is restored to the reduced model. Both methods refit at
-the same fitted rank (`object$rank`). Freedman–Lane has an extra caveat:
-if dropping the tested term lowers the reduced model’s estimable rank
-below that value, the reduced fit is clipped while the full fit is not,
-so the statistic also absorbs that rank difference. Rotation does not
-clip — the reduced design stays in `Q0` and the Haar draw lives in its
-complement. P-values use the finite-resample correction
+the same fitted rank (`fit_between$rank`). Freedman–Lane has an extra
+caveat: if dropping the tested term lowers the reduced model’s estimable
+rank below that value, the reduced fit is clipped while the full fit is
+not, so the statistic also absorbs that rank difference. Rotation does
+not clip — the reduced design stays in `Q0` and the Haar draw lives in
+its complement. P-values use the finite-resample correction
 `(1 + exceedances) / (B + 1)`. With `scope = "both"`, the result also
 contains featurewise tests; `feature_adjust = "maxT"` controls
 multiplicity against the largest feature statistic in each resample.
@@ -194,12 +224,13 @@ or recover the unadjusted power gap.
 
 ## How do you build the target from a DKGE fit?
 
-The more DKGE-native path is to let DKGE construct the subject
-representation first, then model subjects in that common target space.
+The DKGE-native path builds the subject representation first, then
+models subjects in that space rather than in raw feature space.
 
-This example starts from heterogeneous subject maps, fits DKGE,
-transports one contrast to a medoid subject, and then applies the
-between-subject model.
+This example starts from heterogeneous subject maps, fits DKGE, uses a
+separate simulated acquisition to identify functional correspondence,
+selects a reference support, and models the aligned subject rows. The
+reference is a display/support choice, not a privileged source of truth.
 
 ``` r
 
@@ -222,6 +253,21 @@ toy$X_list <- lapply(toy$X_list, function(X) {
   X
 })
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+names(centroids) <- toy$subject_ids
+
+alignment_toy <- dkge_sim_toy(
+  factors = list(condition = list(L = 2), phase = list(L = 2)),
+  active_terms = c("condition", "phase"),
+  S = 6,
+  P = c(4, 5, 3, 6, 4, 5),
+  snr = 6,
+  seed = 10
+)
+alignment_betas <- lapply(alignment_toy$B_list, function(B) {
+  rownames(B) <- effects
+  B
+})
+names(alignment_betas) <- toy$subject_ids
 
 fit_dkge <- dkge_fit(
   dkge_data(toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids),
@@ -232,22 +278,34 @@ fit_dkge <- dkge_fit(
 
 ``` r
 
-transport <- dkge_transport_spec(
-  centroids = centroids,
-  medoid = 1L,
-  method = "sinkhorn",
-  epsilon = 0.1
-)
-
 contrast <- matrix(c(1, 0, 0), ncol = 1, dimnames = list(NULL, "condition"))
 rownames(contrast) <- effects
 
-transported_target <- dkge_make_target(
+contrast_result <- dkge_contrast(
+  fit_dkge, contrast, method = "loso", align = FALSE
+)
+alignment_features <- dkge_alignment_features(
   fit_dkge,
-  type = "transported_maps",
-  contrast = contrast,
-  transport = transport,
-  crossfit = "analytic"
+  contrast_result,
+  independent_betas = alignment_betas,
+  independent_data_hash = "between-subjects-independent-acquisition"
+)
+mapped <- dkge_transport_contrasts_to_reference(
+  fit_dkge,
+  contrast_result,
+  alignment_features = alignment_features,
+  centroids = centroids,
+  selection_method = "geometry_only",
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.1)
+)
+transported_target <- dkge_make_target(
+  type = "matrix",
+  Y = mapped[["condition"]]$subj_values,
+  subject_ids = toy$subject_ids,
+  provenance = list(
+    source = "dkge_aligned_maps",
+    alignment_status = attr(mapped, "aligned_maps")$eligibility$status
+  )
 )
 
 dim(transported_target$Y)
@@ -276,9 +334,9 @@ perm_transport <- dkge_between_permute(
 
 perm_transport$summary[, c("term", "p")]
 #>                    term    p
-#> group             group 0.76
-#> trait             trait 0.78
-#> group:trait group:trait 1.00
+#> group             group 0.94
+#> trait             trait 0.50
+#> group:trait group:trait 0.40
 ```
 
 ## What should you inspect after fitting?
@@ -292,9 +350,9 @@ There are three outputs worth checking first:
 - `perm_transport$summary` gives a global multivariate resampling test
   for each term
 
-If you asked for featurewise inference,
+With featurewise inference requested,
 `perm_between$feature_tests[["group:trait"]]` adds per-feature
-statistics and adjusted p-values in the same target space.
+statistics alongside the omnibus test.
 
 Report the target construction, fitted rank, tested term, resampling
 method, number of resamples, exchangeability assumptions, and
@@ -305,9 +363,11 @@ evidence that every feature in its map is individually significant.
 
 Use `type = "component_scores"` in
 [`dkge_make_target()`](https://bbuchsbaum.github.io/dkge/reference/dkge_make_target.md)
-when you want a compact latent target, and use
-`type = "transported_maps"` when spatial interpretation in a common map
-space matters. See
+when you want a compact latent target. When spatial interpretation in a
+common map space matters, fit alignment explicitly and wrap its aligned
+rows as the matrix target, as above. See
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md)
+for held-out functional reference selection and template fitting, and
 [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
 for within-subject contrast inference. For cohorts with partial or
 unbalanced effect grids, first see

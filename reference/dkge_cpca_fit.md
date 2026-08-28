@@ -1,8 +1,11 @@
 # Fit DKGE with CPCA filtering
 
-Convenience wrapper around \[dkge()\] that enables CPCA filtering with a
-slightly terser interface. Either \`cpca_blocks\` or \`cpca_T\` must be
-provided. Additional arguments are forwarded to \[dkge()\].
+Convenience wrapper around
+[`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md) that
+enables CPCA filtering with a slightly terser interface. Either
+`cpca_blocks` or `cpca_T` must be provided. Additional arguments are
+forwarded to
+[`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md).
 
 ## Usage
 
@@ -20,25 +23,26 @@ dkge_cpca_fit(
 
 - ...:
 
-  Additional arguments passed to \[dkge()\].
+  Additional arguments passed to
+  [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md).
 
 - cpca_blocks:
 
   Optional integer vector specifying the effect rows that span a CPCA
-  design subspace. Ignored when \`cpca_part = "none"\` or when
-  \`cpca_T\` is provided.
+  design subspace. Ignored when `cpca_part = "none"` or when `cpca_T` is
+  provided.
 
 - cpca_T:
 
   Optional qxq0 matrix giving the CPCA design basis explicitly.
-  Overrides \`cpca_blocks\` when supplied.
+  Overrides `cpca_blocks` when supplied.
 
 - cpca_part:
 
-  Which CPCA-filtered component to fit: \`"none"\` (default) performs
-  the standard DKGE fit; \`"design"\` uses only the CPCA design part;
-  \`"resid"\` uses the residual part; \`"both"\` fits the design part
-  but also stores the residual basis.
+  Which CPCA-filtered component to fit: `"none"` (default) performs the
+  standard DKGE fit; `"design"` uses only the CPCA design part;
+  `"resid"` uses the residual part; `"both"` fits the design part but
+  also stores the residual basis.
 
 - cpca_ridge:
 

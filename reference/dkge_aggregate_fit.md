@@ -23,41 +23,41 @@ print(x, ...)
 
 - target:
 
-  A \`dkge_aggregate_target\` or row-by-feature numeric matrix.
+  A `dkge_aggregate_target` or row-by-feature numeric matrix.
 
 - K:
 
-  Optional design kernel, or an object returned by \[design_kernel()\],
-  for the \*aggregate row\* space. Note that \`q\` here is the number of
-  aggregate rows (for example \`group:task:measure\` cells), not the
-  number of subject-level GLM effects used elsewhere in the package:
-  \`K\` must therefore be \`nrow(target\$Y)\` by \`nrow(target\$Y)\`.
-  When \`K\` carries dimnames they are matched against the aggregate row
-  IDs; a kernel with only row names (or only column names) is validated
-  and reordered on whichever labels are present. Rank-deficient PSD
-  kernels keep a true square root: null directions stay at zero rather
-  than receiving the jitter that \[\`.dkge_kernel_roots()\`\] uses for
-  invertibility elsewhere.
+  Optional design kernel, or an object returned by
+  [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md),
+  for the *aggregate row* space. Note that `q` here is the number of
+  aggregate rows (for example `group:task:measure` cells), not the
+  number of subject-level GLM effects used elsewhere in the package: `K`
+  must therefore be `nrow(target$Y)` by `nrow(target$Y)`. When `K`
+  carries dimnames they are matched against the aggregate row IDs; a
+  kernel with only row names (or only column names) is validated and
+  reordered on whichever labels are present. Rank-deficient PSD kernels
+  keep a true square root and Moore–Penrose inverse root: null
+  directions stay at zero.
 
 - rank:
 
-  Number of components to retain. Requests larger than \`min(nrow(Y),
-  ncol(Y))\` are capped with a message.
+  Number of components to retain. Requests larger than
+  `min(nrow(Y), ncol(Y))` are capped with a message.
 
 - center:
 
   Centering applied to the aggregate matrix before fitting. The default
-  \`"none"\` keeps the grand mean in the decomposition, which makes the
+  `"none"` keeps the grand mean in the decomposition, which makes the
   leading component largely a mean-level effect; under
-  \[dkge_aggregate_permute()\] with \`statistic = "singular_value"\`
-  that mean survives subject-label permutation, so the resulting test
-  has little power. Use \`"grand"\`/\`"column"\` centering, or a
-  contrast statistic, when the question is about differences between
-  aggregate rows.
+  [`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md)
+  with `statistic = "singular_value"` that mean survives subject-label
+  permutation, so the resulting test has little power. Use
+  `"grand"`/`"column"` centering, or a contrast statistic, when the
+  question is about differences between aggregate rows.
 
 - x:
 
-  A \`dkge_aggregate_fit\` object to print.
+  A `dkge_aggregate_fit` object to print.
 
 - ...:
 
@@ -65,7 +65,7 @@ print(x, ...)
 
 ## Value
 
-Object of class \`dkge_aggregate_fit\`. Notable fields:
+Object of class `dkge_aggregate_fit`. Notable fields:
 
 - U:
 
@@ -83,8 +83,10 @@ Object of class \`dkge_aggregate_fit\`. Notable fields:
 
   Per-component energies, `sqrt(colSums(scores_feature^2))`. For an
   unrotated fit these equal `sqrt(eig_values[seq_len(rank)])` exactly;
-  after \[dkge_aggregate_align()\] they are the energies of the
-  \*rotated\* components and are no longer sorted.
+  after
+  [`dkge_aggregate_align()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_align.md)
+  they are the energies of the *rotated* components and are no longer
+  sorted.
 
 - eig_values:
 
@@ -94,8 +96,9 @@ Object of class \`dkge_aggregate_fit\`. Notable fields:
 
   \\K^{1/2} Y_c Y_c^\top K^{1/2}\\. Both `Chat` and `eig_values`
   describe the data in the kernel metric and are invariant to the
-  component rotation applied by \[dkge_aggregate_align()\]; only `U`,
-  `saliences`, `scores_feature`, and `singular_values` are
+  component rotation applied by
+  [`dkge_aggregate_align()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_align.md);
+  only `U`, `saliences`, `scores_feature`, and `singular_values` are
   basis-dependent.
 
 ## Examples

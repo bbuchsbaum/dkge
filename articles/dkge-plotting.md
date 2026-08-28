@@ -1,10 +1,14 @@
 # Plotting DKGE Fits
 
-This vignette shows how to inspect one DKGE fit without mistaking a
-polished figure for statistical evidence. We will plot its
-eigenspectrum, effect saliences, subject contributions, and subspace
-sensitivity. Each panel answers a descriptive question; none supplies a
-p-value or validates the scientific model on its own.
+You have a fitted DKGE model and want to see what it found. Four panels
+answer that, each a descriptive question about the fit: how much
+variation was retained, which effects define a component, whether one
+subject dominates, and how stable the subspace is under refitting. None
+supplies a p-value or validates the scientific model on its own, and a
+polished figure is easy to mistake for evidence that it does.
+
+You need a fitted `dkge` object. This page builds one from a small
+simulation so that every panel is reproducible.
 
 ## Prerequisites
 
@@ -15,20 +19,18 @@ library(ggplot2)
 library(patchwork)
 ```
 
-The information-map plotting functions provide enhanced labeling
-capabilities by optionally utilizing the `ggrepel` package to annotate
-top anchors with non-overlapping text placement. When `ggrepel` is not
-available in your environment, the code gracefully falls back to
-standard base text labels to ensure functionality is maintained.
+`ggplot2` and `patchwork` are required. `ggrepel` is optional: the
+information-map functions label top anchors with it when it is
+installed, and with base text otherwise.
 
 ## Simulate a toy dataset
 
-We begin by generating a small synthetic dataset manually. Each subject
-has a diagonal design matrix (one column per effect), and we add modest
-signal plus noise so the latent components are recoverable but not
-trivial. Using this construction keeps the vignette self-contained and
-avoids dependencies on specialised simulators while still providing
-deterministic ground truth for the plots.
+Each subject gets a diagonal design matrix, one column per effect, plus
+modest signal and noise so the latent components are recoverable without
+being trivial.
+[`dkge_sim_toy()`](https://bbuchsbaum.github.io/dkge/reference/dkge_sim_toy.md)
+is not used here because the plots need deterministic ground truth for a
+fixed four-effect design.
 
 ``` r
 
@@ -52,7 +54,7 @@ fit <- dkge(subjects, K = K, rank = 3, w_method = 'mfa_sigma1')
 ## Auxiliary objects
 
 To explain the stability plot’s input contract, we create perturbed
-versions of the fitted rank-three basis and re-orthonormalise them in
+versions of the fitted rank-three basis and re-orthonormalize them in
 the $`K`$-metric. These are controlled sensitivity perturbations, not
 cross-validation folds. In an analysis, supply bases actually refitted
 inside the relevant folds.
@@ -80,16 +82,22 @@ for the classifier workflow that precedes those attribution methods.
 
 ### Scree
 
+The scree plot shows each retained component’s share of the fitted
+variation. The marked rank below is chosen for illustration; in an
+analysis you would obtain it from
+[`dkge_cv_rank_loso()`](https://bbuchsbaum.github.io/dkge/reference/dkge_cv_rank_loso.md)
+or
+[`dkge_cv_kernel_rank()`](https://bbuchsbaum.github.io/dkge/reference/dkge_cv_kernel_rank.md)
+rather than by eye.
+
 ``` r
 
-# For illustrative purposes we annotate the scree at component 3.
-# In a real analysis you would obtain this optimal rank from dkge_cv_rank_loso()
-# or dkge_cv_kernel_rank() cross-validation procedures.
 one_se_pick <- 3
 dkge_plot_scree(fit, one_se_pick = one_se_pick)
 ```
 
-![](dkge-plotting_files/figure-html/scree-1.png)
+![Scree plot of fitted variation with the illustrative rank-three
+selection marked.](dkge-plotting_files/figure-html/scree-1.png)
 
 ### Effect-space loadings
 
@@ -98,21 +106,29 @@ dkge_plot_scree(fit, one_se_pick = one_se_pick)
 dkge_plot_effect_loadings(fit, comps = 1:3, zscore = TRUE)
 ```
 
-![](dkge-plotting_files/figure-html/loadings-1.png)
+![Heatmap of standardized effect-space saliences for three DKGE
+components.](dkge-plotting_files/figure-html/loadings-1.png)
+
+Rows are effects, columns are components. Read down a column: effects
+with similar color and magnitude move together in that component, and
+effects with opposite colors define a contrast-like pattern. Because
+`zscore = TRUE` standardizes loadings within each effect, compare cells
+along a row rather than across rows; the display shows where each effect
+is expressed, not how large its raw loading is.
 
 ### Subject contributions
 
 [`dkge_plot_subject_contrib()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_subject_contrib.md)
-returns two linked panels. The left panel simply visualises the
-subject-level weights that were used while fitting the model
-(`fit$weights`). Those weights depend on the `w_method` argument passed
-to [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md): in
-this vignette we deliberately chose `w_method = "none"`, so each subject
-keeps unit weight and the bars are all equal to one. Switching to
-`"mfa_sigma1"` or `"energy"` would display the corresponding MFA-style
-or energy-based weighting actually used in the eigensolve. The heatmap
-on the right shows how much norm (“energy”) each subject contributes to
-the selected components after those weights have been applied.
+returns two linked panels. The left panel shows the subject-level
+weights used while fitting the model (`fit$weights`). Those weights
+depend on the `w_method` argument passed to
+[`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md). This
+fit uses `w_method = "mfa_sigma1"`, the MFA-style default, so the bars
+vary around one: a subject whose block carries a large leading singular
+value is downweighted. `w_method = "none"` would give every subject unit
+weight and a flat row of bars. The heatmap on the right shows how much
+norm (“energy”) each subject contributes to the selected components
+after those weights have been applied.
 
 ``` r
 
@@ -120,7 +136,9 @@ contrib <- dkge_plot_subject_contrib(fit, comps = 1:3)
 contrib$weights + contrib$energy + patchwork::plot_layout(widths = c(1, 2))
 ```
 
-![](dkge-plotting_files/figure-html/contrib-1.png)
+![Linked bar and heatmap panels showing subject fitting weights and
+component contribution
+energy.](dkge-plotting_files/figure-html/contrib-1.png)
 
 ### Subspace stability
 
@@ -136,7 +154,8 @@ deviate materially.
 dkge_plot_subspace_stability(bases, K = fit[['K']], labels = base_labels)
 ```
 
-![](dkge-plotting_files/figure-html/stability-1.png)
+![Principal-angle stability curves comparing four perturbed bases with
+the consensus basis.](dkge-plotting_files/figure-html/stability-1.png)
 
 ## Combine the fit diagnostics
 
@@ -151,7 +170,9 @@ dkge_plot_suite(fit,
                 top = 5)
 ```
 
-![](dkge-plotting_files/figure-html/suite-1.png)
+![Dashboard combining scree, effect saliences, subject contributions,
+and subspace stability
+diagnostics.](dkge-plotting_files/figure-html/suite-1.png)
 
 [`dkge_plot_suite()`](https://bbuchsbaum.github.io/dkge/reference/dkge_plot_suite.md)
 arranges the available panels and leaves the attribution row empty when
@@ -172,7 +193,7 @@ dkge_plot_suite(fit,
                 height = 10)
 ```
 
-## Summary
+## What these panels do and do not establish
 
 Use the scree plot to describe retained variation, the salience heatmap
 to name effect directions, the contribution panels to detect subject
@@ -180,3 +201,14 @@ dominance, and principal angles to summarize refit sensitivity. Save the
 figure only after the objects behind those panels come from the analysis
 being reported. Visual coherence improves communication; it does not
 upgrade descriptive diagnostics into inferential evidence.
+
+## Where to go next
+
+- [`vignette("dkge-components")`](https://bbuchsbaum.github.io/dkge/articles/dkge-components.md)
+  reads the same saliences as scientific claims rather than as panels.
+- [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
+  is the page that supplies the evidence these panels deliberately do
+  not.
+- [`vignette("dkge-dense-rendering")`](https://bbuchsbaum.github.io/dkge/articles/dkge-dense-rendering.md)
+  maps a component into a shared brain space once you have one worth
+  mapping.

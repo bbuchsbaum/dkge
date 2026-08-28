@@ -28,82 +28,84 @@ dkge_weights(
 
   Optional prior weights: numeric vector of length V, logical mask,
   integer indices, or ROI labels (factor/character/integer of length V)
-  per voxel. Helpers \[dkge_weights_prior_mask()\] and
-  \[dkge_weights_prior_roi()\] ease construction.
+  per voxel. Helpers
+  [`dkge_weights_prior_mask()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights_prior_mask.md)
+  and
+  [`dkge_weights_prior_roi()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights_prior_roi.md)
+  ease construction.
 
 - adapt:
 
-  Adaptive weighting rule, one of \`"none"\`, \`"kenergy"\`,
-  \`"precision"\`, \`"kenergy_prec"\`, or \`"reliability"\`. The
-  \`"reliability"\` rule computes split-half squared inter-run
-  correlation per voxel and requires \`B_list2\` (a second run of beta
-  matrices, one per subject).
+  Adaptive weighting rule, one of `"none"`, `"kenergy"`, `"precision"`,
+  `"kenergy_prec"`, or `"reliability"`. The `"reliability"` rule
+  computes split-half squared inter-run correlation per voxel and
+  requires `B_list2` (a second run of beta matrices, one per subject).
 
 - B_list2:
 
-  Optional second-run beta list (same structure as \`B_list\` used at
-  fit time): one \`q x V\` matrix per subject. Required when \`adapt =
-  "reliability"\`. Per-voxel reliability is estimated as the squared
-  Pearson correlation of cross-subject mean activations between run 1
-  and run 2.
+  Optional second-run beta list (same structure as `B_list` used at fit
+  time): one `q x V` matrix per subject. Required when
+  `adapt = "reliability"`. Per-voxel reliability is estimated as the
+  squared Pearson correlation of cross-subject mean activations between
+  run 1 and run 2.
 
 - combine:
 
-  How prior and adaptive sources combine: \`"product"\` (default),
-  \`"sum"\`, \`"override_adapt"\`, or \`"prefer_prior"\`.
+  How prior and adaptive sources combine: `"product"` (default),
+  `"sum"`, `"override_adapt"`, or `"prefer_prior"`.
 
 - mix:
 
-  Numeric in \[0,1\] controlling the relative influence of the adaptive
-  component. Interpreted in log-space for \`combine = "product"\`.
+  Numeric in `[0, 1]` controlling the relative influence of the adaptive
+  component. Interpreted in log-space for `combine = "product"`.
 
 - shrink:
 
-  List with fields \`alpha\` (shrink towards uniform), \`winsor\` (upper
-  quantile cap), \`normalize\` (\`"mean"\` or \`"sum"\`), and optional
-  \`roi_smooth = TRUE\` to median-smooth within ROIs.
+  List with fields `alpha` (shrink towards uniform), `winsor` (upper
+  quantile cap), `normalize` (`"mean"` or `"sum"`), and optional
+  `roi_smooth = TRUE` to median-smooth within ROIs.
 
 - scope:
 
-  Either \`"fold"\` (default: compute adapt weights from training
-  subjects within each fold) or \`"subject"\` (per-subject adaptive
-  weights averaged for fold pooling).
+  Either `"fold"` (default: compute adapt weights from training subjects
+  within each fold) or `"subject"` (per-subject adaptive weights
+  averaged for fold pooling).
 
 - k_weight:
 
-  Optional effect-space kernel for k-energy rules. When \`NULL\` we
-  reuse the kernel stored in the fit, with optional factor \`collapse\`.
+  Optional effect-space kernel for k-energy rules. When `NULL` we reuse
+  the kernel stored in the fit, with optional factor `collapse`.
 
 - collapse:
 
-  Optional list describing factor collapses (e.g., \`list(time =
-  "mean")\` or \`list(time = list(method = "mean", window = 3:8))\`).
+  Optional list describing factor collapses (e.g., `list(time = "mean")`
+  or `list(time = list(method = "mean", window = 3:8))`).
 
 - roi:
 
-  Optional ROI labels used when \`shrink\$roi_smooth = TRUE\`.
+  Optional ROI labels used when `shrink$roi_smooth = TRUE`.
 
 ## Value
 
-Object of class \`"dkge_weights"\`.
+Object of class `"dkge_weights"`.
 
 ## Combine modes
 
-- \`"product"\`:
+- `"product"`:
 
   Geometric mean of prior and adaptive weights, blended in log-space by
-  \`mix\` (default). Smooth and robust.
+  `mix` (default). Smooth and robust.
 
-- \`"sum"\`:
+- `"sum"`:
 
-  Linear mixture: \`(1 - mix) \* prior + mix \* adaptive\`.
+  Linear mixture: `(1 - mix) * prior + mix * adaptive`.
 
-- \`"override_adapt"\`:
+- `"override_adapt"`:
 
   Adaptive weight is used wherever it is finite and positive; falls back
   to prior otherwise. Adaptive takes priority.
 
-- \`"prefer_prior"\`:
+- `"prefer_prior"`:
 
   Prior weight is used wherever it is finite and positive; falls back to
   adaptive otherwise. Prior takes priority.

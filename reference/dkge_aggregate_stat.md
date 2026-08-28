@@ -2,11 +2,14 @@
 
 Aggregate statistics operate on a cell-mean decomposition, not on a
 subject-level second-level model. In particular,
-\`"between_group_contrast"\` is a convenience bridge statistic: it
-applies a supplied group-by-cell row contrast to the selected
-component's singular-value-scaled aggregate saliences. It should not be
-interpreted as a replacement for \[dkge_between_rrr()\] or
-\[dkge_between_permute()\] on subject-level targets.
+`"between_group_contrast"` is a convenience bridge statistic: it applies
+a supplied group-by-cell row contrast to the selected component's
+singular-value-scaled aggregate saliences. It should not be interpreted
+as a replacement for
+[`dkge_between_rrr()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_rrr.md)
+or
+[`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md)
+on subject-level targets.
 
 ## Usage
 
@@ -25,19 +28,19 @@ dkge_aggregate_stat(
 
 - fit:
 
-  A \`dkge_aggregate_fit\`.
+  A `dkge_aggregate_fit`.
 
 - statistic:
 
-  Built-in statistic name or a function accepting \`fit\`.
-  \`"singular_value"\` returns the selected component singular value.
-  \`"salience_contrast"\` projects the selected component salience
-  vector onto \`contrast\`. \`"component_score_contrast"\` applies the
-  same contrast to the component's singular-value-scaled salience
-  vector. \`"contrast_score"\` is a legacy alias for
-  \`"salience_contrast"\`. \`"between_group_contrast"\` is a
-  bridge-analysis alias for \`"component_score_contrast"\` and should be
-  supplied a group-by-within row contrast.
+  Built-in statistic name or a function accepting `fit`.
+  `"singular_value"` returns the selected component singular value.
+  `"salience_contrast"` projects the selected component salience vector
+  onto `contrast`. `"component_score_contrast"` applies the same
+  contrast to the component's singular-value-scaled salience vector.
+  `"contrast_score"` is a legacy alias for `"salience_contrast"`.
+  `"between_group_contrast"` is a bridge-analysis alias for
+  `"component_score_contrast"` and should be supplied a group-by-within
+  row contrast.
 
 - component:
 
@@ -46,29 +49,34 @@ dkge_aggregate_stat(
 - contrast:
 
   Numeric row contrast. Required for every statistic except
-  \`"singular_value"\`, i.e. for \`"salience_contrast"\`,
-  \`"component_score_contrast"\`, \`"contrast_score"\`, and
-  \`"between_group_contrast"\`. May be named, in which case it is
+  `"singular_value"`, i.e. for `"salience_contrast"`,
+  `"component_score_contrast"`, `"contrast_score"`, and
+  `"between_group_contrast"`. May be named, in which case it is
   reordered to the aggregate row IDs.
 
 - ...:
 
   Additional arguments passed to a user-supplied statistic function.
-  Built-in statistics take only \`component\` and \`contrast\`, so any
-  other argument reaching \`...\` is reported as an error rather than
-  being silently ignored.
+  Built-in statistics take only `component` and `contrast`, so any other
+  argument reaching `...` is reported as an error rather than being
+  silently ignored.
 
 ## Value
 
-Numeric scalar statistic. Contrast statistics are returned
-\*\*signed\*\*; the sign is only interpretable relative to the component
-orientation of the fit the statistic is evaluated on.
-\[dkge_aggregate_bootstrap()\] orients resampled fits with
-\[dkge_aggregate_align()\] before taking the statistic;
-\[dkge_aggregate_permute()\] does not (null draws stay unaligned;
-two-sided \`abs()\` absorbs the arbitrary component sign).
-\[dkge_aggregate_bootstrap()\] reports a percentile interval on the
-signed statistic so that it can legitimately contain zero.
+Numeric scalar statistic. Contrast statistics are returned **signed**;
+the sign is only interpretable relative to the component orientation of
+the fit the statistic is evaluated on.
+[`dkge_aggregate_bootstrap()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_bootstrap.md)
+orients resampled fits with
+[`dkge_aggregate_align()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_align.md)
+before taking the statistic;
+[`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md)
+does not (null draws stay unaligned; two-sided
+[`abs()`](https://rdrr.io/r/base/MathFun.html) absorbs the arbitrary
+component sign).
+[`dkge_aggregate_bootstrap()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_bootstrap.md)
+reports a percentile interval on the signed statistic so that it can
+legitimately contain zero.
 
 ## Examples
 

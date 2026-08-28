@@ -4,7 +4,6 @@ pkgdown_sha: ~
 articles:
   dkge-adaptive-weighting: dkge-adaptive-weighting.html
   dkge-anchors: dkge-anchors.html
-  dkge-architecture: dkge-architecture.html
   dkge-between-subjects: dkge-between-subjects.html
   dkge-classification: dkge-classification.html
   dkge-components: dkge-components.html
@@ -13,14 +12,17 @@ articles:
   dkge-cpca: dkge-cpca.html
   dkge-dense-rendering: dkge-dense-rendering.html
   dkge-design-kernels: dkge-design-kernels.html
+  dkge-functional-alignment: dkge-functional-alignment.html
   dkge-partial-effect-spaces: dkge-partial-effect-spaces.html
   dkge-performance: dkge-performance.html
   dkge-plotting: dkge-plotting.html
+  dkge-spatial-regularization: dkge-spatial-regularization.html
+  dkge-unbalanced-trialwise: dkge-unbalanced-trialwise.html
   dkge-vs-pls: dkge-vs-pls.html
   dkge-weighting: dkge-weighting.html
   dkge-workflow: dkge-workflow.html
   dkge: dkge.html
-last_built: 2026-08-21T12:31Z
+last_built: 2026-08-28T16:03Z
 urls:
   reference: https://bbuchsbaum.github.io/dkge/reference
   article: https://bbuchsbaum.github.io/dkge/articles

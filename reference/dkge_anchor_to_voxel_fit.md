@@ -1,6 +1,6 @@
 # Fit a sparse anchor-to-voxel decoder
 
-Each voxel is represented as a convex combination of its \`k\` nearest
+Each voxel is represented as a convex combination of its `k` nearest
 anchors using Gaussian weights. The result can be reused to decode any
 anchor-level map.
 
@@ -14,11 +14,11 @@ dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 8, sigma = NULL)
 
 - anchors:
 
-  Anchor coordinate matrix (\`Q x 3\`).
+  Anchor coordinate matrix (`Q x 3`).
 
 - vox_xyz:
 
-  Voxel coordinate matrix (\`V x 3\`).
+  Voxel coordinate matrix (`V x 3`).
 
 - k:
 
@@ -26,13 +26,13 @@ dkge_anchor_to_voxel_fit(anchors, vox_xyz, k = 8, sigma = NULL)
 
 - sigma:
 
-  Optional Gaussian length-scale. If \`NULL\`, it is set to the square
+  Optional Gaussian length-scale. If `NULL`, it is set to the square
   root of the median squared distance between voxels and their nearest
   anchors.
 
 ## Value
 
-A decoder object storing neighbour indices, weights, and a sparse matrix
+A decoder object storing neighbor indices, weights, and a sparse matrix
 implementing the transformation.
 
 ## Examples

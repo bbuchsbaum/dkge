@@ -26,30 +26,34 @@ unaligned refit."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -64,7 +68,7 @@ unaligned refit."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Permutation inference for aggregate targets</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-aggregate.R" class="external-link"><code>R/dkge-aggregate.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-aggregate.R" class="external-link"><code>R/dkge-aggregate.R</code></a></small>
       <div class="d-none name"><code>dkge_aggregate_permute.Rd</code></div>
     </div>
 
@@ -102,12 +106,12 @@ unaligned refit.</p>
 
 
 <dl><dt id="arg-target">target<a class="anchor" aria-label="anchor" href="#arg-target"></a></dt>
-<dd><p>A `dkge_aggregate_target`.</p></dd>
+<dd><p>A <code>dkge_aggregate_target</code>.</p></dd>
 
 
 <dt id="arg-k">K<a class="anchor" aria-label="anchor" href="#arg-k"></a></dt>
-<dd><p>Optional aggregate-row design kernel. See [dkge_aggregate_fit()] for
-the row-space convention (`q` = number of aggregate rows).</p></dd>
+<dd><p>Optional aggregate-row design kernel. See <code><a href="dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code> for
+the row-space convention (<code>q</code> = number of aggregate rows).</p></dd>
 
 
 <dt id="arg-statistic">statistic<a class="anchor" aria-label="anchor" href="#arg-statistic"></a></dt>
@@ -120,35 +124,35 @@ the row-space convention (`q` = number of aggregate rows).</p></dd>
 
 <dt id="arg-group-vars">group_vars<a class="anchor" aria-label="anchor" href="#arg-group-vars"></a></dt>
 <dd><p>Subject-level labels to permute. Defaults to
-`target$group_vars`, and must include all of `target$group_vars`.</p></dd>
+<code>target$group_vars</code>, and must include all of <code>target$group_vars</code>.</p></dd>
 
 
 <dt id="arg-rank-center">rank, center<a class="anchor" aria-label="anchor" href="#arg-rank-center"></a></dt>
-<dd><p>Passed to [dkge_aggregate_fit()].</p></dd>
+<dd><p>Passed to <code><a href="dkge_aggregate_fit.html">dkge_aggregate_fit()</a></code>.</p></dd>
 
 
 <dt id="arg-component">component<a class="anchor" aria-label="anchor" href="#arg-component"></a></dt>
-<dd><p>Component index passed to [dkge_aggregate_stat()] for the
-built-in statistics. It is a formal argument rather than part of `...`
-because R's partial matching would otherwise bind a `component =` argument
-to `component_scale`/`component_contrasts`. User-supplied statistic
+<dd><p>Component index passed to <code><a href="dkge_aggregate_stat.html">dkge_aggregate_stat()</a></code> for the
+built-in statistics. It is a formal argument rather than part of <code>...</code>
+because R's partial matching would otherwise bind a <code>component =</code> argument
+to <code>component_scale</code>/<code>component_contrasts</code>. User-supplied statistic
 functions do not receive it.</p></dd>
 
 
 <dt id="arg-alternative">alternative<a class="anchor" aria-label="anchor" href="#arg-alternative"></a></dt>
-<dd><p>Direction of the permutation p-value. `"two.sided"`
-(the default) compares `abs(null)` to `abs(observed)`, which is the
+<dd><p>Direction of the permutation p-value. <code>"two.sided"</code>
+(the default) compares <code>abs(null)</code> to <code>abs(observed)</code>, which is the
 appropriate choice for the signed contrast statistics returned by
-[dkge_aggregate_stat()] because the component sign is arbitrary.
-`"greater"`/`"less"` compare the signed values, and `"greater"` is the
-natural choice for a non-negative statistic such as `"singular_value"`.</p></dd>
+<code><a href="dkge_aggregate_stat.html">dkge_aggregate_stat()</a></code> because the component sign is arbitrary.
+<code>"greater"</code>/<code>"less"</code> compare the signed values, and <code>"greater"</code> is the
+natural choice for a non-negative statistic such as <code>"singular_value"</code>.</p></dd>
 
 
 <dt id="arg-parallel">parallel<a class="anchor" aria-label="anchor" href="#arg-parallel"></a></dt>
-<dd><p>Logical; if `TRUE`, evaluate draws with
-`future.apply::future_lapply()`. Permutation indices are drawn up front in
+<dd><p>Logical; if <code>TRUE</code>, evaluate draws with
+<code><a href="https://future.apply.futureverse.org/reference/future_lapply.html" class="external-link">future.apply::future_lapply()</a></code>. Permutation indices are drawn up front in
 the calling RNG stream, so results are identical for either setting of
-`parallel` given the same `seed`.</p></dd>
+<code>parallel</code> given the same <code>seed</code>.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
@@ -156,39 +160,38 @@ the calling RNG stream, so results are identical for either setting of
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to [dkge_aggregate_stat()]. Every
-other setting is a named formal, so a misspelled argument (`sed = 1` for
-`seed = 1`) lands here and is reported as an error whenever `statistic` is
-one of the built-ins; `...` reaches only user-supplied statistic functions.</p></dd>
+<dd><p>Additional arguments passed to <code><a href="dkge_aggregate_stat.html">dkge_aggregate_stat()</a></code>. Every
+other setting is a named formal, so a misspelled argument (<code>sed = 1</code> for
+<code>seed = 1</code>) lands here and is reported as an error whenever <code>statistic</code> is
+one of the built-ins; <code>...</code> reaches only user-supplied statistic functions.</p></dd>
 
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A `dkge_aggregate_permutation` object to print.</p></dd>
+<dd><p>A <code>dkge_aggregate_permutation</code> object to print.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Object of class `dkge_aggregate_permutation`. `observed` and `null`
-  hold signed statistics; `p` is computed according to `alternative`.</p>
+    <p>Object of class <code>dkge_aggregate_permutation</code>. <code>observed</code> and <code>null</code>
+hold signed statistics; <code>p</code> is computed according to <code>alternative</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Because a permuted subject label changes which aggregate row each subject
-contributes to, `group_vars` must cover every subject-level variable that
-defines the aggregate rows (`target$group_vars`). Permuting a strict subset
+contributes to, <code>group_vars</code> must cover every subject-level variable that
+defines the aggregate rows (<code>target$group_vars</code>). Permuting a strict subset
 would let the joint set of row keys change from draw to draw, so it is
 rejected up front rather than failing partway through the run.</p>
-
-<p>Null draws are evaluated **unaligned**. Aligning every permutation to the
+<p>Null draws are evaluated <strong>unaligned</strong>. Aligning every permutation to the
 observed fit shrinks component statistics (aligned
 \(sv_1 = \sqrt{\sum_k d_k^2 R_{k1}^2} \le d_1\)) and invalidates the
-null at rank greater than one. [dkge_aggregate_align()] is still run so
-that `alignment_summary` can flag weak or near-tied components, but that
+null at rank greater than one. <code><a href="dkge_aggregate_align.html">dkge_aggregate_align()</a></code> is still run so
+that <code>alignment_summary</code> can flag weak or near-tied components, but that
 rotation is diagnostic only and is not passed to
-[dkge_aggregate_stat()]. `"two.sided"` is the right default for
+<code><a href="dkge_aggregate_stat.html">dkge_aggregate_stat()</a></code>. <code>"two.sided"</code> is the right default for
 sign-ambiguous component statistics because the unaligned component sign
-is arbitrary; `"greater"` remains the natural choice for the non-negative
-`"singular_value"` statistic. Bootstrap resampling keeps alignment
+is arbitrary; <code>"greater"</code> remains the natural choice for the non-negative
+<code>"singular_value"</code> statistic. Bootstrap resampling keeps alignment
 because the observed fit is a legitimate reference for a CI.</p>
     </div>
 

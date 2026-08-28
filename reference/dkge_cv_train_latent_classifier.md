@@ -24,29 +24,29 @@ dkge_cv_train_latent_classifier(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - y:
 
-  Either a factor of length \`S\` (subject-level labels) or a list of
-  length \`S\` supplying per-sample labels for each subject.
+  Either a factor of length `S` (subject-level labels) or a list of
+  length `S` supplying per-sample labels for each subject.
 
 - Z_by_subject:
 
-  Optional list of latent feature matrices (\`P_s x r\`). When \`NULL\`,
-  \[dkge_project_clusters_to_latent()\] is used.
+  Optional list of latent feature matrices (`P_s x r`). When `NULL`,
+  [`dkge_project_clusters_to_latent()`](https://bbuchsbaum.github.io/dkge/reference/dkge_project_clusters_to_latent.md)
+  is used.
 
 - folds:
 
-  Either an integer \`K\` or a \`dkge_folds\` object created with
-  \[dkge_define_folds()\].
+  Either an integer `K` or a `dkge_folds` object created with
+  [`dkge_define_folds()`](https://bbuchsbaum.github.io/dkge/reference/dkge_define_folds.md).
 
 - model:
 
-  Binary classifier: \`"lda"\` (pooled covariance linear discriminant,
-  default), \`"ridge_logit"\` (ridge-penalised logistic regression via
-  glmnet when available), or \`"lsvm"\` (placeholder falling back to
-  LDA).
+  Binary classifier: `"lda"` (pooled covariance linear discriminant,
+  default), `"ridge_logit"` (ridge-penalised logistic regression via
+  glmnet when available), or `"lsvm"` (placeholder falling back to LDA).
 
 - ridge:
 
@@ -55,19 +55,19 @@ dkge_cv_train_latent_classifier(
 
 - level:
 
-  Training granularity: \`"subject"\` averages each subject's clusters,
-  while \`"sample"\` stacks all cluster samples from training subjects.
+  Training granularity: `"subject"` averages each subject's clusters,
+  while `"sample"` stacks all cluster samples from training subjects.
 
 - standardize:
 
-  Logical; when \`TRUE\` (default) latent features are standardised
-  within each training fold before fitting. Stored weight vectors are
-  converted back to the original latent scale.
+  Logical; when `TRUE` (default) latent features are standardised within
+  each training fold before fitting. Stored weight vectors are converted
+  back to the original latent scale.
 
 ## Value
 
-An object of class \`dkge_clf\` containing fold models, per-subject
-weight vectors, and metadata required by downstream mapping utilities.
+An object of class `dkge_clf` containing fold models, per-subject weight
+vectors, and metadata required by downstream mapping utilities.
 
 ## Examples
 

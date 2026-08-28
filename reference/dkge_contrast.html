@@ -22,30 +22,34 @@ for multiple cross-fitting strategies to ensure unbiased estimation."></head><bo
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -60,7 +64,7 @@ for multiple cross-fitting strategies to ensure unbiased estimation."></head><bo
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Compute DKGE contrasts with cross-fitting</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-contrast.R" class="external-link"><code>R/dkge-contrast.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-contrast.R" class="external-link"><code>R/dkge-contrast.R</code></a></small>
       <div class="d-none name"><code>dkge_contrast.Rd</code></div>
     </div>
 
@@ -81,6 +85,7 @@ for multiple cross-fitting strategies to ensure unbiased estimation.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  align <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  transport <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  collinearity_tol <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -90,7 +95,7 @@ for multiple cross-fitting strategies to ensure unbiased estimation.</p>
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>A `dkge` object from [dkge_fit()] or [dkge()]</p></dd>
+<dd><p>A <code>dkge</code> object from <code><a href="dkge_fit.html">dkge_fit()</a></code> or <code><a href="dkge.html">dkge()</a></code></p></dd>
 
 
 <dt id="arg-contrasts">contrasts<a class="anchor" aria-label="anchor" href="#arg-contrasts"></a></dt>
@@ -105,7 +110,7 @@ a named list of contrasts, or a qxk matrix where columns are contrasts</p></dd>
 
 <dt id="arg-folds">folds<a class="anchor" aria-label="anchor" href="#arg-folds"></a></dt>
 <dd><p>For method="kfold", either an integer K for random folds,
-or a list defining custom fold assignments (see [dkge_define_folds()])</p></dd>
+or a list defining custom fold assignments (see <code><a href="dkge_define_folds.html">dkge_define_folds()</a></code>)</p></dd>
 
 
 <dt id="arg-ridge">ridge<a class="anchor" aria-label="anchor" href="#arg-ridge"></a></dt>
@@ -113,7 +118,7 @@ or a list defining custom fold assignments (see [dkge_define_folds()])</p></dd>
 
 
 <dt id="arg-parallel">parallel<a class="anchor" aria-label="anchor" href="#arg-parallel"></a></dt>
-<dd><p>Logical; if TRUE uses `future.apply::future_lapply()` for
+<dd><p>Logical; if TRUE uses <code><a href="https://future.apply.futureverse.org/reference/future_lapply.html" class="external-link">future.apply::future_lapply()</a></code> for
 per-subject work (requires the future.apply package)</p></dd>
 
 
@@ -128,10 +133,18 @@ per-subject work (requires the future.apply package)</p></dd>
 <dt id="arg-transport">transport<a class="anchor" aria-label="anchor" href="#arg-transport"></a></dt>
 <dd><p>Optional list describing how to transport subject-level
 contrasts to a shared reference parcellation. Supply either explicit
-transport matrices via `transforms`/`matrices`, or configuration for the
-medoid/atlas transport helpers (e.g., `method`, `centroids`, `medoid`). When
+transport matrices via <code>transforms</code>/<code>matrices</code>, or configuration for the
+medoid/atlas transport helpers (e.g., <code>method</code>, <code>centroids</code>, <code>medoid</code>). When
 provided, the resulting transport bundle is stored under
-`metadata$transport` for downstream reuse.</p></dd>
+<code>metadata$transport</code> for downstream reuse.</p></dd>
+
+
+<dt id="arg-collinearity-tol">collinearity_tol<a class="anchor" aria-label="anchor" href="#arg-collinearity-tol"></a></dt>
+<dd><p>Relative angular tolerance used to flag distinct
+input contrasts whose kernel-transformed queries are practically
+proportional. The default <code>0.05</code> flags absolute query correlations of at
+least <code>0.95</code>; use <code>NULL</code> to disable this warning. This is deliberately
+separate from the much smaller null-space tolerance used for estimability.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -140,31 +153,37 @@ provided, the resulting transport bundle is stored under
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with class `dkge_contrasts` containing:
-  - `values`: Named list of contrast values (one P_s vector per subject per contrast)
-  - `method`: Cross-fitting method used
-  - `contrasts`: Input contrast specifications
-  - `metadata`: Method-specific metadata (fold assignments, bases, etc.)</p>
-    </div>
+    <p>A list with class <code>dkge_contrasts</code> containing:</p><ul><li><p><code>values</code>: Named list of contrast values (one P_s vector per subject per contrast)</p></li>
+<li><p><code>method</code>: Cross-fitting method used</p></li>
+<li><p><code>contrasts</code>: Input contrast specifications</p></li>
+<li><p><code>metadata</code>: Method-specific metadata (fold assignments, bases, etc.)</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>This function provides a unified interface to three cross-fitting strategies:</p>
-<p>1. **LOSO** (`method = "loso"`): Recomputes the basis excluding each subject,
-   then projects that subject's data. This is the gold standard for unbiased
-   estimation but requires S eigen-decompositions.</p>
-<p>2. **K-fold** (`method = "kfold"`): Splits data into K folds, recomputes basis
-   excluding each fold, projects held-out data. More efficient than LOSO while
-   maintaining good bias properties. Supports time-based, run-based, or custom
-   fold definitions.</p>
-<p>3. **Analytic** (`method = "analytic"`): Uses first-order eigenvalue perturbation
-   theory to approximate the LOSO solution without full recomputation. Fast but
-   may be less accurate when subjects have high leverage.</p>
-<p>All methods work entirely in the qxq design space and respect the K-metric
-throughout. Multiple contrasts can be evaluated simultaneously for efficiency.</p>
+    <p>This function provides a unified interface to three cross-fitting strategies:</p><ol><li><p><strong>LOSO</strong> (<code>method = "loso"</code>): Recomputes the basis excluding each subject,
+then projects that subject's data. This is the gold standard for unbiased
+estimation but requires S eigen-decompositions.</p></li>
+<li><p><strong>K-fold</strong> (<code>method = "kfold"</code>): Splits data into K folds, recomputes basis
+excluding each fold, projects held-out data. More efficient than LOSO while
+maintaining good bias properties. Supports time-based, run-based, or custom
+fold definitions.</p></li>
+<li><p><strong>Analytic</strong> (<code>method = "analytic"</code>): Uses first-order eigenvalue perturbation
+theory to approximate the LOSO solution without full recomputation. Fast but
+may be less accurate when subjects have high leverage.</p></li>
+</ol><p>All methods work entirely in the qxq design space and respect the K-metric
+throughout. A semidefinite kernel defines a quotient effect space:
+<code>dkge_contrast()</code> errors when a contrast lies wholly in <code>null(K)</code>, warns when
+only part of a contrast is represented, and reports transformed-query
+collisions in <code>metadata$kernel_query_pairs</code>. Multiple contrasts can be
+evaluated simultaneously for efficiency.</p>
+<p>Exact fold replay currently supports fits made with <code>solver = "pooled"</code> and
+<code>cpca_part = "none"</code>. CPCA and joint-diagonalization fits fail closed for all
+three methods; DKGE does not replace their fitted estimator with an ordinary
+pooled eigensolve while calling the result cross-fitted.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p>[dkge_loso_contrast()], [dkge_define_folds()], [dkge_infer()]</p></div>
+    <div class="dont-index"><p><code><a href="dkge_loso_contrast.html">dkge_loso_contrast()</a></code>, <code><a href="dkge_define_folds.html">dkge_define_folds()</a></code>, <code><a href="dkge_infer.html">dkge_infer()</a></code></p></div>
     </div>
 
     <div class="section level2">

@@ -1,6 +1,14 @@
-# Prepare reusable rendering objects for a fitted DKGE model
+# Prepare a legacy descriptive renderer (deprecated)
 
-Prepare reusable rendering objects for a fitted DKGE model
+This helper fits correspondence directly from caller-supplied geometry
+or features and is retained only for descriptive displays. It does not
+create a typed inferential alignment. Use
+[`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md)
+followed by
+[`dkge_renderer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_renderer.md)
+and
+[`dkge_render_aligned()`](https://bbuchsbaum.github.io/dkge/reference/dkge_render_aligned.md)
+for new workflows.
 
 ## Usage
 
@@ -21,7 +29,8 @@ dkge_build_renderer(
   subject_feats = NULL,
   anchor_feats = NULL,
   feat_lambda = NULL,
-  feat_sigma = NULL
+  feat_sigma = NULL,
+  subject_weights = NULL
 )
 ```
 
@@ -29,23 +38,23 @@ dkge_build_renderer(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - centroids:
 
-  List of per-subject centroid matrices (\`P_s x 3\`). Must align with
-  \`fit\$Btil\`.
+  List of per-subject centroid matrices (`P_s x 3`). Must align with
+  `fit$Btil`.
 
 - anchors:
 
-  Optional precomputed anchor coordinate matrix. When \`NULL\`, anchors
-  are derived from \`anchor_xyz\` if provided, otherwise from
-  \`vox_xyz\`.
+  Optional precomputed anchor coordinate matrix. When `NULL`, anchors
+  are derived from `anchor_xyz` if provided, otherwise from `vox_xyz`.
 
 - anchor_xyz:
 
   Optional matrix of candidate points used to derive anchors via
-  \[dkge_make_anchors()\]. Ignored when \`anchors\` is supplied.
+  [`dkge_make_anchors()`](https://bbuchsbaum.github.io/dkge/reference/dkge_make_anchors.md).
+  Ignored when `anchors` is supplied.
 
 - anchor_n:
 
@@ -53,12 +62,14 @@ dkge_build_renderer(
 
 - anchor_method:
 
-  Method passed to \[dkge_make_anchors()\] when anchors are derived.
-  Defaults to \`"kmeans"\`.
+  Method passed to
+  [`dkge_make_anchors()`](https://bbuchsbaum.github.io/dkge/reference/dkge_make_anchors.md)
+  when anchors are derived. Defaults to `"kmeans"`.
 
 - anchor_seed:
 
-  Optional seed forwarded to \[dkge_make_anchors()\].
+  Optional seed forwarded to
+  [`dkge_make_anchors()`](https://bbuchsbaum.github.io/dkge/reference/dkge_make_anchors.md).
 
 - vox_xyz:
 
@@ -66,12 +77,13 @@ dkge_build_renderer(
 
 - mapper:
 
-  Mapper specification created with \[dkge_mapper()\]. Defaults to the
-  barycentric kNN mapper.
+  Mapper specification created with
+  [`dkge_mapper()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper.md).
+  Defaults to the barycentric kNN mapper.
 
 - graph_k:
 
-  Optional integer; when provided, an anchor graph of this neighbourhood
+  Optional integer; when provided, an anchor graph of this neighborhood
   size is constructed for subsequent smoothing.
 
 - decoder_k:
@@ -87,13 +99,13 @@ dkge_build_renderer(
 
   Optional list of matrices supplying latent features per subject
   cluster. When provided and the mapper consumes latent information
-  (e.g., Sinkhorn), they are forwarded via \`subj_feats\`.
+  (e.g., Sinkhorn), they are forwarded via `subj_feats`.
 
 - anchor_feats:
 
-  Optional anchor-level feature matrix aligned with \`anchors\`. Derived
-  automatically by pooling subject features when \`NULL\` and
-  \`subject_feats\` are provided.
+  Optional anchor-level feature matrix aligned with `anchors`. Derived
+  automatically by pooling subject features when `NULL` and
+  `subject_feats` are provided.
 
 - feat_lambda:
 
@@ -103,10 +115,17 @@ dkge_build_renderer(
 
   Feature bandwidth used when computing feature costs.
 
+- subject_weights:
+
+  Optional fixed subject weights for descriptive aggregation. Equal
+  subject weighting is the default; fit-level MFA weights are never
+  inherited silently.
+
 ## Value
 
-A list bundling anchors, optional graph/decoder, fitted per-subject
-mappers, and subject weights.
+A deprecated `dkge_legacy_renderer` bundling anchors, optional
+graph/decoder, fitted per-subject mappers, fixed subject weights, and an
+ineligible/descriptive alignment receipt.
 
 ## Examples
 
@@ -118,11 +137,11 @@ toy <- dkge_sim_toy(
 )
 fit <- dkge(toy$B_list, toy$X_list, K = toy$K, rank = 2)
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-renderer <- dkge_build_renderer(fit,
+renderer <- suppressWarnings(dkge_build_renderer(fit,
                                 centroids = centroids,
                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
                                 anchor_n = 20,
-                                anchor_method = "sample")
+                                anchor_method = "sample"))
 length(renderer$anchors)
 #> [1] 60
 # }

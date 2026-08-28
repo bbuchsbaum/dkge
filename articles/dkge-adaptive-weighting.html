@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="Adaptive Voxel Weighting in DKGE">
+<meta name="description" content="Define, inspect, and structurally check a training-fold voxel weighting rule with `dkge_weights()`.
+">
+<meta property="og:description" content="Define, inspect, and structurally check a training-fold voxel weighting rule with `dkge_weights()`.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,14 +93,21 @@
       <h1>Adaptive Voxel Weighting in DKGE</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-adaptive-weighting.Rmd" class="external-link"><code>vignettes/dkge-adaptive-weighting.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-adaptive-weighting.Rmd" class="external-link"><code>vignettes/dkge-adaptive-weighting.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-adaptive-weighting.Rmd</code></div>
     </div>
 
     
     
-<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p><strong>See also:</strong> The <a href="dkge-weighting.html">Weighting Strategies</a> vignette covers the
-three complementary weighting <em>layers</em> — spatial
+<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>DKGE fits are driven by cross-subject second moments. Equal voxel
+weights can let large noisy regions dominate those moments, but adaptive
+weights can also create leakage if they use held-out data or change
+under a permutation. This vignette shows how to define, inspect, and
+structurally check a weighting rule. Those checks are necessary
+safeguards; they are not a substitute for design-specific null
+calibration.</p>
+<p><strong>See also:</strong> <code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code>
+covers the three complementary weighting <em>layers</em> — spatial
 (<code>Omega_list</code>), subject-level
 (<code>w_method</code>/<code>w_tau</code>), and transport
 (<code>sizes</code>). This vignette focuses on the separate
@@ -101,27 +116,8 @@ adaptive weighting. The mechanisms enter different stages of the
 computation and can be combined when their joint estimand is
 explicit.</p>
 <hr>
-<p>DKGE fits are driven by cross-subject second moments. Equal voxel
-weights can let large noisy regions dominate those moments, but adaptive
-weights can also create leakage if they use held-out data or change
-under a permutation. This vignette shows how to define, inspect, and
-structurally check a weighting rule. Those checks are necessary
-safeguards; they are not a substitute for design-specific null
-calibration.</p>
-<p>We will proceed through four main steps to build understanding:</p>
-<ol style="list-style-type: decimal">
-<li>First, we clarify the terminology and concepts used by
-<code><a href="../reference/dkge_weights.html">dkge_weights()</a></code> to establish a foundation;</li>
-<li>Next, we build several weight specifications and demonstrate how to
-fit DKGE models with them;</li>
-<li>Then, we inspect the effects of mixing prior knowledge with adaptive
-statistics; and</li>
-<li>Finally, we run quick safety checks and demonstrate post-hoc weight
-updates.</li>
-</ol>
-<p>The examples throughout this vignette use small synthetic datasets so
-that everything runs quickly and the concepts can be clearly
-illustrated.</p>
+<p>The examples use small synthetic datasets so they run fast.</p>
+<p>The examples use small synthetic datasets so they run fast.</p>
 <div class="section level2">
 <h2 id="understanding-the-ingredients">1. Understanding the ingredients<a class="anchor" aria-label="anchor" href="#understanding-the-ingredients"></a>
 </h2>
@@ -131,33 +127,28 @@ to define the weighting strategy:</p>
 <ul>
 <li>
 <strong>Prior weights</strong> describe locations you already trust
-based on external information (for example, a reliability map from
-previous studies). These weights must be <em>sign invariant</em>,
-meaning that flipping the sign of a beta map does not change the weight
-assigned to that voxel. Squares, absolute values, and variances all meet
-this important requirement and can be used safely as priors.</li>
+from external information, such as a reliability map from an earlier
+study. They must be <em>sign invariant</em>: flipping the sign of a beta
+map must not change a voxel’s variances all meet this important
+requirement and can be used safely as priors.</li>
 <li>
 <strong>Adaptive statistics</strong> are computed dynamically from
 the training subjects inside each cross-validation split. The built-in
 options examine <em>energy</em> (squared amplitude in the design
 metric), <em>precision</em> (inverse variance), or their product. Energy
-is simply
+is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><msup><mi>K</mi><mrow><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><msub><mi>B</mi><mrow><mo>:</mo><mi>α</mi></mrow></msub><msubsup><mo stretchy="false" form="postfix">∥</mo><mn>2</mn><mn>2</mn></msubsup></mrow><annotation encoding="application/x-tex">\|K^{1/2} B_{:\alpha}\|_2^2</annotation></semantics></math>,
-representing the amount of signal a voxel carries in effect space;
-precision is defined as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>σ</mi><mn>2</mn></msup><mo>+</mo><mi>ε</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">1/(\sigma^2 + \varepsilon)</annotation></semantics></math>
-and captures measurement reliability.</li>
+the signal a voxel carries in effect space; precision is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>σ</mi><mn>2</mn></msup><mo>+</mo><mi>ε</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">1/(\sigma^2 + \varepsilon)</annotation></semantics></math>,
+its measurement reliability</li>
 <li>
-<strong>Combination rules</strong> specify how prior knowledge and
-adaptive components are blended together (through product, sum, or
-override operations). The <code>mix</code> parameter provides
-fine-grained control over the relative balance between these two sources
-of information.</li>
+<strong>Combination rules</strong> set how prior and adaptive
+components blend (product, sum, or override). <code>mix</code> controls
+the balance between them.</li>
 <li>
-<strong>Shrinkage</strong> keeps the final weights well-behaved by
-applying several regularization steps: we winsorize extreme values and
-pull everything back towards 1 to ensure that no single voxel dominates
-the fit.</li>
+<strong>Shrinkage</strong> keeps the final weights well-behaved:
+winsorize extremes, then everything back towards 1 to ensure that no
+single voxel dominates the fit.</li>
 </ul>
 <p>With <code>scope = "fold"</code>, adaptive statistics are computed
 from the training subjects in each fold. This prevents the held-out
@@ -168,8 +159,8 @@ external generalisation.</p>
 <div class="section level2">
 <h2 id="building-weight-specifications-and-fitting-dkge">2. Building weight specifications and fitting DKGE<a class="anchor" aria-label="anchor" href="#building-weight-specifications-and-fitting-dkge"></a>
 </h2>
-<p>We begin our exploration with the default configuration, which relies
-purely on adaptive statistics without any prior knowledge.</p>
+<p>The default configuration relies purely on adaptive statistics, with
+no prior knowledge.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
 <span></span>
@@ -188,11 +179,9 @@ purely on adaptive statistics without any prior knowledge.</p>
 <span><span class="co">#&gt;   adapt   : kenergy_prec (scope = fold )</span></span>
 <span><span class="co">#&gt;   combine : product (mix = 0.60 )</span></span>
 <span><span class="co">#&gt;   shrink  : alpha =0.50, winsor =0.990, normalize =mean</span></span></code></pre></div>
-<p>Next, we create a small synthetic dataset to work with: ten subjects,
-four effects, and sixty voxels per subject. While the exact numbers are
-unimportant for our purposes, this scale allows us to clearly
-demonstrate the API and observe the effects of different weighting
-strategies.</p>
+<p>The dataset below has ten subjects, four effects, and sixty voxels
+per subject. The scale is arbitrary: it is small enough to run fast and
+large enough to show the weighting strategies apart.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">make_subject</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">id</span>, <span class="va">q</span> <span class="op">=</span> <span class="fl">4L</span>, <span class="va">v</span> <span class="op">=</span> <span class="fl">60L</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
@@ -206,11 +195,9 @@ strategies.</p>
 <span></span>
 <span><span class="va">fit_uniform</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">subjects</span>, K <span class="op">=</span> <span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span>, w_method <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span><span class="va">fit_adaptive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">subjects</span>, K <span class="op">=</span> <span class="va">K</span>, rank <span class="op">=</span> <span class="fl">2</span>, weights <span class="op">=</span> <span class="va">wts_adapt</span><span class="op">)</span></span></code></pre></div>
-<p>The second fit internally computes voxel weights for every training
-fold, applying the adaptive weighting strategy we specified. We can
-inspect both the global weights and examine the average weight values
-across subjects to understand how the algorithm has adjusted the
-influence of different voxels.</p>
+<p>The second fit computes voxel weights for every training fold under
+the adaptive rule. Inspect the global weights and the per-subject
+averages to see how the fit adjusted each voxel’s influence.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">fit_adaptive</span><span class="op">$</span><span class="va">voxel_weights</span><span class="op">)</span></span>
 <span><span class="co">#&gt; cluster_1 cluster_2 cluster_3 cluster_4 cluster_5 cluster_6 </span></span>
@@ -227,19 +214,16 @@ influence of different voxels.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $max</span></span>
 <span><span class="co">#&gt; [1] 1.44</span></span></code></pre></div>
-<p>You should observe modest deviations from 1.0 rather than extreme
-spikes in the weight values. This well-behaved pattern is exactly what
-the shrinkage parameters are designed to enforce, preventing any single
-voxel from dominating the analysis.</p>
+<p><img src="dkge-adaptive-weighting_files/figure-html/adaptive-weight-distribution-1.png" class="r-plt" alt="Histogram of adaptive voxel weights centered near one after shrinkage." width="90%" style="display: block; margin: auto;"></p>
+<p>Expect modest deviations from 1.0 rather than spikes. That is what
+the shrinkage parameters enforce: no single voxel dominates.</p>
 </div>
 <div class="section level2">
 <h2 id="mixing-priors-with-adaptive-statistics">3. Mixing priors with adaptive statistics<a class="anchor" aria-label="anchor" href="#mixing-priors-with-adaptive-statistics"></a>
 </h2>
-<p>Now let us consider a scenario where we have an external reliability
-image from previous studies or analyses. We need to convert this
-reliability information into a sign-invariant quantity (here, squared
-reliability) and incorporate it as a prior. The adaptive component
-remains the same as before, but now we blend it with this external
+<p>Suppose you have an external reliability image from a previous study.
+Convert it into a sign-invariant prior, then blend it with the adaptive
+component. component is unchanged; it is now blended with that external
 knowledge.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reliability_prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">60</span>, min <span class="op">=</span> <span class="fl">0.1</span>, max <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -267,6 +251,11 @@ effect:</p>
 <span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">prior_check</span><span class="op">$</span><span class="va">reliability</span>, <span class="va">prior_check</span><span class="op">$</span><span class="va">final_weight</span>,</span>
 <span>           method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.956</span></span></code></pre></div>
+<p><img src="dkge-adaptive-weighting_files/figure-html/prior-weight-plot-1.png" class="r-plt" alt="Scatter plot showing the relationship between external reliability values and final mixed adaptive weights." width="90%" style="display: block; margin: auto;"></p>
+<p>The upward trend confirms that the prior still affects the final
+ordering, while the scatter shows that the adaptive statistic and
+shrinkage also matter. That is more informative than printing the
+correlation alone.</p>
 </div>
 <div class="section level2">
 <h2 id="safety-checks-and-post-hoc-updates">4. Safety checks and post-hoc updates<a class="anchor" aria-label="anchor" href="#safety-checks-and-post-hoc-updates"></a>
@@ -290,32 +279,30 @@ route, not a claim of exact finite-sample calibration. A new weighting
 rule still needs a simulation study matched to its folds, permutation
 scheme, sample size, and null data-generating process, with Monte Carlo
 uncertainty reported.</p>
-<p>If you plan to implement a custom adaptive rule, there are two
-critical requirements to verify:</p>
-<ol style="list-style-type: decimal">
-<li>The rule must depend only on even statistics (such as squares or
-absolute values). If your custom rule depends on signed means or other
-odd functions, you must set <code>perm_recompute = "always"</code> so
-that weights are recomputed inside each permutation flip to maintain
-validity.</li>
-<li>The rule must be fold-specific (enforced by
-<code>scope = "fold"</code>), otherwise the held-out subject would
-contaminate the training statistics and introduce bias into the
-cross-validation procedure.</li>
-</ol>
+<p>The public API currently accepts only the built-in adaptive rules
+shown above; it does not accept a custom weighting function. Sign-flip
+inference operates on already computed contrast values and holds the
+fitted voxel weights fixed. There is no <code>perm_recompute</code>
+argument or permutation-time weight-recomputation path. Consequently, an
+odd, sign-sensitive custom rule is not supported for this inference
+route. <code><a href="../reference/dkge_weights.html">dkge_weights()</a></code> rejects custom rules and unknown
+arguments, so the public API fails closed. Supporting such a rule would
+require a new, end-to-end resampling path that refits and validates the
+weights for every flip.</p>
+<p>For the supported rules, keep <code>scope = "fold"</code> so the
+held-out subject does not contaminate the training statistics used to
+construct adaptive weights.</p>
 </div>
 <div class="section level3">
 <h3 id="updating-an-existing-fit">Updating an existing fit<a class="anchor" aria-label="anchor" href="#updating-an-existing-fit"></a>
 </h3>
-<p>Sometimes you may fit a DKGE model once, then later decide to revisit
-the weighting strategy without having to rerun the entire preprocessing
-pipeline. In such cases, you can use <code><a href="../reference/dkge_update_weights.html">dkge_update_weights()</a></code>
-to efficiently rebuild the fold bases in place with your new weighting
-scheme.</p>
+<p>You can fit once and revisit the weighting later without rerunning
+preprocessing. <code><a href="../reference/dkge_update_weights.html">dkge_update_weights()</a></code> rebuilds the fold
+bases in place with your new weighting scheme.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_refit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_update_weights.html">dkge_update_weights</a></span><span class="op">(</span><span class="va">fit_uniform</span>, <span class="va">wts_mixed</span><span class="op">)</span></span></code></pre></div>
-<p>This update operation only modifies the weighting machinery itself;
-all subject-level projections and stored projections remain fully
+<p>The update touches only the weighting machinery; subject-level
+projections and stored results are reused. projections remain fully
 compatible with the updated model.</p>
 </div>
 </div>
@@ -327,15 +314,29 @@ adaptive statistic, a combination rule, and shrinkage parameters.
 Training-fold scope and sign-invariance close two important leakage
 paths. They do not prove that a particular analysis has calibrated error
 rates.</p>
-<p>The code examples throughout this vignette have demonstrated how to
-inspect the resulting weights, how to effectively mix prior knowledge
-with adaptive rules, and how to retrofit new weighting choices onto an
-existing fit without recomputing everything from scratch. You should
-employ these weighting controls when external reliability information or
-a prespecified adaptive rule justifies unequal voxel influence. Compare
-the weighted fit with an equal-weight baseline, report the rule and
-shrinkage settings, and calibrate the full inferential procedure under a
-defensible null before making sensitivity or error-control claims.</p>
+<p>The examples above showed how to inspect the resulting weights, mix
+prior knowledge with adaptive rules, and retrofit a new weighting choice
+onto an existing fit. Use these weighting controls when external
+reliability information or a prespecified adaptive rule justifies
+unequal voxel influence. Compare the weighted fit with an equal-weight
+baseline, report the rule and shrinkage settings, and calibrate the full
+inferential procedure under a defensible null before making sensitivity
+or error-control claims.</p>
+</div>
+<div class="section level2">
+<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> — the three weighting layers
+this page sits inside: spatial, subject-level, and transport.</li>
+<li>
+<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> — the inference
+machinery that a weighting choice has to survive.</li>
+<li>
+<code><a href="../articles/dkge-concepts.html">vignette("dkge-concepts")</a></code> — what changing a weight does
+to the estimand.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

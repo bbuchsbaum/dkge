@@ -12,7 +12,7 @@ dkge_project_cluster(fit, b, omega = 1, w = 1)
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - b:
 
@@ -28,4 +28,4 @@ dkge_project_cluster(fit, b, omega = 1, w = 1)
 
 ## Value
 
-Numeric vector of length \`rank\` (component scores).
+Numeric vector of length `rank` (component scores).

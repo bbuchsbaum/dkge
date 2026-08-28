@@ -1,9 +1,22 @@
-# Mapper Customisation and Performance
+# Mapper Customization and Performance
 
-This vignette provides guidance on selecting between kNN and Sinkhorn
-mappers based on your analysis needs, demonstrates how to implement
-custom transport methods, and shows how to leverage warm starts to
-improve computational performance.
+Spatial mapping can dominate runtime when it is repeatedly refit for
+many contrasts or resamples. The first performance decision is therefore
+not simply “which mapper is fastest?” but “which stage can be fitted
+once and safely reused?”
+
+This page separates mapper **fit** cost from **apply** cost, then
+explains when kNN, Sinkhorn, warm starts, or a custom mapper are
+appropriate. It assumes you already understand why transport is needed;
+see
+[`vignette("dkge-dense-rendering")`](https://bbuchsbaum.github.io/dkge/articles/dkge-dense-rendering.md)
+for that workflow.
+
+| Need | Start with | Tradeoff |
+|----|----|----|
+| Fast local interpolation | kNN | no global mass-matching constraint |
+| Mass-preserving global coupling | Sinkhorn | more expensive fit and tuning |
+| Many fields on unchanged geometry | either fitted mapper | reuse the operator; do not resolve |
 
 ## Mapper Factory Recap
 
@@ -60,10 +73,14 @@ knitr::kable(performance, digits = 5)
 
 | stage | mapper   | seconds_per_call |
 |:------|:---------|-----------------:|
-| fit   | kNN      |          0.00100 |
-| fit   | Sinkhorn |          0.00400 |
-| apply | kNN      |          0.00011 |
-| apply | Sinkhorn |          0.00025 |
+| fit   | kNN      |          0.00080 |
+| fit   | Sinkhorn |          0.00410 |
+| apply | kNN      |          0.00013 |
+| apply | Sinkhorn |          0.00022 |
+
+![Log-scale bar chart comparing mapper fit and apply time for
+k-nearest-neighbour and Sinkhorn
+mappings.](dkge-performance_files/figure-html/performance-plot-1.png)
 
 The table separates the solve from application. kNN fitting constructs
 local neighbourhoods; Sinkhorn fitting constructs a dense cost matrix
@@ -102,10 +119,10 @@ the cached duals as an initialization and continues solving.
 
 ## Adding Custom Mappers
 
-To integrate a custom mapping approach into the DKGE framework, you need
-to implement two key S3 methods that follow the established naming
-convention recognized by
-[`dkge_mapper()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper.md).
+A custom mapper implements two S3 methods, following the naming
+convention
+[`dkge_mapper()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper.md)
+recognises.
 
 ``` r
 
@@ -132,20 +149,26 @@ does.
 
 ## Practical Guidance
 
-The choice between mapping methods should be guided by your specific
-analysis requirements and data characteristics. For quick exploratory
-analyses or situations where subject clusters already show good
-anatomical alignment, kNN mapping provides an efficient and
-straightforward solution.
+Pick the mapper from the analysis, not from the benchmark. For quick
+exploration, or when subject clusters already align anatomically, kNN is
+efficient and sufficient.
 
-However, when dealing with substantial anatomical shifts between
-subjects or when latent features should guide the matching process,
-Sinkhorn mapping becomes the preferred choice. In these cases, you can
-tune the `epsilon` parameter upward to achieve faster convergence and
-smoother transport plans, though this comes with a trade-off in matching
+Prefer Sinkhorn when anatomical shifts between subjects are substantial,
+or when latent features should guide the matching. Raising `epsilon`
+converges faster and smooths the transport plan, at the cost of matching
 precision.
 
 For repeated maps, reuse renderer or fitted-mapper objects so the
 already-solved plans and application operators are retained. Warm-start
 caching is most useful when an identical fit is requested again; check
-`stats$diagnostics` instead of assuming that a cache was used.
+`warm_fit$stats$diagnostics` on the fitted assuming that a cache was
+used.
+
+## Where to go next
+
+- [`vignette("dkge-dense-rendering")`](https://bbuchsbaum.github.io/dkge/articles/dkge-dense-rendering.md)
+  — what the mappers benchmarked here are actually for, if you arrived
+  at this page from a search.
+- [`vignette("dkge-anchors")`](https://bbuchsbaum.github.io/dkge/articles/dkge-anchors.md)
+  — anchor construction, which sets the problem size the mappers are
+  solving.

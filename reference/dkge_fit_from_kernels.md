@@ -1,9 +1,10 @@
 # Fit DKGE from precomputed subject effect kernels
 
 Converts a list of subject-level effect kernels \\K_s \in \mathbb{R}^{q
-\times q}\\ into synthetic GLM inputs that reuse \[dkge_fit()\] without
-modifying the core implementation. Each kernel is factorised into a
-symmetric square root, scaled to keep the pooled design metric
+\times q}\\ into synthetic GLM inputs that reuse
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+without modifying the core implementation. Each kernel is factorised
+into a symmetric square root, scaled to keep the pooled design metric
 unchanged, and paired with an identity design matrix so the resulting
 DKGE fit matches the supplied kernels.
 
@@ -15,9 +16,7 @@ dkge_fit_from_kernels(
   effect_ids,
   subject_ids = NULL,
   design_kernel = NULL,
-  sqrt_tol = NULL,
-  sqrt_absolute_tolerance = .Machine$double.xmin,
-  sqrt_relative_tolerance = 1e-08,
+  sqrt_tol = 1e-10,
   ...
 )
 ```
@@ -37,37 +36,34 @@ dkge_fit_from_kernels(
 - subject_ids:
 
   Optional character vector naming subjects. Defaults to the names of
-  \`K_list\` or sequential identifiers.
+  `K_list` or sequential identifiers.
 
 - design_kernel:
 
-  Optional design kernel passed to \[dkge_fit()\]. Defaults to the \\q
-  \times q\\ identity matrix, which matches the whitened anchor setup.
+  Optional design kernel passed to
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
+  Defaults to the \\q \times q\\ identity matrix, which matches the
+  whitened anchor setup.
 
 - sqrt_tol:
 
-  Deprecated absolute eigenvalue truncation threshold. When supplied it
-  overrides \`sqrt_absolute_tolerance\`.
-
-- sqrt_absolute_tolerance:
-
-  Non-negative absolute eigenvalue tolerance.
-
-- sqrt_relative_tolerance:
-
-  Non-negative tolerance relative to each subject kernel's largest
-  eigenvalue.
+  Eigenvalue tolerance used when extracting square roots.
 
 - ...:
 
-  Additional arguments forwarded to \[dkge_fit()\].
+  Additional arguments forwarded to
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
+  Model-level `spatial` regularization is deliberately unsupported
+  because the synthetic factor columns do not index physical spatial
+  units.
 
 ## Value
 
-A \`dkge\` object identical to one obtained from \[dkge_fit()\], with
-provenance annotated to record the kernel-driven construction. Effect
-matrices use \`effect_ids\` as canonical dimnames, subject-indexed lists
-use \`subject_ids\`, and component axes are labelled \`LV1\`, \`LV2\`,
+A `dkge` object identical to one obtained from
+[`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md),
+with provenance annotated to record the kernel-driven construction.
+Effect matrices use `effect_ids` as canonical dimnames, subject-indexed
+lists use `subject_ids`, and component axes are labeled `LV1`, `LV2`,
 and so on.
 
 ## Examples

@@ -1,6 +1,13 @@
-# Transport DKGE quantities directly to voxel space
+# Descriptively transport DKGE quantities directly to voxel space
 
-Transport DKGE quantities directly to voxel space
+This legacy convenience path learns voxel correspondence from full-fit
+loadings and returns untyped display values. It is descriptive only and
+its output is not accepted by
+[`dkge_infer_aligned()`](https://bbuchsbaum.github.io/dkge/reference/dkge_infer_aligned.md).
+For group functional alignment, fit typed features and use
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md)
+or
+[`dkge_align_to_template()`](https://bbuchsbaum.github.io/dkge/reference/dkge_align_to_template.md).
 
 ## Usage
 
@@ -20,7 +27,7 @@ dkge_transport_to_voxels(
 
 - fit:
 
-  A \`dkge\` object containing subject loadings and centroids.
+  A `dkge` object containing subject loadings and centroids.
 
 - values:
 
@@ -36,7 +43,7 @@ dkge_transport_to_voxels(
 
 - mapper:
 
-  Mapper specification or shorthand (defaults to \`"ridge"\`).
+  Mapper specification or shorthand (defaults to `"ridge"`).
 
 - sizes:
 
@@ -48,8 +55,8 @@ dkge_transport_to_voxels(
 
 ## Value
 
-List with \`subj_values\` (S x V matrix) and \`value\` (mean across
-subjects).
+Descriptive list with `subj_values` (S x V matrix), `value` (mean across
+subjects), and explicit non-inferential metadata.
 
 ## Examples
 

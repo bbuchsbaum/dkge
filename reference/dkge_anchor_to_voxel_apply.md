@@ -12,11 +12,12 @@ dkge_anchor_to_voxel_apply(decoder, anchor_values)
 
 - decoder:
 
-  Object returned by \[dkge_anchor_to_voxel_fit()\].
+  Object returned by
+  [`dkge_anchor_to_voxel_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_to_voxel_fit.md).
 
 - anchor_values:
 
-  Numeric vector of length \`decoder\$n_anchors\`.
+  Numeric vector of length `decoder$n_anchors`.
 
 ## Value
 

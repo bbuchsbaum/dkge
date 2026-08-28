@@ -12,8 +12,10 @@ dkge_anchor_diagnostics(fit)
 
 - fit:
 
-  Object returned by \[dkge_anchor_fit()\] or
-  \[dkge_fit_from_kernels()\].
+  Object returned by
+  [`dkge_anchor_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_fit.md)
+  or
+  [`dkge_fit_from_kernels()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit_from_kernels.md).
 
 ## Value
 

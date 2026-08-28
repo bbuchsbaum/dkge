@@ -18,7 +18,7 @@ dkge_target_factor(
 
 - fit:
 
-  dkge object containing \`kernel_info\$map\` metadata.
+  dkge object containing `kernel_info$map` metadata.
 
 - factor:
 
@@ -26,15 +26,16 @@ dkge_target_factor(
 
 - residualize:
 
-  Logical; if \`TRUE\` (default) residualise higher-order targets
-  against previously constructed lower-order targets.
+  Logical; if `TRUE` (default) residualise higher-order targets against
+  previously constructed lower-order targets.
 
 - collapse:
 
   Optional named list describing how to collapse factors that do not
-  appear in a target. Each entry may be \`"mean"\`, \`list(method =
-  "mean", window = 3:8)\`, or a numeric vector of length equal to the
-  number of levels providing custom weights (automatically normalised).
+  appear in a target. Each entry may be `"mean"`,
+  `list(method = "mean", window = 3:8)`, or a numeric vector of length
+  equal to the number of levels providing custom weights (automatically
+  normalized).
 
 - scope:
 

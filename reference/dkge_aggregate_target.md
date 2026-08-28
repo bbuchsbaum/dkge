@@ -1,11 +1,10 @@
 # Build an aggregate target from subject-level repeated-measures data
 
-Constructs row-by-feature aggregate targets such as
-\`group:task:measure\` cell means from subject-level repeated-measures
-matrices. The returned object stores the source metadata required to
-recompute aggregates under subject-label permutations or subject
-bootstrap resampling. The unit of inference remains subjects; aggregate
-rows are never resampled directly.
+Constructs row-by-feature aggregate targets such as `group:task:measure`
+cell means from subject-level repeated-measures matrices. The returned
+object stores the source metadata required to recompute aggregates under
+subject-label permutations or subject bootstrap resampling. The unit of
+inference remains subjects; aggregate rows are never resampled directly.
 
 ## Usage
 
@@ -43,10 +42,10 @@ print(x, ...)
 
 - cell_data:
 
-  Data frame with one row per repeated-measures cell. If \`NULL\`, a
-  cell factor named \`cell\` is inferred from matrix row names (or
-  \`cell1\`, \`cell2\`, ...) and is kept in the aggregate rows. Pass
-  \`cell_vars = character(0)\` to collapse those cells.
+  Data frame with one row per repeated-measures cell. If `NULL`, a cell
+  factor named `cell` is inferred from matrix row names (or `cell1`,
+  `cell2`, ...) and is kept in the aggregate rows. Pass
+  `cell_vars = character(0)` to collapse those cells.
 
 - group_vars:
 
@@ -55,16 +54,16 @@ print(x, ...)
 - cell_vars:
 
   Character vector of cell-level variables. Defaults to the inferred
-  \`cell\` column when \`cell_data\` is \`NULL\`, otherwise to all
-  columns in \`cell_data\` except \`cell_id_col\`.
+  `cell` column when `cell_data` is `NULL`, otherwise to all columns in
+  `cell_data` except `cell_id_col`.
 
 - subject_id_col:
 
-  Subject identifier column in \`subject_data\`.
+  Subject identifier column in `subject_data`.
 
 - cell_id_col:
 
-  Optional cell identifier column in \`cell_data\`.
+  Optional cell identifier column in `cell_data`.
 
 - weights:
 
@@ -72,19 +71,19 @@ print(x, ...)
 
 - aggregate:
 
-  Aggregation method. \`"mean"\` ignores \`weights\`;
-  \`"weighted_mean"\` uses them.
+  Aggregation method. `"mean"` ignores `weights`; `"weighted_mean"` uses
+  them.
 
 - row_sep:
 
   Separator used to build aggregate row labels. No level of a
-  \`group_vars\`/\`cell_vars\` variable may contain it, otherwise two
+  `group_vars`/`cell_vars` variable may contain it, otherwise two
   distinct aggregate rows could be given the same row ID; violations are
   rejected.
 
 - x:
 
-  A \`dkge_aggregate_target\` object to print.
+  A `dkge_aggregate_target` object to print.
 
 - ...:
 
@@ -92,7 +91,7 @@ print(x, ...)
 
 ## Value
 
-Object of class \`dkge_aggregate_target\`.
+Object of class `dkge_aggregate_target`.
 
 ## Examples
 

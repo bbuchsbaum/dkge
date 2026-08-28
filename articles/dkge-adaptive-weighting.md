@@ -1,8 +1,16 @@
 # Adaptive Voxel Weighting in DKGE
 
-**See also:** The [Weighting
-Strategies](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
-vignette covers the three complementary weighting *layers* — spatial
+DKGE fits are driven by cross-subject second moments. Equal voxel
+weights can let large noisy regions dominate those moments, but adaptive
+weights can also create leakage if they use held-out data or change
+under a permutation. This vignette shows how to define, inspect, and
+structurally check a weighting rule. Those checks are necessary
+safeguards; they are not a substitute for design-specific null
+calibration.
+
+**See also:**
+[`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
+covers the three complementary weighting *layers* — spatial
 (`Omega_list`), subject-level (`w_method`/`w_tau`), and transport
 (`sizes`). This vignette focuses on the separate
 [`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
@@ -12,29 +20,9 @@ joint estimand is explicit.
 
 ------------------------------------------------------------------------
 
-DKGE fits are driven by cross-subject second moments. Equal voxel
-weights can let large noisy regions dominate those moments, but adaptive
-weights can also create leakage if they use held-out data or change
-under a permutation. This vignette shows how to define, inspect, and
-structurally check a weighting rule. Those checks are necessary
-safeguards; they are not a substitute for design-specific null
-calibration.
+The examples use small synthetic datasets so they run fast.
 
-We will proceed through four main steps to build understanding:
-
-1.  First, we clarify the terminology and concepts used by
-    [`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
-    to establish a foundation;
-2.  Next, we build several weight specifications and demonstrate how to
-    fit DKGE models with them;
-3.  Then, we inspect the effects of mixing prior knowledge with adaptive
-    statistics; and
-4.  Finally, we run quick safety checks and demonstrate post-hoc weight
-    updates.
-
-The examples throughout this vignette use small synthetic datasets so
-that everything runs quickly and the concepts can be clearly
-illustrated.
+The examples use small synthetic datasets so they run fast.
 
 ## 1. Understanding the ingredients
 
@@ -43,26 +31,23 @@ The weight specification is created with
 which packages four essential pieces of information that work together
 to define the weighting strategy:
 
-- **Prior weights** describe locations you already trust based on
-  external information (for example, a reliability map from previous
-  studies). These weights must be *sign invariant*, meaning that
-  flipping the sign of a beta map does not change the weight assigned to
-  that voxel. Squares, absolute values, and variances all meet this
-  important requirement and can be used safely as priors.
+- **Prior weights** describe locations you already trust from external
+  information, such as a reliability map from an earlier study. They
+  must be *sign invariant*: flipping the sign of a beta map must not
+  change a voxel’s variances all meet this important requirement and can
+  be used safely as priors.
 - **Adaptive statistics** are computed dynamically from the training
   subjects inside each cross-validation split. The built-in options
   examine *energy* (squared amplitude in the design metric), *precision*
-  (inverse variance), or their product. Energy is simply
-  $`\|K^{1/2} B_{:\alpha}\|_2^2`$, representing the amount of signal a
-  voxel carries in effect space; precision is defined as
-  $`1/(\sigma^2 + \varepsilon)`$ and captures measurement reliability.
-- **Combination rules** specify how prior knowledge and adaptive
-  components are blended together (through product, sum, or override
-  operations). The `mix` parameter provides fine-grained control over
-  the relative balance between these two sources of information.
-- **Shrinkage** keeps the final weights well-behaved by applying several
-  regularization steps: we winsorize extreme values and pull everything
-  back towards 1 to ensure that no single voxel dominates the fit.
+  (inverse variance), or their product. Energy is
+  $`\|K^{1/2} B_{:\alpha}\|_2^2`$, the signal a voxel carries in effect
+  space; precision is $`1/(\sigma^2 + \varepsilon)`$, its measurement
+  reliability
+- **Combination rules** set how prior and adaptive components blend
+  (product, sum, or override). `mix` controls the balance between them.
+- **Shrinkage** keeps the final weights well-behaved: winsorize
+  extremes, then everything back towards 1 to ensure that no single
+  voxel dominates the fit.
 
 With `scope = "fold"`, adaptive statistics are computed from the
 training subjects in each fold. This prevents the held-out subject from
@@ -72,8 +57,8 @@ generalisation.
 
 ## 2. Building weight specifications and fitting DKGE
 
-We begin our exploration with the default configuration, which relies
-purely on adaptive statistics without any prior knowledge.
+The default configuration relies purely on adaptive statistics, with no
+prior knowledge.
 
 ``` r
 
@@ -96,11 +81,9 @@ print(wts_adapt)
 #>   shrink  : alpha =0.50, winsor =0.990, normalize =mean
 ```
 
-Next, we create a small synthetic dataset to work with: ten subjects,
-four effects, and sixty voxels per subject. While the exact numbers are
-unimportant for our purposes, this scale allows us to clearly
-demonstrate the API and observe the effects of different weighting
-strategies.
+The dataset below has ten subjects, four effects, and sixty voxels per
+subject. The scale is arbitrary: it is small enough to run fast and
+large enough to show the weighting strategies apart.
 
 ``` r
 
@@ -118,11 +101,9 @@ fit_uniform  <- dkge(subjects, K = K, rank = 2, w_method = "none")
 fit_adaptive <- dkge(subjects, K = K, rank = 2, weights = wts_adapt)
 ```
 
-The second fit internally computes voxel weights for every training
-fold, applying the adaptive weighting strategy we specified. We can
-inspect both the global weights and examine the average weight values
-across subjects to understand how the algorithm has adjusted the
-influence of different voxels.
+The second fit computes voxel weights for every training fold under the
+adaptive rule. Inspect the global weights and the per-subject averages
+to see how the fit adjusted each voxel’s influence.
 
 ``` r
 
@@ -143,18 +124,17 @@ dkge_diagnostics(fit_adaptive)$voxel_weights
 #> [1] 1.44
 ```
 
-You should observe modest deviations from 1.0 rather than extreme spikes
-in the weight values. This well-behaved pattern is exactly what the
-shrinkage parameters are designed to enforce, preventing any single
-voxel from dominating the analysis.
+![Histogram of adaptive voxel weights centered near one after
+shrinkage.](dkge-adaptive-weighting_files/figure-html/adaptive-weight-distribution-1.png)
+
+Expect modest deviations from 1.0 rather than spikes. That is what the
+shrinkage parameters enforce: no single voxel dominates.
 
 ## 3. Mixing priors with adaptive statistics
 
-Now let us consider a scenario where we have an external reliability
-image from previous studies or analyses. We need to convert this
-reliability information into a sign-invariant quantity (here, squared
-reliability) and incorporate it as a prior. The adaptive component
-remains the same as before, but now we blend it with this external
+Suppose you have an external reliability image from a previous study.
+Convert it into a sign-invariant prior, then blend it with the adaptive
+component. component is unchanged; it is now blended with that external
 knowledge.
 
 ``` r
@@ -190,6 +170,15 @@ stats::cor(prior_check$reliability, prior_check$final_weight,
 #> [1] 0.956
 ```
 
+![Scatter plot showing the relationship between external reliability
+values and final mixed adaptive
+weights.](dkge-adaptive-weighting_files/figure-html/prior-weight-plot-1.png)
+
+The upward trend confirms that the prior still affects the final
+ordering, while the scatter shows that the adaptive statistic and
+shrinkage also matter. That is more informative than printing the
+correlation alone.
+
 ## 4. Safety checks and post-hoc updates
 
 ### Sign-invariance check
@@ -215,35 +204,36 @@ still needs a simulation study matched to its folds, permutation scheme,
 sample size, and null data-generating process, with Monte Carlo
 uncertainty reported.
 
-If you plan to implement a custom adaptive rule, there are two critical
-requirements to verify:
+The public API currently accepts only the built-in adaptive rules shown
+above; it does not accept a custom weighting function. Sign-flip
+inference operates on already computed contrast values and holds the
+fitted voxel weights fixed. There is no `perm_recompute` argument or
+permutation-time weight-recomputation path. Consequently, an odd,
+sign-sensitive custom rule is not supported for this inference route.
+[`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
+rejects custom rules and unknown arguments, so the public API fails
+closed. Supporting such a rule would require a new, end-to-end
+resampling path that refits and validates the weights for every flip.
 
-1.  The rule must depend only on even statistics (such as squares or
-    absolute values). If your custom rule depends on signed means or
-    other odd functions, you must set `perm_recompute = "always"` so
-    that weights are recomputed inside each permutation flip to maintain
-    validity.
-2.  The rule must be fold-specific (enforced by `scope = "fold"`),
-    otherwise the held-out subject would contaminate the training
-    statistics and introduce bias into the cross-validation procedure.
+For the supported rules, keep `scope = "fold"` so the held-out subject
+does not contaminate the training statistics used to construct adaptive
+weights.
 
 ### Updating an existing fit
 
-Sometimes you may fit a DKGE model once, then later decide to revisit
-the weighting strategy without having to rerun the entire preprocessing
-pipeline. In such cases, you can use
+You can fit once and revisit the weighting later without rerunning
+preprocessing.
 [`dkge_update_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_update_weights.md)
-to efficiently rebuild the fold bases in place with your new weighting
-scheme.
+rebuilds the fold bases in place with your new weighting scheme.
 
 ``` r
 
 fit_refit <- dkge_update_weights(fit_uniform, wts_mixed)
 ```
 
-This update operation only modifies the weighting machinery itself; all
-subject-level projections and stored projections remain fully compatible
-with the updated model.
+The update touches only the weighting machinery; subject-level
+projections and stored results are reused. projections remain fully
+compatible with the updated model.
 
 ## Summary
 
@@ -253,12 +243,21 @@ Training-fold scope and sign-invariance close two important leakage
 paths. They do not prove that a particular analysis has calibrated error
 rates.
 
-The code examples throughout this vignette have demonstrated how to
-inspect the resulting weights, how to effectively mix prior knowledge
-with adaptive rules, and how to retrofit new weighting choices onto an
-existing fit without recomputing everything from scratch. You should
-employ these weighting controls when external reliability information or
-a prespecified adaptive rule justifies unequal voxel influence. Compare
-the weighted fit with an equal-weight baseline, report the rule and
-shrinkage settings, and calibrate the full inferential procedure under a
-defensible null before making sensitivity or error-control claims.
+The examples above showed how to inspect the resulting weights, mix
+prior knowledge with adaptive rules, and retrofit a new weighting choice
+onto an existing fit. Use these weighting controls when external
+reliability information or a prespecified adaptive rule justifies
+unequal voxel influence. Compare the weighted fit with an equal-weight
+baseline, report the rule and shrinkage settings, and calibrate the full
+inferential procedure under a defensible null before making sensitivity
+or error-control claims.
+
+## Where to go next
+
+- [`vignette("dkge-weighting")`](https://bbuchsbaum.github.io/dkge/articles/dkge-weighting.md)
+  — the three weighting layers this page sits inside: spatial,
+  subject-level, and transport.
+- [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
+  — the inference machinery that a weighting choice has to survive.
+- [`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
+  — what changing a weight does to the estimand.

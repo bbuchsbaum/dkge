@@ -4,6 +4,31 @@
 
 ### New features
 
+- **Model-level spatial regularization.**
+  [`dkge_spatial_regularizer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_spatial_regularizer.md)
+  builds graph Laplacians with `adjoin` (or accepts precomputed
+  Laplacians), binds them to shared or subject-specific beta-column
+  domains, and applies sparse `(I + lambda * L)^{-1}` solves inside the
+  pooled moment and all reconstructed component, contrast, bootstrap,
+  transport, and prediction fields. The regularizer can therefore change
+  the learned q-space solution rather than merely blur its display.
+  `lambda = 0` is exactly the unsmoothed fit;
+  [`dkge_cv_spatial_grid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_cv_spatial_grid.md)
+  scores candidate penalties against raw held-out fields in a fixed
+  validation geometry and uses the smoothest one-SE choice. Analytic
+  noise debiasing fails closed because its diagonal residual-variance
+  contract does not identify smoothing-induced spatial covariance;
+  split-half debiasing remains supported.
+- [`dkge_contrast_diagnostics()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast_diagnostics.md)
+  preflights planned contrasts against the fitted kernel support,
+  reporting retained/null fractions and distinct contrasts that produce
+  nearly proportional kernel queries. Numerical support tolerance is now
+  separate from practical query collinearity; the returned summary names
+  the maximally correlated query pair and reports the query-norm range.
+- [`dkge_component_contrasts()`](https://bbuchsbaum.github.io/dkge/reference/dkge_component_contrasts.md)
+  constructs the component-isolating contrast matrix `R %*% U`. This
+  makes the contrast path distinct from the dual salience/read-out basis
+  `K %*% U`, which must not be fed back as a contrast.
 - [`dkge_signflip_maxT()`](https://bbuchsbaum.github.io/dkge/reference/dkge_signflip_maxT.md)
   now explicitly exposes both max-T FWER-adjusted `p` and per-location
   unadjusted `p_unadj`. The latter is the raw value reported by
@@ -12,11 +37,7 @@
   carry stable subject, feature, and permutation labels.
 - The partial-effect-space article is restored and now executes
   coverage, pair-ESS, weighted chunked-debiasing, and
-  estimability-warning contracts. The frozen 8,100-result
-  between-subject rotation calibration was also rerun from exact clean
-  snapshot `5b185e9f`; replicate and summary artifacts were
-  byte-identical to the historical run, whose missing dirty-tree digest
-  is now explicitly labeled non-certifying on its own.
+  estimability-warning contracts.
 - **Partial effect spaces.** Subjects may observe only a subset of the
   design effects (`observed_rows` on
   [`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md);
@@ -88,15 +109,30 @@
 
 ### Bug fixes
 
+- Kernel roots now preserve exact positive-semidefinite support instead
+  of jittering `null(K)` into artificial inverse directions. Fits cap
+  latent rank at `rank(K)`, keep ridge inside `image(K)`, expose
+  rank/nullity/condition diagnostics, and reject contrasts that the
+  chosen kernel cannot represent.
+- Kernel cross-validation now requires full-rank candidates by default
+  and scores every candidate in one fixed validation geometry
+  (identity/effect space by default). Intentional quotient models
+  require `kernel_rank_policy = "allow_singular"`; excluded candidates
+  remain in audit rows, and score saturation is flagged, preventing a
+  low-rank kernel from grading itself only on the directions it kept.
+- Full-rank but spectrally concentrated kernels now expose
+  participation-ratio effective rank, effective-rank fraction, and
+  leading-eigenvalue share in fit, contrast, and CV diagnostics. CV
+  warns—without changing its predictive selection—when the selected
+  kernel is effectively too concentrated for the selected latent rank.
 - Sinkhorn transport now separates joint couplings from
   value-application operators. Intensive fields preserve constants,
-  extensive values preserve total mass, and null support is represented
-  by zero columns or rows in the corresponding application operator.
-  Fitted reliability is not applied twice, and each solve reports
-  convergence, iteration, marginal-error, and cache-hit diagnostics.
-  Warm-start keys digest the complete numerical problem and
-  non-converged states are not cached; the legacy `sinkhorn_cpp` method
-  name is a deprecated alias because the main path already uses C++.
+  extensive values preserve total mass, fitted reliability is not
+  applied twice, and each solve reports convergence, iteration,
+  marginal-error, and cache-hit diagnostics. Warm-start keys digest the
+  complete numerical problem and non-converged states are not cached;
+  the legacy `sinkhorn_cpp` method name is a deprecated alias because
+  the main path already uses C++.
 - K-Procrustes now reports the achieved proper-rotation objective when
   reflections are forbidden, validates PSD kernels and K-orthonormal
   inputs, accepts arbitrary eigenvector sign reflections in
@@ -113,8 +149,8 @@
   dimensions are no longer treated as proof that cell metadata indexes
   effect rows.
 - Analytic LOSO now reports structural fallback causes before numerical
-  ones. Pair-normalized effect/missingness pooling is again labelled
-  `pair_normalized_pooling`, covariance-aware moments are labelled
+  ones. Pair-normalized effect/missingness pooling is again labeled
+  `pair_normalized_pooling`, covariance-aware moments are labeled
   `covariance_aware_moment`, and a later large perturbation cannot mask
   either primary cause.
 - [`dkge_procrustes_K()`](https://bbuchsbaum.github.io/dkge/reference/dkge_procrustes_K.md)
@@ -126,12 +162,12 @@
   the RBF length-scale was read as `f$l`, which partially matched
   `f$levels`, breaking ordinal/circular/continuous factors carrying
   level labels.
-- Duplicate subject IDs are now rejected in
-  [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md).
-- Duplicated effect labels are rejected on
-  [`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md),
+- [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md)
+  now rejects duplicate subject IDs.
+- [`dkge_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject.md),
   [`dkge_data()`](https://bbuchsbaum.github.io/dkge/reference/dkge_data.md),
-  and the union-alignment path instead of dropping a beta row.
+  and the union-alignment path now reject duplicated effect labels
+  instead of dropping a beta row.
 - [`dkge_aggregate_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_aggregate_permute.md)
   evaluates the statistic on the unaligned null refit (alignment is
   diagnostic only).
@@ -165,11 +201,18 @@
   refits now preserve `effect_scaling`, `effect_weights`, `debias`,
   `missingness`, and `miss_args`.
 
-### Breaking / behaviour changes
+### Breaking / behavior changes
 
-- A one-factor `design_kernel(terms = NULL)` now contains its
+- [`kernel_roots()`](https://bbuchsbaum.github.io/dkge/reference/kernel_roots.md)
+  now defaults to `jitter = 0` and returns a Moore–Penrose inverse
+  square root for singular kernels. A positive `jitter` explicitly
+  regularizes `K`; it no longer happens invisibly on every call.
+  `dkge_cv_*()` scores are therefore comparable across kernels but are
+  not numerically interchangeable with the former candidate-specific
+  K-metric scores.
+- `design_kernel(terms = NULL)` on a one-factor design now contains its
   main-effect term once. Previously the identical main effect and full
-  interaction were both added, which doubled an unnormalised cell kernel
+  interaction were both added, which doubled an unnormalized cell kernel
   and duplicated the effect-basis block and labels. Multi-factor
   defaults are unchanged; callers that intentionally need the old
   cell-kernel scale can set the sole term’s `rho` to 2 explicitly.
@@ -202,8 +245,7 @@
   a design kernel whose labels cannot be reconciled with the data’s
   effect names (duplicated labels) now warns; a kernel with
   `rownames != colnames` is an error.
-- Adaptive/prior voxel weighting
-  ([`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md))
+- [`dkge_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_weights.md)
   now errors when subjects have different numbers of voxels/clusters
   instead of silently recycling one subject’s weights onto another.
 - Roxygen markdown mode is enabled package-wide (documentation now

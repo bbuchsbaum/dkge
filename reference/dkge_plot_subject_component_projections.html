@@ -20,30 +20,34 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -58,7 +62,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Plot subject projections onto DKGE components</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-plot.R" class="external-link"><code>R/dkge-plot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-plot.R" class="external-link"><code>R/dkge-plot.R</code></a></small>
       <div class="d-none name"><code>dkge_plot_subject_component_projections.Rd</code></div>
     </div>
 
@@ -84,7 +88,7 @@
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>Fitted `dkge` object.</p></dd>
+<dd><p>Fitted <code>dkge</code> object.</p></dd>
 
 
 <dt id="arg-groups">groups<a class="anchor" aria-label="anchor" href="#arg-groups"></a></dt>
@@ -94,7 +98,7 @@ every subject; unnamed vectors are matched positionally.</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
-<dd><p>`"loso"` for held-out supplementary projections or `"pooled"` for
+<dd><p><code>"loso"</code> for held-out supplementary projections or <code>"pooled"</code> for
 descriptive projections on the pooled fit.</p></dd>
 
 
@@ -104,7 +108,7 @@ descriptive projections on the pooled fit.</p></dd>
 
 <dt id="arg-align">align<a class="anchor" aria-label="anchor" href="#arg-align"></a></dt>
 <dd><p>Rotate each LOSO fold basis onto the pooled component axes
-(`fit$U`) by K-Procrustes before scoring.</p></dd>
+(<code>fit$U</code>) by K-Procrustes before scoring.</p></dd>
 
 
 <dt id="arg-ridge">ridge<a class="anchor" aria-label="anchor" href="#arg-ridge"></a></dt>
@@ -113,13 +117,13 @@ descriptive projections on the pooled fit.</p></dd>
 
 <dt id="arg-projections">projections<a class="anchor" aria-label="anchor" href="#arg-projections"></a></dt>
 <dd><p>Optional data frame previously returned by
-[dkge_subject_component_projections()]. Supplying it skips recomputation,
-which matters for `mode = "loso"` because that path refits one basis per
-subject. It must contain `subject`, `group`, `component`, and a numeric
-`projection`. When supplied, `fit`, `groups`, `comps`, `align`, `ridge`,
-and `mode` are all ignored: the panel label is read from the frame's own
-`mode` column, and a frame without one (or mixing modes) is left
-unlabelled rather than being captioned with the `mode` default.</p></dd>
+<code><a href="dkge_subject_component_projections.html">dkge_subject_component_projections()</a></code>. Supplying it skips recomputation,
+which matters for <code>mode = "loso"</code> because that path refits one basis per
+subject. It must contain <code>subject</code>, <code>group</code>, <code>component</code>, and a numeric
+<code>projection</code>. When supplied, <code>fit</code>, <code>groups</code>, <code>comps</code>, <code>align</code>, <code>ridge</code>,
+and <code>mode</code> are all ignored: the panel label is read from the frame's own
+<code>mode</code> column, and a frame without one (or mixing modes) is left
+unlabeled rather than being captioned with the <code>mode</code> default.</p></dd>
 
 </dl></div>
     <div class="section level2">

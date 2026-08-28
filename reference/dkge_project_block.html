@@ -22,30 +22,34 @@ Convenience wrapper for projecting row-standardised betas onto DKGE components."
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -60,7 +64,7 @@ Convenience wrapper for projecting row-standardised betas onto DKGE components."
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Project DKGE data into component space</h1>
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/R/dkge-project.R" class="external-link"><code>R/dkge-project.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/R/dkge-project.R" class="external-link"><code>R/dkge-project.R</code></a></small>
       <div class="d-none name"><code>dkge_project_block.Rd</code></div>
     </div>
 
@@ -71,7 +75,7 @@ Convenience wrapper for projecting row-standardised betas onto DKGE components."
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dkge_project_btil</span><span class="op">(</span><span class="va">fit</span>, <span class="va">Btil</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dkge_project_btil</span><span class="op">(</span><span class="va">fit</span>, <span class="va">Btil</span>, subject <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">dkge_project_block</span><span class="op">(</span></span>
 <span>  <span class="va">fit</span>,</span>
@@ -88,11 +92,17 @@ Convenience wrapper for projecting row-standardised betas onto DKGE components."
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>A `dkge` object.</p></dd>
+<dd><p>A <code>dkge</code> object.</p></dd>
 
 
 <dt id="arg-btil">Btil<a class="anchor" aria-label="anchor" href="#arg-btil"></a></dt>
-<dd><p>Either a qxP matrix or a list of such matrices (e.g. `fit$Btil`).</p></dd>
+<dd><p>Either a qxP matrix or a list of such matrices (e.g. <code>fit$Btil</code>).</p></dd>
+
+
+<dt id="arg-subject">subject<a class="anchor" aria-label="anchor" href="#arg-subject"></a></dt>
+<dd><p>Optional training-subject index or id for a single matrix.
+Required when the fit uses subject-specific spatial regularization. A list
+is matched to fitted subjects positionally.</p></dd>
 
 
 <dt id="arg-s">s<a class="anchor" aria-label="anchor" href="#arg-s"></a></dt>
@@ -105,7 +115,7 @@ Convenience wrapper for projecting row-standardised betas onto DKGE components."
 
 <dt id="arg-omega-s">Omega_s<a class="anchor" aria-label="anchor" href="#arg-omega-s"></a></dt>
 <dd><p>Optional weights (vector length P or PxP matrix) matching the
-columns of `B_s`.</p></dd>
+columns of <code>B_s</code>.</p></dd>
 
 
 <dt id="arg-w-s">w_s<a class="anchor" aria-label="anchor" href="#arg-w-s"></a></dt>
@@ -113,13 +123,13 @@ columns of `B_s`.</p></dd>
 
 
 <dt id="arg-least-squares">least_squares<a class="anchor" aria-label="anchor" href="#arg-least-squares"></a></dt>
-<dd><p>Logical; pass to [multivarious::project_block()].</p></dd>
+<dd><p>Logical; pass to <code><a href="https://bbuchsbaum.github.io/multivarious/reference/project_block.html" class="external-link">multivarious::project_block()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>List of Pxrank matrices; returns a single matrix when `Btil` is a matrix.</p>
-<p>Projection scores (qxrank) restricted to block `s`.</p>
+    <p>List of Pxrank matrices; returns a single matrix when <code>Btil</code> is a matrix.</p>
+<p>Projection scores (qxrank) restricted to block <code>s</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a></h2>

@@ -21,16 +21,18 @@ dkge_fit_cpca(
 
 - fit:
 
-  A \`dkge\` object from \[dkge_fit()\] or \[dkge()\].
+  A `dkge` object from
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+  or [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md).
 
 - blocks:
 
   Optional integer vector of effect indices defining the subspace (used
-  when \`T\` is not supplied).
+  when `T` is not supplied).
 
 - T:
 
-  Optional explicit qxq0 basis matrix; overrides \`blocks\` when given.
+  Optional explicit qxq0 basis matrix; overrides `blocks` when given.
 
 - part:
 
@@ -38,7 +40,7 @@ dkge_fit_cpca(
 
 - rank:
 
-  Target rank for the returned bases (defaults to \`ncol(fit\$U)\`).
+  Target rank for the returned bases (defaults to `ncol(fit$U)`).
 
 - ridge:
 

@@ -6,10 +6,21 @@ library(dkge)
 set.seed(12)
 ```
 
-The DKGE classification helpers decode experimental conditions from
-subject-level effect patterns. This vignette follows one complete path:
-define the effect space, fit DKGE, specify the classes, and estimate
-held-out-subject performance.
+Use classification when the scientific question is predictive: can a
+condition label be recovered from a subject’s effect pattern when that
+subject was not used to train the decoder? This is different from asking
+whether a component explains much variation or whether a contrast is
+non-zero.
+
+This page follows one complete path:
+
+``` text
+factor definition -> DKGE representation -> class weight matrix -> held-out predictions -> accuracy and confusion
+```
+
+The weight matrix is the conceptual bridge. It says how named beta rows
+become the class patterns that the classifier sees; the decoder never
+infers that mapping from effect names by magic.
 
 There are two distinct cross-validation contracts. The default
 `mode = "auto"` uses subject-level folds but selects the faster `"cell"`
@@ -19,10 +30,11 @@ while the global DKGE basis has seen every subject. Use
 without each held-out subject. The primary example below uses that
 stricter end-to-end path.
 
-## Setup
+## What is being classified?
 
-We define two experimental factors — condition (A vs B) and time (4 time
-points) — and construct a design kernel that encodes their structure:
+We define two experimental factors—condition (A versus B) and four time
+points—and construct a design kernel that encodes their effect
+structure:
 
 ``` r
 
@@ -34,8 +46,9 @@ q
 ```
 
 We simulate 10 subjects, each with `q` design effects and 60 voxels. A
-detectable signal distinguishing the two conditions is embedded in the
-condition contrast:
+detectable condition signal is planted only in voxels 1–10. That
+artificial localization gives the example a visible ground truth; the
+remaining voxels are noise.
 
 ``` r
 
@@ -58,6 +71,14 @@ make_subject <- function(id) {
 subjects <- lapply(seq_len(n_subjects), make_subject)
 ```
 
+![Line plot showing a positive planted condition signal in voxels one
+through ten and zero signal
+elsewhere.](dkge-classification_files/figure-html/planted-signal-1.png)
+
+The signal plot describes the simulation, not the model output. The
+honest performance question remains whether a decoder trained without
+one subject can classify that held-out subject’s A and B patterns.
+
 Fit the DKGE model using the design kernel.
 [`design_kernel()`](https://bbuchsbaum.github.io/dkge/reference/design_kernel.md)
 returns a list with `$K` (the q×q kernel matrix) and `$info` (factor
@@ -68,19 +89,13 @@ metadata used by
 
 fit <- dkge(subjects, K = kern, rank = 2)
 fit
-#> Multiblock Bi-Projector object:
-#>   Projection matrix dimensions:  600 x 2 
-#>   Block indices:
-#>     Block 1: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60
-#>     Block 2: 61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120
-#>     Block 3: 121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180
-#>     Block 4: 181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240
-#>     Block 5: 241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300
-#>     Block 6: 301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360
-#>     Block 7: 361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380,381,382,383,384,385,386,387,388,389,390,391,392,393,394,395,396,397,398,399,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,419,420
-#>     Block 8: 421,422,423,424,425,426,427,428,429,430,431,432,433,434,435,436,437,438,439,440,441,442,443,444,445,446,447,448,449,450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480
-#>     Block 9: 481,482,483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540
-#>     Block 10: 541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,563,564,565,566,567,568,569,570,571,572,573,574,575,576,577,578,579,580,581,582,583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600
+#> <dkge>
+#>   Subjects: 10 
+#>   Effects: 7 
+#>   Rank: 2 
+#>   Subject weighting: mfa_sigma1 (tau = 0.3) 
+#>   Weight range: 0.8058 to 1.1005 (median = 1.008, CV = 0.08452) 
+#>   Effective subject mass: 9.936 of 10 usable
 ```
 
 ## Classification targets
@@ -113,7 +128,7 @@ cls <- dkge_classify(
   targets = targets,
   method  = "lda",     # "lda" (default) or "logit"
   mode    = "cell_cross",
-  n_perm  = 0,         # descriptive cross-validated decoding
+  n_perm  = 99,        # coarse permutation resolution for this example
   seed    = 99
 )
 print(cls)
@@ -122,8 +137,9 @@ print(cls)
 #> Targets: 1
 #> Classifier: lda
 #> Metrics: accuracy, logloss
-#> Permutations: 0
+#> Permutations: 99
 #>   cond: accuracy=1.000, logloss=0.000
+#>     accuracy p=0.010, logloss p=0.010
 ```
 
 The result is a `dkge_classification` object. Each entry of `$results`
@@ -157,6 +173,17 @@ An accuracy of 1 means every held-out condition row was classified
 correctly in this deliberately strong toy example. It is not an estimate
 of performance on an external dataset.
 
+Accuracy is easier to interpret alongside the errors it summarizes:
+
+![Confusion-matrix heatmap for held-out condition
+predictions.](dkge-classification_files/figure-html/confusion-plot-1.png)
+
+Rows are observed classes and columns are predictions. A strong diagonal
+means the held-out labels were recovered; off-diagonal counts reveal
+which classes are confused. For imbalanced classes, always pair this
+display with class counts and a metric such as balanced accuracy or
+log-loss.
+
 Convert to a tidy data frame for plotting or downstream analysis:
 
 ``` r
@@ -164,53 +191,26 @@ Convert to a tidy data frame for plotting or downstream analysis:
 df <- as.data.frame(cls)
 head(df)
 #>   target   metric        value p_value n_perm
-#> 1   cond accuracy 1.000000e+00      NA      0
-#> 2   cond  logloss 9.999779e-13      NA      0
+#> 1   cond accuracy 1.000000e+00    0.01     99
+#> 2   cond  logloss 9.999779e-13    0.01     99
 ```
 
 ### Permutation p-values
 
-The descriptive fit above deliberately sets `n_perm = 0`, so its
-p-values are `NULL`:
+When `n_perm > 0`, each target gets an empirical p-value from the
+sign-flip max-T permutation distribution:
 
 ``` r
 
 res$p_values    # named numeric vector per metric (NULL when n_perm = 0)
-#> NULL
+#> accuracy  logloss 
+#>     0.01     0.01
 ```
 
-For an inferential fit, preselect one scalar penalty independently and
-provide a callback that reruns the complete data-dependent
-representation and classifier for every randomized label vector. The
-callback must return finite named metrics:
-
-``` r
-
-full_recompute <- function(labels, row_data, target, fit, fold_assignments,
-                           method, mode, lambda, metric, class_weights,
-                           standardize_within_fold) {
-  # Rebuild the DKGE fit, rank choice, folds, target representation, and
-  # classifier from `labels`, then return all metrics requested in `metric`.
-  list(metrics = c(accuracy = recomputed_accuracy))
-}
-
-cls_perm <- dkge_classify(
-  fit,
-  targets = targets,
-  method = "lda",
-  mode = "cell_cross",
-  lambda = 1e-3,       # selected independently of these outcomes
-  metric = "accuracy",
-  n_perm = 199,
-  seed = 99,
-  control = list(randomization_recompute = full_recompute)
-)
-```
-
-With 199 permutations and the plus-one correction, the smallest
-attainable p-value is $`1/(199+1)=0.005`$. A value at that boundary
-means none of the sampled permutations was as extreme; it does not
-provide finer resolution.
+With 99 permutations and the plus-one correction, the smallest
+attainable p-value is (1/(99+1)=0.01). A value at that boundary means
+none of the sampled permutations was as extreme; it does not provide
+finer resolution than 0.01.
 
 ### Subject-level predictions
 
@@ -254,18 +254,21 @@ diag_fold1$class_counts_test   # observed class counts in test set
 The `mode` argument controls how the group basis is applied at test
 time:
 
-| Mode | Basis used | Supported claim |
+| Mode | Basis used | Use case |
 |----|----|----|
-| `"cell"` | Global `fit$U` | Transductive performance within this cohort; the basis saw held-out subjects |
-| `"cell_cross"` | Fold-specific LOSO `U_fold` | Prospective held-out-subject performance |
-| `"delta"` | Fold-specific basis + subject labels | Prospective held-out-subject binary test; requires `y` |
+| `"cell"` | Global `fit$U` | Fast; mild basis-step leakage — `fit$U` saw all subjects |
+| `"cell_cross"` | Fold-specific LOSO `U_fold` | Basis and classifier refit per subject fold |
+| `"delta"` | Global `fit$U` + subject labels | Subject-level binary test; requires `y` argument |
 
 `"auto"` (default) selects `"cell"` for within-subject targets and
 `"delta"` for between-subject targets.
 
+The strict route refits the basis for every held-out subject, so it is
+shown here for syntax rather than run:
+
 ``` r
 
-# Cross-fitted representation for a prospective generalisation claim
+# Refit the basis without each held-out subject.
 cls_strict <- dkge_classify(fit, targets = targets, mode = "cell_cross", n_perm = 0)
 ```
 
@@ -310,25 +313,25 @@ automatically:
 cls_multi <- dkge_classify(fit_multi,
                            targets = W_runs,   # plain matrix dispatch
                            mode = "cell_cross",
-                           n_perm  = 0,
+                           n_perm  = 49,
                            seed    = 101)
 
 res_multi <- cls_multi$results[[1]]
 res_multi$metrics
 #>     accuracy      logloss 
-#> 1.000000e+00 1.172934e-12
+#> 1.000000e+00 9.999779e-13
 as.data.frame(cls_multi)
 #>    target   metric        value p_value n_perm
-#> 1 target1 accuracy 1.000000e+00      NA      0
-#> 2 target1  logloss 1.172934e-12      NA      0
+#> 1 target1 accuracy 1.000000e+00    0.02     49
+#> 2 target1  logloss 9.999779e-13    0.02     49
 ```
 
-Run averaging happens inside the weight matrix, so each prospective LOSO
-fold observes exactly one pattern per condition. This example is
-descriptive; an inferential run must use the full-recomputation contract
-shown above. Cross-fitting guards against basis-reuse leakage; it does
-not by itself establish transportability to a new scanner, acquisition
-protocol, or population.
+Run averaging happens inside the weight matrix, so each fold observes
+one pattern per condition. Because this call also uses
+`mode = "cell_cross"`, both the basis and classifier exclude the
+held-out subject. This guards against the specific basis-reuse leakage
+described above; it does not by itself establish transportability to a
+new scanner, acquisition protocol, or population.
 
 ## Hyperdesign inputs and fold bridges
 
@@ -339,9 +342,11 @@ and
 [`as_dkge_folds()`](https://bbuchsbaum.github.io/dkge/reference/as_dkge_folds.md)
 flows through the existing pipeline without altering the core solvers.
 
+The block below is illustrative and does not run here: it needs the
+`multidesign` package and a hyperdesign object you supply yourself.
+
 ``` r
 
-# Pseudocode — requires multidesign package and a user-defined hyperdesign object
 library(multidesign)
 
 hd     <- make_demo_hyperdesign()                # user-supplied helper
@@ -376,21 +381,17 @@ methodological consistency.
 sufficient. Use `method = "logit"` with `class_weights = "balanced"`
 when experimental conditions have unequal numbers of trials.
 
-**Permutation testing.** The beta inferential API requires one
-externally preselected positive scalar `lambda` whenever `n_perm > 0`.
-Observed-data `lambda_grid` and `lambda_fun` selection remain available
-only with `n_perm = 0`; freezing their selected value across
-permutations would invalidate the randomization comparison. For `cell`
-and `cell_cross`, `control$randomization_recompute` must also rebuild
-the DKGE fit, rank choice, folds, representation, and classifier for
-each randomized label vector; the callback returns the requested named
-metrics. Increase `n_perm` for precise p-values near significance
-thresholds, and record how the fixed penalty was selected independently.
+**Permutation testing.** Increase `n_perm` for precise p-values near
+significance thresholds. Set `n_perm = 0` during exploratory analysis to
+skip the permutation loop.
 
-**Spatial alignment.** When subjects have different voxel grids, apply
-transport to a common medoid parcellation via
-[`dkge_transport_contrasts_to_medoid()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_medoid.md)
-before classification.
+**Functional alignment.** When subjects have different voxel grids or
+parcel systems, fit correspondence from an eligible functional feature
+channel and use
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md)
+before classification. A bare MNI grid supplies display coordinates, not
+functional correspondence; see
+[`vignette("dkge-functional-alignment")`](https://bbuchsbaum.github.io/dkge/articles/dkge-functional-alignment.md).
 
 **Input caching.** Keep `keep_inputs = TRUE` (default) to enable
 [`dkge_update_weights()`](https://bbuchsbaum.github.io/dkge/reference/dkge_update_weights.md)

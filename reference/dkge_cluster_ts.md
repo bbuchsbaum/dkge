@@ -12,12 +12,15 @@ dkge_cluster_ts(bv, labels, ids = NULL, chunker = NULL)
 
 - bv:
 
-  A \`neuroim2::NeuroVec\` object (4D time-series data, TxXxYxZ).
+  A
+  [`neuroim2::NeuroVec`](https://bbuchsbaum.github.io/neuroim2/reference/NeuroVec-class.html)
+  object (4D time-series data, TxXxYxZ).
 
 - labels:
 
-  A \`neuroim2::NeuroVol\` with integer cluster identifiers (0 indicates
-  background).
+  A
+  [`neuroim2::NeuroVol`](https://bbuchsbaum.github.io/neuroim2/reference/NeuroVol.html)
+  with integer cluster identifiers (0 indicates background).
 
 - ids:
 

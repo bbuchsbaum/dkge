@@ -20,7 +20,7 @@ dkge_plot_subject_component_projections(
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - groups:
 
@@ -30,7 +30,7 @@ dkge_plot_subject_component_projections(
 
 - mode:
 
-  \`"loso"\` for held-out supplementary projections or \`"pooled"\` for
+  `"loso"` for held-out supplementary projections or `"pooled"` for
   descriptive projections on the pooled fit.
 
 - comps:
@@ -39,8 +39,8 @@ dkge_plot_subject_component_projections(
 
 - align:
 
-  Rotate each LOSO fold basis onto the pooled component axes
-  (\`fit\$U\`) by K-Procrustes before scoring.
+  Rotate each LOSO fold basis onto the pooled component axes (`fit$U`)
+  by K-Procrustes before scoring.
 
 - ridge:
 
@@ -49,14 +49,14 @@ dkge_plot_subject_component_projections(
 - projections:
 
   Optional data frame previously returned by
-  \[dkge_subject_component_projections()\]. Supplying it skips
-  recomputation, which matters for \`mode = "loso"\` because that path
-  refits one basis per subject. It must contain \`subject\`, \`group\`,
-  \`component\`, and a numeric \`projection\`. When supplied, \`fit\`,
-  \`groups\`, \`comps\`, \`align\`, \`ridge\`, and \`mode\` are all
-  ignored: the panel label is read from the frame's own \`mode\` column,
-  and a frame without one (or mixing modes) is left unlabelled rather
-  than being captioned with the \`mode\` default.
+  [`dkge_subject_component_projections()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject_component_projections.md).
+  Supplying it skips recomputation, which matters for `mode = "loso"`
+  because that path refits one basis per subject. It must contain
+  `subject`, `group`, `component`, and a numeric `projection`. When
+  supplied, `fit`, `groups`, `comps`, `align`, `ridge`, and `mode` are
+  all ignored: the panel label is read from the frame's own `mode`
+  column, and a frame without one (or mixing modes) is left unlabeled
+  rather than being captioned with the `mode` default.
 
 ## Value
 

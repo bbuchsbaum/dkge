@@ -11,7 +11,7 @@ dkge_clear_sinkhorn_cache()
 
 ## Value
 
-Logical \`TRUE\` invisibly.
+Logical `TRUE` invisibly.
 
 ## Examples
 

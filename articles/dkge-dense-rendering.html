@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="Transport and Dense Rendering">
+<meta name="description" content="Transport subject-specific cluster values onto a shared anchor space and render them as a dense field.
+">
+<meta property="og:description" content="Transport subject-specific cluster values onto a shared anchor space and render them as a dense field.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,26 +93,32 @@
       <h1>Transport and Dense Rendering</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-dense-rendering.Rmd" class="external-link"><code>vignettes/dkge-dense-rendering.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-dense-rendering.Rmd" class="external-link"><code>vignettes/dkge-dense-rendering.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-dense-rendering.Rmd</code></div>
     </div>
 
     
     
-<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>The dense rendering stack provides a mechanism for converting
-subject-specific cluster values into a shared anchor space, with the
-option to interpolate these values back to full voxel grids. This
-capability enables spatial visualization and analysis of group-level
-patterns. In this vignette, we demonstrate how to assemble rendering
-pipelines and interpret the associated diagnostic outputs.</p>
+<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>DKGE components and contrasts initially live on each subject’s own
+clusters. You cannot average those vectors merely because they have
+similar lengths: cluster indices are not anatomical correspondences.
+Dense rendering makes the spatial assumption explicit by mapping every
+subject through shared anchors and, optionally, decoding the anchor
+field onto a voxel grid.</p>
+<pre class="text"><code>subject cluster values -&gt; fitted subject-to-anchor maps -&gt; shared anchor field -&gt; voxel interpolation</code></pre>
+<p>This page preserves the deprecated geometry-only renderer as a worked
+example of rendering mechanics. It is descriptive, cannot produce valid
+group inference, and must not be mistaken for functional alignment. For
+the typed workflow in which independent response signatures identify
+correspondence, read <code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>
+instead.</p>
 <div class="section level2">
-<h2 id="toy-dataset-with-centroids">Toy Dataset with Centroids<a class="anchor" aria-label="anchor" href="#toy-dataset-with-centroids"></a>
+<h2 id="what-spatial-information-is-required">What spatial information is required?<a class="anchor" aria-label="anchor" href="#what-spatial-information-is-required"></a>
 </h2>
-<p>We begin by constructing a synthetic dataset that includes both beta
-coefficients and spatial centroids for each subject. This setup will
-allow us to demonstrate the rendering pipeline with concrete spatial
-coordinates.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>The rendering pipeline needs coordinates, so the example below
+carries both beta coefficients and spatial centroids for each
+subject.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
 <span><span class="va">S</span> <span class="op">&lt;-</span> <span class="fl">4</span>; <span class="va">q</span> <span class="op">&lt;-</span> <span class="fl">3</span>; <span class="va">P</span> <span class="op">&lt;-</span> <span class="fl">20</span>; <span class="cn">T</span> <span class="op">&lt;-</span> <span class="fl">50</span></span>
 <span><span class="va">betas</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="va">S</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">q</span> <span class="op">*</span> <span class="va">P</span><span class="op">)</span>, <span class="va">q</span>, <span class="va">P</span><span class="op">)</span>, simplify <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -119,152 +133,101 @@ coordinates.</p>
 <span><span class="va">fit</span><span class="op">$</span><span class="va">centroids</span> <span class="op">&lt;-</span> <span class="va">centroids</span>  <span class="co"># attach for transport helpers; pass explicitly in production</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="building-an-anchor-renderer">Building an Anchor Renderer<a class="anchor" aria-label="anchor" href="#building-an-anchor-renderer"></a>
+<h2 id="legacy-descriptive-anchor-rendering">Legacy descriptive anchor rendering<a class="anchor" aria-label="anchor" href="#legacy-descriptive-anchor-rendering"></a>
 </h2>
-<p>The next step involves constructing a renderer object that will
-handle the mapping between subject-specific cluster coordinates and a
-shared anchor space. This process requires defining a target voxel grid
-and specifying the transport parameters.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/dkge_build_renderer.html">dkge_build_renderer()</a></code> is deprecated. It maps
+subject-specific cluster coordinates onto a shared anchor space for
+descriptive display, defaults to equal subject weights, and records an
+inferentially ineligible receipt. A bare anchor or MNI grid supplies
+display coordinates; it supplies no functional correspondence to any
+subject. This legacy example uses a deterministic geometric
+k-nearest-neighbor mapper; the functional Sinkhorn workflow and its
+numerical eligibility gates are covered in
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># use 5k anchors sampled from grey-matter-like cube</span></span>
 <span><span class="va">vox_xyz</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">40</span>, <span class="fl">40</span>, by <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">40</span>, <span class="fl">40</span>, by <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">40</span>, <span class="fl">40</span>, by <span class="op">=</span> <span class="fl">20</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">renderer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_build_renderer.html">dkge_build_renderer</a></span><span class="op">(</span></span>
+<span><span class="va">renderer</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/dkge_build_renderer.html">dkge_build_renderer</a></span><span class="op">(</span></span>
 <span>  <span class="va">fit</span>,</span>
 <span>  centroids <span class="op">=</span> <span class="va">centroids</span>,</span>
 <span>  vox_xyz <span class="op">=</span> <span class="va">vox_xyz</span>,</span>
-<span>  mapper <span class="op">=</span> <span class="fu"><a href="../reference/dkge_mapper.html">dkge_mapper</a></span><span class="op">(</span><span class="st">"sinkhorn"</span>, epsilon <span class="op">=</span> <span class="fl">0.05</span>, lambda_xyz <span class="op">=</span> <span class="fl">1</span>, lambda_feat <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  mapper <span class="op">=</span> <span class="fu"><a href="../reference/dkge_mapper.html">dkge_mapper</a></span><span class="op">(</span><span class="st">"knn"</span>, k <span class="op">=</span> <span class="fl">8</span>, sigx <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
 <span>  graph_k <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  decoder_k <span class="op">=</span> <span class="fl">8</span>,</span>
 <span>  anchor_n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">500L</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">vox_xyz</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  anchor_method <span class="op">=</span> <span class="st">"sample"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Sinkhorn did not converge in 5000 iterations (marginal error 1.85e-03</span></span>
-<span><span class="co">#&gt; &gt; tol 1.00e-04); increase max_iter or epsilon.</span></span>
-<span><span class="co">#&gt; Warning: Sinkhorn did not converge in 5000 iterations (marginal error 1.85e-03</span></span>
-<span><span class="co">#&gt; &gt; tol 1.00e-04); increase max_iter or epsilon.</span></span>
-<span><span class="co">#&gt; Warning: Sinkhorn did not converge in 5000 iterations (marginal error 3.15e-04</span></span>
-<span><span class="co">#&gt; &gt; tol 1.00e-04); increase max_iter or epsilon.</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">renderer</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 8</span></span>
-<span><span class="co">#&gt;  $ anchors     : num [1:405, 1:3] -40 -30 -20 -10 0 10 20 30 40 -40 ...</span></span>
+<span><span class="co">#&gt; List of 11</span></span>
+<span><span class="co">#&gt;  $ anchors          : num [1:405, 1:3] -40 -30 -20 -10 0 10 20 30 40 -40 ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "dimnames")=List of 2</span></span>
-<span><span class="co">#&gt;  $ graph       :List of 4</span></span>
-<span><span class="co">#&gt;  $ decoder     :List of 6</span></span>
-<span><span class="co">#&gt;  $ mapper      :List of 2</span></span>
-<span><span class="co">#&gt;   ..- attr(*, "class")= chr [1:2] "dkge_mapper_sinkhorn" "dkge_mapper"</span></span>
-<span><span class="co">#&gt;  $ mapper_fits :List of 4</span></span>
-<span><span class="co">#&gt;  $ weights     : num [1:4] 0.874 1.063 0.904 1.159</span></span>
-<span><span class="co">#&gt;  $ anchor_feats: NULL</span></span>
-<span><span class="co">#&gt;  $ mapper_stats:List of 4</span></span></code></pre></div>
-<p>The resulting renderer object contains several key components that
-facilitate the rendering process:</p>
+<span><span class="co">#&gt;  $ graph            :List of 4</span></span>
+<span><span class="co">#&gt;  $ decoder          :List of 6</span></span>
+<span><span class="co">#&gt;  $ mapper           :List of 2</span></span>
+<span><span class="co">#&gt;   ..- attr(*, "class")= chr [1:2] "dkge_mapper_knn" "dkge_mapper"</span></span>
+<span><span class="co">#&gt;  $ mapper_fits      :List of 4</span></span>
+<span><span class="co">#&gt;  $ weights          : num [1:4] 1 1 1 1</span></span>
+<span><span class="co">#&gt;  $ subject_weighting: chr "equal_subject"</span></span>
+<span><span class="co">#&gt;  $ eligibility      :List of 16</span></span>
+<span><span class="co">#&gt;   ..- attr(*, "class")= chr [1:2] "dkge_alignment_eligibility" "list"</span></span>
+<span><span class="co">#&gt;  $ mode             : chr "legacy_descriptive"</span></span>
+<span><span class="co">#&gt;  $ anchor_feats     : NULL</span></span>
+<span><span class="co">#&gt;  $ mapper_stats     :List of 2</span></span>
+<span><span class="co">#&gt;  - attr(*, "class")= chr [1:2] "dkge_legacy_renderer" "list"</span></span></code></pre></div>
+<p>The renderer carries four components:</p>
 <ul>
 <li>
-<code>anchors</code>: The shared anchor coordinates that are
-automatically derived from the input <code>vox_xyz</code> grid and serve
-as the common reference space.</li>
+<code>anchors</code>: the shared coordinates, derived from the
+<code>vox_xyz</code> grid, that serve as the common reference
+space.</li>
 <li>
-<code>graph</code>: An optional k-nearest neighbor graph and
-associated Laplacian matrix that enables spatial smoothing across
-anchors.</li>
+<code>graph</code>: an optional k-nearest-neighbor graph and
+Laplacian, which enables spatial smoothing across anchors.</li>
 <li>
 <code>mapper_fits</code>: Subject-specific fitted plans and
 target-conditional application operators. Reusing the renderer reuses
 these solved mappings.</li>
 <li>
-<code>mapper_stats</code>: Comprehensive transport diagnostics
-including costs, entropies, and support sizes that help assess the
-quality of the mapping.</li>
+<code>mapper_stats</code>: transport diagnostics - costs, entropies,
+and support sizes - for assessing the mapping.</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="rendering-subject-values">Rendering Subject Values<a class="anchor" aria-label="anchor" href="#rendering-subject-values"></a>
+<h2 id="rendering-subject-values-descriptively">Rendering subject values descriptively<a class="anchor" aria-label="anchor" href="#rendering-subject-values-descriptively"></a>
 </h2>
-<p>With the renderer in place, we can now transform subject-specific
-cluster values into the shared anchor space and interpolate them to the
-full voxel grid. This process applies optimal transport to map values
-while preserving spatial relationships.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/dkge_render_subject_values.html">dkge_render_subject_values()</a></code> transports subject cluster
+values into the shared anchor space, then interpolates them to the full
+voxel grid. It too is deprecated and returns no inferential result.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">values_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Btil</span>, <span class="kw">function</span><span class="op">(</span><span class="va">Bts</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">Bts</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">rendered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_render_subject_values.html">dkge_render_subject_values</a></span><span class="op">(</span><span class="va">renderer</span>, <span class="va">values_list</span>, lambda <span class="op">=</span> <span class="fl">0.2</span>, to_vox <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">rendered</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/dkge_render_subject_values.html">dkge_render_subject_values</a></span><span class="op">(</span><span class="va">renderer</span>, <span class="va">values_list</span>, lambda <span class="op">=</span> <span class="fl">0.2</span>, to_vox <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">rendered</span><span class="op">$</span><span class="va">details</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
-<span><span class="co">#&gt;  -1.673  -0.235   0.141   0.144   0.578   1.719</span></span>
+<span><span class="co">#&gt; -0.8714 -0.0868  0.0546  0.0550  0.2125  0.8612</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rendered</span><span class="op">$</span><span class="va">details</span><span class="op">$</span><span class="va">subject_stats</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [[1]]</span></span>
-<span><span class="co">#&gt; [[1]]$transport_cost</span></span>
-<span><span class="co">#&gt; [1] 25.3</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[1]]$plan_entropy</span></span>
-<span><span class="co">#&gt; [1] 6.03</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[1]]$effective_support</span></span>
-<span><span class="co">#&gt; [1] 428</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[1]]$epsilon</span></span>
-<span><span class="co">#&gt; [1] 0.05</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
-<span><span class="co">#&gt; [[2]]$transport_cost</span></span>
-<span><span class="co">#&gt; [1] 19.4</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[2]]$plan_entropy</span></span>
-<span><span class="co">#&gt; [1] 6.03</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[2]]$effective_support</span></span>
-<span><span class="co">#&gt; [1] 430</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[2]]$epsilon</span></span>
-<span><span class="co">#&gt; [1] 0.05</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[3]]</span></span>
-<span><span class="co">#&gt; [[3]]$transport_cost</span></span>
-<span><span class="co">#&gt; [1] 21.9</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[3]]$plan_entropy</span></span>
-<span><span class="co">#&gt; [1] 6.03</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[3]]$effective_support</span></span>
-<span><span class="co">#&gt; [1] 431</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[3]]$epsilon</span></span>
-<span><span class="co">#&gt; [1] 0.05</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[4]]</span></span>
-<span><span class="co">#&gt; [[4]]$transport_cost</span></span>
-<span><span class="co">#&gt; [1] 21.4</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[4]]$plan_entropy</span></span>
-<span><span class="co">#&gt; [1] 6.04</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[4]]$effective_support</span></span>
-<span><span class="co">#&gt; [1] 435</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; [[4]]$epsilon</span></span>
-<span><span class="co">#&gt; [1] 0.05</span></span></code></pre></div>
-<p>The rendering process produces several important outputs that capture
-different aspects of the spatial transformation:</p>
+<span><span class="co">#&gt; NULL</span></span></code></pre></div>
+<p>The render returns three things:</p>
 <ul>
 <li>
-<code>rendered$anchor</code>: The smoothed group field values
-defined on the anchor coordinates, representing the primary output of
-the transport process.</li>
+<code>rendered$anchor</code>: the smoothed group field on the anchor
+coordinates. This is the primary output of the transport.</li>
 <li>
-<code>rendered$voxel</code>: The interpolated voxel map with length
-equal to <code>nrow(vox_xyz)</code>, providing values for the complete
-target grid.</li>
+<code>rendered$voxel</code>: the interpolated voxel map, with length
+<code>nrow(vox_xyz)</code>.</li>
 <li>
-<code>details$plan_entropy_mean</code>: The average diffusion of
-transport plans across subjects, where higher values indicate broader
-anchor coverage and more diffuse mapping patterns.</li>
+<code>rendered$details$plan_entropy_mean</code>: mean diffusion of
+the transport plans. Higher values mean broader anchor coverage and more
+diffuse mapping patterns.</li>
 </ul>
-<p>To examine the spatial structure of the rendered field, we can
-visualize how the anchor values vary along a single spatial
-dimension.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>The anchor values vary along a single spatial dimension, which is the
+easiest way to see the field’s structure.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">renderer</span><span class="op">$</span><span class="va">anchors</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">rendered</span><span class="op">$</span><span class="va">anchor</span>, pch <span class="op">=</span> <span class="fl">20</span>, col <span class="op">=</span> <span class="st">"steelblue"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Anchor x-coordinate"</span>, ylab <span class="op">=</span> <span class="st">"Rendered value"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Rendered anchor field"</span><span class="op">)</span></span>
@@ -274,37 +237,55 @@ dimension.</p>
 <div class="section level2">
 <h2 id="voxel-map-snapshot">Voxel Map Snapshot<a class="anchor" aria-label="anchor" href="#voxel-map-snapshot"></a>
 </h2>
-<p>We can further inspect the interpolated results by examining specific
-slices of the voxel grid. This provides insight into how the
-anchor-based smoothing affects the final voxel-level representation.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>Slices of the voxel grid show how the anchor-based smooth field is
+interpolated onto the target space.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sel</span> <span class="op">&lt;-</span> <span class="va">vox_xyz</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">==</span> <span class="fl">0</span>  <span class="co"># slice at z = 0</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vox_xyz</span><span class="op">[</span><span class="va">sel</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">rendered</span><span class="op">$</span><span class="va">voxel</span><span class="op">[</span><span class="va">sel</span><span class="op">]</span>, pch <span class="op">=</span> <span class="fl">16</span>, col <span class="op">=</span> <span class="st">"tomato"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"x"</span>, ylab <span class="op">=</span> <span class="st">"value"</span>, main <span class="op">=</span> <span class="st">"Voxel slice (z=0)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="dkge-dense-rendering_files/figure-html/plot-vox-1.png" class="r-plt" alt="Scatter plot of voxel slice values for z equals zero." width="90%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
-<h2 id="practical-considerations">Practical Considerations<a class="anchor" aria-label="anchor" href="#practical-considerations"></a>
+<h2 id="what-to-check-before-reporting">What to check before reporting<a class="anchor" aria-label="anchor" href="#what-to-check-before-reporting"></a>
 </h2>
-<p>Several important parameters and features can be adjusted to optimize
-the rendering process for specific applications:</p>
+<p>Three settings change the result:</p>
 <ul>
-<li>The <code>lambda</code> parameter in
-<code><a href="../reference/dkge_render_subject_values.html">dkge_render_subject_values()</a></code> controls the trade-off between
-fidelity to the original data and spatial smoothness. Users should
-monitor the <code>plan_entropy_mean</code> diagnostic to assess whether
-the current settings lead to excessive or insufficient smoothing.</li>
-<li>Incorporating additional latent features through the
-<code>subject_feats</code> and <code>anchor_feats</code> arguments in
-<code><a href="../reference/dkge_build_renderer.html">dkge_build_renderer()</a></code> allows the transport costs to reflect
-both spatial proximity and functional similarity, potentially improving
-the biological relevance of the mappings.</li>
+<li>
+<code>lambda</code> in <code><a href="../reference/dkge_render_subject_values.html">dkge_render_subject_values()</a></code>
+trades fidelity to the original data against spatial smoothness. Watch
+<code>plan_entropy_mean</code> to judge whether a setting smooths too
+much or too little.</li>
+<li>
+<code>subject_feats</code> and <code>anchor_feats</code> in
+<code><a href="../reference/dkge_build_renderer.html">dkge_build_renderer()</a></code> let the descriptive transport use
+additional latent features. They do not establish fold-safe or
+independent functional correspondence.</li>
 <li>Reuse a renderer for repeated maps: its fitted plans avoid solving
 the same subject-to-anchor mappings again. Separately, DKGE keeps a
 process-local cache of converged Sinkhorn duals for byte-identical fit
 problems; inspect
 <code>mapper_fits[[s]]$stats$diagnostics$cache_hit</code> when
 diagnosing a repeated fit.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../articles/dkge-anchors.html">vignette("dkge-anchors")</a></code> builds the shared anchor
+representation this page renders onto, when items rather than
+coordinates define the alignment.</li>
+<li>
+<code><a href="../articles/dkge-performance.html">vignette("dkge-performance")</a></code> compares the mappers and
+shows when warm starts and caching pay for themselves.</li>
+<li>
+<code><a href="../articles/dkge-weighting.html">vignette("dkge-weighting")</a></code> covers the transport
+weighting layer, which changes what a rendered field means.</li>
+<li>
+<code><a href="../articles/dkge-functional-alignment.html">vignette("dkge-functional-alignment")</a></code> is the supported
+typed workflow for functional correspondence, aligned subject rows,
+group inference, and rendering on one identified reference support.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

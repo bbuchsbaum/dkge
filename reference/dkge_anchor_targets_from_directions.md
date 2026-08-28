@@ -1,7 +1,7 @@
 # Assemble anchor targets from feature-space directions
 
 Converts named direction vectors into anchor weight rows using
-\[dkge_anchor_contrast_from_direction()\].
+[`dkge_anchor_contrast_from_direction()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_contrast_from_direction.md).
 
 ## Usage
 
@@ -18,28 +18,26 @@ dkge_anchor_targets_from_directions(
 
 - anchors:
 
-  Matrix of anchor coordinates (\`L x d\`).
+  Matrix of anchor coordinates (`L x d`).
 
 - directions:
 
-  Either a named list of numeric vectors (length \`d\`) or a matrix
-  whose rows are named directions in the same feature space as
-  \`anchors\`.
+  Either a named list of numeric vectors (length `d`) or a matrix whose
+  rows are named directions in the same feature space as `anchors`.
 
 - sigma:
 
   Optional bandwidth forwarded to
-  \[dkge_anchor_contrast_from_direction()\].
+  [`dkge_anchor_contrast_from_direction()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_contrast_from_direction.md).
 
 - normalize:
 
-  Logical; when \`TRUE\` (default) the resulting weights are
-  L2-normalised.
+  Logical; when `TRUE` (default) the resulting weights are
+  L2-normalized.
 
 ## Value
 
-Matrix with one row per supplied direction and \`nrow(anchors)\`
-columns.
+Matrix with one row per supplied direction and `nrow(anchors)` columns.
 
 ## Examples
 

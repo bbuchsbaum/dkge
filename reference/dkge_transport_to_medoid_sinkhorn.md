@@ -1,8 +1,7 @@
-# Transport cluster values to a medoid via entropic Sinkhorn OT
+# Transport cluster values to a medoid (deprecated)
 
-\`dkge_transport_to_medoid_sinkhorn_cpp()\` is a deprecated
-compatibility alias. The main function already uses the compiled
-Sinkhorn backend.
+Compatibility alias for
+[`dkge_transport_to_reference_sinkhorn()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_to_reference_sinkhorn.md).
 
 ## Usage
 
@@ -21,24 +20,6 @@ dkge_transport_to_medoid_sinkhorn(
   tol = 1e-04,
   value_type = c("intensive", "extensive"),
   warm_start = TRUE,
-  transport_cache = NULL
-)
-
-dkge_transport_to_medoid_sinkhorn_cpp(
-  v_list,
-  A_list,
-  centroids,
-  sizes = NULL,
-  medoid,
-  lambda_emb = 1,
-  lambda_spa = 0.5,
-  sigma_mm = 15,
-  epsilon = 0.05,
-  max_iter = 5000L,
-  tol = 1e-04,
-  value_type = c("intensive", "extensive"),
-  warm_start = TRUE,
-  return_plans = FALSE,
   transport_cache = NULL
 )
 ```
@@ -63,7 +44,7 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 - medoid:
 
-  Integer index of the reference subject (1-based).
+  Deprecated name for `reference_subject`.
 
 - lambda_emb, lambda_spa:
 
@@ -79,12 +60,9 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 - value_type:
 
-  Value semantics. \`"intensive"\` transports field values as
-  target-conditional averages and preserves constants on positive-mass
-  targets; \`"extensive"\` distributes source totals and preserves their
-  sum over positive-mass sources. Null-mass target columns (intensive)
-  and source rows (extensive) are represented by zeros in the
-  application operator.
+  Value semantics. `"intensive"` transports field values as
+  target-conditional averages and preserves constants; `"extensive"`
+  distributes source totals and preserves their sum.
 
 - warm_start:
 
@@ -93,16 +71,7 @@ dkge_transport_to_medoid_sinkhorn_cpp(
 
 - transport_cache:
 
-  Optional cache returned by \[dkge_prepare_transport()\]. When
-  supplied, cached operators are reused and the mapper configuration
-  stored in the cache takes precedence.
-
-- return_plans:
-
-  Logical; if TRUE, include transport plans in the output.
-
-## Value
-
-List containing summary statistics, transported subject maps, and
-per-subject joint \`plans\`, application \`operators\`, and solver
-\`diagnostics\`.
+  Optional fitted alignment returned by
+  [`dkge_prepare_transport()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_transport.md).
+  Cached operators are reused only after every structural input is
+  fingerprint-validated.

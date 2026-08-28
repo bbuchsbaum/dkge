@@ -38,14 +38,15 @@ dkge_classify(
 
 - targets:
 
-  Target specification consumed by \[dkge_targets()\] or a list of
-  \`dkge_target\` objects.
+  Target specification consumed by
+  [`dkge_targets()`](https://bbuchsbaum.github.io/dkge/reference/dkge_targets.md)
+  or a list of `dkge_target` objects.
 
 - y:
 
   Optional subject-level labels for delta-mode targets. Can be a vector
-  (recycled across all delta targets) or a list matching \`targets\`;
-  values are coerced to factors using each target's \`class_labels\`.
+  (recycled across all delta targets) or a list matching `targets`;
+  values are coerced to factors using each target's `class_labels`.
 
 - method:
 
@@ -54,10 +55,10 @@ dkge_classify(
 
 - folds:
 
-  Cross-fitting specification. \`NULL\` (default) performs LOSO. Integer
-  values request subject-level K-fold. A \`dkge_folds\` object is also
+  Cross-fitting specification. `NULL` (default) performs LOSO. Integer
+  values request subject-level K-fold. A `dkge_folds` object is also
   accepted. Other coercible inputs are routed through
-  \[as_dkge_folds()\].
+  [`as_dkge_folds()`](https://bbuchsbaum.github.io/dkge/reference/as_dkge_folds.md).
 
 - lambda:
 
@@ -70,28 +71,29 @@ dkge_classify(
 - mode:
 
   Decoding mode: "auto" (default), "cell", "cell_cross", or "delta".
-  \`"cell"\` uses the full-cohort global basis and supports only a
-  transductive within-cohort claim. \`"cell_cross"\` rebuilds the
-  representation without held-out subjects and supports prospective
-  held-out-subject claims.
+  Cell-cross trains on held-in subjects and tests generalisation to the
+  held-out subject.
 
 - standardize_within_fold:
 
   Logical indicating whether to z-score features using training data
-  inside each fold. When \`NULL\` (default), standardisation is enabled
-  automatically for \`mode = "cell_cross"\` and disabled otherwise.
+  inside each fold. When `NULL` (default), standardisation is enabled
+  automatically for `mode = "cell_cross"` and disabled otherwise.
 
 - residualize:
 
-  Forwarded to \[dkge_targets()\].
+  Forwarded to
+  [`dkge_targets()`](https://bbuchsbaum.github.io/dkge/reference/dkge_targets.md).
 
 - collapse:
 
-  Forwarded to \[dkge_targets()\] for factor collapsing.
+  Forwarded to
+  [`dkge_targets()`](https://bbuchsbaum.github.io/dkge/reference/dkge_targets.md)
+  for factor collapsing.
 
 - restrict_factors:
 
-  Optional factor subset for \`spec = "fullcell"\`.
+  Optional factor subset for `spec = "fullcell"`.
 
 - n_perm:
 
@@ -111,24 +113,17 @@ dkge_classify(
 
 - control:
 
-  Optional list of advanced controls (power users). Recognised entries:
-  \`lambda_grid\` (numeric vector of candidate penalties) and
-  \`lambda_fun\` (function returning a lambda per target/fold with
-  signature \`function(target, fold, method, default)\`). Defaults to
-  \`NULL\`, leaving the standard \`lambda\` behaviour unchanged. These
-  data-dependent selectors are descriptive-only in the beta API. When
-  \`n_perm \> 0\`, supply one externally preselected positive scalar
-  \`lambda\`; grids and callbacks are rejected so selection cannot be
-  frozen after seeing the observed labels. Cell and cell-cross
-  permutations additionally require \`randomization_recompute\`, a
-  callback that rebuilds the complete representation and returns named
-  metrics for each randomized label vector.
+  Optional list of advanced controls (power users). Recognized entries:
+  `lambda_grid` (numeric vector of candidate penalties) and `lambda_fun`
+  (function returning a lambda per target/fold with signature
+  `function(target, fold, method, default)`). Defaults to `NULL`,
+  leaving the standard `lambda` behavior unchanged.
 
 - blocks:
 
   Optional vector identifying within-subject blocks (e.g., runs or
   sessions) used to constrain permutations. Length must match the number
-  of subjects in \`fit\` when supplied.
+  of subjects in `fit` when supplied.
 
 - parallel:
 
@@ -144,12 +139,17 @@ dkge_classify(
 
 ## Details
 
-Anchor-based fits produced by \[dkge_anchor_fit()\] do not retain the
-design-factor metadata that \`dkge_targets()\` expects. In that setting
-you must supply explicit weight matrices (rows = classes, columns =
-effects) or ready-made \[\`dkge_target\`\] objects—helpers such as
-\[dkge_anchor_targets_from_prototypes()\] and
-\[dkge_anchor_targets_from_directions()\] can be used to construct them.
+Anchor-based fits produced by
+[`dkge_anchor_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_fit.md)
+do not retain the design-factor metadata that
+[`dkge_targets()`](https://bbuchsbaum.github.io/dkge/reference/dkge_targets.md)
+expects. In that setting you must supply explicit weight matrices (rows
+= classes, columns = effects) or ready-made `dkge_target`
+objects—helpers such as
+[`dkge_anchor_targets_from_prototypes()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_targets_from_prototypes.md)
+and
+[`dkge_anchor_targets_from_directions()`](https://bbuchsbaum.github.io/dkge/reference/dkge_anchor_targets_from_directions.md)
+can be used to construct them.
 
 ## Examples
 

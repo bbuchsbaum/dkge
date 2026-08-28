@@ -6,7 +6,7 @@ factor needed for fast kernel alignment screening.
 ## Usage
 
 ``` r
-dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
+dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL, spatial = NULL)
 ```
 
 ## Arguments
@@ -23,11 +23,16 @@ dkge_pooled_cov_q(B_list, X_list, Omega_list = NULL)
 
   Optional list of spatial weights.
 
+- spatial:
+
+  Optional fixed
+  [`dkge_spatial_regularizer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_spatial_regularizer.md)
+  applied inside every candidate fit and training fold.
+
 ## Value
 
-List containing \`C\` (pooled covariance in the ruler metric), \`R\`
-(upper-triangular Cholesky factor), and \`G\` (pooled design Gram
-matrix).
+List containing `C` (pooled covariance in the ruler metric), `R`
+(upper-triangular Cholesky factor), and `G` (pooled design Gram matrix).
 
 ## Examples
 

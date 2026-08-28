@@ -1,7 +1,7 @@
-# Summarise DKGE diagnostics
+# Summarize DKGE diagnostics
 
-Provides a compact list of variance explained, subject weights, and rank
-metadata for quick inspection.
+Provides a compact list of variance explained, subject weights, rank,
+and kernel-support metadata for quick inspection.
 
 ## Usage
 
@@ -13,11 +13,14 @@ dkge_diagnostics(fit)
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 ## Value
 
-List with variance table, subject weights, and rank info.
+List with variance table, subject weights, rank info, and scalar kernel
+diagnostics, including numerical rank/nullity, condition, status,
+participation-ratio effective rank, leading-eigenvalue share, and any
+model-level spatial-regularization provenance.
 
 ## Examples
 
@@ -31,5 +34,6 @@ fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 diag <- dkge_diagnostics(fit)
 names(diag)
 #> [1] "variance"      "weights"       "rank"          "q"            
-#> [5] "n_subjects"    "spectral"      "voxel_weights" "weight_spec"  
+#> [5] "kernel"        "n_subjects"    "voxel_weights" "weight_spec"  
+#> [9] "spatial"      
 ```

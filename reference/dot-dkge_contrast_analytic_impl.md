@@ -31,7 +31,8 @@ Uses first-order perturbation theory to approximate LOSO contrasts.
 
 - ridge:
 
-  Ridge parameter (unused in analytic, kept for consistency)
+  Ridge parameter added to the exact fold moment before the first-order
+  eigensystem update (and used by an exact fallback).
 
 - parallel:
 

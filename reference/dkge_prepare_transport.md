@@ -15,7 +15,9 @@ dkge_prepare_transport(
   sizes = NULL,
   mapper = "sinkhorn",
   medoid = 1L,
-  provenance = NULL,
+  reference_selection = NULL,
+  alignment_features = NULL,
+  preprocessing = NULL,
   ...
 )
 ```
@@ -24,22 +26,22 @@ dkge_prepare_transport(
 
 - fit:
 
-  A \`dkge\` object.
+  A `dkge` object.
 
 - centroids:
 
   List of subject centroid matrices. Defaults to the centroids stored on
-  \`fit\` or \`fit\$input\`.
+  `fit` or `fit$input`.
 
 - loadings:
 
-  Optional list of subject loadings (\`P_s x r\`). When omitted, they
-  are recomputed from \`fit\$Btil\` or the supplied \`betas\`.
+  Optional list of subject loadings (`P_s x r`). When omitted, they are
+  recomputed from `fit$Btil` or the supplied `betas`.
 
 - betas:
 
   Optional list of subject betas used to recompute loadings when
-  \`loadings\` is \`NULL\`.
+  `loadings` is `NULL`.
 
 - sizes:
 
@@ -47,26 +49,38 @@ dkge_prepare_transport(
 
 - mapper:
 
-  Mapper specification or shorthand passed to \[dkge_mapper_spec()\].
+  Mapper specification or shorthand passed to
+  [`dkge_mapper_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper_spec.md).
 
 - medoid:
 
   Index (1-based) of the reference subject.
 
-- provenance:
+- reference_selection:
 
-  Optional declaration from \[dkge_transport_provenance()\]. When
-  omitted, the cache is honestly marked as sign-sensitive transport
-  learned from inferential-sample loadings and is descriptive by
-  default.
+  Optional typed selection from
+  [`dkge_select_reference_subject()`](https://bbuchsbaum.github.io/dkge/reference/dkge_select_reference_subject.md).
+  When supplied, its selected subject is authoritative and `medoid` is
+  only a compatibility alias.
+
+- alignment_features:
+
+  Optional typed feature object used both for reference selection and
+  mapper fitting.
+
+- preprocessing:
+
+  Optional immutable provenance for feature construction.
+  Caller-authored provenance is accepted only when it exactly matches a
+  typed `alignment_features` object. Loose loadings/betas are always
+  recorded as descriptive and inferentially ineligible.
 
 - ...:
 
-  Additional mapper arguments such as \`epsilon\` or \`lambda_spa\`.
+  Additional mapper arguments such as `epsilon` or `lambda_spa`.
 
 ## Value
 
-A list containing cached application \`operators\`, joint transport
-\`plans\`, solver \`diagnostics\`, \`mapper_spec\`, \`feature_list\`,
-\`size_list\`, \`feature_ref\`, \`size_ref\`, \`centroids\`, and
-\`medoid\`.
+A list containing cached application `operators`, joint transport
+`plans`, solver `diagnostics`, `mapper_spec`, `feature_list`,
+`size_list`, `feature_ref`, `size_ref`, `centroids`, and `medoid`.

@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="DKGE versus Partial Least Squares">
+<meta name="description" content="Compare DKGE with PLS on estimand, input contract, and inference route rather than on accuracy.
+">
+<meta property="og:description" content="Compare DKGE with PLS on estimand, input contract, and inference route rather than on accuracy.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,60 +93,48 @@
       <h1>DKGE versus Partial Least Squares</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-vs-pls.Rmd" class="external-link"><code>vignettes/dkge-vs-pls.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-vs-pls.Rmd" class="external-link"><code>vignettes/dkge-vs-pls.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-vs-pls.Rmd</code></div>
     </div>
 
     
     
-<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>This page is a conceptual orientation, not an accuracy or power
-benchmark. “PLS” names several related methods, and implementation
-choices matter. The summary follows the neuroimaging accounts of <a href="https://doi.org/10.1016/j.neuroimage.2004.07.020" class="external-link">McIntosh and
+<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>You are choosing between DKGE and PLS for a study, and the two answer
+different questions from different inputs. “PLS” names several related
+methods, and implementation choices matter, so the summary here follows
+the neuroimaging accounts of <a href="https://doi.org/10.1016/j.neuroimage.2004.07.020" class="external-link">McIntosh and
 Lobaugh (2004)</a> and <a href="https://doi.org/10.1016/j.neuroimage.2010.07.034" class="external-link">Krishnan et
-al. (2011)</a>. It compares their classical task/behavior PLS
-formulations with DKGE’s current subject-beta workflow so you can decide
-which estimand and input contract match your study.</p>
+al. (2011)</a>.</p>
+<p>This page compares what each method estimates and what each requires
+as input. It does not benchmark accuracy or power.</p>
 <hr>
 <div class="section level2">
 <h2 id="what-classical-pls-does">What classical PLS does<a class="anchor" aria-label="anchor" href="#what-classical-pls-does"></a>
 </h2>
-<p>Classical PLS neuroimaging analysis operates by constructing latent
-variables that capture the strongest relationships between brain
-activity and experimental or behavioral variables. The <strong>primary
-objective</strong> is to build latent variables (LVs) that maximise the
-covariance between an exogenous block (such as task design or behavior)
-and a brain-data block (elements × time).</p>
-<p>The framework encompasses several <strong>methodological
-variants</strong>, each tailored to different research questions: task
-PLS analyzes condition differences, behavior PLS examines brain–behavior
-coupling, seed PLS investigates functional connectivity patterns, and
-spatiotemporal PLS treats space × time jointly for fMRI/ERP/MEG
-data.</p>
-<p>The <strong>computational workflow</strong> follows a systematic
-sequence of steps: 1. Data are arranged as a single matrix
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mo>∈</mo><msup><mi>ℝ</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mi>k</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">M \in \mathbb{R}^{(n k) \times (m t)}</annotation></semantics></math>
-with observations nested inside conditions. 2. Cross-block covariance is
-formed with an orthonormal design matrix, followed by singular value
-decomposition
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>C</mi><mi>⊤</mi></msup><mi>M</mi><mo>=</mo><mi>U</mi><mi>S</mi><msup><mi>V</mi><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">C^\top M = U S V^\top</annotation></semantics></math>.
-3. Element/time saliences (singular images), design saliences, and
-singular values are extracted from the decomposition. 4. Brain scores
+<p>Classical PLS builds latent variables that maximize the covariance
+between an exogenous block, such as task design or behavior, and a
+brain-data block of elements by time.</p>
+<p>Four <strong>variants</strong> answer different questions: task PLS
+analyzes condition differences, behavior PLS examines brain-behavior
+coupling, seed PLS investigates connectivity, and spatiotemporal PLS
+treats space and time jointly.</p>
+<p>The <strong>computational workflow</strong> is: 1. Data are arranged
+as one matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mo>∈</mo><msup><mi>ℝ</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mi>k</mi><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup></mrow><annotation encoding="application/x-tex">M \in \mathbb{R}^{(n k) \times (m t)}</annotation></semantics></math>,
+observations by measurements. 2. Cross-block covariance is formed
+against an orthonormal design matrix, then decomposed by SVD. 3. Element
+and time saliences, design saliences, and singular values are extracted.
+4. Brain scores
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mi>M</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">B = M U</annotation></semantics></math>
 and design scores
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo>=</mo><mi>C</mi><mi>V</mi></mrow><annotation encoding="application/x-tex">D = C V</annotation></semantics></math>
-are computed to characterize patterns in each domain. 5. For behavior
-PLS specifically, the design block is replaced with behavior matrices
-and correlated with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>M</mi><annotation encoding="application/x-tex">M</annotation></semantics></math>
-before applying SVD.</p>
-<p><strong>Statistical inference</strong> in PLS relies on resampling
-approaches: permutation tests assess LV significance, bootstrap
-procedures evaluate voxel salience reliability, and Procrustes alignment
-stabilizes resampled LVs across iterations.</p>
-<p>This methodology emphasizes <em>whole-pattern</em> effects and
-time-resolved couplings, leveraging linear algebra and resampling
-techniques to identify distributed, reliable neural patterns that relate
-to experimental or behavioral variables.</p>
+characterize the patterns. 5. Behavior PLS replaces the design block
+with behavior matrices and correlates them per group.</p>
+<p><strong>Inference</strong> is by resampling: permutation for LV
+significance, bootstrap for salience reliability, and Procrustes
+alignment to stabilize resampled LVs.</p>
+<p>The method targets whole-pattern effects and time-resolved couplings,
+using resampling rather than a parametric null.</p>
 </div>
 <div class="section level2">
 <h2 id="how-dkge-relates">How DKGE relates<a class="anchor" aria-label="anchor" href="#how-dkge-relates"></a>
@@ -148,8 +144,74 @@ from different objects. Classical task or behavior PLS constructs a
 cross-block matrix linking a design/behavior block to brain
 measurements. DKGE pools subject-level GLM effect moments and applies an
 explicit effect-space kernel. The table records implemented differences;
-it does not establish that one method is generally more accurate,
-stable, or powerful.</p>
+it does not establish that one method is generally more accurate or more
+stable.</p>
+<p>The word <em>salience</em> also refers to different objects here. In
+PLS, brain and design saliences are singular vectors of the cross-block
+matrix. In DKGE, the effect-space salience of a component is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">K U</annotation></semantics></math>:
+the fitted component direction
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>U</mi><annotation encoding="application/x-tex">U</annotation></semantics></math>
+expressed through the design kernel
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>.</p>
+</div>
+<div class="section level2">
+<h2 id="when-the-objectives-give-different-answers">When the objectives give different answers<a class="anchor" aria-label="anchor" href="#when-the-objectives-give-different-answers"></a>
+</h2>
+<p>The following construction isolates the difference before any
+implementation detail can obscure it. Six subjects share a coherent
+effect of magnitude 2. A second effect is twice as large within every
+subject but alternates sign across subjects. A task-mean PLS SVD sees
+the cross-subject mean, so the second effect cancels. DKGE pools each
+subject’s second moment, so its squared energy does not cancel and the
+second effect leads.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">subject_sign</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">effect_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"coherent"</span>, <span class="st">"sign_varying"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">beta_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">subject_sign</span>, <span class="kw">function</span><span class="op">(</span><span class="va">sign</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span> <span class="op">*</span> <span class="va">sign</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">beta</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">effect_names</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"feature1"</span>, <span class="st">"feature2"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">beta</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">subjects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">beta_list</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">effect_names</span></span>
+<span>  <span class="fu"><a href="../reference/dkge_subject.html">dkge_subject</a></span><span class="op">(</span><span class="va">beta_list</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>, design <span class="op">=</span> <span class="va">design</span>, id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sub"</span>, <span class="va">i</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>The PLS calculation below is the SVD of the task-mean beta matrix,
+written directly so the example needs no PLS package. The DKGE fit uses
+an identity kernel and disables adaptive and subject weighting, leaving
+the pooled second-moment objective as the only source of the
+difference.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mean_beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Reduce</a></span><span class="op">(</span><span class="va">`+`</span>, <span class="va">beta_list</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">beta_list</span><span class="op">)</span></span>
+<span><span class="va">pls_direction</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/svd.html" class="external-link">svd</a></span><span class="op">(</span><span class="va">mean_beta</span>, nu <span class="op">=</span> <span class="fl">2</span>, nv <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">$</span><span class="va">u</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">fit_difference</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span></span>
+<span>  <span class="va">subjects</span>,</span>
+<span>  K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>  rank <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  w_method <span class="op">=</span> <span class="st">"none"</span>,</span>
+<span>  effect_scaling <span class="op">=</span> <span class="st">"none"</span>,</span>
+<span>  weights <span class="op">=</span> <span class="fu"><a href="../reference/dkge_weights.html">dkge_weights</a></span><span class="op">(</span>adapt <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">dkge_direction</span> <span class="op">&lt;-</span> <span class="va">fit_difference</span><span class="op">$</span><span class="va">U</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"task-mean PLS"</span>, <span class="st">"DKGE"</span><span class="op">)</span>,</span>
+<span>  coherent <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">pls_direction</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">dkge_direction</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  sign_varying <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">pls_direction</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, <span class="va">dkge_direction</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;          method coherent sign_varying</span></span>
+<span><span class="co">#&gt; 1 task-mean PLS        1            0</span></span>
+<span><span class="co">#&gt; 2          DKGE        0            1</span></span></code></pre></div>
+<p>The methods return orthogonal leading directions because they answer
+different questions: coherent mean signal versus average within-subject
+second-moment energy. This is an estimand example, not a power
+comparison; neither answer is better without first deciding which
+quantity the study is meant to recover.</p>
 <style>
 table.dkge-vs-pls {
   table-layout: fixed;
@@ -186,7 +248,7 @@ DKGE
 Latent-space construction
 </th>
 <td>
-SVD on cross-block covariance between design/behaviour and brain data;
+SVD on cross-block covariance between design/behavior and brain data;
 columns of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>U</mi><annotation encoding="application/x-tex">U</annotation></semantics></math>
 and
@@ -238,9 +300,10 @@ significance and bootstrap for salience stability; predictive
 cross-validation can be added but is not the same estimand.
 </td>
 <td>
-LOSO / K-fold cross-fitting (<code>dkge_contrast</code>), analytic
-approximations, parametric or bootstrap inference with cached
-transports.
+LOSO / K-fold cross-fitting (<code>dkge_contrast</code>); typed
+aligned-map inference and bootstrap with validated correspondence
+receipts. Rank-truncated cohort-trained routes are labelled approximate
+and require explicit opt-in.
 </td>
 </tr>
 <tr>
@@ -299,22 +362,13 @@ tailored to fMRI/ERP pipelines.
 <div class="section level2">
 <h2 id="similarities-worth-noting">Similarities worth noting<a class="anchor" aria-label="anchor" href="#similarities-worth-noting"></a>
 </h2>
-<p>Despite their methodological differences, PLS and DKGE share several
-fundamental characteristics that reflect their common mathematical
-foundations. Both approaches rely on SVD or eigendecomposition
-techniques to obtain orthogonal latent patterns and their associated
-scores, ensuring that the derived components capture independent sources
-of variation in the data.</p>
-<p>Resampling methodology plays a central role in both frameworks,
-though implemented differently: PLS employs permutation tests and
-bootstrap procedures for statistical inference, while DKGE provides a
-broader toolkit including analytic approximations, leave-one-subject-out
-(LOSO) cross-fitting, bootstrap procedures, and transport-aware
-resampling utilities.</p>
-<p>Both methods require careful interpretation that involves examining
-latent loadings or saliences in conjunction with subject scores to
-properly understand how experimental conditions or behavioral variables
-relate to the underlying neural patterns.</p>
+<p>The two share a mathematical core. Both use SVD or eigendecomposition
+to obtain orthogonal latent patterns and scores.</p>
+<p>Both rest on resampling, implemented differently: PLS permutes and
+bootstraps directly; DKGE cross-fits and then resamples the held-out
+fields.</p>
+<p>Both require reading latent loadings or saliences alongside subject
+scores to see what a component means.</p>
 </div>
 <div class="section level2">
 <h2 id="which-method-matches-the-question">Which method matches the question?<a class="anchor" aria-label="anchor" href="#which-method-matches-the-question"></a>
@@ -338,6 +392,23 @@ methods to the same analysis units, use identical outer resampling
 splits, and compare a held-out metric with uncertainty. Do not infer
 superiority from the fact that one package exposes a helper that the
 other workflow leaves to the analyst.</p>
+</div>
+<div class="section level2">
+<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../articles/dkge-concepts.html">vignette("dkge-concepts")</a></code> sets out what each DKGE
+analysis licenses you to claim, which is the question this comparison
+keeps returning to.</li>
+<li>
+<code><a href="../articles/dkge-design-kernels.html">vignette("dkge-design-kernels")</a></code> covers the kernel that
+gives DKGE its metric, and which classical PLS has no analogue for.</li>
+<li>
+<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> is the inference
+route for a prespecified effect, where PLS would resample the latent
+variable instead.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

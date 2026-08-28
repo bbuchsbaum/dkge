@@ -1,16 +1,27 @@
 # Create a pluggable DKGE anchor mapper for dense rendering
 
-Constructs a mapper descriptor for the \*\*dense rendering / anchor
-pipeline\*\* — used when projecting subject-space voxel/parcel values
-onto a set of 3-D spatial anchor points (e.g., medoid centroids). Pass
-the result to \[dkge_build_renderer()\],
-\[dkge_render_subject_values()\], or directly to \[fit_mapper()\]
-together with \`subj_points\` / \`anchor_points\` matrices.
+Constructs a mapper descriptor for the legacy **dense rendering / anchor
+pipeline** — used when projecting subject-space voxel/parcel values onto
+a set of 3-D spatial anchor points (e.g., medoid centroids). Pass the
+result to deprecated
+[`dkge_build_renderer()`](https://bbuchsbaum.github.io/dkge/reference/dkge_build_renderer.md)
+or
+[`dkge_render_subject_values()`](https://bbuchsbaum.github.io/dkge/reference/dkge_render_subject_values.md),
+or directly to
+[`fit_mapper()`](https://bbuchsbaum.github.io/dkge/reference/fit_mapper.md)
+together with `subj_points` / `anchor_points` matrices. These operations
+are descriptive and do not make an alignment inferentially eligible. Use
+[`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md)
+for that contract.
 
-Use \[dkge_mapper_spec()\] instead when you need a \*\*transport
-pipeline mapper\*\* that operates in an abstract feature space (ridge
-regression, Sinkhorn OT over embeddings) for functions such as
-\[dkge_prepare_transport()\] or \[dkge_transport_spec()\].
+Use
+[`dkge_mapper_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper_spec.md)
+instead when you need a **transport pipeline mapper** that operates in
+an abstract feature space (ridge regression, Sinkhorn OT over
+embeddings) for functions such as
+[`dkge_prepare_transport()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_transport.md)
+or
+[`dkge_transport_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_spec.md).
 
 ## Usage
 
@@ -22,20 +33,22 @@ dkge_mapper(type = c("knn", "sinkhorn", "ridge", "gw"), ...)
 
 - type:
 
-  Mapper backend identifier: \`"knn"\` (barycentric kNN), \`"sinkhorn"\`
-  (OT over point clouds), \`"ridge"\`, \`"gw"\`, or a custom identifier
-  whose \`fit_mapper.dkge_mapper\_\<type\>()\` method is supplied by an
-  extension. The ridge and Gromov-Wasserstein backends require plugins.
+  Mapper backend identifier: `"knn"` (barycentric kNN), `"sinkhorn"` (OT
+  over point clouds), `"ridge"`, `"gw"`, or a custom identifier whose
+  `fit_mapper.dkge_mapper_<type>()` method is supplied by an extension.
+  The ridge and Gromov-Wasserstein backends require plugins.
 
 - ...:
 
-  Backend-specific parameters stored within the mapper object (e.g.
-  \`k\`, \`sigx\`, \`sigz\` for kNN; \`epsilon\` for Sinkhorn).
+  Backend-specific parameters stored within the mapper object (e.g. `k`,
+  `sigx`, `sigz` for kNN; `epsilon` for Sinkhorn).
 
 ## Value
 
-A \`dkge_mapper\` S3 descriptor consumed by \[fit_mapper()\] and
-\[apply_mapper()\].
+A `dkge_mapper` S3 descriptor consumed by
+[`fit_mapper()`](https://bbuchsbaum.github.io/dkge/reference/fit_mapper.md)
+and
+[`apply_mapper()`](https://bbuchsbaum.github.io/dkge/reference/apply_mapper.md).
 
 ## Examples
 

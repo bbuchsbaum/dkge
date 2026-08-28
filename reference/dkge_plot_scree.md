@@ -12,7 +12,7 @@ dkge_plot_scree(fit, one_se_pick = NULL)
 
 - fit:
 
-  Fitted \`dkge\` object.
+  Fitted `dkge` object.
 
 - one_se_pick:
 

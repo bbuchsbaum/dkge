@@ -22,12 +22,15 @@ dkge_between_rrr(
 
 - target:
 
-  A \`dkge_target\` from \[dkge_make_target()\] or a numeric matrix.
+  A `dkge_target` from
+  [`dkge_make_target()`](https://bbuchsbaum.github.io/dkge/reference/dkge_make_target.md)
+  or a numeric matrix.
 
 - design:
 
-  A \`dkge_subject_model\` from \[dkge_subject_model()\] or a numeric
-  model matrix.
+  A `dkge_subject_model` from
+  [`dkge_subject_model()`](https://bbuchsbaum.github.io/dkge/reference/dkge_subject_model.md)
+  or a numeric model matrix.
 
 - rank:
 
@@ -35,8 +38,8 @@ dkge_between_rrr(
 
 - weights:
 
-  \`"none"\`, \`"target"\`, or a list with optional \`subject\` and
-  \`feature\` numeric weights.
+  `"none"`, `"target"`, or a list with optional `subject` and `feature`
+  numeric weights.
 
 - feature_mask:
 
@@ -46,12 +49,13 @@ dkge_between_rrr(
 
   Numerical tolerance for rank checks; a single positive finite number.
   It is stored on the fit and reused for every refit performed by
-  \[dkge_between_permute()\], so a design accepted here is also accepted
-  by the permutation machinery.
+  [`dkge_between_permute()`](https://bbuchsbaum.github.io/dkge/reference/dkge_between_permute.md),
+  so a design accepted here is also accepted by the permutation
+  machinery.
 
 ## Value
 
-Object of class \`dkge_between_rrr\`.
+Object of class `dkge_between_rrr`.
 
 ## Examples
 

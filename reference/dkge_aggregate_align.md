@@ -13,7 +13,7 @@ dkge_aggregate_align(reference, fit, rank = NULL, degeneracy_tol = 0.001)
 
 - reference:
 
-  Reference \`dkge_aggregate_fit\`.
+  Reference `dkge_aggregate_fit`.
 
 - fit:
 
@@ -26,21 +26,21 @@ dkge_aggregate_align(reference, fit, rank = NULL, degeneracy_tol = 0.001)
 - degeneracy_tol:
 
   Relative singular-value gap below which components are flagged as
-  near-tied. The gap is computed on the \*unrotated\* (sorted) spectrum
-  of \`fit\`, which is the quantity that governs how identifiable the
-  rotation is. Treat \`alignment_summary\$min_cosine\` as the primary
-  diagnostic; \`near_tie\` is a coarse flag on this relative gap.
+  near-tied. The gap is computed on the *unrotated* (sorted) spectrum of
+  `fit`, which is the quantity that governs how identifiable the
+  rotation is. Treat `alignment_summary$min_cosine` as the primary
+  diagnostic; `near_tie` is a coarse flag on this relative gap.
 
 ## Value
 
-Aligned \`dkge_aggregate_fit\` with \`alignment\` metadata. \`U\`,
-\`saliences\`, \`scores_feature\`, and \`singular_values\` are all
-carried through the rotation together: \`singular_values\` is recomputed
-as \`sqrt(colSums(scores_feature^2))\`, which reproduces the unaligned
-singular values exactly when the rotation is the identity. \`Chat\` and
-\`eig_values\` are rotation-invariant properties of the data and are
-left untouched, so after alignment \`singular_values\` no longer equals
-\`sqrt(eig_values\[seq_len(rank)\])\`.
+Aligned `dkge_aggregate_fit` with `alignment` metadata. `U`,
+`saliences`, `scores_feature`, and `singular_values` are all carried
+through the rotation together: `singular_values` is recomputed as
+`sqrt(colSums(scores_feature^2))`, which reproduces the unaligned
+singular values exactly when the rotation is the identity. `Chat` and
+`eig_values` are rotation-invariant properties of the data and are left
+untouched, so after alignment `singular_values` no longer equals
+`sqrt(eig_values[seq_len(rank)])`.
 
 ## Examples
 

@@ -1,6 +1,6 @@
 # Robust K-orthonormalization
 
-Ensures the columns of \`W\` are orthonormal with respect to the design
+Ensures the columns of `W` are orthonormal with respect to the design
 kernel metric: U^T K U = I.
 
 ## Usage
@@ -22,8 +22,9 @@ dkge_k_orthonormalize(W, K, Kroots = NULL)
 - Kroots:
 
   Optional precomputed kernel roots retained for API compatibility.
-  Orthonormalization is computed from the exact Gram matrix \`t(W) into
-  artificial metric dimensions.
+  Orthonormalization is computed from the exact Gram matrix
+  `t(W) %*% K %*% W`, so null directions of a PSD kernel are not
+  jittered into artificial metric dimensions.
 
 ## Value
 

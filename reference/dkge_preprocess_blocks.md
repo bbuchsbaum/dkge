@@ -12,7 +12,8 @@ dkge_preprocess_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 
 - fit:
 
-  A \`dkge\` object returned by \[dkge_fit()\].
+  A `dkge` object returned by
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md).
 
 - B_list:
 
@@ -20,7 +21,7 @@ dkge_preprocess_blocks(fit, B_list, Omega_list = NULL, w = NULL)
 
 - Omega_list:
 
-  Optional list of spatial weights aligned with \`B_list\`.
+  Optional list of spatial weights aligned with `B_list`.
 
 - w:
 

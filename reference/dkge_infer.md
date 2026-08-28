@@ -10,14 +10,13 @@ dkge_infer(
   fit,
   contrasts,
   method = c("loso", "kfold", "analytic"),
-  inference = c("signflip", "parametric"),
+  inference = c("signflip", "freedman-lane", "parametric"),
   correction = c("maxT", "fdr", "bonferroni", "none"),
   n_perm = 2000,
   alpha = 0.05,
-  center = "mean",
-  parallel = FALSE,
   transported = FALSE,
   transport = NULL,
+  allow_approximate_alignment = FALSE,
   ...
 )
 ```
@@ -26,11 +25,14 @@ dkge_infer(
 
 - fit:
 
-  A \`dkge\` object from \[dkge_fit()\] or \[dkge()\]
+  A `dkge` object from
+  [`dkge_fit()`](https://bbuchsbaum.github.io/dkge/reference/dkge_fit.md)
+  or [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md)
 
 - contrasts:
 
-  Contrast specification (see \[dkge_contrast()\])
+  Contrast specification (see
+  [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md))
 
 - method:
 
@@ -38,96 +40,121 @@ dkge_infer(
 
 - inference:
 
-  Inference type: - \`"signflip"\`: Sign-flip permutation test
-  (default) - \`"parametric"\`: Parametric t-test (assumes normality)
+  Inference type:
+
+  - `"signflip"`: Sign-flip permutation test (default)
+
+  - `"freedman-lane"`: Freedman-Lane permutation (requires adapters)
+
+  - `"parametric"`: Parametric t-test (assumes normality)
 
 - correction:
 
-  Multiple testing correction: - \`"maxT"\`: Family-wise error rate via
-  max-T (default) - \`"fdr"\`: False discovery rate
-  (Benjamini-Hochberg) - \`"bonferroni"\`: Bonferroni correction -
-  \`"none"\`: No correction
+  Multiple testing correction:
+
+  - `"maxT"`: Family-wise error rate via max-T (default)
+
+  - `"fdr"`: False discovery rate (Benjamini-Hochberg)
+
+  - `"bonferroni"`: Bonferroni correction
+
+  - `"none"`: No correction
 
 - n_perm:
 
-  Number of permutations for sign-flip inference; ignored for parametric
-  inference.
+  Number of permutations for non-parametric tests
 
 - alpha:
 
   Significance level for corrections
 
-- center:
-
-  Location statistic for sign-flip inference. Only \`"mean"\` is
-  implemented in the beta API.
-
-- parallel:
-
-  Logical; compute target-level inference through the parallel apply
-  backend. Randomization descriptors are generated serially first, so
-  serial and parallel results are identical for the same caller RNG
-  state.
-
 - transported:
 
-  Logical; retained for backwards compatibility. Deprecated.
+  Deprecated. Must be `FALSE`. Rendering/alignment is no longer learned
+  inside this inference helper.
 
 - transport:
 
-  Optional list describing how to map subject clusters to a shared
-  reference before inference. Provide \`centroids\`, \`medoid\`, and an
-  optional mapper specification created via \[dkge_mapper_spec()\].
-  Additional parameters (e.g. \`epsilon\`, \`lambda_emb\`) are forwarded
-  when constructing the default Sinkhorn mapper. Transported inference
-  also requires an explicit \`provenance\` from
-  \[dkge_transport_provenance()\]. A \`fully_recomputed\` declaration
-  must provide \`randomization_recompute(signs, target_index,
-  target_name, contrast_results, observed_values)\`, returning the
-  randomized transported subject-by-feature matrix after rebuilding
-  every data-dependent step.
+  Deprecated. Must be `NULL`. Use the typed two-stage workflow
+  [`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md)
+  then
+  [`dkge_infer_aligned()`](https://bbuchsbaum.github.io/dkge/reference/dkge_infer_aligned.md).
+
+- allow_approximate_alignment:
+
+  Logical; permit an explicitly labelled `"approximate"` alignment or
+  same-data rank-truncated LOSO, K-fold, or analytic estimator.
+  Ineligible/descriptive states are always refused. The default is
+  fail-closed.
 
 - ...:
 
-  Additional arguments passed to \[dkge_contrast()\] and inference
-  functions
+  Additional arguments passed to
+  [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md)
+  and inference functions
 
 ## Value
 
-An object of class \`dkge_inference\` containing: - \`contrasts\`: The
-contrast results from cross-fitting - \`statistics\`: Test statistics
-per cluster/voxel - \`p_values\`: Raw p-values - \`p_adjusted\`:
-Adjusted p-values based on correction method - \`significant\`: Logical
-indicators of significance - \`method\`: Cross-fitting method used -
-\`inference\`: Inference type used - \`correction\`: Correction method
-applied - \`metadata\`: Additional information about the analysis
+An object of class `dkge_inference` containing:
+
+- `contrasts`: The contrast results from cross-fitting
+
+- `statistics`: Test statistics per cluster/voxel
+
+- `p_values`: Raw p-values
+
+- `p_adjusted`: Adjusted p-values based on correction method
+
+- `significant`: Logical indicators of significance
+
+- `method`: Cross-fitting method used
+
+- `inference`: Inference type used
+
+- `correction`: Correction method applied
+
+- `metadata`: Additional information about the analysis
 
 ## Details
 
 This function integrates the cross-fitting machinery from
-\[dkge_contrast()\] with various statistical inference procedures. It
-first computes contrast values using the specified cross-fitting method,
-then applies the chosen inference procedure to obtain p-values, and
-finally applies multiple testing correction.
+[`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md)
+with various statistical inference procedures. It first computes
+contrast values using the specified cross-fitting method, then applies
+the chosen inference procedure to obtain p-values, and finally applies
+multiple testing correction.
 
-When subject cluster counts differ across participants, supply the
-\`transport\` argument so that contrasts are first mapped to a shared
-parcellation before stacking. The resulting mapped subject matrices are
-returned in the \`transport\` field of the output for downstream
-inspection.
+This helper performs inference only in the contrast result's native
+support. It never learns correspondence. When subject supports differ,
+first build typed alignment features, transport with
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md),
+extract its `dkge_aligned_maps` object, and pass that object to
+[`dkge_infer_aligned()`](https://bbuchsbaum.github.io/dkge/reference/dkge_infer_aligned.md).
 
-The workflow is: 1. Compute contrast values via cross-fitting
-(LOSO/K-fold/analytic) 2. Apply an implemented inference procedure
-(sign-flip or parametric) 3. Apply multiple testing correction
-(maxT/FDR/Bonferroni)
+The workflow is:
 
-For sign-flip inference, the max-T correction provides strong FWER
-control. For parametric inference, FDR may be more appropriate for
-exploratory analyses.
+1.  Compute contrast values via cross-fitting (LOSO/K-fold/analytic)
+
+2.  Apply inference procedure (sign-flip/Freedman-Lane/parametric)
+
+3.  Apply multiple testing correction (maxT/FDR/Bonferroni)
+
+Max-T uses one subject-sign action and one maximum over the entire
+prespecified contrast-by-location family. Its conditional FWER guarantee
+requires joint row-sign invariance of the supplied subject matrix.
+Standard rank-truncated LOSO/K-fold DKGE estimates retain same-data
+latent-span dependence and are therefore labelled approximate unless the
+full estimator is rebuilt under every null action. The analytic method
+is also approximate: it uses a first-order approximation to the LOSO
+basis except where its diagnostic selects an exact-LOSO fallback.
 
 ## See also
 
-\[dkge_contrast()\], \[dkge_signflip_maxT()\]
+[`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md),
+[`dkge_infer_aligned()`](https://bbuchsbaum.github.io/dkge/reference/dkge_infer_aligned.md),
+[`dkge_transport_contrasts_to_reference()`](https://bbuchsbaum.github.io/dkge/reference/dkge_transport_contrasts_to_reference.md),
+[`dkge_signflip_maxT()`](https://bbuchsbaum.github.io/dkge/reference/dkge_signflip_maxT.md),
+[`dkge_freedman_lane()`](https://bbuchsbaum.github.io/dkge/reference/dkge_freedman_lane.md)
 
 ## Examples
 
@@ -142,7 +169,10 @@ fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 
 # LOSO with sign-flip and maxT correction (fast with few perms for example)
 # \donttest{
-results <- dkge_infer(fit, c(1, rep(0, 4)), n_perm = 100)
+results <- dkge_infer(
+  fit, c(1, rep(0, 4)), n_perm = 100,
+  allow_approximate_alignment = TRUE
+)
 results
 #> DKGE Inference Results
 #> ----------------------

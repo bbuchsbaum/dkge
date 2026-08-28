@@ -1,8 +1,8 @@
 # Fail-closed multivarious methods for q-space DKGE fits
 
 Pair-normalized, debiased, ridged, CPCA, and JD fits do not inherit from
-\`multiblock_biprojector\`. These methods reject physical block
-projection instead of inventing incompatible loadings.
+`multiblock_biprojector`. These methods reject physical block projection
+instead of inventing incompatible loadings.
 
 ## Usage
 
@@ -21,7 +21,7 @@ transfer(x, new_data, from, to, opts = list(), ...)
 
 - x:
 
-  A \`dkge_qspace\` fit.
+  A `dkge_qspace` fit.
 
 - new_data:
 

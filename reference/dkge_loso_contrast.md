@@ -12,7 +12,7 @@ dkge_loso_contrast(fit, s, contrasts, ridge = 0)
 
 - fit:
 
-  \`dkge\` object
+  `dkge` object
 
 - s:
 
@@ -28,7 +28,15 @@ dkge_loso_contrast(fit, s, contrasts, ridge = 0)
 
 ## Value
 
-List with fields \`v\`, \`alpha\`, and \`basis\`
+List with fields `v`, `alpha`, `basis`, `loadings`, and a typed
+`alignment_receipt` binding those values to their held-out training and
+preprocessing provenance.
+
+## Details
+
+Exact estimator replay currently supports pooled, non-CPCA fits. JD and
+CPCA fits fail closed rather than substituting an ordinary pooled
+eigensolve and mislabelling it as the fitted estimator.
 
 ## Examples
 

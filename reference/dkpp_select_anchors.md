@@ -1,7 +1,7 @@
 # Determinantal k-means++ (d-kpp) anchor selection
 
 Combines a greedy k-DPP seeding phase with either farthest-first or D^2
-sampling to reach \`L\` anchors. The kernel bandwidth defaults to the
+sampling to reach `L` anchors. The kernel bandwidth defaults to the
 median distance heuristic computed on the training pool.
 
 ## Usage
@@ -34,13 +34,13 @@ dkpp_select_anchors(
 
 - sigma:
 
-  Optional RBF bandwidth. When \`NULL\`, the median heuristic is applied
-  on \`X_train\`.
+  Optional RBF bandwidth. When `NULL`, the median heuristic is applied
+  on `X_train`.
 
 - fill:
 
   Strategy for completing the anchor set after the DPP stage:
-  \`"kcenter"\` (farthest-first) or \`"kmeanspp"\`.
+  `"kcenter"` (farthest-first) or `"kmeanspp"`.
 
 - seed:
 
@@ -52,8 +52,8 @@ dkpp_select_anchors(
 
 ## Value
 
-List with \`indices\` (row indices in \`X_train\`), \`sigma\`, and
-selection diagnostics.
+List with `indices` (row indices in `X_train`), `sigma`, and selection
+diagnostics.
 
 ## Examples
 

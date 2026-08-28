@@ -12,8 +12,10 @@ fit_mapper(spec, ...)
 
 - spec:
 
-  Mapper specification created with \[dkge_mapper_spec()\] or
-  \[dkge_mapper()\].
+  Mapper specification created with
+  [`dkge_mapper_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper_spec.md)
+  or
+  [`dkge_mapper()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper.md).
 
 - ...:
 

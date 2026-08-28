@@ -1,6 +1,10 @@
-# Transport component loadings to a medoid parcellation
+# Transport component loadings for legacy descriptive display
 
-Transport component loadings to a medoid parcellation
+This compatibility helper learns correspondence from full-fit component
+loadings and is therefore descriptive/ineligible. It cannot supply an
+inferential alignment. New workflows should build typed alignment
+features and call
+[`dkge_prepare_alignment()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_alignment.md).
 
 ## Usage
 
@@ -15,7 +19,6 @@ dkge_transport_loadings_to_medoid(
   mapper = NULL,
   method = c("sinkhorn", "ridge", "ols", "sinkhorn_cpp"),
   transport_cache = NULL,
-  provenance = NULL,
   ...
 )
 ```
@@ -24,7 +27,7 @@ dkge_transport_loadings_to_medoid(
 
 - fit:
 
-  A \`dkge\` object used to compute the loadings.
+  A `dkge` object used to compute the loadings.
 
 - medoid:
 
@@ -37,12 +40,12 @@ dkge_transport_loadings_to_medoid(
 - loadings:
 
   Optional list of subject loadings (P_s x r). When omitted, they are
-  recomputed from \`betas\`.
+  recomputed from `betas`.
 
 - betas:
 
   Optional list of subject betas used to recompute loadings when
-  \`loadings\` is \`NULL\`.
+  `loadings` is `NULL`.
 
 - sizes:
 
@@ -50,32 +53,28 @@ dkge_transport_loadings_to_medoid(
 
 - mapper:
 
-  Optional mapper specification created by \[dkge_mapper_spec()\]. When
-  \`NULL\`, defaults to Sinkhorn with the supplied parameters.
+  Optional mapper specification created by
+  [`dkge_mapper_spec()`](https://bbuchsbaum.github.io/dkge/reference/dkge_mapper_spec.md).
+  When `NULL`, defaults to Sinkhorn with the supplied parameters.
 
 - method:
 
-  Mapper strategy (\`"sinkhorn"\`, \`"ridge"\`, or \`"ols"\`). The
-  legacy \`"sinkhorn_cpp"\` name is a deprecated alias for
-  \`"sinkhorn"\`.
+  Mapper strategy (`"sinkhorn"`, `"ridge"`, or `"ols"`). The legacy
+  `"sinkhorn_cpp"` name is a deprecated alias for `"sinkhorn"`.
 
 - transport_cache:
 
-  Optional cache from \[dkge_prepare_transport()\]. When supplied,
-  cached operators are reused for all components.
-
-- provenance:
-
-  Optional transport provenance declaration. Descriptive loading-derived
-  transport is recorded when omitted.
+  Optional fitted alignment from
+  [`dkge_prepare_transport()`](https://bbuchsbaum.github.io/dkge/reference/dkge_prepare_transport.md).
+  Reuse requires exact structural fingerprints.
 
 - ...:
 
   Additional parameters passed when building the default mapper
-  specification (e.g. \`epsilon\`, \`lambda_emb\`).
+  specification (e.g. `epsilon`, `lambda_emb`).
 
 ## Value
 
-List with \`group\` (medoid cluster vectors per component), \`subjects\`
-(per-subject transported values), and \`cache\` (transport cache reused
+List with `group` (medoid cluster vectors per component), `subjects`
+(per-subject transported values), and `cache` (transport cache reused
 for future calls).

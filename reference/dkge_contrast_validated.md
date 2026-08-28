@@ -1,10 +1,10 @@
 # Dual-path DKGE contrasts with coverage diagnostics
 
 Computes DKGE contrasts twice on the same fold structure: once with an
-observed-only coverage policy (typically \`missingness = "rescale"\`)
-and once with a completed/penalised policy (e.g., \`missingness =
-"shrink"\`). Coverage metadata from the fit and folds is returned
-together with simple sensitivity summaries.
+observed-only coverage policy (typically `missingness = "rescale"`) and
+once with a completed/penalised policy (e.g., `missingness = "shrink"`).
+Coverage metadata from the fit and folds is returned together with
+simple sensitivity summaries.
 
 ## Usage
 
@@ -29,15 +29,17 @@ dkge_contrast_validated(
 
 - fit:
 
-  Fitted \[dkge()\] object.
+  Fitted [`dkge()`](https://bbuchsbaum.github.io/dkge/reference/dkge.md)
+  object.
 
 - contrasts:
 
-  Contrast specification accepted by \[dkge_contrast()\].
+  Contrast specification accepted by
+  [`dkge_contrast()`](https://bbuchsbaum.github.io/dkge/reference/dkge_contrast.md).
 
 - folds:
 
-  Fold definition (integer \`k\`, \`dkge_folds\`, data frame, or list).
+  Fold definition (integer `k`, `dkge_folds`, data frame, or list).
 
 - ridge:
 
@@ -66,7 +68,7 @@ dkge_contrast_validated(
 - observed_args:
 
   Optional list of arguments for the observed policy (e.g.,
-  \`list(min_pairs = 2)\` for masking).
+  `list(min_pairs = 2)` for masking).
 
 - completed_args:
 
@@ -78,11 +80,14 @@ dkge_contrast_validated(
 
 ## Value
 
-A list with class \`dkge_contrast_validated\` containing: -
-\`observed\`, \`completed\`: outputs from the respective paths. -
-\`summary\`: data frame with weighted means and sensitivity indices. -
-\`provenance\`: coverage metadata (effect IDs, subject masks, per-fold
-pair-count matrices).
+A list with class `dkge_contrast_validated` containing:
+
+- `observed`, `completed`: outputs from the respective paths.
+
+- `summary`: data frame with weighted means and sensitivity indices.
+
+- `provenance`: coverage metadata (effect IDs, subject masks, per-fold
+  pair-count matrices).
 
 ## Examples
 

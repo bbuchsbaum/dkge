@@ -12,6 +12,10 @@
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <script src="../extra.js"></script><meta property="og:title" content="Components and Interpretability">
+<meta name="description" content="Read a fitted component in effect space and on shared clusters, and rotate or project it without treating description as inference.
+">
+<meta property="og:description" content="Read a fitted component in effect space and on shared clusters, and rotate or project it without treating description as inference.
+">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,30 +40,34 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/dkge-workflow.html">DKGE Workflow: From Subject Betas to a Shared Map</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core analysis</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-design-kernels.html">Design Kernels and Model Tuning</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts, Inference, and Bootstraps</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-contrasts-inference.html">Contrasts and Inference</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-components.html">Components and Interpretability</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-classification.html">Classification with DKGE</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Study designs</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Partial Effect Spaces</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-unbalanced-trialwise.html">Unbalanced Trialwise Designs</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-between-subjects.html">Between-Subject Multivariate Modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-partial-effect-spaces.html">Unbalanced and Partial Effect Spaces</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-concepts.html">DKGE Concepts: What Is Estimated and What Can Be Claimed?</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Weighting</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-weighting.html">Weighting Strategies in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-adaptive-weighting.html">Adaptive Voxel Weighting in DKGE</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Spatial mapping</h6></li>
+    <li><a class="dropdown-item" href="../articles/dkge-spatial-regularization.html">Model-Level Spatial Regularization in DKGE</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-dense-rendering.html">Transport and Dense Rendering</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-functional-alignment.html">Functional alignment across subjects</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-anchors.html">Feature-Anchored DKGE</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customisation and Performance</a></li>
+    <li><a class="dropdown-item" href="../articles/dkge-performance.html">Mapper Customization and Performance</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Extras</h6></li>
     <li><a class="dropdown-item" href="../articles/dkge-plotting.html">Plotting DKGE Fits</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-cpca.html">CPCA Filtering</a></li>
     <li><a class="dropdown-item" href="../articles/dkge-vs-pls.html">DKGE versus Partial Least Squares</a></li>
-    <li><a class="dropdown-item" href="../articles/dkge-architecture.html">DKGE Architecture Guide</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,20 +93,27 @@
       <h1>Components and Interpretability</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/codex/public-beta-p0/vignettes/dkge-components.Rmd" class="external-link"><code>vignettes/dkge-components.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/bbuchsbaum/dkge/blob/main/vignettes/dkge-components.Rmd" class="external-link"><code>vignettes/dkge-components.Rmd</code></a></small>
       <div class="d-none name"><code>dkge-components.Rmd</code></div>
     </div>
 
     
     
-<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>This vignette asks how a fitted component is expressed in effect
+<script>document.addEventListener("DOMContentLoaded",function(){document.body.classList.remove("palette-red","palette-lapis","palette-ochre","palette-teal","palette-green","palette-violet","preset-homage","preset-interaction","preset-study","preset-structural","preset-adobe","preset-midnight");document.body.classList.add("palette-red","preset-interaction");});</script><p>A component number has no intrinsic scientific meaning. Once DKGE
+returns a fitted basis you still have to say what each direction
+represents, and that requires reading it in more than one place.</p>
+<p>You need to connect three views of the same fitted direction: the
+effects that define it, the spatial units on which subjects express it,
+and any target used to rotate or label it.</p>
+<p>This vignette asks how a fitted component is expressed in effect
 space and on a shared toy cluster grid. It then shows rotation and
 projection without treating those descriptive operations as inferential
 results.</p>
+<pre class="text"><code>effect saliences (what) -&gt; subject cluster scores (where, within support) -&gt; rotation or new-data projection (reuse)</code></pre>
 <div class="section level2">
 <h2 id="example-fit">Example Fit<a class="anchor" aria-label="anchor" href="#example-fit"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bbuchsbaum.github.io/dkge/">dkge</a></span><span class="op">)</span></span>
 <span><span class="va">S</span> <span class="op">&lt;-</span> <span class="fl">4</span>; <span class="va">q</span> <span class="op">&lt;-</span> <span class="fl">5</span>; <span class="va">P</span> <span class="op">&lt;-</span> <span class="fl">18</span>; <span class="cn">T</span> <span class="op">&lt;-</span> <span class="fl">70</span></span>
 <span><span class="va">effect_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"effect"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span><span class="op">)</span></span>
@@ -133,67 +148,89 @@ joint diagonalization of the subject matrices instead, set
 optimizer). Treat agreement or disagreement with the pooled solution as
 a model comparison; the solver choice does not guarantee greater
 stability.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_jd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge.html">dkge</a></span><span class="op">(</span><span class="va">bundle</span>,</span>
 <span>               K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span>,</span>
 <span>               rank <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>               solver <span class="op">=</span> <span class="st">"jd"</span>,</span>
 <span>               jd_control <span class="op">=</span> <span class="fu"><a href="../reference/dkge_jd_control.html">dkge_jd_control</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span>, tol <span class="op">=</span> <span class="fl">1e-8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Both solvers return the same object structure (<code>fit$U</code>,
-<code>fit$Chat</code>, projections, etc.), so the subsequent workflow in
-this vignette applies unchanged regardless of the solver choice.</p>
+<code>fit$Chat</code>, projections), so downstream code does not change.
+subsequent workflow in this vignette applies unchanged regardless of the
+solver choice.</p>
 </div>
 <div class="section level2">
-<h2 id="inspect-loadings-and-scores">Inspect Loadings and Scores<a class="anchor" aria-label="anchor" href="#inspect-loadings-and-scores"></a>
+<h2 id="which-effects-define-each-component">Which effects define each component?<a class="anchor" aria-label="anchor" href="#which-effects-define-each-component"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">U</span>, <span class="fl">3</span><span class="op">)</span>         <span class="co"># effect-space loadings</span></span>
-<span><span class="co">#&gt;        [,1]   [,2]   [,3]</span></span>
-<span><span class="co">#&gt; [1,]  0.342  0.747 -0.534</span></span>
-<span><span class="co">#&gt; [2,]  0.456 -0.639 -0.447</span></span>
-<span><span class="co">#&gt; [3,] -0.818 -0.030 -0.437</span></span>
-<span><span class="co">#&gt; [4,] -0.056 -0.022  0.039</span></span>
-<span><span class="co">#&gt; [5,]  0.055  0.179  0.568</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Btil</span>, <span class="kw">function</span><span class="op">(</span><span class="va">Bts</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Bts</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span><span class="co">#&gt; [[1]]</span></span>
-<span><span class="co">#&gt;         cluster1 cluster2 cluster3</span></span>
-<span><span class="co">#&gt; effect1     1.28     1.85     0.18</span></span>
-<span><span class="co">#&gt; effect2     0.33     0.37     0.32</span></span>
-<span><span class="co">#&gt; effect3    -2.08    -1.85    -0.95</span></span>
-<span><span class="co">#&gt; effect4    -0.15    -0.86     0.21</span></span>
-<span><span class="co">#&gt; effect5     0.81    -0.78    -2.29</span></span></code></pre></div>
-<p>The columns of <code>fit$U</code> represent the loadings for each
-component in the effect space. These loadings define how the original
-design effects combine to form the extracted components. The
-<code>Btil</code> element stores the subject-specific beta matrices
-after row-standardization, which ensures comparable scaling across
-subjects. To obtain cluster scores for each component, these
-standardized betas are multiplied with the corresponding columns of
-<code>fit$U</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>effects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">U</span><span class="op">)</span>, components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">U</span><span class="op">)</span>, subjects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Btil</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    effects components   subjects </span></span>
+<span><span class="co">#&gt;          5          3          4</span></span></code></pre></div>
+<p>The compact summary establishes the object shapes without printing
+internal matrices. The interpretable effect-space quantity is the
+design-weighted salience (K U):</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/dkge_plot_effect_loadings.html">dkge_plot_effect_loadings</a></span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="dkge-components_files/figure-html/loading-heatmap-1.png" class="r-plt" alt="Heatmap showing how five design effects contribute to the first three DKGE components." width="90%" style="display: block; margin: auto;"></p>
+<p>Read each column as a relative pattern. Effects with opposite colors
+pull the component in opposite directions; a column dominated by one row
+is closer to a single-effect axis. Component signs are arbitrary, so the
+within-column pattern matters more than whether red or blue is
+positive.</p>
+<p>The salience matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">K U</annotation></semantics></math>
+is a dual read-out basis; it is not the contrast matrix that isolates
+fitted components. Passing those columns to <code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code>
+would apply <code>K</code> again after the pooled-design ruler. Use
+<code><a href="../reference/dkge_component_contrasts.html">dkge_component_contrasts()</a></code> instead. It returns
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo>=</mo><mi>R</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">C = R U</annotation></semantics></math>,
+for which the full-data component coefficients are exactly the
+identity:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">component_contrasts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_component_contrasts.html">dkge_component_contrasts</a></span><span class="op">(</span><span class="va">fit</span>, comps <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">component_alpha</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/matmult-methods.html" class="external-link">crossprod</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit</span><span class="op">$</span><span class="va">U</span>,</span>
+<span>  <span class="va">fit</span><span class="op">$</span><span class="va">K</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/backsolve.html" class="external-link">backsolve</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">R</span>, <span class="va">component_contrasts</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">component_alpha</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      [,1] [,2] [,3]</span></span>
+<span><span class="co">#&gt; [1,]    1    0    0</span></span>
+<span><span class="co">#&gt; [2,]    0    1    0</span></span>
+<span><span class="co">#&gt; [3,]    0    0    1</span></span></code></pre></div>
+<p>Those columns may be supplied directly to
+<code><a href="../reference/dkge_contrast.html">dkge_contrast()</a></code>. Under LOSO or K-fold evaluation, genuine
+changes in a held-out basis can still mix component coordinates relative
+to the full-data reference; the helper prevents the additional,
+unintended mixing caused by using
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mi>U</mi></mrow><annotation encoding="application/x-tex">K U</annotation></semantics></math>
+as an input contrast.</p>
+<p><code>fit$Btil</code> stores the row-standardized subject beta
+blocks. Multiplying those blocks by the component directions produces
+spatial-unit scores, which answer the next question.</p>
 </div>
 <div class="section level2">
 <h2 id="projecting-subjects-into-component-space">Projecting Subjects into Component Space<a class="anchor" aria-label="anchor" href="#projecting-subjects-into-component-space"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">subject_scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_project_block.html">dkge_project_btil</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">fit</span><span class="op">$</span><span class="va">Btil</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">subject_scores</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 4</span></span>
-<span><span class="co">#&gt;  $ : num [1:18, 1:3] 2.339 2.324 0.844 1.03 1.314 ...</span></span>
+<span><span class="co">#&gt;  $ sub1: num [1:18, 1:3] 2.339 2.324 0.844 1.03 1.314 ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "dimnames")=List of 2</span></span>
-<span><span class="co">#&gt;  $ : num [1:18, 1:3] 1.78 1.62 1.73 0.98 1.94 ...</span></span>
+<span><span class="co">#&gt;  $ sub2: num [1:18, 1:3] 1.78 1.62 1.73 0.98 1.94 ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "dimnames")=List of 2</span></span>
-<span><span class="co">#&gt;  $ : num [1:18, 1:3] 1.715 2.515 0.924 1.741 2.142 ...</span></span>
+<span><span class="co">#&gt;  $ sub3: num [1:18, 1:3] 1.715 2.515 0.924 1.741 2.142 ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "dimnames")=List of 2</span></span>
-<span><span class="co">#&gt;  $ : num [1:18, 1:3] 2.818 2.517 1.179 1.312 0.685 ...</span></span>
+<span><span class="co">#&gt;  $ sub4: num [1:18, 1:3] 2.818 2.517 1.179 1.312 0.685 ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "dimnames")=List of 2</span></span></code></pre></div>
 <p>Each subject score matrix has dimensions clusters × components.
 Cluster rows are only comparable across subjects when they already refer
 to the same spatial support. This simulation deliberately uses a shared
 18-cluster indexing scheme, so a row-wise mean is meaningful. With
-subject-specific parcellations, first transport the scores to a common
-medoid, anchor, or voxel space; equal matrix dimensions alone do not
-establish anatomical correspondence.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+subject-specific parcellations, first transport the scores to an
+identified reference, anchor, or voxel space; equal matrix dimensions
+alone do not establish anatomical correspondence.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">avg_scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Reduce</a></span><span class="op">(</span><span class="st">"+"</span>, <span class="va">subject_scores</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">subject_scores</span><span class="op">)</span></span>
 <span><span class="va">avg_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">avg_scores</span><span class="op">)</span></span>
 <span><span class="va">component_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Component "</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">avg_df</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -217,12 +254,13 @@ inspect, not a significant spatial effect.</p>
 <div class="section level2">
 <h2 id="rotating-components">Rotating Components<a class="anchor" aria-label="anchor" href="#rotating-components"></a>
 </h2>
-<p>The <code><a href="../reference/dkge_procrustes_K.html">dkge_procrustes_K()</a></code> function provides a principled
-way to rotate components toward a target basis, such as canonical
-contrasts or previously established loadings from prior studies. This
-rotation preserves the mathematical properties of the solution by
-staying within the design-kernel metric space.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/dkge_procrustes_K.html">dkge_procrustes_K()</a></code> rotates components toward a target
+basis in the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>
+metric: canonical contrasts, or loadings from an earlier study. The
+rotation stays inside the design-kernel metric, so the solution’s
+properties are preserved.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># target basis: identity for first two effects</span></span>
 <span><span class="va">B_target</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_k_orthonormalize.html">dkge_k_orthonormalize</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">q</span><span class="op">)</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="va">fit</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span>
 <span><span class="va">rot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_procrustes_K.html">dkge_procrustes_K</a></span><span class="op">(</span><span class="va">B_target</span>, <span class="va">fit</span><span class="op">$</span><span class="va">U</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="va">fit</span><span class="op">$</span><span class="va">K</span><span class="op">)</span></span>
@@ -241,7 +279,7 @@ it can be smaller than <code>rot$unconstrained_d</code>.</p>
 <div class="section level2">
 <h2 id="projecting-new-data">Projecting New Data<a class="anchor" aria-label="anchor" href="#projecting-new-data"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">q</span> <span class="op">*</span> <span class="va">P</span><span class="op">)</span>, <span class="va">q</span>, <span class="va">P</span><span class="op">)</span></span>
 <span><span class="va">projected</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dkge_project_clusters.html">dkge_project_clusters</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">new_beta</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">projected</span><span class="op">)</span></span>
@@ -252,10 +290,9 @@ it can be smaller than <code>rot$unconstrained_d</code>.</p>
 <span><span class="co">#&gt; [4,] -0.204818 -0.0151  0.15044</span></span>
 <span><span class="co">#&gt; [5,]  0.018553  0.0610 -0.10772</span></span>
 <span><span class="co">#&gt; [6,] -0.063557 -0.0554  0.00225</span></span></code></pre></div>
-<p>The <code><a href="../reference/dkge_project_clusters.html">dkge_project_clusters()</a></code> function returns component
-scores for each cluster in the new data, providing a standardized
-representation that is ready for subsequent analyses such as contrast
-testing or optimal transport mapping to reference parcellations.</p>
+<p><code><a href="../reference/dkge_project_clusters.html">dkge_project_clusters()</a></code> returns component scores for
+each cluster in the new data, ready for contrast testing or transport to
+a reference parcellation.</p>
 </div>
 <div class="section level2">
 <h2 id="interpreting-components">Interpreting Components<a class="anchor" aria-label="anchor" href="#interpreting-components"></a>
@@ -268,11 +305,28 @@ inspect <code>fit$contribs</code>,
 <code><a href="../reference/dkge_subject_component_projections.html">dkge_subject_component_projections()</a></code>. <code>fit$v</code>
 concatenates subject-block cluster loadings; interpret its rows
 spatially only when the blocks share a declared support or after
-transport to a common space. Finally,
-<code><a href="../reference/dkge_component_stats.html">dkge_component_stats()</a></code> supplies component summaries under
-its chosen mapper and inference assumptions. Those assumptions and the
-target of inference must be reported; the function does not make every
-extracted component generically “significant.”</p>
+transport to a common space. The deprecated
+<code><a href="../reference/dkge_component_stats.html">dkge_component_stats()</a></code> can provide a descriptive legacy
+summary, but it refuses inference because its correspondence is learned
+from the full-fit loadings. For spatial inference, construct typed
+aligned subject rows and call <code><a href="../reference/dkge_infer_aligned.html">dkge_infer_aligned()</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../articles/dkge-plotting.html">vignette("dkge-plotting")</a></code> — how to display saliences,
+subject contributions and subspace stability without over-reading a
+polished figure.</li>
+<li>
+<code><a href="../articles/dkge-contrasts-inference.html">vignette("dkge-contrasts-inference")</a></code> — what it takes to
+attach uncertainty to a component or a contrast, rather than describing
+one.</li>
+<li>
+<code><a href="../articles/dkge-concepts.html">vignette("dkge-concepts")</a></code> — which claims a fitted
+component supports and which it does not.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
