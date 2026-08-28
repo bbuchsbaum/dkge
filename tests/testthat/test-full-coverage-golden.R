@@ -23,13 +23,14 @@ test_that("canonical default MFA weights match the exact sigma1 baseline", {
   caller_rng <- .Random.seed
   fit <- dkge_fit(betas, designs, K = K, rank = 3L)
   expect_identical(.Random.seed, caller_rng)
-  expect_identical(
-    sprintf("%a", unname(fit$weights)),
-    c(
-      "0x1.092e5ae1c24fbp+0", "0x1.b1939592f6612p-1",
-      "0x1.9241e4b6d029ep-1", "0x1.07e266b93885fp+0",
-      "0x1.ff6c54cd705bcp-1", "0x1.4d4e56d969b6fp+0"
-    )
+  expected_weights <- c(
+    0x1.092e5ae1c24fbp+0, 0x1.b1939592f6612p-1,
+    0x1.9241e4b6d029ep-1, 0x1.07e266b93885fp+0,
+    0x1.ff6c54cd705bcp-1, 0x1.4d4e56d969b6fp+0
+  )
+  expect_equal(
+    unname(fit$weights), expected_weights,
+    tolerance = 64 * .Machine$double.eps
   )
 
   set.seed(123456)

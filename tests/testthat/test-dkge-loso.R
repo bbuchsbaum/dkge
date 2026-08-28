@@ -119,11 +119,22 @@ test_that("LOSO: matches manual pipeline; basis is K-orthonormal; depends on R (
   A_s <- t(Bts) %*% fit$K %*% Uminus
   v_manual <- as.numeric(A_s %*% alpha)
 
+  # Eigenvectors have an arbitrary column sign, and LAPACK implementations
+  # need not choose the same sign even for the same symmetric eigensolve.
+  # Align the returned gauge to the independently recomputed gauge before
+  # comparing sign-sensitive basis coordinates.  The contrast map itself is
+  # gauge invariant and is compared directly below.
+  gauge <- sign(diag(t(out$basis) %*% fit$K %*% Uminus))
+  gauge[gauge == 0] <- 1
+  basis_aligned <- sweep(out$basis, 2L, gauge, "*")
+  alpha_aligned <- as.numeric(gauge) * as.numeric(out$alpha)
+  loadings_aligned <- sweep(out$loadings, 2L, gauge, "*")
+
   # Numerical agreement
   expect_lt(rel_err(out$v, v_manual), 1e-12)
-  expect_lt(max_abs(out$basis - Uminus), 1e-10)
-  expect_lt(rel_err(out$alpha, alpha), 1e-12)
-  expect_equal(out$loadings, A_s, tolerance = 1e-12)
+  expect_lt(max_abs(basis_aligned - Uminus), 1e-10)
+  expect_lt(rel_err(alpha_aligned, alpha), 1e-12)
+  expect_equal(loadings_aligned, A_s, tolerance = 1e-12)
   expect_equal(out$v, as.numeric(out$loadings %*% out$alpha), tolerance = 1e-12)
   expect_s3_class(out$alignment_receipt, "dkge_alignment_receipt")
   expect_identical(out$alignment_receipt$training_subject_indices, train_ids)
