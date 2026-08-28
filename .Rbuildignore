@@ -28,3 +28,4 @@
 ^src/symbols\.rds$
 ^\.rcmdcheck.*\.rds$
 ^VIGNETTE-STYLE\.md$
+^CONTRIBUTING[.]md$

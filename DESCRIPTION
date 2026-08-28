@@ -32,6 +32,7 @@ Suggests:
     albersdown,
     fmriAR,
     future,
+    jsonlite,
     microbenchmark,
     neuralign,
     pkgload,
