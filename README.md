@@ -10,8 +10,8 @@ Design-Kernel Group Embedding (DKGE) turns subject-level GLM outputs into a shar
 ## What it does
 - **Design kernels** encode factorial structure, effect-space smoothness, and interactions, which control how effects align across subjects.
 - **Model-level spatial regularization** uses sparse graph-Laplacian solves to smooth subject fields inside the pooled moment, so the spatial prior can change the learned basis as well as its reconstructed maps.
-- **Contrasts and inference** use leave-one-subject-out (LOSO) or K-fold cross-fitting, analytic approximations, and bootstrap utilities for medoid or voxel maps.
-- **Transport and rendering** map parcellated fields to a common space with barycentric kNN or C++-accelerated Sinkhorn mappers, anchor graph smoothing, and voxel decoders. The *medoid* is the reference subject whose parcellation the others are mapped onto; it is an index you supply, defaulting to subject 1.
+- **Contrasts and inference** use leave-one-subject-out (LOSO) or K-fold cross-fitting. Rank-truncated cohort-trained inference is labelled approximate and requires explicit opt-in; aligned-map bootstraps require typed correspondence provenance.
+- **Functional alignment and rendering** use typed independent response signatures, auditable reference selection, or an iterative group template to map subject fields onto one identified support. A subject is a *medoid* only when selected by a stated criterion; a bare MNI grid supplies coordinates, not functional correspondence. Rendering is downstream of alignment.
 - **Classifier localization** cross-fits latent classifiers and returns decoder, Haufe, and LOCO maps.
 - **Component interpretation** projects new data, rotates components, and summarizes variance explained.
 
@@ -48,7 +48,7 @@ Start with `vignette("dkge")`, then `vignette("dkge-workflow")`. The full set:
 
 **Weighting** — `vignette("dkge-weighting")`, `vignette("dkge-adaptive-weighting")`
 
-**Spatial mapping** — `vignette("dkge-spatial-regularization")`, `vignette("dkge-dense-rendering")`, `vignette("dkge-anchors")`, `vignette("dkge-performance")`
+**Spatial mapping** — `vignette("dkge-functional-alignment")`, `vignette("dkge-spatial-regularization")`, `vignette("dkge-dense-rendering")`, `vignette("dkge-anchors")`, `vignette("dkge-performance")`
 
 **Extras** — `vignette("dkge-plotting")`, `vignette("dkge-cpca")`, `vignette("dkge-vs-pls")`
 
@@ -60,12 +60,12 @@ compatibility with raw lists.
 
 ```r
 kernel <- diag(nrow(betas[[1]]))
-transport <- dkge_transport_spec(
-  centroids = centroids,
-  sizes = sizes,
-  medoid = 2
+contrasts <- c(1, -1, 0, 0)
+inference <- dkge_inference_spec(
+  B = 1000,
+  tail = "two.sided",
+  allow_approximate_alignment = TRUE
 )
-inference <- dkge_inference_spec(B = 1000, tail = "two.sided")
 cls_spec <- dkge_classification_spec(targets = ~ condition, method = "lda")
 
 results <- dkge_pipeline(
@@ -73,11 +73,20 @@ results <- dkge_pipeline(
   designs = designs,
   kernel = kernel,
   contrasts = contrasts,
-  transport = transport,
   inference = inference,
   classification = cls_spec
 )
 ```
+
+The opt-in is explicit because the rank-truncated latent span is estimated from
+the same cohort. The returned inference object labels that estimator
+`"approximate"`; omit the opt-in to fail closed. All requested contrasts and
+support locations share one max-T family.
+
+For cross-subject functional correspondence, use the typed
+`dkge_prepare_alignment()` / `dkge_transport_contrasts_to_reference()` workflow
+in `vignette("dkge-functional-alignment")`; the pipeline does not infer a
+functional mapping from coordinates alone.
 
 To score new subjects without manually assembling `B_list`, use
 `dkge_predict_subjects()`:

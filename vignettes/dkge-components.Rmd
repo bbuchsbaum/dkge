@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 library(ggplot2)
 library(tidyr)
@@ -188,7 +190,7 @@ Each subject score matrix has dimensions clusters × components. Cluster rows
 are only comparable across subjects when they already refer to the same spatial
 support. This simulation deliberately uses a shared 18-cluster indexing scheme,
 so a row-wise mean is meaningful. With subject-specific parcellations, first
-transport the scores to a common medoid, anchor, or voxel space; equal matrix
+transport the scores to an identified reference, anchor, or voxel space; equal matrix
 dimensions alone do not establish anatomical correspondence.
 
 ```{r score-plot, fig.height=4, fig.width=5, fig.alt="Line plot showing average DKGE component scores across clusters."}
@@ -257,10 +259,10 @@ component-specific participation, inspect `fit$contribs`,
 `dkge_plot_subject_contrib()`, or `dkge_subject_component_projections()`.
 `fit$v` concatenates subject-block cluster loadings; interpret its rows spatially
 only when the blocks share a declared support or after transport to a common
-space. Finally, `dkge_component_stats()` supplies component summaries under its
-chosen mapper and inference assumptions. Those assumptions and the target of
-inference must be reported; the function does not make every extracted
-component generically “significant.”
+space. The deprecated `dkge_component_stats()` can provide a descriptive legacy
+summary, but it refuses inference because its correspondence is learned from
+the full-fit loadings. For spatial inference, construct typed aligned subject
+rows and call `dkge_infer_aligned()`.
 
 
 ## Where to go next

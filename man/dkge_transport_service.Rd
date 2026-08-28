@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-services.R
 \name{dkge_transport_service}
 \alias{dkge_transport_service}
-\title{Construct a transport service}
+\title{Construct a legacy descriptive transport service}
 \usage{
 dkge_transport_service(spec = NULL, ...)
 }
@@ -15,7 +15,9 @@ dkge_transport_service(spec = NULL, ...)
 Object of class \code{dkge_transport_service}.
 }
 \description{
-Construct a transport service
+Pipeline transport services are retained for descriptive migration output.
+They cannot be composed with inference; use the typed reference-oriented
+alignment workflow for inferential maps.
 }
 \examples{
 transport_srv <- dkge_transport_service(dkge_transport_spec(centroids = list(matrix(0, 2, 3))))

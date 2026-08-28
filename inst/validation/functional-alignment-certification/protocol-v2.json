@@ -1,0 +1,77 @@
+{
+  "protocol_id": "dkge-functional-alignment-certification-v2",
+  "frozen_on": "2026-08-27",
+  "status": "frozen_before_v2_results",
+  "candidate_contract": {
+    "reference_self_map": "Every subject, including the selected reference, is fitted with the same entropic mapper and fixed epsilon policy.",
+    "independent_features": "Recommended correspondence channel, but the current rank-truncated contrast estimator retains same-data latent-span dependence and is therefore approximate.",
+    "same_data_residualized": "Conditional covariance residualization is an approximate fallback, never an exact frozen-plan test under rank truncation.",
+    "geometry_only": "Ancillary alignment bound; it does not demonstrate functional correspondence.",
+    "full_reestimation": "Exact comparator only for the frozen raw sign action and simulated DGP scope.",
+    "release_claim": "Court failure blocks inferential promotion, not delivery of a fail-closed approximate workflow. Approximate inference requires an explicit override."
+  },
+  "court": {
+    "implementation": "The v1 court implementation and OAT grid are reused without changing estimands, signs, seeds, arms, or gates; outputs are written to a source-tree-addressed v2 directory.",
+    "n_sim": 40,
+    "n_perm": 31,
+    "formal_cores": 4,
+    "seed_rule": "7300000 + 10000 * cell_index + simulation_index",
+    "arms_of_record": [
+      "geometry_only",
+      "independent_alignment",
+      "kernel_image_residual_prototype",
+      "full_permutation_reestimation"
+    ],
+    "additional_historical_arms": [
+      "legacy_fullfit_functional",
+      "l1_fixed_fullfit_functional",
+      "l2_fold_loading"
+    ],
+    "factors_of_record": [
+      "S",
+      "estimation_rank",
+      "kernel_rank",
+      "contrast_family_dimension",
+      "eigengap",
+      "nuisance_magnitude",
+      "spatial_correlation",
+      "spatial_heteroscedasticity",
+      "parcel_count_heterogeneity",
+      "epsilon",
+      "functional_cost_weight",
+      "dgp"
+    ],
+    "gates": {
+      "exact_oracle": "Every exact-oracle cell has a Wilson 95% interval containing 0.05 and convergence at least 0.95.",
+      "negative_control_promotion": "Geometry-only and independent-alignment cells each have a Wilson 95% interval containing 0.05, upper bound at most 0.12, and convergence at least 0.95.",
+      "solver": "Convergence below 0.95 invalidates a cell.",
+      "same_data": "Always approximate even when observed size is favorable."
+    },
+    "stopping_rule": "Run all scheduled cells. Do not replace seeds, remove adverse cells, retune epsilon, or alter gates after observing results."
+  },
+  "known_warp_power": {
+    "seeds": {"first": 91201, "last": 91240, "n_cohorts": 40},
+    "S": 8,
+    "n_perm": 127,
+    "heldout_signal_scale": 0.35,
+    "heldout_value_noise": 0.8,
+    "arms": [
+      "iterative_template",
+      "raw_functional_medoid",
+      "geometry_only",
+      "ordinary_mni_average"
+    ],
+    "statistic": "Maximum absolute one-sample t over reference-support locations with all unique sign actions modulo global sign.",
+    "power_role": "Descriptive efficacy with Wilson uncertainty. No power superiority threshold can promote an arm or override court/provenance gates.",
+    "required_metrics": [
+      "correlation",
+      "rmse",
+      "amplitude_ratio",
+      "positive_peak_error",
+      "negative_peak_error",
+      "latent_error",
+      "point_spread",
+      "maxT_power"
+    ]
+  }
+}

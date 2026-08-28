@@ -232,6 +232,7 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
   values <- vector("list", n_contrasts)
   names(values) <- names(contrast_list)
   fold_alphas <- vector("list", n_contrasts)
+  names(fold_alphas) <- names(contrast_list)
 
   fold_row_names <- vapply(folds_internal, function(fold) paste(subject_labels[fold$subjects], collapse = ","), character(1))
 
@@ -281,6 +282,9 @@ dkge_define_folds <- function(fit, type = c("subject", "time", "run", "custom"),
     aligned_bases = lapply(folds_internal, `[[`, "basis_aligned"),
     rotations = lapply(folds_internal, `[[`, "rotation"),
     fold_alphas = fold_alphas,
+    alignment_receipts = .dkge_alignment_receipts_from_folds(
+      fit, fold_info, fold_alphas, method = "kfold"
+    ),
     ridge = ridge,
     missingness = missingness,
     miss_args = miss_args,

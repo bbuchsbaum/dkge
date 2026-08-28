@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-voxel.R
 \name{dkge_transport_to_voxels}
 \alias{dkge_transport_to_voxels}
-\title{Transport DKGE quantities directly to voxel space}
+\title{Descriptively transport DKGE quantities directly to voxel space}
 \usage{
 dkge_transport_to_voxels(
   fit,
@@ -30,10 +30,15 @@ dkge_transport_to_voxels(
 \item{...}{Additional mapper parameters.}
 }
 \value{
-List with \code{subj_values} (S x V matrix) and \code{value} (mean across subjects).
+Descriptive list with \code{subj_values} (S x V matrix), \code{value} (mean
+across subjects), and explicit non-inferential metadata.
 }
 \description{
-Transport DKGE quantities directly to voxel space
+This legacy convenience path learns voxel correspondence from full-fit
+loadings and returns untyped display values. It is descriptive only and its
+output is not accepted by \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}}. For group functional
+alignment, fit typed features and use
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}} or \code{\link[=dkge_align_to_template]{dkge_align_to_template()}}.
 }
 \examples{
 \donttest{

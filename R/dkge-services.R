@@ -26,7 +26,11 @@ dkge_contrast_service <- function(method = c("loso", "kfold", "analytic"),
             class = "dkge_contrast_service")
 }
 
-#' Construct a transport service
+#' Construct a legacy descriptive transport service
+#'
+#' Pipeline transport services are retained for descriptive migration output.
+#' They cannot be composed with inference; use the typed reference-oriented
+#' alignment workflow for inferential maps.
 #'
 #' @param spec Transport specification (list or `dkge_transport_spec`).
 #' @param ... Additional key-value pairs merged into the specification.
@@ -102,6 +106,14 @@ dkge_inference_service <- function(spec = NULL, ...) {
   medoid <- spec$medoid %||% 1L
   mapper_spec <- spec$mapper %||% NULL
   method_arg <- spec$method %||% "sinkhorn"
+  alignment_mode <- spec$alignment_mode %||% "fold_safe"
+  if (identical(alignment_mode, "fold_safe") &&
+      (!is.null(spec$loadings) || !is.null(spec$betas))) {
+    warning(
+      "Transport-service loadings/betas are ignored in fold-safe mode; contrast receipts own alignment features.",
+      call. = FALSE
+    )
+  }
   mapper_args <- spec[intersect(names(spec),
                                 c("epsilon", "max_iter", "tol",
                                   "lambda_emb", "lambda_spa",
@@ -112,15 +124,17 @@ dkge_inference_service <- function(spec = NULL, ...) {
     contrast_obj = contrast_results,
     medoid = medoid,
     centroids = spec$centroids,
-    loadings = spec$loadings,
-    betas = spec$betas,
+    loadings = if (identical(alignment_mode, "descriptive")) spec$loadings else NULL,
+    betas = if (identical(alignment_mode, "descriptive")) spec$betas else NULL,
     sizes = spec$sizes,
     mapper = mapper_spec,
-    method = method_arg
+    method = method_arg,
+    alignment_mode = alignment_mode,
+    transport_cache = spec$transport_cache %||% spec$fitted_alignment
   )
   args <- c(args, mapper_args)
   args <- args[!vapply(args, is.null, logical(1))]
-  do.call(dkge_transport_contrasts_to_medoid, args)
+  do.call(.dkge_transport_contrasts_to_reference_core, args)
 }
 
 #' Execute an inference service
@@ -134,20 +148,47 @@ dkge_inference_service <- function(spec = NULL, ...) {
   if (is.null(service) || is.null(service$spec)) {
     return(NULL)
   }
+  if (!is.null(transport_results)) {
+    .dkge_abort(
+      paste0(
+        "Pipeline transport is legacy descriptive output and cannot enter ",
+        "inference. Use `dkge_transport_contrasts_to_reference()` followed by ",
+        "`dkge_infer_aligned()`."
+      ),
+      "dkge_alignment_ineligible_error"
+    )
+  }
   spec <- service$spec
   B <- spec$B %||% 2000L
   tail <- spec$tail %||% "two.sided"
   center <- spec$center %||% "mean"
-  res <- lapply(seq_along(contrast_results$values), function(i) {
-    subj_mat <- if (!is.null(transport_results)) {
-      transport_results[[i]]$subj_values
-    } else {
-      as.matrix(contrast_results, contrast = i)
-    }
-    dkge_signflip_maxT(subj_mat, B = B, tail = tail, center = center)
-  })
-  names(res) <- names(contrast_results$values)
-  res
+  alpha <- spec$alpha %||% 0.05
+  allow_approximate <- isTRUE(spec$allow_approximate_alignment)
+  estimator_eligibility <- .dkge_rank_truncated_estimator_eligibility(
+    contrast_results$method
+  )
+  .dkge_assert_alignment_eligible(
+    estimator_eligibility,
+    allow_approximate = allow_approximate
+  )
+  mapped_values <- NULL
+  res <- .infer_signflip(
+    contrast_results,
+    n_perm = B,
+    correction = "maxT",
+    mapped_values = mapped_values,
+    tail = tail,
+    center = center
+  )
+  res$significant <- lapply(res$p_adjusted, function(p) p <= alpha)
+  res$alpha <- alpha
+  res$metadata$estimator <- list(
+    status = estimator_eligibility$status,
+    reason = estimator_eligibility$reason,
+    method = contrast_results$method,
+    approximate_override = allow_approximate
+  )
+  structure(res, class = "dkge_inference")
 }
 
 #' Run a dkge service object

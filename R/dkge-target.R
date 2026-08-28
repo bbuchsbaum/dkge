@@ -239,16 +239,14 @@ dkge_make_target <- function(fit = NULL,
   }
   stopifnot(inherits(fit, "dkge"))
 
-  if (is.null(loadings)) {
-    loadings <- .dkge_subject_loadings(fit)
-  }
-
+  alignment_mode <- "fold_safe"
   if (!is.null(transport) && inherits(transport, "dkge_transport_spec")) {
     centroids <- centroids %||% transport$centroids
     sizes <- sizes %||% transport$sizes
     medoid <- medoid %||% transport$medoid
     mapper <- mapper %||% transport$mapper
     transport_method <- transport$method %||% "sinkhorn"
+    alignment_mode <- transport$alignment_mode %||% "fold_safe"
     dots <- c(list(...),
               list(epsilon = transport$epsilon,
                    max_iter = transport$max_iter,
@@ -268,6 +266,7 @@ dkge_make_target <- function(fit = NULL,
   if (is.null(medoid)) medoid <- 1L
 
   if (!is.null(values)) {
+    if (is.null(loadings)) loadings <- .dkge_subject_loadings(fit)
     if (is.null(centroids)) {
       Y <- .dkge_values_to_matrix(values)
       return(list(Y = Y, feature_ids = colnames(Y), subject_ids = rownames(Y),
@@ -303,7 +302,7 @@ dkge_make_target <- function(fit = NULL,
                 provenance = list(source = "contrast", contrast_obj = contrast_obj)))
   }
 
-  tr <- do.call(dkge_transport_contrasts_to_medoid,
+  tr <- do.call(.dkge_transport_contrasts_to_reference_core,
                 c(list(fit = fit,
                        contrast_obj = contrast_obj,
                        medoid = medoid,
@@ -311,7 +310,8 @@ dkge_make_target <- function(fit = NULL,
                        loadings = loadings,
                        sizes = sizes,
                        mapper = mapper,
-                       method = transport_method %||% "sinkhorn"),
+                       method = transport_method %||% "sinkhorn",
+                       alignment_mode = alignment_mode),
                   dots))
   mats <- lapply(names(tr), function(nm) {
     M <- tr[[nm]]$subj_values

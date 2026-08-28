@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 
 knitr::opts_chunk$set(
@@ -97,6 +99,21 @@ M_s(\lambda) =
 \Omega_s\,
 H_{s,\lambda}\widetilde B_s^{\mathsf T}.
 \]
+
+Note that $H_{s,\lambda}$ appears **twice**: the resolvent smooths the beta
+block, and the moment is then formed from the smoothed block, so the effective
+moment-level smoothing is the squared resolvent rather than $H_{s,\lambda}$
+itself. Under an identity spatial metric this is
+$\widetilde B_s H_{s,\lambda}^2 \widetilde B_s^{\mathsf T}$.
+
+If you also supply voxel weights via `dkge_weights()`, be aware that the two
+per-unit weightings sit on opposite sides of the smoother: voxel weights
+multiply the beta columns *before* smoothing (so a zero-weight unit becomes a
+hole that its neighbours diffuse into), while $\Omega_s$ acts *after* it, as a
+metric on the smoothed field. To exclude a unit completely, remove the matching
+beta column, graph node, domain label, and every aligned per-unit input
+together. Changing only `coords` would violate the fitted spatial-domain
+contract.
 
 Thus $\lambda$ changes the pooled $q \times q$ moment that DKGE
 diagonalizes. The same $H_{s,\lambda}$ is then used for components,
@@ -172,6 +189,42 @@ spatial_demo <- dkge_spatial_regularizer(
 )
 spatial_demo
 ```
+
+`dthresh` is a distance cutoff **in the units of `coords`**, and the defaults
+(`dthresh = 1.42`, `nnk = 27`) assume unit-spaced voxel indices, where 1.42
+picks up the face and edge neighbours of a 3x3x3 neighbourhood. Real
+coordinates are usually in millimetres, where that threshold connects nothing:
+every unit is isolated, `L` is the zero matrix, and the resolvent is the
+identity, so the fit is bit-identical to an unregularized one even though
+`lambda` is positive. DKGE warns when a graph ends up with no edges, and the
+printed object reports the edge count, which is the fastest way to confirm the
+graph is what you meant:
+
+```{r spatial-units-caution, warning=TRUE}
+mm_coords <- cbind(x = seq(0, 33, by = 3), y = 0, z = 0)
+
+# Default threshold on millimetre coordinates: warns, and smooths nothing.
+dkge_spatial_regularizer(coords = mm_coords, lambda = 2)
+
+# A threshold on the millimetre scale connects the chain.
+dkge_spatial_regularizer(coords = mm_coords, lambda = 2,
+                         dthresh = 3.1, nnk = 6)
+```
+
+DKGE uses four spatial-effectiveness states:
+
+| Status | Meaning |
+|---|---|
+| `inactive` | `lambda = 0`; the explicit identity model |
+| `inert` | positive `lambda`, but every graph is edgeless |
+| `partial` | positive `lambda`, with only some subject graphs edgeless |
+| `active` | positive `lambda`, and every graph can smooth |
+
+Direct construction and fitting warn for `inert` or `partial` specifications.
+Spatial CV is stricter: if any positive candidate is requested but every graph
+is edgeless, the candidate scores cannot identify `lambda`, so
+`dkge_cv_spatial_grid()` stops before fitting folds. A partially edgeless CV
+warns once with the affected domain identifiers and continues.
 
 Because `coords` is one matrix, this is a shared spatial domain: every subject
 must have the same number and ordering of columns. The matching location names
@@ -272,8 +325,9 @@ fingerprints here are expected because all subjects share one ordered graph.
 
 ```{r inspect-spatial-provenance}
 spatial_diagnostics <- dkge_diagnostics(fit_demo)$spatial
+spatial_diagnostics[c("status", "requested", "effective", "fully_effective")]
 spatial_diagnostics$diagnostics[
-  , c("subject", "n_units", "n_edges", "lambda", "domain_mode")
+  , c("subject", "n_units", "n_edges", "lambda", "effective", "domain_mode")
 ]
 ```
 
@@ -373,7 +427,7 @@ stopifnot(loso_roughness$median_roughness[2] <
             loso_roughness$median_roughness[1])
 ```
 
-Transport to a medoid, anchor field, or voxel grid happens **after** these
+Transport to an identified subject support, anchor field, or voxel grid happens **after** these
 regularized subject fields are constructed. It aligns spatial domains; it does
 not redefine the fitted effect-space solution.
 

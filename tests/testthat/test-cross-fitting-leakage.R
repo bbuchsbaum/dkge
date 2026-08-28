@@ -45,8 +45,11 @@ library(testthat)
   # Subject betas
   Btil <- lapply(seq_len(S), function(s) matrix(rnorm(q * P), q, P))
 
-  # Positive weights
-  weights <- rexp(S) + 0.1
+  # Positive raw subject scores and their full-cohort normalization. LOSO must
+  # re-normalize these scores over the training cohort rather than subtract a
+  # full-cohort weighted contribution.
+  weight_scores_raw <- rexp(S) + 0.1
+  weights <- weight_scores_raw / mean(weight_scores_raw)
 
   # Per-subject contributions and pooled Chat
   contribs <- vector("list", S)
@@ -80,6 +83,10 @@ library(testthat)
     Chat             = Chat,
     contribs         = contribs,
     weights          = weights,
+    subject_weight_scores_raw = weight_scores_raw,
+    subject_weight_usable = rep(TRUE, S),
+    w_method         = "fixture_raw",
+    w_tau            = 0,
     Btil             = Btil,
     subject_ids      = paste0("sub", seq_len(S)),
     rank             = r
@@ -166,14 +173,14 @@ test_that("LOSO: extreme values in held-out subject do not affect U_minus", {
   expect_lt(.max_abs(out1$evals - out2$evals), 1e-10,
             label = "LOSO eigenvalues should be identical regardless of held-out subject's values")
 
-  # Verify Chat_minus is the same (computed without subject s)
-  # Compute manually for verification
-  # Note: use 1e-7 tolerance due to floating-point accumulation in Chat computation
-  Chat_minus_manual1 <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
-  Chat_minus_manual2 <- fit_extreme$Chat - fit_extreme$weights[s] * fit_extreme$contribs[[s]]
-
-  expect_lt(.max_abs(Chat_minus_manual1 - Chat_minus_manual2), 1e-7,
-            label = "Chat_minus should be identical when held-out subject is excluded")
+  # Verify the fold-repooled matrices directly. Subtracting a full-cohort
+  # contribution is no longer the LOSO contract because raw subject scores are
+  # re-normalized over the training cohort.
+  train <- setdiff(seq_along(fit$Btil), s)
+  Chat_minus1 <- dkge:::.dkge_fold_weight_context(fit, train)$Chat
+  Chat_minus2 <- dkge:::.dkge_fold_weight_context(fit_extreme, train)$Chat
+  expect_equal(Chat_minus1, Chat_minus2, tolerance = 1e-12,
+               label = "Chat_minus should be identical when held-out subject is excluded")
 })
 
 # ========================== Test 3: Different subjects get different held-out bases ==========================
@@ -305,7 +312,7 @@ test_that("KFOLD: held-out bases match between k=S K-fold and LOSO", {
 
 # ========================== Test 6: LOSO includes all-but-one subject ==========================
 
-test_that("LOSO: Chat_minus equals Chat minus held-out contribution", {
+test_that("LOSO: Chat_minus renormalizes raw weights over all-but-one subject", {
   skip_on_cran()
 
   fit <- .make_fit(seed = 303, q = 8, r = 3, S = 6, P = 10)
@@ -313,34 +320,25 @@ test_that("LOSO: Chat_minus equals Chat minus held-out contribution", {
 
   # Test for multiple subjects
   for (s in c(1L, 3L, 6L)) {
-    # Manual Chat_minus computation
-    Chat_minus_manual <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
-    Chat_minus_manual <- (Chat_minus_manual + t(Chat_minus_manual)) / 2
-
-    # Verify sum of remaining subject weights
-    remaining_weight <- sum(fit$weights[-s])
-    total_weight <- sum(fit$weights)
-    expect_equal(remaining_weight, total_weight - fit$weights[s],
-                 label = sprintf("Subject %d: remaining weights should sum correctly", s))
+    train <- setdiff(seq_along(fit$Btil), s)
+    fold_weights <- fit$subject_weight_scores_raw[train]
+    fold_weights <- fold_weights / mean(fold_weights)
+    expect_equal(mean(fold_weights), 1, tolerance = 1e-14)
 
     # Verify Chat_minus can be reconstructed from remaining subjects
     Chat_from_remaining <- matrix(0, q, q)
-    for (j in seq_along(fit$Btil)) {
-      if (j != s) {
-        Chat_from_remaining <- Chat_from_remaining + fit$weights[j] * fit$contribs[[j]]
-      }
+    for (j in seq_along(train)) {
+      Chat_from_remaining <- Chat_from_remaining +
+        fold_weights[j] * fit$contribs[[train[j]]]
     }
     Chat_from_remaining <- (Chat_from_remaining + t(Chat_from_remaining)) / 2
-
-    expect_lt(.max_abs(Chat_minus_manual - Chat_from_remaining), 1e-10,
-              label = sprintf("Subject %d: Chat_minus should match reconstruction from remaining subjects", s))
 
     # Verify LOSO function uses correct Chat_minus by comparing eigenvalues
     cvec <- rnorm(q)
     out <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
 
     # Eigenvalues of manual Chat_minus should match returned evals
-    manual_eig <- eigen(Chat_minus_manual, symmetric = TRUE)$values
+    manual_eig <- eigen(Chat_from_remaining, symmetric = TRUE)$values
     expect_lt(.max_abs(out$evals - manual_eig), 1e-10,
               label = sprintf("Subject %d: LOSO eigenvalues should match manual Chat_minus", s))
   }

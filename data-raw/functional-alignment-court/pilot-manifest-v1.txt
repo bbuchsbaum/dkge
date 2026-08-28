@@ -1,0 +1,15 @@
+mode=pilot
+generated_at=2026-08-27 01:19:08 UTC
+elapsed_seconds=17.925
+source_sha=f40c1f630c8bc94d0f7dc1d9d177b78bd877b6c3
+script_sha256=f83cf97bc0562a5bbe804fe74231ef98fc4163f084a3ac483e957baddad03e1c
+protocol_sha256=e9bc207d3308cde65d4ddde9ac0758a4de3aaeffd839d8654d75fed56205bfac
+pilot_n_sim=2
+pilot_n_perm=15
+seconds_per_exact_perm=0.4089
+selected_n_sim=24
+selected_n_perm=31
+predicted_formal_seconds=4563.324
+resource_limited=TRUE
+R=R version 4.5.1 (2025-06-13)
+platform=aarch64-apple-darwin20

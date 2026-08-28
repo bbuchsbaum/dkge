@@ -2,29 +2,36 @@
 % Please edit documentation in R/dkge-bootstrap.R
 \name{dkge_bootstrap_projected}
 \alias{dkge_bootstrap_projected}
-\title{Subject-level projection bootstrap in medoid space}
+\title{Subject-level projection bootstrap on a reference support}
 \usage{
 dkge_bootstrap_projected(
   values_medoid,
+  contrast = 1L,
   B = 1000L,
   aggregate = c("mean", "median"),
   weights = NULL,
   seed = NULL,
   voxel_operator = NULL,
-  return_samples = TRUE
+  return_samples = TRUE,
+  allow_approximate_alignment = FALSE
 )
 }
 \arguments{
-\item{values_medoid}{List of length \code{S} where each element is a numeric vector
-defined on the medoid parcellation (e.g. LOSO contrast values).}
+\item{values_medoid}{An operator-bound \code{\link[=dkge_aligned_maps]{dkge_aligned_maps()}} object returned
+by a fitted alignment application. Raw lists and objects from the public
+descriptive constructor are refused because they carry no certified
+operator application.}
+
+\item{contrast}{Contrast name or index to bootstrap from \code{values_medoid}.}
 
 \item{B}{Number of bootstrap replicates.}
 
 \item{aggregate}{Aggregation function applied to the resampled subjects
 (\code{"mean"} or \code{"median"}).}
 
-\item{weights}{Optional subject weights applied when computing the resampled
-mean. Only used when \code{aggregate = "mean"}.}
+\item{weights}{Optional assertion of the immutable subject weights stored in
+\code{values_medoid}. If supplied, it must match that receipt exactly. Only used
+when \code{aggregate = "mean"}.}
 
 \item{seed}{Optional random seed for reproducibility.}
 
@@ -34,15 +41,19 @@ returned.}
 
 \item{return_samples}{Logical; when \code{TRUE} the matrix of bootstrap samples is
 returned in the output bundle.}
+
+\item{allow_approximate_alignment}{Permit an explicitly labelled approximate
+aligned-map object. Descriptive/ineligible states are always refused.}
 }
 \value{
 A list containing bootstrap summaries (\code{mean}, \code{sd}, \code{z}, confidence
-intervals), and optionally the raw bootstrap draws (medoid and voxel space).
+intervals), and optionally the raw bootstrap draws (reference-support and
+voxel space).
 }
 \description{
-Resamples transported subject vectors (already aligned in the medoid
-parcellation) to quantify between-subject variability without recomputing the
-group basis.
+Resamples subject vectors already carried by a typed aligned-map object to
+quantify between-subject variability without recomputing the group basis or
+correspondence.
 }
 \examples{
 \donttest{

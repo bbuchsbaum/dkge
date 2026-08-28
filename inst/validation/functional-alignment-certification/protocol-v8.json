@@ -1,0 +1,117 @@
+{
+  "protocol_id": "dkge-functional-alignment-certification-v8",
+  "frozen_on": "2026-08-27",
+  "status": "frozen_before_v8_results",
+  "candidate_source_tree_sha256": "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400",
+  "amendment": {
+    "supersedes": "dkge-functional-alignment-certification-v7",
+    "reason": "The exact V7 built-tarball check exposed one roxygen/Rd lifecycle defect and several installed-check, test, and vignette harness defects after V7 source, court, and power results existed but before collection. V7 and all adverse or descriptive results are preserved byte-for-byte and explicitly superseded rather than mutated or reused as V8 evidence.",
+    "protocol_change": "Bind the unchanged certification design to the repaired package candidate, correct the court output-directory version label from v7 to v8, and declare the closed-world tarball check policy.",
+    "inherited_numerical_amendment": "The sole numerical amendment remains v3's fixed Sinkhorn max_iter ceiling of 50000, inherited from v2's invalidated ceiling of 5000. The marginal tolerance remains 0.0001.",
+    "candidate_change_before_results": "V8 documents the already-existing medoid formal on its roxygen/Rd topic, makes repository-history tests explicitly source-tree-only, keeps core Sinkhorn contracts independent of the optional T4transport oracle, raises one non-court Sinkhorn regression's max_iter from 500 to 5000 to meet the existing fail-closed tolerance, and version-gates optional albersdown 2.0 vignette styling. The only candidate R-tree change is a documentation comment; no executable package expression changed. These repairs change neither the frozen court or power helpers nor any design constant, arm, estimand, gate, seed, sign action, tolerance, or stopping rule.",
+    "unchanged": "Epsilon values, marginal tolerance, 50000 iteration ceiling, seeds, grid, arms, estimands, sign actions, statistical gates, and stopping rules are byte-for-byte inherited from v3.",
+    "no_second_numerical_amendment": "V8 makes no numerical or statistical protocol amendment. V7 outcomes were observed but did not alter V8's design. Any remaining numerical failure invalidates v8; the iteration ceiling will not be raised again.",
+    "v7_protocol": "protocol-v7.json",
+    "v7_protocol_sha256": "c6d3a282b967bacef0f7da76a9192389e624e91075eccd3de4de648386f28487",
+    "v7_supersession": "protocol-v7-supersession.json",
+    "v7_supersession_sha256": "ceea7aed678eabcd7683531dc295685d489e3223b1b5cb4f9d13aef393a024f6",
+    "v6_protocol": "protocol-v6.json",
+    "v6_protocol_sha256": "6c40c99387fd157e875871a242256d1ab6bea9d2fcc8f2ba21309f26b150f5ef",
+    "v6_supersession": "protocol-v6-supersession.json",
+    "v6_supersession_sha256": "1a6858b01b8b7a62d7155bd3b3cf9ef331717c9fba63f156e7a0817ea5db4463",
+    "v5_protocol": "protocol-v5.json",
+    "v5_protocol_sha256": "18b19d49ee853b62a0ae1a59e95c9d82f1b56207a5eb1c3e9cf097a81f576612",
+    "v5_supersession": "protocol-v5-supersession.json",
+    "v5_supersession_sha256": "cf3d487d81dfb163589d8f65ae597344c08301b046d5862f89c8623ef6665168",
+    "v4_protocol": "protocol-v4.json",
+    "v4_protocol_sha256": "728a40762eeeca517760452d854cf2a870ba299cad05d77366f7afb43acd4cba",
+    "v4_invalidation": "protocol-v4-invalidation.json",
+    "v4_invalidation_sha256": "470ff4158791bb5bc1e1c598f676201913cc0534532154bbd5a52f1de321a369",
+    "v3_protocol": "protocol-v3.json",
+    "v3_protocol_sha256": "f2b843c630ec2166a152b306938b105e42a9e06203fc0cd50e3855d343d78dc7",
+    "v3_supersession": "protocol-v3-supersession.json",
+    "v3_supersession_sha256": "9e29eeb8d58da95e30eafe4818361bad7b1e44b51dbac5ee074b46dce4be0f16",
+    "v2_protocol": "protocol-v2.json",
+    "v2_invalidation": "court-v2-invalidation.json",
+    "regression_fixture": "court-v2-failing-sinkhorn-fixture.json"
+  },
+  "artifact_validation": {
+    "certified_tarball_build": "R CMD build --no-build-vignettes",
+    "built_tarball_check": "R CMD check --no-manual --no-clean --ignore-vignettes",
+    "check_rationale": "Generated inst/doc and build/vignette.rds are excluded from the closed-world source projection. Executable documentation is proven by the exact-tarball pkgdown receipt rather than duplicated inside R CMD check.",
+    "pkgdown": "The receipt-producing wrapper must render from the exact certified tarball plus the separately hashed documentation overlay."
+  },
+  "candidate_contract": {
+    "reference_self_map": "Every subject, including the selected reference, is fitted with the same entropic mapper and fixed epsilon policy.",
+    "independent_features": "Recommended correspondence channel, but the current rank-truncated contrast estimator retains same-data latent-span dependence and is therefore approximate.",
+    "same_data_residualized": "Conditional covariance residualization is an approximate fallback, never an exact frozen-plan test under rank truncation.",
+    "geometry_only": "Ancillary alignment bound; it does not demonstrate functional correspondence.",
+    "full_reestimation": "Exact comparator only for the frozen raw sign action and simulated DGP scope.",
+    "release_claim": "Court failure blocks inferential promotion, not delivery of a fail-closed approximate workflow. Approximate inference requires an explicit override."
+  },
+  "court": {
+    "implementation": "The v1 court implementation and OAT grid are reused without changing estimands, signs, seeds, arms, or gates; outputs are written to a source-tree-addressed v8 directory.",
+    "n_sim": 40,
+    "n_perm": 31,
+    "formal_cores": 4,
+    "sinkhorn_max_iter": 50000,
+    "seed_rule": "7300000 + 10000 * cell_index + simulation_index",
+    "arms_of_record": [
+      "geometry_only",
+      "independent_alignment",
+      "kernel_image_residual_prototype",
+      "full_permutation_reestimation"
+    ],
+    "additional_historical_arms": [
+      "legacy_fullfit_functional",
+      "l1_fixed_fullfit_functional",
+      "l2_fold_loading"
+    ],
+    "factors_of_record": [
+      "S",
+      "estimation_rank",
+      "kernel_rank",
+      "contrast_family_dimension",
+      "eigengap",
+      "nuisance_magnitude",
+      "spatial_correlation",
+      "spatial_heteroscedasticity",
+      "parcel_count_heterogeneity",
+      "epsilon",
+      "functional_cost_weight",
+      "dgp"
+    ],
+    "gates": {
+      "exact_oracle": "Every exact-oracle cell has a Wilson 95% interval containing 0.05 and convergence at least 0.95.",
+      "negative_control_promotion": "Geometry-only and independent-alignment cells each have a Wilson 95% interval containing 0.05, upper bound at most 0.12, and convergence at least 0.95.",
+      "solver": "Convergence below 0.95 invalidates a cell.",
+      "same_data": "Always approximate even when observed size is favorable."
+    },
+    "stopping_rule": "Run all scheduled cells. Do not replace seeds, remove adverse cells, retune epsilon, or alter gates after observing results."
+  },
+  "known_warp_power": {
+    "seeds": {"first": 91201, "last": 91240, "n_cohorts": 40},
+    "S": 8,
+    "n_perm": 127,
+    "heldout_signal_scale": 0.35,
+    "heldout_value_noise": 0.8,
+    "arms": [
+      "iterative_template",
+      "raw_functional_medoid",
+      "geometry_only",
+      "ordinary_mni_average"
+    ],
+    "statistic": "Maximum absolute one-sample t over reference-support locations with all unique sign actions modulo global sign.",
+    "power_role": "Descriptive efficacy with Wilson uncertainty. No power superiority threshold can promote an arm or override court/provenance gates.",
+    "required_metrics": [
+      "correlation",
+      "rmse",
+      "amplitude_ratio",
+      "positive_peak_error",
+      "negative_peak_error",
+      "latent_error",
+      "point_spread",
+      "maxT_power"
+    ]
+  }
+}

@@ -141,7 +141,7 @@ test_that("JD gradient matches finite-difference directional derivative", {
   expect_equal(fd, grad_dot, tolerance = 1e-5)
 })
 
-test_that("JD fit supports LOSO contrast, prediction, and transport pipelines", {
+test_that("JD fit rejects pooled cross-fitting but supports held-out prediction", {
   set.seed(314)
   S <- 4
   q <- 5
@@ -167,19 +167,21 @@ test_that("JD fit supports LOSO contrast, prediction, and transport pipelines", 
   )
 
   cvec <- rnorm(q)
-  loso <- dkge_loso_contrast(fit_jd, s = 1, contrasts = cvec)
-  expect_type(loso$v, "double")
-  expect_length(loso$v, P)
-
-  contrast <- dkge_contrast(fit_jd, cvec, method = "loso")
-  expect_s3_class(contrast, "dkge_contrasts")
-
-  transport <- dkge_transport_contrasts_to_medoid(fit_jd, contrast,
-                                                  medoid = 1,
-                                                  centroids = centroids,
-                                                  betas = betas)
-  expect_equal(length(transport), length(contrast$values))
-  expect_true(is.matrix(transport[[1]]$subj_values))
+  expect_error(
+    dkge_loso_contrast(fit_jd, s = 1, contrasts = cvec),
+    "joint diagonalization|ordinary pooled eigensolve",
+    class = "dkge_crossfit_estimator_error"
+  )
+  expect_error(
+    dkge_contrast(fit_jd, cvec, method = "loso"),
+    "joint diagonalization|ordinary pooled eigensolve",
+    class = "dkge_crossfit_estimator_error"
+  )
+  expect_error(
+    dkge_contrast(fit_jd, cvec, method = "kfold", folds = 2L),
+    "joint diagonalization|ordinary pooled eigensolve",
+    class = "dkge_crossfit_estimator_error"
+  )
 
   cv_scores <- numeric(S)
   for (holdout in seq_len(S)) {

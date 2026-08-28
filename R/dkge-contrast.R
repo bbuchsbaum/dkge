@@ -60,6 +60,11 @@
 #' collisions in `metadata$kernel_query_pairs`. Multiple contrasts can be
 #' evaluated simultaneously for efficiency.
 #'
+#' Exact fold replay currently supports fits made with `solver = "pooled"` and
+#' `cpca_part = "none"`. CPCA and joint-diagonalization fits fail closed for all
+#' three methods; DKGE does not replace their fitted estimator with an ordinary
+#' pooled eigensolve while calling the result cross-fitted.
+#'
 #' @examples
 #' # Simulate and fit
 #' toy <- dkge_sim_toy(
@@ -90,6 +95,7 @@ dkge_contrast <- function(fit, contrasts,
                          ...) {
   stopifnot(inherits(fit, "dkge"))
   method <- match.arg(method)
+  .dkge_assert_crossfit_estimator_supported(fit, "`dkge_contrast()`")
 
   # Normalize contrast input
   contrast_list <- .normalize_contrasts(contrasts, fit)
@@ -130,7 +136,7 @@ dkge_contrast <- function(fit, contrasts,
   }
 
   if (!is.null(transport)) {
-    warning("`transport` argument to dkge_contrast() is deprecated; use `dkge_transport_contrasts_to_medoid()`.",
+    warning("`transport` argument to dkge_contrast() is deprecated; use `dkge_transport_contrasts_to_reference()`.",
             call. = FALSE)
   }
 
@@ -657,6 +663,7 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8,
   values <- vector("list", n_contrasts)
   names(values) <- names(contrast_list)
   alphas <- vector("list", n_contrasts)
+  names(alphas) <- names(contrast_list)
 
   r <- ncol(fit$U)
   fold_row_names <- vapply(folds, function(fold) paste(subject_labels[fold$subjects], collapse = ","), character(1))
@@ -706,6 +713,9 @@ dkge_contrast_diagnostics <- function(fit, contrasts, tol = 1e-8,
     aligned_bases = lapply(folds, `[[`, "basis_aligned"),
     rotations = lapply(folds, `[[`, "rotation"),
     alphas = alphas,
+    alignment_receipts = .dkge_alignment_receipts_from_folds(
+      fit, fold_info, alphas, method = "loso"
+    ),
     ridge = ridge,
     procrustes = if (align) list(alignment = fold_info$alignment, consensus = fold_info$consensus) else NULL
   )
@@ -792,7 +802,7 @@ as.matrix.dkge_contrasts <- function(x, contrast = 1, ...) {
   unique_dims <- unique(dims)
 
   if (length(unique_dims) != 1) {
-    msg <- "Subject cluster counts differ; use dkge_transport_contrasts_to_medoid() before stacking."
+    msg <- "Subject cluster counts differ; use dkge_transport_contrasts_to_reference() before stacking."
     cond <- structure(list(message = msg, call = sys.call()),
                      class = c("dkge_transport_needed", "error", "condition"))
     stop(cond)

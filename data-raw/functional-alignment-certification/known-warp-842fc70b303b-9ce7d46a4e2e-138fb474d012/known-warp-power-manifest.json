@@ -1,0 +1,28 @@
+{
+  "protocol_id": "dkge-functional-alignment-certification-v2",
+  "run_id": "known-warp-842fc70b303b-9ce7d46a4e2e-138fb474d012",
+  "source_tree_sha256": "842fc70b303b82f40751ec3202c1a0056ff08798ed9583e26bf37dbfeef38151",
+  "protocol_sha256": "9ce7d46a4e2efd98f9319f157dd477a78125972e7a4e961aa772a8377541b25e",
+  "harness_bundle_sha256": "138fb474d0120eccf9a4882e67e67f061b1ea4112d37c7aa008ac0ec02a4fc19",
+  "harness_files": {
+    "inst/validation/functional-alignment-certification/evidence-utils.R": "f3fd0bca02e34a82648fd20561594a9eada44b7e3e173afc0bb6542c8c95bc17",
+    "inst/validation/functional-alignment-certification/known-warp-power.R": "11cc4c0370b393cb778119b96f9557dcc64c852fb604959f6b9b1c113001ea82",
+    "inst/validation/functional-alignment-certification/protocol.json": "9ce7d46a4e2efd98f9319f157dd477a78125972e7a4e961aa772a8377541b25e",
+    "inst/validation/functional-alignment-certification/run-known-warp-power.R": "19fd69051c74b4285986494de160303f0e8be3b6f2901f00cbda1d1159d6904f",
+    "inst/validation/functional-alignment-certification/verify-known-warp-determinism.R": "20310b63d690f2fbb3f7e214e8916e03a9048f6a688da14c909dbafd94d4e60d",
+    "inst/validation/functional-alignment-court/court.R": "d1ae47855a41558342556e2ec32bf4d8db5c515948fabd10ef74b8e88abc5821",
+    "inst/validation/functional-alignment-template/template-benefit.R": "c3768ab2c9f244fb0b525c3deca8f1900d3e67f56f6dc9481523cad75317b884"
+  },
+  "runner_sha256": "19fd69051c74b4285986494de160303f0e8be3b6f2901f00cbda1d1159d6904f",
+  "seeds": {
+    "first": 91201,
+    "last": 91240,
+    "n": 40
+  },
+  "workers": 4,
+  "n_perm": 127,
+  "heldout_signal_scale": 0.35,
+  "heldout_value_noise": 0.8,
+  "runtime_seconds": 583.896,
+  "role": "Descriptive held-out efficacy only; power cannot override court or provenance gates."
+}

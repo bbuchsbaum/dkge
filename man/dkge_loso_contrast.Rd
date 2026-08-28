@@ -16,10 +16,17 @@ dkge_loso_contrast(fit, s, contrasts, ridge = 0)
 \item{ridge}{Optional ridge when recomputing the held-out compressed matrix}
 }
 \value{
-List with fields \code{v}, \code{alpha}, and \code{basis}
+List with fields \code{v}, \code{alpha}, \code{basis}, \code{loadings}, and a typed
+\code{alignment_receipt} binding those values to their held-out training and
+preprocessing provenance.
 }
 \description{
 Leave-one-subject-out DKGE contrast
+}
+\details{
+Exact estimator replay currently supports pooled, non-CPCA fits.
+JD and CPCA fits fail closed rather than substituting an ordinary pooled
+eigensolve and mislabelling it as the fitted estimator.
 }
 \examples{
 \donttest{

@@ -1,4 +1,4 @@
-test_that("canonical default MFA weights match the pre-extension baseline", {
+test_that("canonical default MFA weights match the exact sigma1 baseline", {
   set.seed(20260820L)
   S <- 6L
   q <- 5L
@@ -26,9 +26,9 @@ test_that("canonical default MFA weights match the pre-extension baseline", {
   expect_identical(
     sprintf("%a", unname(fit$weights)),
     c(
-      "0x1.092e59420ccfep+0", "0x1.b1938e2f0683ap-1",
-      "0x1.9241e5f5f2ae8p-1", "0x1.07e262b545053p+0",
-      "0x1.ff6c5984d258p-1", "0x1.4d4e5d33c865bp+0"
+      "0x1.092e5ae1c24fbp+0", "0x1.b1939592f6612p-1",
+      "0x1.9241e4b6d029ep-1", "0x1.07e266b93885fp+0",
+      "0x1.ff6c54cd705bcp-1", "0x1.4d4e56d969b6fp+0"
     )
   )
 

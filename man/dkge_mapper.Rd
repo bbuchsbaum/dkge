@@ -20,11 +20,13 @@ A \code{dkge_mapper} S3 descriptor consumed by \code{\link[=fit_mapper]{fit_mapp
 \code{\link[=apply_mapper]{apply_mapper()}}.
 }
 \description{
-Constructs a mapper descriptor for the \strong{dense rendering / anchor pipeline}
+Constructs a mapper descriptor for the legacy \strong{dense rendering / anchor pipeline}
 — used when projecting subject-space voxel/parcel values onto a set of 3-D
 spatial anchor points (e.g., medoid centroids).  Pass the result to
-\code{\link[=dkge_build_renderer]{dkge_build_renderer()}}, \code{\link[=dkge_render_subject_values]{dkge_render_subject_values()}}, or directly to
-\code{\link[=fit_mapper]{fit_mapper()}} together with \code{subj_points} / \code{anchor_points} matrices.
+deprecated \code{\link[=dkge_build_renderer]{dkge_build_renderer()}} or \code{\link[=dkge_render_subject_values]{dkge_render_subject_values()}}, or
+directly to \code{\link[=fit_mapper]{fit_mapper()}} together with \code{subj_points} / \code{anchor_points}
+matrices. These operations are descriptive and do not make an alignment
+inferentially eligible. Use \code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}} for that contract.
 
 Use \code{\link[=dkge_mapper_spec]{dkge_mapper_spec()}} instead when you need a \strong{transport pipeline
 mapper} that operates in an abstract feature space (ridge regression,

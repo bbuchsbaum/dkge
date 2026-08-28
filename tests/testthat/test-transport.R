@@ -30,11 +30,11 @@ make_deterministic_sinkhorn_inputs <- function() {
 
 test_that("sinkhorn transport produces deterministic operators", {
   dat <- make_deterministic_sinkhorn_inputs()
-  res <- dkge_transport_to_medoid_sinkhorn(
+  res <- dkge_transport_to_reference_sinkhorn(
     dat$v_list,
     dat$A_list,
     dat$centroids,
-    medoid = 1,
+    reference_subject = 1,
     epsilon = 1e-4,
     max_iter = 2000,
     tol = 1e-9
@@ -63,11 +63,11 @@ test_that("sinkhorn transport produces deterministic operators", {
 
 test_that("cpp sinkhorn wrapper matches deterministic R transport", {
   dat <- make_deterministic_sinkhorn_inputs()
-  res_r <- dkge_transport_to_medoid_sinkhorn(
+  res_r <- dkge_transport_to_reference_sinkhorn(
     dat$v_list,
     dat$A_list,
     dat$centroids,
-    medoid = 2,
+    reference_subject = 2,
     epsilon = 1e-4,
     max_iter = 2000,
     tol = 1e-9
@@ -89,6 +89,24 @@ test_that("cpp sinkhorn wrapper matches deterministic R transport", {
   expect_equal(res_cpp$value, res_r$value, tolerance = 1e-6)
   expect_equal(res_cpp$subj_values, res_r$subj_values, tolerance = 1e-6)
   expect_equal(res_cpp$plans, res_r$plans, tolerance = 1e-6)
+})
+
+test_that("medoid-named Sinkhorn entry point is a deprecated compatibility shim", {
+  dat <- make_deterministic_sinkhorn_inputs()
+  expect_warning(
+    res <- dkge_transport_to_medoid_sinkhorn(
+      dat$v_list,
+      dat$A_list,
+      dat$centroids,
+      medoid = 1,
+      epsilon = 1e-4,
+      max_iter = 2000,
+      tol = 1e-9
+    ),
+    "deprecated"
+  )
+  expect_s3_class(res$fitted_alignment, "dkge_fitted_alignment")
+  expect_identical(res$fitted_alignment$eligibility$status, "ineligible")
 })
 
 test_that("size penalty contributes to cost matrix for sub-unit masses", {

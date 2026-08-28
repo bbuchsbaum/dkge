@@ -103,21 +103,18 @@ sym_eig_sqrt <- function(M, inv = FALSE, jitter = 1e-10) {
   (S_s + t(S_s)) / 2
 }
 
-# ---------- Test 1: Fallback when solver is not pooled ----------
-test_that("Analytic LOSO falls back when solver is not pooled", {
+# ---------- Test 1: Fail closed when solver is not pooled ----------
+test_that("Analytic LOSO rejects a solver it cannot replay by fold", {
   skip_on_cran()
   fit <- .make_fit(seed = 101, q = 8, r = 3, S = 8, P = 10)
   fit$solver <- "jd"  # Non-pooled solver
 
   cvec <- rnorm(nrow(fit$U))
-  result <- dkge_analytic_loso(fit, s = 1, contrasts = cvec)
-
-  expect_equal(result$method, "fallback")
-  expect_equal(result$diagnostic$reason, "solver_not_pooled")
-
-  # Verify fallback produces same result as direct LOSO
-  exact <- dkge_loso_contrast(fit, s = 1, contrasts = cvec)
-  expect_lt(max(abs(result$v - exact$v)), 1e-12)
+  expect_error(
+    dkge_analytic_loso(fit, s = 1, contrasts = cvec),
+    "joint diagonalization|solver = 'pooled'",
+    class = "dkge_crossfit_estimator_error"
+  )
 })
 
 # ---------- Test 2: Fallback when voxel_weights are nonuniform ----------
@@ -131,6 +128,29 @@ test_that("Analytic LOSO falls back when voxel_weights are nonuniform", {
 
   expect_equal(result$method, "fallback")
   expect_equal(result$diagnostic$reason, "nonuniform_voxel_weights")
+})
+
+test_that("per-subject voxel profiles cannot hide behind a uniform average", {
+  skip_on_cran()
+  fit <- .make_fit(seed = 112, q = 8, r = 3, S = 8, P = 10)
+  profile_a <- rep(c(0.5, 1.5), 5)
+  profile_b <- 2 - profile_a
+  fit$voxel_weights <- rep(1, 10)
+  fit$voxel_weights_subject <- rep(
+    list(profile_a, profile_b), length.out = length(fit$Btil)
+  )
+  expect_equal(
+    Reduce(`+`, fit$voxel_weights_subject) /
+      length(fit$voxel_weights_subject),
+    fit$voxel_weights,
+    tolerance = 0
+  )
+
+  result <- dkge_analytic_loso(
+    fit, s = 1, contrasts = rnorm(nrow(fit$U))
+  )
+  expect_identical(result$method, "fallback")
+  expect_identical(result$diagnostic$reason, "nonuniform_voxel_weights")
 })
 
 # ---------- Test 3: No fallback when voxel_weights are uniform ----------
@@ -207,6 +227,13 @@ test_that("Analytic LOSO falls back when perturbation magnitude is large", {
 
   fit$contribs[[1]] <- S_new
   fit$weights[1] <- 0.5  # Moderate weight
+  fold_chat <- dkge:::.dkge_fold_weight_context(
+    fit, setdiff(seq_along(fit$Btil), 1L)
+  )$Chat
+  # Make the synthetic full moment agree with the intended exact fold
+  # perturbation. The stored eigensystem remains deliberately near-degenerate
+  # so this fixture isolates the coefficient gate.
+  fit$Chat <- fold_chat + fit$weights[[1L]] * S_new
 
   # Verify setup: check that H has large off-diagonal
   H <- t(V_full) %*% S_new %*% V_full
@@ -231,7 +258,7 @@ test_that("structural fallback precedence and vocabulary are stable", {
   expect_identical(
     dkge:::.dkge_analytic_reason_levels,
     c(
-      "analytic", "solver_not_pooled", "pair_normalized_pooling",
+      "analytic", "pair_normalized_pooling",
       "covariance_aware_moment", "nonuniform_voxel_weights",
       "missing_full_decomposition", "dimension_mismatch", "eigengap",
       "perturbation_magnitude", "fallback"

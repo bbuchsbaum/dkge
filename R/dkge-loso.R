@@ -8,7 +8,12 @@
 #' @param s Subject index (1-based)
 #' @param contrasts Contrast vector in the original design basis
 #' @param ridge Optional ridge when recomputing the held-out compressed matrix
-#' @return List with fields `v`, `alpha`, and `basis`
+#' @return List with fields `v`, `alpha`, `basis`, `loadings`, and a typed
+#'   `alignment_receipt` binding those values to their held-out training and
+#'   preprocessing provenance.
+#' @details Exact estimator replay currently supports pooled, non-CPCA fits.
+#'   JD and CPCA fits fail closed rather than substituting an ordinary pooled
+#'   eigensolve and mislabelling it as the fitted estimator.
 #' @keywords internal
 #' @export
 #' @examples
@@ -23,6 +28,7 @@
 #' }
 dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   stopifnot(inherits(fit, "dkge"), s >= 1L, s <= length(fit$Btil))
+  .dkge_assert_crossfit_estimator_supported(fit, "LOSO contrast estimation")
   q <- nrow(fit$U)
   stopifnot(length(contrasts) == q)
   .dkge_validate_kernel_contrasts(list(contrast1 = as.numeric(contrasts)), fit)
@@ -60,5 +66,38 @@ dkge_loso_contrast <- function(fit, s, contrasts, ridge = 0) {
   A_s <- t(Bmodel) %*% fit$K %*% Uminus
   v_s <- as.numeric(A_s %*% alpha)
 
-  list(v = v_s, alpha = alpha, basis = Uminus, evals = eig_minus$values)
+  preprocessing <- .dkge_alignment_preprocessing_receipt(
+    fit, s, Bts, voxel_weights = loader_weights
+  )
+  alignment_receipt <- .dkge_make_alignment_receipt(
+    fit = fit,
+    subject = s,
+    train_ids = train_ids,
+    basis = Uminus,
+    evals = eig_minus$values,
+    loadings = A_s,
+    preprocessing = preprocessing,
+    alphas = list(contrast1 = as.numeric(alpha)),
+    fold_index = s,
+    holdout = s,
+    subject_weights = ctx$subject_weights,
+    subject_weight_source = ctx$subject_weight_source,
+    method = "loso",
+    eligible = TRUE,
+    eligibility_reason = "exact_heldout_basis"
+  )
+
+  list(
+    v = v_s,
+    alpha = alpha,
+    basis = Uminus,
+    evals = eig_minus$values,
+    loadings = A_s,
+    training_subject_indices = train_ids,
+    training_subject_ids = alignment_receipt$training_subject_ids,
+    basis_id = alignment_receipt$basis_id,
+    basis_hash = alignment_receipt$basis_hash,
+    preprocessing = preprocessing,
+    alignment_receipt = alignment_receipt
+  )
 }

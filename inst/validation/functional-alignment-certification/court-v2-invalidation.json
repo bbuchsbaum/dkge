@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "recorded_at_utc": "2026-08-27T13:09:40Z",
+  "status": "invalidated_before_statistical_outputs",
+  "reason": "The frozen v2 court stopped because a required Sinkhorn solve did not meet its marginal tolerance within the frozen 5000-iteration ceiling.",
+  "v2": {
+    "protocol_id": "dkge-functional-alignment-certification-v2",
+    "protocol_path": "inst/validation/functional-alignment-certification/protocol-v2.json",
+    "protocol_sha256": "9ce7d46a4e2efd98f9319f157dd477a78125972e7a4e961aa772a8377541b25e",
+    "run_id": "court-0be19103609aa074-30c9732ef157",
+    "court_harness_bundle_sha256": "30c9732ef157fc6ba7c543865c3b6e0d3eb7c38ede5ed931a5026314704ce4b7",
+    "source_tree_sha256": "0be19103609aa074d2ff86c15c27f6f701442623800a10cbe599b01c141ae87f",
+    "test_validation_tree_sha256": "b143f64a3f6e1d17af0d1d30153eae4f885e800c7a1b63da3a3b8e5a466f539d",
+    "source_test_manifest_sha256": "868f9a4bedb92bb2e9d4e1be1fd9827d8dc01137bfeef127effba6aed8413cc6"
+  },
+  "historical_evidence": {
+    "source_test_manifest": {
+      "path": "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/source-test-manifest.json",
+      "sha256": "868f9a4bedb92bb2e9d4e1be1fd9827d8dc01137bfeef127effba6aed8413cc6"
+    },
+    "source_test_results": {
+      "path": "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/source-test-results.csv",
+      "sha256": "1eff5db2e88af04d3b59dc99824b756f310d78f1ce3513841fc877b53a73d141"
+    },
+    "source_test_session_info": {
+      "path": "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/session-info.txt",
+      "sha256": "7cda8fe33c3c20fb2eaf70959496c69c9bca21a7ea3e865dc88a54429f433b1a"
+    },
+    "failed_court_formal_budget": {
+      "path": "data-raw/functional-alignment-certification/court-0be19103609aa074-30c9732ef157/formal-budget.csv",
+      "sha256": "c553e88d2e8a4876063b92fab74d1ebc4aa88dc5feea3ac54fb2bee523034052"
+    }
+  },
+  "representative_failure": {
+    "cell": "baseline",
+    "sim": 9,
+    "seed": 7310009,
+    "arm": "geometry_only",
+    "subject_index": 6,
+    "condition_class": [
+      "dkge_alignment_numerical_error",
+      "dkge_input_error",
+      "dkge_error",
+      "error",
+      "condition"
+    ],
+    "condition_message": "Direct Sinkhorn mapper fit is numerically invalid: solver did not converge; marginal error exceeds tolerance.",
+    "warning_message": "Sinkhorn did not converge in 5000 iterations (marginal error 1.02e-04 > tol 1.00e-04); increase max_iter or epsilon.",
+    "epsilon": 0.080000000000000002,
+    "max_iter": 5000,
+    "tolerance": 0.0001,
+    "iterations": 5000,
+    "marginal_error": 0.00010240446925113833,
+    "converged": false
+  },
+  "fixture": {
+    "path": "inst/validation/functional-alignment-certification/court-v2-failing-sinkhorn-fixture.json",
+    "sha256": "628031d4361e734a5dbbf1860efe55c8081913882f47f914ee81fa0ec8aabb13"
+  },
+  "numerical_amendment_evidence": {
+    "max_iter_20000": {
+      "iterations": 7770,
+      "marginal_error": 0.000099996451252304386,
+      "converged": true,
+      "plan_sha256": "17bb021d67c2591ba7c1a69f8238246fc6d9b92f8ed3b4c2dcdfdb5dcd145c10",
+      "operator_sha256": "0904ccc7e6e16f2b677521c204f0a28cf28d141806853d54a1e53900198c6f80"
+    },
+    "max_iter_50000": {
+      "iterations": 7770,
+      "marginal_error": 0.000099996451252304386,
+      "converged": true,
+      "plan_sha256": "17bb021d67c2591ba7c1a69f8238246fc6d9b92f8ed3b4c2dcdfdb5dcd145c10",
+      "operator_sha256": "0904ccc7e6e16f2b677521c204f0a28cf28d141806853d54a1e53900198c6f80"
+    },
+    "plans_bitwise_identical": true,
+    "operators_bitwise_identical": true
+  },
+  "materialization": {
+    "statistical_outputs_materialized": false,
+    "materialized_files": ["data-raw/functional-alignment-certification/court-0be19103609aa074-30c9732ef157/formal-budget.csv"],
+    "formal_raw_present": false,
+    "formal_summary_present": false,
+    "formal_manifest_present": false,
+    "statistical_results_used_for_amendment": false
+  }
+}

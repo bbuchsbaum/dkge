@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "status": "superseded_after_execution_due_nonstatistical_package_check_repair",
+  "superseded_on": "2026-08-27",
+  "superseded_protocol": {
+    "protocol_id": "dkge-functional-alignment-certification-v7",
+    "path": "protocol-v7.json",
+    "sha256": "c6d3a282b967bacef0f7da76a9192389e624e91075eccd3de4de648386f28487",
+    "candidate_source_tree_sha256": "7bee7084bc4c66d29880efd3006c16d4118e38b08c3242127ab9d1b4e9f4a2b6"
+  },
+  "materialization": {
+    "independent_freeze_issued": true,
+    "source_test_suite_completed": true,
+    "court_analyzed_complete": true,
+    "known_warp_determinism_complete": true,
+    "statistical_outputs_materialized": true,
+    "statistical_results_observed": true,
+    "certification_collector_started": false,
+    "certification_record_materialized": false,
+    "statistical_results_used_to_change_successor_design": false
+  },
+  "retained_evidence": {
+    "source_test_directory": "data-raw/functional-alignment-certification/package-7bee7084bc4c66d2-5363594a0a95",
+    "source_test_bundle_sha256": "59cee5c123670d9db6bc51c9ae5cb18ecd00221d7d45007d7bb2862130f81984",
+    "court_directory": "data-raw/functional-alignment-certification/court-7bee7084bc4c66d2-56f8cf4b5eb3",
+    "court_bundle_sha256": "3f19285f4f707abb56147106824e2fc50c79b03e3f8228b0eb54d713d73abd63",
+    "known_warp_directory": "data-raw/functional-alignment-certification/known-warp-7bee7084bc4c-c6d3a282b967-71c6137c8826",
+    "known_warp_bundle_sha256": "326598b219a13ae4cadc7663bcd1d2e357e05a997e4dd7def9e52688ef1def1b",
+    "court_exact_oracle_gate": true,
+    "court_negative_control_promotion_gate": false,
+    "court_status": "complete_approximate_only_inferential_promotion_blocked",
+    "known_warp_role": "descriptive_only_no_promotion"
+  },
+  "package_check_discovery": {
+    "default_build_tarball_sha256_not_certified": "56d33163d384b4e7df1ee8b1a1898467e40b70493fb5c62ec43bc83af99c672a",
+    "closed_world_tarball_sha256_not_certified": "517ca26a38b5b3a24af7ac325f345db2dd378263130340bc4e309cce40083ec4",
+    "reason": "The exact built-tarball check exposed an undocumented deprecated medoid formal, an installed-package test that assumed repository-only historical evidence, a Sinkhorn test iteration budget below the package's fail-closed numerical requirement, and a vignette theme call that required albersdown 2.0 without declaring or gating that version. The default build also generated files outside the certified closed-world projection. No final certification record was collected.",
+    "vignette_policy": "The exact-tarball pkgdown receipt is the collectible executable-documentation gate. The closed-world tarball is built without generated vignette outputs and R CMD check uses --ignore-vignettes on that exact tarball."
+  },
+  "source_change": {
+    "candidate_source_tree_sha256_after_repair": "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400",
+    "package_runtime_change": false,
+    "reason": "The only R-tree change is a roxygen parameter declaration for the already-existing deprecated medoid formal; no executable R expression, C++ source, estimator, mapper, arm, seed, tolerance, or gate changed. The generated Rd topic now documents the formal. Test-only changes make repository evidence explicitly source-tree-only, keep non-oracle Sinkhorn contracts independent of T4transport, and raise one mapper regression's max_iter from 500 to 5000 so it satisfies the existing tolerance. Vignettes version-gate albersdown 2.0 styling and fall back safely on older allowed versions."
+  },
+  "successor": {
+    "protocol_id": "dkge-functional-alignment-certification-v8",
+    "path": "protocol.json",
+    "candidate_source_tree_sha256": "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400",
+    "protocol_change": "Candidate source binding, v7-to-v8 output-directory label, and explicit closed-world check policy only.",
+    "numerical_protocol_change": false,
+    "statistical_protocol_change": false
+  }
+}

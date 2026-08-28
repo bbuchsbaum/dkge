@@ -7,7 +7,8 @@
 dkge_inference_spec(
   B = 2000L,
   tail = c("two.sided", "greater", "less"),
-  center = c("mean", "median", "none")
+  center = c("mean", "median", "none"),
+  allow_approximate_alignment = FALSE
 )
 }
 \arguments{
@@ -15,7 +16,13 @@ dkge_inference_spec(
 
 \item{tail}{Tail of the test: "two.sided", "greater", or "less".}
 
-\item{center}{Centering method for permutations: "mean", "median", or "none".}
+\item{center}{Location statistic. Only \code{"mean"} is supported. Legacy
+\code{"median"} and \code{"none"} values now fail at construction because the
+downstream max-T statistic is a studentized mean.}
+
+\item{allow_approximate_alignment}{Logical; explicitly permit inference from
+an estimator or fitted alignment labelled \code{"approximate"}. The default is
+fail-closed; ineligible states are never permitted.}
 }
 \value{
 Object with class \code{dkge_inference_spec}.

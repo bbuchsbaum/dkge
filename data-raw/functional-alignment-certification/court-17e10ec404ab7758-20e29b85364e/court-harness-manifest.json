@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_sha256": "20e29b85364ec73df7a0ba218f984908d333b07e9f7905399ef269b6c3c18e2b",
+  "files": {
+    "data-raw/functional-alignment-certification/court-0be19103609aa074-30c9732ef157/formal-budget.csv": "c553e88d2e8a4876063b92fab74d1ebc4aa88dc5feea3ac54fb2bee523034052",
+    "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/session-info.txt": "7cda8fe33c3c20fb2eaf70959496c69c9bca21a7ea3e865dc88a54429f433b1a",
+    "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/source-test-manifest.json": "868f9a4bedb92bb2e9d4e1be1fd9827d8dc01137bfeef127effba6aed8413cc6",
+    "data-raw/functional-alignment-certification/package-0be19103609aa074-b143f64a3f6e/source-test-results.csv": "1eff5db2e88af04d3b59dc99824b756f310d78f1ce3513841fc877b53a73d141",
+    "inst/validation/functional-alignment-certification/analyze-court.R": "e4b042274fc691b8e1e6b6d0d705f8a56235d191c6ff38fff111258b21301fca",
+    "inst/validation/functional-alignment-certification/court-v2-failing-sinkhorn-fixture.json": "628031d4361e734a5dbbf1860efe55c8081913882f47f914ee81fa0ec8aabb13",
+    "inst/validation/functional-alignment-certification/court-v2-invalidation.json": "08e4ff679ebf34cb2d1a8e9408691920a4ae7cfc6ecb93b02e2b10ea8472866c",
+    "inst/validation/functional-alignment-certification/evidence-utils.R": "8defb262a6fcaf6f6036ead4629df5155a2c4094af49d2bf136ab0e5fc5796ea",
+    "inst/validation/functional-alignment-certification/protocol-v2.json": "9ce7d46a4e2efd98f9319f157dd477a78125972e7a4e961aa772a8377541b25e",
+    "inst/validation/functional-alignment-certification/protocol-v3-supersession.json": "9e29eeb8d58da95e30eafe4818361bad7b1e44b51dbac5ee074b46dce4be0f16",
+    "inst/validation/functional-alignment-certification/protocol-v3.json": "f2b843c630ec2166a152b306938b105e42a9e06203fc0cd50e3855d343d78dc7",
+    "inst/validation/functional-alignment-certification/protocol.json": "728a40762eeeca517760452d854cf2a870ba299cad05d77366f7afb43acd4cba",
+    "inst/validation/functional-alignment-certification/run-court.R": "f342247ea9239436d164579a59dc80569300a268154205024d8432d4cffd7de3",
+    "inst/validation/functional-alignment-court/court.R": "b899bb34d5045a1effdf55e3d664b161e33df3d26f22278d6156b0f66742db59"
+  }
+}

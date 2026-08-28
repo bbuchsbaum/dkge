@@ -39,8 +39,9 @@ max_abs <- function(M) max(abs(M))
   # subject betas (already row-standardized for the test)
   Btil <- lapply(seq_len(S), function(s) matrix(rnorm(q * P), q, P))
 
-  # positive subject weights
-  weights <- rexp(S) + 0.1
+  # positive raw subject scores and their full-cohort normalization
+  raw_weights <- rexp(S) + 0.1
+  weights <- raw_weights / mean(raw_weights)
 
   # per-subject contributions and pooled Chat
   contribs <- vector("list", S)
@@ -67,6 +68,9 @@ max_abs <- function(M) max(abs(M))
     Chat     = Chat,
     contribs = contribs,       # list of q×q
     weights  = weights,        # length S
+    subject_weight_scores_raw = raw_weights,
+    subject_weight_usable = rep(TRUE, S),
+    w_tau = 0,
     Btil     = Btil,           # list of q×P
     subject_ids = paste0("sub", seq_len(S))
   )
@@ -173,6 +177,18 @@ test_that(".dkge_contrast_kfold: with k=S equals LOSO and bases are valid", {
   U1 <- kres$metadata$fold_bases[[1]]
   alpha1 <- t(U1) %*% fit$K %*% c_tilde
   expect_lt(rel_err(a_fold[1, ], as.numeric(alpha1)), 1e-12)
+
+  receipts <- kres$metadata$alignment_receipts
+  expect_s3_class(receipts, "dkge_alignment_receipts")
+  expect_length(receipts, S)
+  for (s in seq_len(S)) {
+    receipt <- receipts[[fit$subject_ids[[s]]]]
+    expect_s3_class(receipt, "dkge_alignment_receipt")
+    expect_false(s %in% receipt$training_subject_indices)
+    expect_equal(kres$values$c1[[s]],
+                 as.numeric(receipt$loadings %*% receipt$alphas$c1),
+                 tolerance = 1e-12)
+  }
 })
 
 # ------------------------- 3) Equivariance: permuting a held-out subject's cluster order -------------------------
@@ -209,6 +225,10 @@ test_that(".dkge_contrast_kfold: permuting B_s columns only permutes that subjec
   v_base <- base$values$c1[[s0]]
   v_alt  <- alt$values$c1[[s0]]
   expect_lt(max_abs(v_alt - as.numeric(t(Pmat) %*% v_base)), 1e-12)
+  expect_lt(max_abs(
+    alt$metadata$alignment_receipts[[fit$subject_ids[[s0]]]]$loadings -
+      t(Pmat) %*% base$metadata$alignment_receipts[[fit$subject_ids[[s0]]]]$loadings
+  ), 1e-12)
 
   # Other subjects unaffected
   others <- setdiff(seq_len(S), s0)

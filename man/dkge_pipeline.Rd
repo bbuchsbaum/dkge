@@ -14,7 +14,7 @@ dkge_pipeline(
   spatial = NULL,
   contrasts,
   transport = NULL,
-  inference = list(),
+  inference = NULL,
   classification = NULL,
   method = c("loso", "kfold", "analytic"),
   ridge = 0,
@@ -40,9 +40,12 @@ expose a physical beta-column domain and therefore reject this argument.}
 
 \item{contrasts}{Contrast specification as accepted by \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 
-\item{transport}{Either a transport specification/service or \code{NULL}.}
+\item{transport}{Either a legacy descriptive transport specification/service
+or \code{NULL}. It cannot be combined with \code{inference}.}
 
-\item{inference}{Either an inference specification/service or \code{NULL}.}
+\item{inference}{Either an inference specification/service or \code{NULL} (the
+default). Same-data rank-truncated inference is approximate and requires an
+explicit \code{allow_approximate_alignment = TRUE} in the inference spec.}
 
 \item{classification}{Optional specification passed to \code{\link[=dkge_classify]{dkge_classify()}}.}
 
@@ -54,12 +57,15 @@ expose a physical beta-column domain and therefore reject this argument.}
 pipeline, or to \code{\link[=dkge_contrast]{dkge_contrast()}}.}
 }
 \value{
-List containing the fit, diagnostics, raw contrast values, transported
-maps (if requested), and inference results.
+List containing the fit, diagnostics, raw contrast values, optional
+legacy descriptive maps, and optional native-support inference results.
 }
 \description{
-Fits DKGE (if needed), computes cross-fitted contrasts, optionally transports
-them to a medoid parcellation, and performs sign-flip inference.
+Fits DKGE (if needed), computes cross-fitted contrasts, optionally produces
+legacy descriptive transport output, and performs native-support sign-flip
+inference. Pipeline transport and inference cannot be composed. Functional
+alignment inference uses \code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}} followed
+by \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}}.
 }
 \examples{
 # Simulate toy data

@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "status": "superseded_before_execution_due_candidate_source_drift",
+  "superseded_on": "2026-08-27",
+  "superseded_protocol": {
+    "protocol_id": "dkge-functional-alignment-certification-v5",
+    "path": "protocol-v5.json",
+    "sha256": "18b19d49ee853b62a0ae1a59e95c9d82f1b56207a5eb1c3e9cf097a81f576612",
+    "candidate_source_tree_sha256_before_drift": "1904edc4832aa028636fba9a57ef74497db62b6c9cee5cf38c917513499832e4"
+  },
+  "materialization": {
+    "independent_freeze_approved": false,
+    "source_test_suite_started": false,
+    "court_started": false,
+    "known_warp_power_started": false,
+    "statistical_outputs_materialized": false,
+    "statistical_results_used_for_supersession": false
+  },
+  "source_change": {
+    "candidate_source_tree_sha256_after_drift": "9054ca2e51ea11ea88cca447c15536194090d21732dd7c50f95462d7b98f3887",
+    "reason": "Independent pre-execution review found additional spatial estimator-identity boundaries after v5 was drafted: exact operator domain and edge metadata, mutable public specification validation, and fail-closed print/diagnostic audit surfaces. The fixes landed before any v5 executor or statistical result.",
+    "review_verdict": "FREEZE",
+    "reviewed_source_tree_sha256": "9054ca2e51ea11ea88cca447c15536194090d21732dd7c50f95462d7b98f3887",
+    "reviewed_test_validation_tree_sha256_before_protocol_tests": "dc5373ed9038bc89308124033e0c556abb9e0b1404f822530e8ae3308121ece8"
+  },
+  "successor": {
+    "protocol_id": "dkge-functional-alignment-certification-v6",
+    "path": "protocol.json",
+    "candidate_source_tree_sha256": "9054ca2e51ea11ea88cca447c15536194090d21732dd7c50f95462d7b98f3887",
+    "protocol_change": "Candidate source binding and v5-to-v6 output-directory label only.",
+    "numerical_protocol_change": false,
+    "statistical_protocol_change": false
+  }
+}

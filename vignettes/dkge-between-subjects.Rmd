@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include = FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -331,8 +333,10 @@ repair either method's assumptions or recover the unadjusted power gap.
 The DKGE-native path builds the subject representation first, then models
 subjects in that space rather than in raw feature space.
 
-This example starts from heterogeneous subject maps, fits DKGE, transports one
-contrast to a medoid subject, and models the result.
+This example starts from heterogeneous subject maps, fits DKGE, uses a separate
+simulated acquisition to identify functional correspondence, selects a
+reference support, and models the aligned subject rows. The reference is a
+display/support choice, not a privileged source of truth.
 
 ```{r dkge-fit}
 toy <- dkge_sim_toy(
@@ -354,6 +358,21 @@ toy$X_list <- lapply(toy$X_list, function(X) {
   X
 })
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
+names(centroids) <- toy$subject_ids
+
+alignment_toy <- dkge_sim_toy(
+  factors = list(condition = list(L = 2), phase = list(L = 2)),
+  active_terms = c("condition", "phase"),
+  S = 6,
+  P = c(4, 5, 3, 6, 4, 5),
+  snr = 6,
+  seed = 10
+)
+alignment_betas <- lapply(alignment_toy$B_list, function(B) {
+  rownames(B) <- effects
+  B
+})
+names(alignment_betas) <- toy$subject_ids
 
 fit_dkge <- dkge_fit(
   dkge_data(toy$B_list, designs = toy$X_list, subject_ids = toy$subject_ids),
@@ -363,22 +382,34 @@ fit_dkge <- dkge_fit(
 ```
 
 ```{r transported-target}
-transport <- dkge_transport_spec(
-  centroids = centroids,
-  medoid = 1L,
-  method = "sinkhorn",
-  epsilon = 0.1
-)
-
 contrast <- matrix(c(1, 0, 0), ncol = 1, dimnames = list(NULL, "condition"))
 rownames(contrast) <- effects
 
-transported_target <- dkge_make_target(
+contrast_result <- dkge_contrast(
+  fit_dkge, contrast, method = "loso", align = FALSE
+)
+alignment_features <- dkge_alignment_features(
   fit_dkge,
-  type = "transported_maps",
-  contrast = contrast,
-  transport = transport,
-  crossfit = "analytic"
+  contrast_result,
+  independent_betas = alignment_betas,
+  independent_data_hash = "between-subjects-independent-acquisition"
+)
+mapped <- dkge_transport_contrasts_to_reference(
+  fit_dkge,
+  contrast_result,
+  alignment_features = alignment_features,
+  centroids = centroids,
+  selection_method = "geometry_only",
+  mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.1)
+)
+transported_target <- dkge_make_target(
+  type = "matrix",
+  Y = mapped[["condition"]]$subj_values,
+  subject_ids = toy$subject_ids,
+  provenance = list(
+    source = "dkge_aligned_maps",
+    alignment_status = attr(mapped, "aligned_maps")$eligibility$status
+  )
 )
 
 dim(transported_target$Y)
@@ -432,8 +463,10 @@ is individually significant.
 ## Where to go next
 
 Use `type = "component_scores"` in `dkge_make_target()` when you want a compact
-latent target, and use `type = "transported_maps"` when spatial interpretation
-in a common map space matters. See `vignette("dkge-contrasts-inference")` for
+latent target. When spatial interpretation in a common map space matters, fit
+alignment explicitly and wrap its aligned rows as the matrix target, as above.
+See `vignette("dkge-functional-alignment")` for held-out functional reference
+selection and template fitting, and `vignette("dkge-contrasts-inference")` for
 within-subject contrast inference.
 For cohorts with partial or unbalanced effect grids, first see
 `vignette("dkge-partial-effect-spaces")` for the coverage, precision-weighting,

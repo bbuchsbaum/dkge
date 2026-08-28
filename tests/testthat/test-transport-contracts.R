@@ -20,7 +20,7 @@ test_that("joint plans and application operators obey distinct conservation laws
   expect_equal(sum(t(extensive) %*% c(2, 5)), 7, tolerance = 1e-14)
 })
 
-test_that("medoid transport preserves constants or total mass end to end", {
+test_that("reference transport preserves constants or total mass end to end", {
   A_list <- list(
     diag(2),
     rbind(c(1, 0), c(0, 1), c(1, 1))
@@ -31,21 +31,77 @@ test_that("medoid transport preserves constants or total mass end to end", {
   )
   sizes <- list(c(2, 1), c(1, 2, 3))
 
-  field <- dkge_transport_to_medoid_sinkhorn(
+  field <- dkge_transport_to_reference_sinkhorn(
     list(rep(7, 2), rep(7, 3)), A_list, centroids, sizes = sizes,
-    medoid = 2, value_type = "intensive", warm_start = FALSE
+    reference_subject = 2, value_type = "intensive", warm_start = FALSE
   )
   expect_equal(field$subj_values, matrix(7, 2, 3), tolerance = 2e-3)
-  expect_equal(field$operators[[2]], diag(3))
-  expect_equal(diag(field$plans[[2]]), sizes[[2]] / sum(sizes[[2]]))
+  expect_false(isTRUE(all.equal(field$operators[[2]], diag(3), tolerance = 0)))
+  expect_equal(diag(field$plans[[2]]), sizes[[2]] / sum(sizes[[2]]),
+               tolerance = 1e-4)
+  expect_true(field$diagnostics[[2]]$self_map)
+  expect_gt(field$diagnostics[[2]]$point_spread$mean_effective_points, 1)
+  expect_lte(field$diagnostics[[2]]$marginal_error,
+             field$diagnostics[[2]]$tolerance)
 
-  totals <- dkge_transport_to_medoid_sinkhorn(
+  totals <- dkge_transport_to_reference_sinkhorn(
     list(c(2, 5), c(1, 2, 4)), A_list, centroids, sizes = sizes,
-    medoid = 2, value_type = "extensive", warm_start = FALSE
+    reference_subject = 2, value_type = "extensive", warm_start = FALSE
   )
   expect_equal(sum(totals$subj_values[1, ]), 7, tolerance = 1e-10)
   expect_equal(rowSums(totals$operators[[1]]), rep(1, 2), tolerance = 1e-10)
-  expect_equal(totals$subj_values[2, ], c(1, 2, 4))
+  expect_equal(totals$subj_values[2, ], c(1, 2, 4), tolerance = 1e-4)
+})
+
+test_that("reference transport inherits an exact non-default cached mapper", {
+  A_list <- list(diag(2), diag(2))
+  centroids <- list(
+    rbind(c(0, 0, 0), c(2, 0, 0)),
+    rbind(c(0, 0, 0), c(2, 0, 0))
+  )
+  values <- list(c(1, 3), c(2, 4))
+  initial <- dkge_transport_to_reference_sinkhorn(
+    values, A_list, centroids,
+    reference_subject = 2L,
+    lambda_emb = 0.7,
+    lambda_spa = 0.1,
+    epsilon = 0.2,
+    warm_start = FALSE
+  )
+  reused <- dkge_transport_to_reference_sinkhorn(
+    values, A_list, centroids,
+    reference_subject = 2L,
+    transport_cache = initial$fitted_alignment
+  )
+  expect_identical(reused$fitted_alignment$mapper_spec,
+                   initial$fitted_alignment$mapper_spec)
+  expect_identical(reused$operators, initial$operators)
+  expect_true(all(vapply(reused$diagnostics, `[[`, logical(1),
+                         "reused_operator")))
+
+  expect_warning(
+    legacy <- dkge_transport_to_medoid_sinkhorn(
+      values, A_list, centroids,
+      medoid = 2L,
+      transport_cache = initial$fitted_alignment
+    ),
+    "deprecated"
+  )
+  expect_identical(legacy$fitted_alignment$mapper_spec,
+                   initial$fitted_alignment$mapper_spec)
+  expect_identical(legacy$operators, initial$operators)
+
+  expect_warning(
+    legacy_cpp <- dkge_transport_to_medoid_sinkhorn_cpp(
+      values, A_list, centroids,
+      medoid = 2L,
+      transport_cache = initial$fitted_alignment
+    ),
+    "deprecated"
+  )
+  expect_identical(legacy_cpp$fitted_alignment$mapper_spec,
+                   initial$fitted_alignment$mapper_spec)
+  expect_identical(legacy_cpp$operators, initial$operators)
 })
 
 test_that("Sinkhorn cache keys include every cost entry and reuse exact solves", {
@@ -116,6 +172,24 @@ test_that("default Sinkhorn budget converges on a deterministic representative p
   expect_true(diagnostics$converged)
   expect_lte(diagnostics$marginal_error, diagnostics$tolerance)
   expect_lte(diagnostics$iterations, 5000L)
+})
+
+test_that("direct Sinkhorn mapper fitting fails closed on non-convergence", {
+  set.seed(260868L)
+  source_feat <- matrix(rnorm(20), 5, 4)
+  target_feat <- matrix(rnorm(24), 6, 4)
+  expect_error(
+    suppressWarnings(fit_mapper(
+      dkge_mapper_spec(
+        "sinkhorn", epsilon = 1e-6, max_iter = 1L, tol = 1e-14,
+        warm_start = FALSE
+      ),
+      source_feat = source_feat,
+      target_feat = target_feat
+    )),
+    "numerically invalid|did not converge",
+    class = "dkge_alignment_numerical_error"
+  )
 })
 
 test_that("transport method aliases are honest and unsupported kNN fails early", {

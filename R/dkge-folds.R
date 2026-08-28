@@ -1,6 +1,40 @@
 # dkge-folds.R
 # Shared fold-building helpers for LOSO/K-fold cross-fitting.
 
+.dkge_crossfit_estimator_status <- function(fit) {
+  solver <- fit$solver %||% "pooled"
+  cpca_part <- fit$cpca$part %||% "none"
+  supported <- identical(solver, "pooled") && is.null(fit$cpca)
+  list(
+    supported = supported,
+    solver = solver,
+    cpca_part = cpca_part,
+    reason = if (supported) {
+      "pooled_non_cpca_estimator"
+    } else {
+      paste0("solver='", solver, "', cpca_part='", cpca_part, "'")
+    }
+  )
+}
+
+.dkge_assert_crossfit_estimator_supported <- function(
+    fit, operation = "DKGE cross-fitting") {
+  status <- .dkge_crossfit_estimator_status(fit)
+  if (!isTRUE(status$supported)) {
+    .dkge_abort(
+      paste0(
+        operation, " currently supports only `solver = 'pooled'` with ",
+        "`cpca_part = 'none'`; this fit uses ", status$reason, ". ",
+        "Replaying CPCA or joint diagonalization inside every training fold ",
+        "is not implemented, so an ordinary pooled eigensolve cannot be ",
+        "labelled an exact held-out estimator."
+      ),
+      "dkge_crossfit_estimator_error"
+    )
+  }
+  invisible(status)
+}
+
 .dkge_subject_loader_weights <- function(loader_weights, Bts) {
   if (is.null(loader_weights) || length(loader_weights) == 0L) {
     return(NULL)
@@ -10,6 +44,303 @@
     w_s <- rep(w_s, length.out = ncol(Bts))
   }
   w_s
+}
+
+#' Stable identity for inferential alignment payloads
+#'
+#' Alignment receipts deliberately hash the serialized numerical object, rather
+#' than a rounded summary, because a cache or transport plan is only reusable
+#' when it was fitted from exactly the same structural input.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_object_hash <- function(x) {
+  digest::digest(x, algo = "xxhash64", serialize = TRUE)
+}
+
+#' Diagnose a fold basis at the fitted truncation boundary
+#'
+#' @keywords internal
+#' @noRd
+.dkge_fold_basis_diagnostics <- function(U, evals, K, reference = NULL) {
+  r <- ncol(U)
+  scale <- max(abs(evals), 0, na.rm = TRUE)
+  gap <- if (length(evals) > r) {
+    as.numeric(evals[[r]] - evals[[r + 1L]])
+  } else {
+    NA_real_
+  }
+  out <- list(
+    rank = r,
+    eigengap = gap,
+    relative_eigengap = if (is.finite(gap) && scale > 0) gap / scale else NA_real_,
+    k_orthonormality_error = norm(crossprod(U, K %*% U) - diag(r), "F"),
+    procrustes_residual = NA_real_,
+    principal_cosines = NULL
+  )
+  if (!is.null(reference)) {
+    pr <- dkge_procrustes_K(reference, U, K, allow_reflection = TRUE)
+    delta <- pr$U_aligned - reference
+    out$procrustes_residual <- sqrt(max(0, sum(delta * (K %*% delta)))) /
+      sqrt(max(1, r))
+    out$principal_cosines <- pr$cosines
+  }
+  out
+}
+
+#' Record the exact transformations used to construct one held-out loading
+#'
+#' @keywords internal
+#' @noRd
+.dkge_alignment_preprocessing_receipt <- function(fit, s, Btil,
+                                                   voxel_weights = NULL) {
+  P <- ncol(Btil)
+  cluster_order <- colnames(Btil)
+  if (is.null(cluster_order)) cluster_order <- seq_len(P)
+  op <- .dkge_fit_spatial_operator(fit, subject = s, n_cols = P)
+  spatial_payload <- if (is.null(op)) {
+    list(active = FALSE, lambda = 0, fingerprint = NULL,
+         domain_mode = "identity", operator_binding = NULL)
+  } else {
+    list(
+      active = isTRUE(op$lambda > 0),
+      lambda = as.numeric(op$lambda),
+      fingerprint = op$fingerprint %||% .dkge_object_hash(
+        list(L = op$L, lambda = op$lambda, domain = op$domain)
+      ),
+      operator_binding = .dkge_spatial_operator_binding(op),
+      domain_mode = op$domain_mode %||% NA_character_,
+      subject_id = op$subject_id %||% NA_character_
+    )
+  }
+  list(
+    schema_version = "2.1.0",
+    standardized_beta_source = "fit$Btil",
+    effect_scaling = fit$effect_scaling %||% "legacy_or_unspecified",
+    ruler_hash = .dkge_object_hash(fit$R %||% diag(nrow(Btil))),
+    beta_hash = .dkge_object_hash(Btil),
+    voxel_weights_applied = !is.null(voxel_weights),
+    voxel_weights = if (is.null(voxel_weights)) NULL else as.numeric(voxel_weights),
+    voxel_weights_hash = .dkge_object_hash(
+      if (is.null(voxel_weights)) NULL else as.numeric(voxel_weights)
+    ),
+    spatial = spatial_payload,
+    effect_separability = list(
+      transform_verified = (fit$effect_scaling %||% "legacy_or_unspecified") %in%
+        c("pooled_design", "none"),
+      assumption_status = "declared_model_assumption_not_empirically_verified",
+      effect_transform = if (identical(fit$effect_scaling, "pooled_design")) {
+        "R_transpose"
+      } else if (identical(fit$effect_scaling, "none")) {
+        "identity"
+      } else {
+        "unverified"
+      },
+      parcel_transform = paste0(
+        "effect-invariant column scaling",
+        if (isTRUE(spatial_payload$active)) {
+          " followed by an effect-invariant linear spatial solve"
+        } else {
+          ""
+        }
+      ),
+      covariance_contract = paste0(
+        "Cov(Bmodel[,p], Bmodel[,q]) = rho[p,q] * ",
+        "R' Lambda R after the recorded parcel-only transforms"
+      )
+    ),
+    cluster_order = cluster_order,
+    cluster_order_hash = .dkge_object_hash(cluster_order),
+    n_clusters = P
+  )
+}
+
+#' Construct one typed fold-safe alignment receipt
+#'
+#' @keywords internal
+#' @noRd
+.dkge_make_alignment_receipt <- function(fit, subject, train_ids, basis,
+                                         evals, loadings, preprocessing,
+                                         alphas, fold_index = subject,
+                                         holdout = subject,
+                                         subject_weights = NULL,
+                                         subject_weight_source = NULL,
+                                         method = "loso",
+                                         reference_basis = NULL,
+                                         eligible = TRUE,
+                                         eligibility_reason = "exact_heldout_basis") {
+  S <- length(fit$Btil)
+  subject_ids <- as.character(fit$subject_ids %||% seq_len(S))
+  basis_hash <- .dkge_object_hash(basis)
+  # The projector is invariant to an admissible right rotation of the basis.
+  subspace_projector <- basis %*% crossprod(basis, fit$K)
+  train_ids <- as.integer(train_ids)
+  sw <- if (is.null(subject_weights)) NULL else as.numeric(subject_weights)
+  if (!is.null(sw)) names(sw) <- subject_ids[train_ids]
+  structure(
+    list(
+      schema_version = "1.0.0",
+      estimation_method = method,
+      subject_index = as.integer(subject),
+      subject_id = subject_ids[[subject]],
+      fold_index = as.integer(fold_index),
+      holdout_subject_indices = as.integer(holdout),
+      holdout_subject_ids = subject_ids[holdout],
+      training_subject_indices = train_ids,
+      training_subject_ids = subject_ids[train_ids],
+      basis = basis,
+      basis_id = paste0("dkge-basis-", basis_hash),
+      basis_hash = basis_hash,
+      subspace_hash = .dkge_object_hash(subspace_projector),
+      eigenvalues = as.numeric(evals),
+      basis_diagnostics = .dkge_fold_basis_diagnostics(
+        basis, evals, fit$K, reference = reference_basis
+      ),
+      loadings = loadings,
+      loadings_hash = .dkge_object_hash(loadings),
+      alphas = alphas,
+      preprocessing = preprocessing,
+      training_subject_weights = sw,
+      subject_weight_source = subject_weight_source,
+      inference = list(
+        eligible = isTRUE(eligible),
+        reason = eligibility_reason,
+        own_subject_excluded_from_basis = subject %in% holdout &&
+          !subject %in% train_ids,
+        adaptive_group_alignment_exact = FALSE,
+        statement = paste0(
+          "Cross-fitting excludes the subject from its estimation basis; ",
+          "it does not by itself make adaptive group alignment finite-sample exact."
+        )
+      )
+    ),
+    class = c("dkge_alignment_receipt", "list")
+  )
+}
+
+#' Assemble one receipt per held-out subject from cached fold loaders
+#'
+#' @keywords internal
+#' @noRd
+.dkge_alignment_receipts_from_folds <- function(fit, fold_info, alphas,
+                                                method = c("loso", "kfold")) {
+  method <- match.arg(method)
+  S <- length(fit$Btil)
+  subject_ids <- as.character(fit$subject_ids %||% seq_len(S))
+  contrast_names <- names(alphas) %||% paste0("contrast", seq_along(alphas))
+  receipts <- vector("list", S)
+  names(receipts) <- subject_ids
+  reference_basis <- fold_info$consensus$U %||% NULL
+
+  for (fold in fold_info$folds) {
+    train_ids <- fold$training_subjects
+    for (s in fold$subjects) {
+      if (!is.null(receipts[[s]])) {
+        .dkge_abort(
+          sprintf("Subject '%s' occurs in more than one held-out fold.",
+                  subject_ids[[s]]),
+          "dkge_alignment_receipt_error"
+        )
+      }
+      loader <- fold$loaders[[as.character(s)]]
+      alpha_list <- lapply(seq_along(alphas), function(i) {
+        as.numeric(alphas[[i]][fold$index, , drop = TRUE])
+      })
+      names(alpha_list) <- contrast_names
+      receipts[[s]] <- .dkge_make_alignment_receipt(
+        fit = fit,
+        subject = s,
+        train_ids = train_ids,
+        basis = fold$basis,
+        evals = fold$evals,
+        loadings = loader$A,
+        preprocessing = loader$preprocessing,
+        alphas = alpha_list,
+        fold_index = fold$index,
+        holdout = fold$subjects,
+        subject_weights = fold$training_subject_weights,
+        subject_weight_source = fold$subject_weight_source,
+        method = method,
+        reference_basis = reference_basis,
+        eligible = TRUE,
+        eligibility_reason = "exact_heldout_basis"
+      )
+    }
+  }
+  if (any(vapply(receipts, is.null, logical(1)))) {
+    missing <- subject_ids[vapply(receipts, is.null, logical(1))]
+    .dkge_abort(
+      sprintf("No fold-safe alignment receipt exists for subject(s): %s.",
+              paste(missing, collapse = ", ")),
+      "dkge_alignment_receipt_error"
+    )
+  }
+  structure(
+    receipts,
+    class = c("dkge_alignment_receipts", "list"),
+    estimation_method = method,
+    inferential_contract = paste0(
+      "Each loading uses a basis fitted without its held-out subject. ",
+      "Adaptive correspondence remains a separate inferential choice."
+    )
+  )
+}
+
+#' Merge per-contrast alignment receipts when a method evaluates subjects
+#' separately for each contrast
+#'
+#' @keywords internal
+#' @noRd
+.dkge_merge_alignment_receipt_sets <- function(receipt_sets, contrast_names,
+                                               method = "analytic") {
+  if (!length(receipt_sets)) {
+    return(structure(list(), class = c("dkge_alignment_receipts", "list"),
+                     estimation_method = method))
+  }
+  S <- length(receipt_sets[[1]])
+  out <- vector("list", S)
+  subject_names <- names(receipt_sets[[1]])
+  if (is.null(subject_names)) subject_names <- as.character(seq_len(S))
+  names(out) <- subject_names
+  for (s in seq_len(S)) {
+    candidates <- lapply(receipt_sets, `[[`, s)
+    base <- candidates[[1]]
+    same_structural_source <- length(unique(vapply(
+      candidates,
+      function(x) paste(x$basis_hash, x$loadings_hash,
+                         x$preprocessing$beta_hash, sep = ":"),
+      character(1)
+    ))) == 1L
+    alpha_list <- lapply(candidates, function(x) as.numeric(x$alphas[[1]]))
+    names(alpha_list) <- contrast_names
+    base$alphas <- alpha_list
+    base$per_contrast_estimation_method <- vapply(
+      candidates, `[[`, character(1), "estimation_method"
+    )
+    names(base$per_contrast_estimation_method) <- contrast_names
+    if (!same_structural_source) {
+      base$inference$eligible <- FALSE
+      base$inference$reason <- "contrast_specific_alignment_sources_disagree"
+    } else if (!all(vapply(candidates, function(x) {
+      isTRUE(x$inference$eligible)
+    }, logical(1)))) {
+      base$inference$eligible <- FALSE
+      reasons <- unique(vapply(candidates, function(x) {
+        x$inference$reason %||% "unknown"
+      }, character(1)))
+      base$inference$reason <- paste(reasons, collapse = ";")
+    }
+    out[[s]] <- base
+  }
+  structure(
+    out,
+    class = c("dkge_alignment_receipts", "list"),
+    estimation_method = method,
+    inferential_contract = paste0(
+      "Analytic receipts are descriptive for adaptive functional alignment ",
+      "unless every subject-contrast path used an exact held-out fallback."
+    )
+  )
 }
 
 #' Build held-out fold bases and loaders
@@ -50,6 +381,7 @@
                                    missingness = c("none", "rescale", "mask", "shrink"),
                                    miss_args = list()) {
   stopifnot(inherits(fit, "dkge"))
+  .dkge_assert_crossfit_estimator_supported(fit, "Fold-basis construction")
   stopifnot(is.list(assignments), length(assignments) >= 1)
   loader_scope <- match.arg(loader_scope)
   missingness <- match.arg(missingness)
@@ -135,7 +467,8 @@
       Bts <- fit$Btil[[s]]
       w_s <- .dkge_subject_loader_weights(loader_weights, Bts)
       if (!is.null(loader_weights) && length(loader_weights) != ncol(Bts)) {
-        if (length(loader_weights) > 1L) {
+        if (length(loader_weights) > 1L &&
+            diff(range(as.numeric(loader_weights), finite = TRUE)) > 1e-12) {
           recycled_subjects <- unique(c(recycled_subjects, subject_ids[s]))
         }
       }
@@ -151,7 +484,10 @@
         subject = s,
         A = A_s,
         Y = Y_s,
-        n_cluster = ncol(Bts)
+        n_cluster = ncol(Bts),
+        preprocessing = .dkge_alignment_preprocessing_receipt(
+          fit, s, Bts, voxel_weights = w_s
+        )
       )
     }
 
@@ -172,7 +508,11 @@
       w_adapt = weight_eval$adapt,
       w_total = weight_eval$total,
       w_total_subject = weight_eval$total_subject,
-      weight_spec = weight_spec
+      weight_spec = weight_spec,
+      subject_weights = ctx$subject_weights,
+      subject_weight_scores_raw = ctx$subject_weight_scores_raw,
+      subject_weight_usable = ctx$subject_weight_usable,
+      subject_weight_source = ctx$subject_weight_source
     )
     fold_pair_counts[fold_idx] <- list(ctx$pair_counts)
   }
@@ -202,6 +542,7 @@
     folds[[fold_idx]] <- list(
       index = fold_idx,
       subjects = assignments[[fold_idx]],
+      training_subjects = setdiff(seq_len(S), assignments[[fold_idx]]),
       basis = fold_bases[[fold_idx]],
       basis_aligned = aligned_bases[[fold_idx]],
       rotation = rotations[[fold_idx]],
@@ -211,6 +552,16 @@
       U_minus = fold_bases[[fold_idx]],
       D_minus = fold_evals[[fold_idx]],
       pair_counts = fold_pair_counts[[fold_idx]],
+      training_subject_weights = {
+        sw <- fold_weight_info[[fold_idx]]$subject_weights
+        if (!is.null(sw)) {
+          names(sw) <- as.character(setdiff(seq_len(S), assignments[[fold_idx]]))
+        }
+        sw
+      },
+      subject_weight_scores_raw = fold_weight_info[[fold_idx]]$subject_weight_scores_raw,
+      subject_weight_usable = fold_weight_info[[fold_idx]]$subject_weight_usable,
+      subject_weight_source = fold_weight_info[[fold_idx]]$subject_weight_source,
       missingness = missingness,
       miss_args = miss_args
     )
@@ -240,7 +591,7 @@
 #'
 #' For `mode = "cell"` classification, every subject is projected onto the
 #' global `fit$U` rather than fold-specific leave-one-out bases.  This helper
-#' produces the same list structure as [.dkge_build_fold_bases()] so that the
+#' produces the same list structure as `.dkge_build_fold_bases()` so that the
 #' downstream CV loop can use it without modification.
 #'
 #' @param fit dkge object.
@@ -351,6 +702,97 @@
   same(fit_weights, voxel_weights_train)
 }
 
+#' Recover and normalize subject weights for one training fold
+#'
+#' New fits retain raw per-subject scores. Older fits retain only the final
+#' full-cohort normalized and shrunken weights; because raw score scale cancels
+#' on renormalization, those scores can be recovered up to scale whenever
+#' `w_tau < 1`. At `w_tau = 1`, equal usable-subject weights are exact.
+#'
+#' @keywords internal
+#' @noRd
+.dkge_fold_subject_weights <- function(fit, train_ids, obs_masks_all = NULL) {
+  S <- length(fit$Btil)
+  if (!is.numeric(train_ids) || anyNA(train_ids) ||
+      any(train_ids != as.integer(train_ids)) ||
+      any(train_ids < 1L) || any(train_ids > S)) {
+    .dkge_abort("`train_ids` must contain valid subject indices.",
+                "dkge_fold_subject_index_error")
+  }
+  train_ids <- as.integer(train_ids)
+  tau <- fit$w_tau %||% 0
+
+  raw <- fit$subject_weight_scores_raw
+  usable <- fit$subject_weight_usable
+  source <- "stored_raw"
+
+  if (is.null(raw) || length(raw) != S ||
+      is.null(usable) || length(usable) != S) {
+    final_obj <- fit$weights %||% numeric()
+    final <- if (is.numeric(final_obj) && is.atomic(final_obj)) {
+      as.numeric(final_obj)
+    } else {
+      numeric()
+    }
+    if (length(final) == S && all(is.finite(final)) && all(final >= 0)) {
+      usable <- final > 0
+      raw <- numeric(S)
+      if (tau < 1) {
+        raw[usable] <- pmax((final[usable] - tau) / (1 - tau), 0)
+      } else {
+        raw[usable] <- 1
+      }
+      source <- "legacy_inversion"
+    }
+  }
+
+  if (!is.null(raw) && length(raw) == S &&
+      !is.null(usable) && length(usable) == S && any(usable[train_ids])) {
+    weights <- .dkge_normalize_subject_weights(
+      raw[train_ids], usable[train_ids], tau
+    )
+    return(list(
+      weights = weights,
+      raw = as.numeric(raw[train_ids]),
+      usable = as.logical(usable[train_ids]),
+      source = source
+    ))
+  }
+
+  # Last-resort compatibility for malformed/minimal legacy fixtures. Recompute
+  # from the training data when the necessary inputs exist; otherwise retain
+  # the historical explicit equal-weight fallback.
+  can_recompute <- !is.null(fit$Khalf) && length(fit$Omega) == S &&
+    !is.null(fit$w_method)
+  if (can_recompute) {
+    spatial_train <- if (is.null(fit$spatial)) {
+      vector("list", length(train_ids))
+    } else {
+      (fit$spatial$operators %||% vector("list", S))[train_ids]
+    }
+    score_info <- .dkge_subject_weight_scores(
+      fit$Btil[train_ids], fit$Omega[train_ids], fit$Khalf, fit$w_method,
+      obs_masks = if (is.null(obs_masks_all)) NULL else obs_masks_all[train_ids],
+      spatial_list = spatial_train
+    )
+    return(list(
+      weights = .dkge_normalize_subject_weights(
+        score_info$raw, score_info$usable, tau
+      ),
+      raw = score_info$raw,
+      usable = score_info$usable,
+      source = "recomputed"
+    ))
+  }
+
+  list(
+    weights = rep(1, length(train_ids)),
+    raw = rep(1, length(train_ids)),
+    usable = rep(TRUE, length(train_ids)),
+    source = "equal_fallback"
+  )
+}
+
 #' @noRd
 .dkge_fold_weight_context <- function(fit,
                                       train_ids,
@@ -368,7 +810,18 @@
   kernel_payload <- .dkge_weight_kernel_payload(fit$K, fit$kernel_info)
   B_train <- fit$Btil[train_ids]
   Omega_train <- fit$Omega[train_ids]
-  subject_weights <- fit$weights[train_ids]
+  subject_ids <- fit$subject_ids %||% seq_along(fit$Btil)
+  obs_masks_all <- .dkge_obs_masks_from_provenance(fit$provenance,
+                                                   subject_ids,
+                                                   nrow(fit$K))
+  if (is.null(obs_masks_all)) {
+    obs_masks_all <- replicate(length(fit$Btil), rep(TRUE, nrow(fit$K)),
+                               simplify = FALSE)
+  }
+  subject_weight_info <- .dkge_fold_subject_weights(
+    fit, train_ids, obs_masks_all = obs_masks_all
+  )
+  subject_weights <- subject_weight_info$weights
   equal_weight_fallback <- !length(subject_weights) ||
     any(!is.finite(subject_weights)) || sum(subject_weights) <= 0
   if (equal_weight_fallback) {
@@ -394,6 +847,7 @@
   if (!equal_weight_fallback &&
       .dkge_voxel_weights_match(fit, voxel_weights_train, train_ids)) {
     pool <- .dkge_repool_fit(fit, indices = train_ids,
+                             subject_weights = subject_weights,
                              missingness = missingness, miss_args = miss_args)
     if (!is.null(pool)) {
       Chat <- pool$Chat
@@ -406,6 +860,10 @@
       return(list(
         Chat = Chat,
         weights = weight_eval,
+        subject_weights = subject_weights,
+        subject_weight_scores_raw = subject_weight_info$raw,
+        subject_weight_usable = subject_weight_info$usable,
+        subject_weight_source = subject_weight_info$source,
         train_ids = train_ids,
         weight_spec = weight_spec,
         pair_counts = pool$pair_counts,
@@ -417,14 +875,6 @@
     }
   }
 
-  subject_ids <- fit$subject_ids %||% seq_along(fit$Btil)
-  obs_masks_all <- .dkge_obs_masks_from_provenance(fit$provenance,
-                                                   subject_ids,
-                                                   nrow(fit$K))
-  if (is.null(obs_masks_all)) {
-    obs_masks_all <- replicate(length(fit$Btil), rep(TRUE, nrow(fit$K)),
-                               simplify = FALSE)
-  }
   obs_masks_train <- obs_masks_all[train_ids]
 
   Braw_all <- fit$Braw
@@ -481,6 +931,10 @@
   list(
     Chat = Chat,
     weights = weight_eval,
+    subject_weights = subject_weights,
+    subject_weight_scores_raw = subject_weight_info$raw,
+    subject_weight_usable = subject_weight_info$usable,
+    subject_weight_source = subject_weight_info$source,
     train_ids = train_ids,
     weight_spec = weight_spec,
     pair_counts = accum$pair_counts,

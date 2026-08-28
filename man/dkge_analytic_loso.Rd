@@ -36,33 +36,37 @@ eigenvalue perturbation theory, avoiding full eigen-decomposition per subject.
 This function implements the first-order eigenvalue perturbation approximation
 described in the paper. For the held-out compressed covariance:
 
-Chat^(-s) ~ Chat - w_s S_s
+Delta_s = Chat^(-s) - Chat
 
-The eigenvalues and eigenvectors are updated using:
+where \code{Chat^(-s)} is formed with the same fold-local subject-weight
+normalization and shrinkage as exact LOSO. The eigenvalues and eigenvectors
+are updated using:
 \itemize{
-\item deltalambda_j = -w_s v_j^T S_s v_j (eigenvalue shift)
-\item deltav_j = -w_s Sum over k!=j of (v_k^T S_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
+\item deltalambda_j = v_j^T Delta_s v_j (eigenvalue shift)
+\item deltav_j = Sum over k!=j of (v_k^T Delta_s v_j)/(lambda_j - lambda_k) v_k (eigenvector rotation)
 }
 
-This avoids the O(q^3) eigen-decomposition, requiring only O(q^2r) operations
-where r is the rank. The approximation is accurate when:
+After the exact fold moment has been constructed, this replaces its O(q^3)
+eigen-decomposition with an O(q^2 r) first-order eigensystem update, where r
+is the rank. The approximation is accurate when:
 \enumerate{
-\item Subject weights w_s are small (no single subject dominates)
+\item The fold perturbation norm is small relative to the fitted eigensystem
 \item Eigenvalue gaps are large (well-separated components)
-\item The perturbation S_s is not aligned with transition regions
+\item The resulting first-order rotation coefficients remain below the gate
 }
 
 When these conditions are violated (detected via condition number or
 eigenvalue gaps), the function can fall back to full eigen-decomposition.
 
 Fallback diagnostics use a closed reason vocabulary with this precedence:
-\code{solver_not_pooled}, \code{pair_normalized_pooling},
-\code{covariance_aware_moment}, \code{nonuniform_voxel_weights},
+\code{pair_normalized_pooling}, \code{covariance_aware_moment}, \code{nonuniform_voxel_weights},
 \code{missing_full_decomposition}, \code{dimension_mismatch}, \code{eigengap}, and
 \code{perturbation_magnitude}. Structural reasons are checked before numerical
 perturbation thresholds, so a large perturbation cannot mask the more basic
-fact that the leave-one-out covariance is not a linear subtraction from the
-fitted pooled moment. A successful approximation reports \code{analytic}.
+fact that the fitted moment does not support this approximation. The
+q-by-q perturbation itself is exact for the fold pooling contract; only its
+eigensystem update is first-order. A successful approximation reports
+\code{analytic}.
 }
 \examples{
 \donttest{

@@ -31,8 +31,9 @@ fold covariances when they are not stored in \code{clf}.}
 \item{to_vox}{Logical; when \code{TRUE} and a decoder is available in \code{renderer},
 a dense voxel map is produced.}
 
-\item{inference}{One of \code{"none"}, \code{"signflip"}, or \code{"parametric"} specifying the
-group inference routine applied to anchor maps.}
+\item{inference}{Must be \code{"none"}. Legacy \code{"signflip"} and \code{"parametric"}
+modes are retired; use operator-bound aligned maps from
+\code{\link[=dkge_transport_contrasts_to_reference]{dkge_transport_contrasts_to_reference()}} with \code{\link[=dkge_infer_aligned]{dkge_infer_aligned()}}.}
 }
 \value{
 List mirroring \code{\link[=dkge_info_map_from_classifier]{dkge_info_map_from_classifier()}} with
@@ -51,11 +52,11 @@ toy <- dkge_sim_toy(
 )
 fit <- dkge(toy$B_list, toy$X_list, kernel = toy$K, rank = 2)
 centroids <- lapply(toy$B_list, function(B) matrix(rnorm(ncol(B) * 3), ncol(B), 3))
-renderer <- dkge_build_renderer(fit,
+renderer <- suppressWarnings(dkge_build_renderer(fit,
                                 centroids = centroids,
                                 anchor_xyz = matrix(rnorm(20 * 3), 20, 3),
                                 anchor_n = 20,
-                                anchor_method = "sample")
+                                anchor_method = "sample"))
 y <- factor(rep(c("class1", "class2"), length.out = length(fit$Btil)))
 folds <- dkge_define_folds(fit, type = "custom",
                            assignments = list(c(1, 2), c(3, 4), c(5, 6)))

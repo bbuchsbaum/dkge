@@ -67,3 +67,32 @@ test_that("analytic metadata includes diagnostic detail", {
   expect_s3_class(detail, "data.frame")
   expect_true(all(c("contrast", "subject", "reason") %in% names(detail)))
 })
+
+test_that("analytic perturbation uses the exact fold-normalized MFA moment", {
+  toy <- make_analytic_toy(S = 7, q = 4, P = 18, T = 60, seed = 2027)
+  scales <- c(0.15, 0.35, 0.7, 1, 1.8, 3.2, 5.5)
+  toy$betas <- Map(`*`, toy$betas, scales)
+  fit <- dkge_fit(
+    toy$betas, toy$designs, K = toy$K, rank = 2,
+    w_method = "mfa_sigma1", w_tau = 0.3, effect_scaling = "none"
+  )
+  heldout <- 3L
+  train <- setdiff(seq_along(fit$Btil), heldout)
+
+  target <- dkge:::.dkge_analytic_fold_perturbation(fit, heldout)
+  oracle <- dkge:::.dkge_repool_fit(fit, indices = train)
+  expect_equal(target$fold_chat, oracle$Chat, tolerance = 1e-12)
+  expect_equal(fit$Chat + target$delta, oracle$Chat, tolerance = 1e-12)
+  expect_equal(
+    target$subject_weights,
+    dkge:::.dkge_fold_subject_weights(fit, train)$weights,
+    tolerance = 1e-14
+  )
+
+  historical <- fit$Chat -
+    fit$weights[[heldout]] * fit$contribs[[heldout]]
+  scalar <- sum(historical * oracle$Chat) / sum(historical^2)
+  relative_mismatch <- norm(scalar * historical - oracle$Chat, "F") /
+    norm(oracle$Chat, "F")
+  expect_gt(relative_mismatch, 1e-6)
+})

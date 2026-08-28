@@ -39,8 +39,11 @@ max_abs <- function(M) max(abs(M))
   # Subject betas (already "row-standardized" for the test)
   Btil <- lapply(seq_len(S), function(s) matrix(rnorm(q * P), q, P))
 
-  # Positive weights
-  weights <- rexp(S) + 0.1
+  # Positive raw subject-weight scores. The fitted weights are normalized over
+  # the full cohort, while each LOSO fold must renormalize these raw scores over
+  # its own training cohort.
+  raw_weights <- rexp(S) + 0.1
+  weights <- raw_weights / mean(raw_weights)
 
   # Per-subject contributions and pooled Chat
   contribs <- vector("list", S)
@@ -74,6 +77,9 @@ max_abs <- function(M) max(abs(M))
     Chat             = Chat,
     contribs         = contribs,
     weights          = weights,
+    subject_weight_scores_raw = raw_weights,
+    subject_weight_usable = rep(TRUE, S),
+    w_tau             = 0,
     Btil             = Btil,
     subject_ids      = paste0("sub", seq_len(S)),
     rank             = r
@@ -98,7 +104,10 @@ test_that("LOSO: matches manual pipeline; basis is K-orthonormal; depends on R (
   out <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = 0)
 
   # ---- Manual recomputation (should match function) ----
-  Chat_minus <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
+  train_ids <- setdiff(seq_len(length(fit$Btil)), s)
+  fold_weights <- fit$subject_weight_scores_raw[train_ids]
+  fold_weights <- fold_weights / mean(fold_weights)
+  Chat_minus <- Reduce(`+`, Map(`*`, fit$contribs[train_ids], fold_weights))
   Chat_minus <- (Chat_minus + t(Chat_minus)) / 2
   egm <- eigen(Chat_minus, symmetric = TRUE)
   Uminus <- fit$Kihalf %*% egm$vectors[, seq_len(r), drop = FALSE]
@@ -114,6 +123,14 @@ test_that("LOSO: matches manual pipeline; basis is K-orthonormal; depends on R (
   expect_lt(rel_err(out$v, v_manual), 1e-12)
   expect_lt(max_abs(out$basis - Uminus), 1e-10)
   expect_lt(rel_err(out$alpha, alpha), 1e-12)
+  expect_equal(out$loadings, A_s, tolerance = 1e-12)
+  expect_equal(out$v, as.numeric(out$loadings %*% out$alpha), tolerance = 1e-12)
+  expect_s3_class(out$alignment_receipt, "dkge_alignment_receipt")
+  expect_identical(out$alignment_receipt$training_subject_indices, train_ids)
+  expect_identical(out$alignment_receipt$subject_index, s)
+  expect_identical(out$alignment_receipt$basis_hash,
+                   dkge:::.dkge_object_hash(out$basis))
+  expect_true(isFALSE(out$alignment_receipt$inference$adaptive_group_alignment_exact))
 
   # K-orthonormality: Uminus^T K Uminus = I_r
   G <- t(out$basis) %*% fit$K %*% out$basis
@@ -138,7 +155,10 @@ test_that("LOSO: ridge shifts eigenvalues by +ridge and preserves K-orthonormali
   out1 <- dkge_loso_contrast(fit, s = s, contrasts = cvec, ridge = ridge)
 
   # Independent check: eigenvalues of (Chat_minus + ridge * I)
-  Chat_minus <- fit$Chat - fit$weights[s] * fit$contribs[[s]]
+  train_ids <- setdiff(seq_len(length(fit$Btil)), s)
+  fold_weights <- fit$subject_weight_scores_raw[train_ids]
+  fold_weights <- fold_weights / mean(fold_weights)
+  Chat_minus <- Reduce(`+`, Map(`*`, fit$contribs[train_ids], fold_weights))
   Chat_minus <- (Chat_minus + t(Chat_minus)) / 2
   lam0 <- eigen(Chat_minus, symmetric = TRUE)$values
   lam1 <- eigen(Chat_minus + ridge * diag(q), symmetric = TRUE)$values
@@ -180,6 +200,11 @@ test_that("LOSO: permuting columns of B_s permutes v_s identically; basis & alph
   # Basis & alpha equality
   expect_lt(max_abs(out2$basis - out$basis), 1e-10)
   expect_lt(rel_err(out2$alpha, out$alpha), 1e-12)
+  expect_lt(max_abs(out2$loadings - t(Pi) %*% out$loadings), 1e-12)
+  expected_order <- colnames(fit2$Btil[[s]])
+  if (is.null(expected_order)) expected_order <- seq_len(P)
+  expect_identical(out2$alignment_receipt$preprocessing$cluster_order,
+                   expected_order)
 
   # v is permuted in the same way (right-multiplication by Pi permutes columns => v permutes)
   expect_lt(max_abs(out2$v - as.numeric(t(Pi) %*% out$v)), 1e-12)

@@ -12,7 +12,8 @@ dkge_signflip_maxT(
 )
 }
 \arguments{
-\item{Y}{SxQ matrix of subject values on the medoid parcellation (rows=subjects, cols=clusters)}
+\item{Y}{SxQ matrix of aligned subject values on one identified reference
+support (rows = subjects, columns = support locations).}
 
 \item{B}{number of sign-flip permutations}
 
@@ -32,6 +33,8 @@ defaults).
 \description{
 Computes cluster-wise one-sample t-statistics across subjects on transported
 values (SxQ matrix), and calibrates p-values by the max-|t| distribution under
-random subject-wise sign flips (symmetric null). This does not re-estimate DKGE,
-leveraging LOSO independence of each subject's value.
+random subject-wise sign flips (symmetric null). The helper conditions on the
+supplied matrix and is exact only when that complete matrix is jointly
+row-sign invariant. It does not establish that an upstream adaptive DKGE
+estimator has this property.
 }

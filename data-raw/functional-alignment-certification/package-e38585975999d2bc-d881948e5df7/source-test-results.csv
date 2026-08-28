@@ -1,0 +1,856 @@
+"file","context","test","nb","failed","skipped","error","warning","user","system","real","passed"
+"test-advanced-fit-representation.R","advanced-fit-representation","audit mismatch probes no longer advertise a false block factor",10,0,FALSE,FALSE,0,0.484,0.004,0.489000000000001,10
+"test-advanced-fit-representation.R","advanced-fit-representation","q-space loadings and contrasts follow an independent raw-beta oracle",4,0,FALSE,FALSE,0,0.0499999999999998,0.002,0.0510000000000002,4
+"test-advanced-fit-representation.R","advanced-fit-representation","q-space fits support audited downstream consumers or fail closed",9,0,FALSE,FALSE,0,0.147,0.003,0.152000000000001,9
+"test-advanced-fit-representation.R","advanced-fit-representation","cell classification consumes q-space representations",3,0,FALSE,FALSE,0,0.0340000000000003,0.001,0.0340000000000007,3
+"test-aggregate.R","aggregate","aggregate target builds reusable group-by-cell means",8,0,FALSE,FALSE,0,0.106,0.002,0.108000000000001,8
+"test-aggregate.R","aggregate","aggregate target rejects missing values in row-defining variables",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.00600000000000023,2
+"test-aggregate.R","aggregate","aggregate target validates and reorders cell rows by cell IDs",3,0,FALSE,FALSE,0,0.0129999999999999,0.001,0.0139999999999993,3
+"test-aggregate.R","aggregate","aggregate target matches cells and features by name",10,0,FALSE,FALSE,0,0.0169999999999999,0.002,0.0190000000000001,10
+"test-aggregate.R","aggregate","vectorised aggregation reproduces the row-scan implementation",19,0,FALSE,FALSE,0,0.289,0.011,0.302000000000001,19
+"test-aggregate.R","aggregate","bootstrap draws record the resampled subjects with duplicates",5,0,FALSE,FALSE,0,0.0250000000000004,0.002,0.0269999999999992,5
+"test-aggregate.R","aggregate","aggregate fit reproduces the SVD of K^{1/2} Y",4,0,FALSE,FALSE,0,0.00599999999999934,0.001,0.00799999999999912,4
+"test-aggregate.R","aggregate","aggregate fit preserves the null space of a rank-deficient kernel",7,0,FALSE,FALSE,0,0.0380000000000003,0.002,0.0409999999999986,7
+"test-aggregate.R","aggregate","aggregate fit matches kernels on whichever dimnames are present",4,0,FALSE,FALSE,0,0.00900000000000034,0,0.00999999999999979,4
+"test-aggregate.R","aggregate","aggregate statistics are signed and match a direct SVD",14,0,FALSE,FALSE,0,0.0259999999999998,0.003,0.0280000000000005,14
+"test-aggregate.R","aggregate","aggregate alignment handles signs, swaps, ties, and truncation",11,0,FALSE,FALSE,0,0.0300000000000002,0.003,0.0339999999999989,11
+"test-aggregate.R","aggregate","alignment rotates singular values with the components",10,0,FALSE,FALSE,0,0.0189999999999992,0.003,0.0199999999999996,10
+"test-aggregate.R","aggregate","aggregate alignment requires matching row identities",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000000011,1
+"test-aggregate.R","aggregate","aggregate permutation and bootstrap resample subjects and refit",20,0,FALSE,FALSE,0,0.0800000000000001,0.004,0.0839999999999996,20
+"test-aggregate.R","aggregate","rank > 1 permutation and bootstrap track the reference components",11,0,FALSE,FALSE,0,0.127000000000001,0.004,0.132000000000001,11
+"test-aggregate.R","aggregate","stratified bootstrap resamples within strata",5,0,FALSE,FALSE,0,0.00800000000000001,0.00199999999999995,0.00899999999999856,5
+"test-aggregate.R","aggregate","singleton strata reproduce the observed fit and are warned about",5,0,FALSE,FALSE,0,0.0230000000000006,0.001,0.0249999999999986,5
+"test-aggregate.R","aggregate","bootstrap interval on a null contrast can contain zero",6,0,FALSE,FALSE,0,0.159000000000001,0.002,0.169,6
+"test-aggregate.R","aggregate","aggregate permutation is calibrated at smoke scale under a null",10,0,FALSE,FALSE,0,0.101999999999999,0.004,0.105,10
+"test-aggregate.R","aggregate","bootstrap alignment stays on the reference of a strong-signal fit",1,0,FALSE,FALSE,0,0.024,0.001,0.0250000000000004,1
+"test-aggregate.R","aggregate","permutation null statistic equals the unaligned refit",7,0,FALSE,FALSE,0,0.04,0.003,0.0429999999999993,7
+"test-aggregate.R","aggregate","permutation type-I at rank 3 is nominal",3,0,FALSE,FALSE,0,27.126,0.117,27.304,3
+"test-aggregate.R","aggregate","permutation rejects group_vars that would change the row set",3,0,FALSE,FALSE,0,0.0110000000000028,0.001,0.0120000000000005,3
+"test-aggregate.R","aggregate","feature bootstrap ratios are NA when the bootstrap SD collapses",5,0,FALSE,FALSE,0,0.00600000000000023,0.002,0.0069999999999979,5
+"test-aggregate.R","aggregate","parallel resampling reproduces the serial result",4,0,FALSE,FALSE,0,0.103000000000002,0.003,0.106999999999999,4
+"test-aggregate.R","aggregate","aggregate row IDs cannot be made ambiguous by a label separator",9,0,FALSE,FALSE,0,0.0280000000000058,0.002,0.029999999999994,9
+"test-aggregate.R","aggregate","bootstrap strata must nest within the target's group variables",7,0,FALSE,FALSE,0,0.0240000000000009,0.001,0.0260000000000034,7
+"test-aggregate.R","aggregate","misspelled resampling arguments are errors, not silent no-ops",6,0,FALSE,FALSE,0,0.0210000000000008,0.001,0.0230000000000032,6
+"test-aggregate.R","aggregate","resampling workers capture only what a draw needs",13,0,FALSE,FALSE,0,0.0230000000000032,0.002,0.0259999999999962,13
+"test-aggregate.R","aggregate","shared seed and B helpers behave identically in both layers",11,0,FALSE,FALSE,0,0.0319999999999965,0.002,0.0339999999999989,11
+"test-aggregate.R","aggregate","basic bootstrap interval is the reflection of the percentile interval",5,0,FALSE,FALSE,0,0.164999999999999,0.002,0.167000000000002,5
+"test-aggregate.R","aggregate","near-tie is flagged at a relative singular-value gap of 5e-4",2,0,FALSE,FALSE,0,0.00399999999999778,0.001,0.00400000000000489,2
+"test-aggregate.R","aggregate","aggregate fit messages when rank exceeds the matrix dimensions",2,0,FALSE,FALSE,0,0.00399999999999778,0,0.00399999999999778,2
+"test-aggregate.R","aggregate","values names absent from subject_data are warned about",1,0,FALSE,FALSE,0,0.00399999999999778,0.001,0.00399999999999778,1
+"test-aggregate.R","aggregate","all-blank contrast names are treated as unnamed",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00400000000000489,1
+"test-aggregate.R","aggregate","component is ignored with a warning for function statistics",2,0,FALSE,FALSE,0,0.00999999999999801,0,0.0109999999999957,2
+"test-align-effects.R","align-effects","dkge_align_effects completes union via Nystr<U+00F6>m",11,0,FALSE,FALSE,0,0.0240000000000009,0.003,0.0260000000000034,11
+"test-align-effects.R","align-effects","shrinkage and intersection modes behave as expected",6,0,FALSE,FALSE,0,0.0609999999999999,0.002,0.0640000000000001,6
+"test-align-effects.R","align-effects","fold-aware alignment keeps training/test separation",6,0,FALSE,FALSE,0,0.0110000000000028,0.001,0.0130000000000052,6
+"test-alignment-api-lifecycle.R","alignment-api-lifecycle","strict preparation chooses an auditable reference channel",8,0,FALSE,FALSE,0,0.786000000000001,1.286,0.946999999999996,8
+"test-alignment-api-lifecycle.R","alignment-api-lifecycle","reference contrast workflow requires typed features and reuses exact cache",6,0,FALSE,FALSE,0,0.207000000000001,0.857,0.309999999999995,6
+"test-alignment-api-lifecycle.R","alignment-api-lifecycle","descriptive reference scoring is opt-in and ineligible",3,0,FALSE,FALSE,0,0.137999999999998,0.829,0.241999999999997,3
+"test-alignment-api-lifecycle.R","alignment-api-lifecycle","failed Sinkhorn preparation and calibration fail closed",2,0,FALSE,FALSE,0,0.305,0.00300000000000011,0.306999999999995,2
+"test-alignment-api-lifecycle.R","alignment-api-lifecycle","legacy medoid contrast API warns and preserves its safe result",3,0,FALSE,FALSE,0,0.209000000000003,0.532,0.273999999999994,3
+"test-alignment-api-lifecycle.R","alignment-api-lifecycle","legacy paint API is a deprecation-compatible shim",2,0,FALSE,FALSE,0,0.0229999999999961,0.00100000000000033,0.0240000000000009,2
+"test-alignment-contract.R","alignment-contract","support and functional template are distinct immutable objects",7,0,FALSE,FALSE,0,0.00800000000000267,0.00100000000000033,0.00900000000000034,7
+"test-alignment-contract.R","alignment-contract","eligibility combines feature and estimator provenance",6,0,FALSE,FALSE,0,0.0069999999999979,0.00199999999999978,0.00800000000000267,6
+"test-alignment-contract.R","alignment-contract","fitted alignment owns typed contract objects and solution hashes",7,0,FALSE,FALSE,0,0.0230000000000032,0.00100000000000033,0.0240000000000009,7
+"test-alignment-contract.R","alignment-contract","aligned maps preserve rows, support, estimand, and explicit weights",16,0,FALSE,FALSE,0,0.0549999999999997,0.00399999999999956,0.0589999999999975,16
+"test-alignment-contract.R","alignment-contract","subject IDs control cyclic row and typed-source ordering exactly",6,0,FALSE,FALSE,0,0.0280000000000058,0.00100000000000033,0.0300000000000011,6
+"test-alignment-contract.R","alignment-contract","aligned inference fails closed and labels any approximate override",13,0,FALSE,FALSE,0,0.0720000000000027,0.00199999999999978,0.0749999999999957,13
+"test-alignment-contract.R","alignment-contract","renderer consumes aligned values and never owns correspondence",5,0,FALSE,FALSE,0,0.0309999999999988,0.000999999999999446,0.0320000000000036,5
+"test-alignment-features.R","alignment-features","compact image(K) coordinates preserve full-root feature geometry",4,0,FALSE,FALSE,0,0.0069999999999979,0.00199999999999978,0.00900000000000034,4
+"test-alignment-features.R","alignment-features","conditional residualization matches a hand-matrix oracle",5,0,FALSE,FALSE,0,0.0130000000000052,0.00100000000000033,0.0149999999999935,5
+"test-alignment-features.R","alignment-features","the separable oracle covers every cross-parcel covariance",3,0,FALSE,FALSE,0,0.0330000000000013,0.00100000000000033,0.0350000000000037,3
+"test-alignment-features.R","alignment-features","residualization is equivariant to feature scale and permutation",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999999446,0.007000000000005,3
+"test-alignment-features.R","alignment-features","production residual features retain rank(K) minus family span",9,0,FALSE,FALSE,0,0.0420000000000016,0.00199999999999978,0.0439999999999969,9
+"test-alignment-features.R","alignment-features","independent is the default verified feature source",11,0,FALSE,FALSE,0,0.0480000000000018,0.00199999999999978,0.0499999999999972,11
+"test-alignment-features.R","alignment-features","typed over-ranked features flow into transport without loose matrices",6,0,FALSE,FALSE,0,0.0339999999999989,0.00200000000000067,0.0350000000000037,6
+"test-alignment-features.R","alignment-features","feature objects fail closed under mutation and mixed contrast provenance",2,0,FALSE,FALSE,0,0.017000000000003,0,0.017000000000003,2
+"test-alignment-features.R","alignment-features","feature provenance binds the exact estimator and rejects CPCA or JD",20,0,FALSE,FALSE,0,0.0459999999999994,0.00300000000000011,0.0489999999999995,20
+"test-alignment-features.R","alignment-features","rank, condition, energy, and covariance gates fail closed",7,0,FALSE,FALSE,0,0.0220000000000056,0,0.0219999999999985,7
+"test-alignment-features.R","alignment-features","missing covariance and unverified preprocessing are hard failures",2,0,FALSE,FALSE,0,0.0329999999999941,0,0.0330000000000013,2
+"test-alignment-features.R","alignment-features","kernel-image residualization has a bounded moderate-size runtime",2,0,FALSE,FALSE,0,0.161000000000001,0.000999999999999446,0.161999999999999,2
+"test-alignment-gauge-invariance.R","alignment-gauge-invariance","transport is invariant to the arbitrary rotation of a shared basis",2,0,FALSE,FALSE,0,0.387999999999998,2.371,0.666999999999994,2
+"test-alignment-gauge-invariance.R","alignment-gauge-invariance","a rotated basis is the same subspace, and a fold basis is not",3,0,FALSE,FALSE,0,0.0320000000000036,0.000999999999999446,0.0330000000000013,3
+"test-alignment-leakage-scaling.R","alignment-leakage-scaling","geometry-only alignment is exactly invariant to the sign action",1,0,FALSE,FALSE,0,0.699999999999996,4.18,1.186,1
+"test-alignment-leakage-scaling.R","alignment-leakage-scaling","residualised features are less contrast-sensitive than full-fit loadings",2,0,FALSE,FALSE,0,7.37,42.39,12.385,2
+"test-alignment-operator-symmetry.R","alignment-operator-symmetry","reference and non-reference subjects use one mapper policy",5,0,FALSE,FALSE,0,0.558999999999997,2.683,0.759999999999998,5
+"test-alignment-operator-symmetry.R","alignment-operator-symmetry","effective point spread and amplitude diagnostics are auditable",63,0,FALSE,FALSE,0,0.609999999999999,2.694,0.812000000000005,63
+"test-alignment-operator-symmetry.R","alignment-operator-symmetry","point-spread epsilon calibration is opt-in and fully recorded",11,0,FALSE,FALSE,0,0.0210000000000008,0.0200000000000031,0.0260000000000034,11
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO rejects a solver it cannot replay by fold",1,0,FALSE,FALSE,0,0.00199999999999534,0.000999999999997669,0.00300000000000011,1
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO falls back when voxel_weights are nonuniform",2,0,FALSE,FALSE,0,0.0629999999999953,0.000999999999997669,0.0640000000000001,2
+"test-analytic-fallback.R","analytic-fallback","per-subject voxel profiles cannot hide behind a uniform average",3,0,FALSE,FALSE,0,0.00799999999999557,0.00100000000000477,0.00900000000000034,3
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO does NOT fall back when voxel_weights are uniform",1,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00399999999999778,1
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO falls back when eig_vectors_full is NULL",2,0,FALSE,FALSE,0,0.0110000000000028,0.000999999999997669,0.0120000000000005,2
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO falls back when eig_values_full is NULL",2,0,FALSE,FALSE,0,0.00500000000000256,0.00100000000000477,0.00600000000000023,2
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO falls back when perturbation magnitude is large",5,0,FALSE,FALSE,0,0.00800000000000267,0.000999999999997669,0.00900000000000034,5
+"test-analytic-fallback.R","analytic-fallback","structural fallback precedence and vocabulary are stable",4,0,FALSE,FALSE,0,0.107999999999997,0.000999999999997669,0.109000000000002,4
+"test-analytic-fallback.R","analytic-fallback","Analytic matches iterative LOSO within tolerance for stable input",5,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.00600000000000023,5
+"test-analytic-fallback.R","analytic-fallback","Analytic LOSO populates diagnostic information",7,0,FALSE,FALSE,0,0.00800000000000267,0.00199999999999534,0.00900000000000034,7
+"test-analytic.R","analytic","dkge_analytic_loso closely matches exact LOSO when perturbations are small",2,0,FALSE,FALSE,0,0.00799999999999557,0,0.00999999999999801,2
+"test-analytic.R","analytic","dkge_analytic_loso falls back to exact LOSO when tolerance is large",3,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0100000000000051,3
+"test-analytic.R","analytic","dkge_contrast analytic metadata records fallback usage",3,0,FALSE,FALSE,0,0.027000000000001,0.000999999999997669,0.0279999999999987,3
+"test-analytic.R","analytic","analytic metadata includes diagnostic detail",2,0,FALSE,FALSE,0,0.0570000000000022,0.00100000000000477,0.056999999999995,2
+"test-analytic.R","analytic","analytic perturbation uses the exact fold-normalized MFA moment",4,0,FALSE,FALSE,0,0.00900000000000034,0.00199999999999534,0.0109999999999957,4
+"test-anchor-fit.R","anchor-fit","dkge_fit_from_kernels reproduces pooled kernel",12,0,FALSE,FALSE,0,0.0259999999999962,0.00199999999999534,0.0289999999999964,12
+"test-anchor-fit.R","anchor-fit","kernel fits preserve labelled values across reordered non-syntactic effects",18,0,FALSE,FALSE,0,0.0790000000000006,0.00399999999999778,0.0830000000000055,18
+"test-anchor-fit.R","anchor-fit","kernel fits reject ambiguous effect and subject labels",3,0,FALSE,FALSE,0,0.007000000000005,0.000999999999997669,0.0069999999999979,3
+"test-anchor-fit.R","anchor-fit","dkpp_select_anchors returns valid indices",3,0,FALSE,FALSE,0,0.00500000000000256,0.00100000000000477,0.00600000000000023,3
+"test-anchor-fit.R","anchor-fit","dkge_build_anchor_kernels outputs PSD aligned kernels",9,0,FALSE,FALSE,0,0.0150000000000006,0.00199999999999534,0.0159999999999982,9
+"test-anchor-fit.R","anchor-fit","dkge_anchor_fit stores provenance and diagnostics",12,0,FALSE,FALSE,0,0.105999999999995,0.00300000000000011,0.108999999999995,12
+"test-anchor-fit.R","anchor-fit","dkge_pipeline accepts anchor input",3,0,FALSE,FALSE,0,0.0289999999999964,0.000999999999997669,0.029999999999994,3
+"test-anchor-fit.R","anchor-fit","anchor fit handles fully shared item sets",5,0,FALSE,FALSE,0,0.0159999999999982,0.00200000000000244,0.0169999999999959,5
+"test-anchor-fit.R","anchor-fit","dkge_build_anchor_kernels accepts dkge_folds assignments",7,0,FALSE,FALSE,0,0.007000000000005,0.000999999999997669,0.00799999999999557,7
+"test-anchor-fit.R","anchor-fit","anchor fit preserves PSD with subject subgroups sharing items",3,0,FALSE,FALSE,0,0.00900000000000034,0,0.00900000000000034,3
+"test-anchor-fit.R","anchor-fit","anchor classification requires explicit weight targets",1,0,FALSE,FALSE,0,0.0459999999999994,0,0.0459999999999994,1
+"test-anchor-targets.R","anchor-targets","dkge_anchor_targets_from_prototypes builds class matrix",2,0,FALSE,FALSE,0,0.00999999999999801,0.000999999999997669,0.0110000000000028,2
+"test-anchor-targets.R","anchor-targets","dkge_anchor_targets_from_directions accepts list or matrix",2,0,FALSE,FALSE,0,0.00800000000000267,0.00100000000000477,0.00999999999999801,2
+"test-as-data-frame.R","as-data-frame","as.data.frame.dkge_contrasts returns tidy rows",3,0,FALSE,FALSE,0,0.0180000000000007,0.000999999999997669,0.0200000000000031,3
+"test-as-data-frame.R","as-data-frame","as.data.frame.dkge_inference summarises statistics",3,0,FALSE,FALSE,0,0.0180000000000007,0.000999999999997669,0.019999999999996,3
+"test-backproj.R","backproj","dkge_transport_loadings_to_medoid self-transports the reference",6,0,FALSE,FALSE,0,0.146000000000001,0.918999999999997,0.263000000000005,6
+"test-backproj.R","backproj","dkge_transport_contrasts_to_medoid returns aligned subject maps",7,0,FALSE,FALSE,0,0.234000000000002,1.35400000000001,0.418999999999997,7
+"test-backproj.R","backproj","dkge_transport_loadings_to_medoid falls back to stored loadings",1,0,FALSE,FALSE,0,0.017000000000003,0.000999999999997669,0.0180000000000007,1
+"test-between-permute-null.R","between-permute-null","Between-subject permutation p-values are approximately Uniform(0,1) under the null (quick)",9,0,FALSE,FALSE,0,0.950000000000003,0.00800000000000267,0.960000000000001,9
+"test-between-permute-null.R","between-permute-null","Between-subject permutation p-values remain calibrated in a longer null run (opt-in)",1,0,TRUE,FALSE,0,0.000999999999997669,0.000999999999997669,0.000999999999997669,0
+"test-between-rotation-evidence.R","between-rotation-evidence","frozen rotation calibration evidence is complete and decision-stable",31,0,FALSE,FALSE,0,0.054000000000002,0.00900000000000034,0.0649999999999977,31
+"test-between-rotation.R","between-rotation","Haar draws are orthogonal and isolated seeds are reproducible",9,0,FALSE,FALSE,0,0.0139999999999958,0.00199999999999534,0.0159999999999982,9
+"test-between-rotation.R","between-rotation","compressed rotation matches dense reconstruction invariants",5,0,FALSE,FALSE,0,0.0100000000000051,0.00200000000000244,0.0110000000000028,5
+"test-between-rotation.R","between-rotation","compressed rotation null matches an explicit dense refit loop",7,0,FALSE,FALSE,0,0.054000000000002,0.00200000000000244,0.0570000000000022,7
+"test-between-rotation.R","between-rotation","rotation supports feature inference and records assumptions",7,0,FALSE,FALSE,0,0.0189999999999984,0.00199999999999534,0.0210000000000008,7
+"test-between-rotation.R","between-rotation","rotation setup uses a compact residual basis",1,0,FALSE,FALSE,0,0.00300000000000011,0.00100000000000477,0.00300000000000011,1
+"test-between-rotation.R","between-rotation","seeded rotation restores caller RNG and is reproducible",3,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999997669,0.00900000000000034,3
+"test-between-rotation.R","between-rotation","rotation serial and parallel paths are bit-identical",4,0,FALSE,FALSE,0,0.0329999999999941,0.00200000000000244,0.0349999999999966,4
+"test-between-rotation.R","between-rotation","rotation fails closed outside its validated scope",4,0,FALSE,FALSE,0,0.0109999999999957,0,0.0120000000000005,4
+"test-between-rotation.R","between-rotation","rotation detects a strong rank-one interaction",1,0,FALSE,FALSE,0,0.0189999999999984,0.000999999999997669,0.0189999999999984,1
+"test-between-rotation.R","between-rotation","two-term serial and parallel nulls match and term 2 is order-independent",7,0,TRUE,FALSE,0,0.147999999999996,0.00300000000000011,0.159999999999997,6
+"test-between-rotation.R","between-rotation","rotation accepts a factor with an unused block level",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00500000000000256,1
+"test-between-rotation.R","between-rotation","rotation energy guard uses machine-eps scaling",3,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.0069999999999979,3
+"test-between-rrr.R","between-rrr","dkge_subject_model builds formula metadata",5,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00800000000000267,5
+"test-between-rrr.R","between-rrr","dkge_make_target wraps matrix targets with metadata",4,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999997669,0.00499999999999545,4
+"test-between-rrr.R","between-rrr","dkge_between_rrr recovers rank-one formula-structured signal",5,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999997669,0.00900000000000034,5
+"test-between-rrr.R","between-rrr","dkge_between_rrr supports target-derived feature weights",3,0,FALSE,FALSE,0,0.00500000000000256,0.00100000000000477,0.00600000000000023,3
+"test-between-rrr.R","between-rrr","full-rank dkge_between_rrr matches weighted least squares oracle",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00200000000000244,2
+"test-between-rrr.R","between-rrr","RRR residual SSE decreases monotonically with rank",3,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00399999999999778,3
+"test-between-rrr.R","between-rrr","between RRR is invariant to subject order when IDs align",1,0,FALSE,FALSE,0,0.00200000000000244,0,0.00300000000000011,1
+"test-between-rrr.R","between-rrr","between RRR exposes fitted, residual, and prediction methods",6,0,FALSE,FALSE,0,0.0069999999999979,0.00200000000000244,0.00900000000000034,6
+"test-between-rrr.R","between-rrr","zero target feature weights mask features before weighted fitting",2,0,FALSE,FALSE,0,0.00199999999999534,0.000999999999997669,0.00300000000000011,2
+"test-between-rrr.R","between-rrr","matrix design inputs without column names get stable term metadata",2,0,FALSE,FALSE,0,0.00300000000000011,0.00100000000000477,0.00400000000000489,2
+"test-between-rrr.R","between-rrr","between layer rejects adversarial invalid inputs clearly",3,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00800000000000267,3
+"test-between-rrr.R","between-rrr","randomized RRR fuzz checks finite outputs and rank monotonicity",18,0,FALSE,FALSE,0,0.0180000000000007,0.00300000000000011,0.0210000000000008,18
+"test-between-rrr.R","between-rrr","between RRR handles representative S much smaller than feature count",3,0,FALSE,FALSE,0,0.00399999999999778,0,0.00499999999999545,3
+"test-between-rrr.R","between-rrr","near-collinear but full-rank between-subject designs remain numerically stable",4,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00600000000000023,4
+"test-between-rrr.R","between-rrr","component score target derives subject-by-component matrix from DKGE fit",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.00699999999999079,3
+"test-between-rrr.R","between-rrr","transported map targets integrate with between-subject RRR and permutation inference",8,0,FALSE,FALSE,0,0.0399999999999991,0.0450000000000017,0.0480000000000018,8
+"test-between-rrr.R","between-rrr","dkge_between_permute returns formula-aware term tests",5,0,FALSE,FALSE,0,0.0109999999999957,0.000999999999997669,0.0109999999999957,5
+"test-between-rrr.R","between-rrr","dkge_between_permute returns featurewise maxT inference and term maps",5,0,FALSE,FALSE,0,0.007000000000005,0.00200000000000244,0.00799999999999557,5
+"test-between-rrr.R","between-rrr","dkge_between_permute is reproducible with a seed",2,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.007000000000005,2
+"test-between-rrr.R","between-rrr","dkge_between_permute restores caller RNG state after seeded run",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00499999999999545,1
+"test-between-rrr.R","between-rrr","singleton exchangeability blocks make Freedman-Lane null deterministic",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00600000000000023,2
+"test-between-rrr.R","between-rrr","dkge_between_rrr stores and validates rank tolerance",3,0,FALSE,FALSE,0,0.00600000000000023,0,0.00600000000000023,3
+"test-between-rrr.R","between-rrr","dkge_between_permute finds the shared resampling helpers",3,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00600000000000023,3
+"test-between-rrr.R","between-rrr","dkge_subject_model drops NA rows and keeps matching IDs",3,0,FALSE,FALSE,0,0.00400000000000489,0.00100000000000477,0.00500000000000966,3
+"test-between-rrr.R","between-rrr","terms = NULL skips declared nuisance terms",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.007000000000005,2
+"test-block-factor-validation.R","block-factor-validation","near-rank-deficient block factors pass only within measured backward error",14,0,FALSE,FALSE,0,0.0069999999999979,0.00100000000000477,0.00799999999999557,14
+"test-block-factor-validation.R","block-factor-validation","conditioning alone never excuses unrelated loading corruption",4,0,FALSE,FALSE,0,0.00500000000000256,0,0.00499999999999545,4
+"test-block-factor-validation.R","block-factor-validation","block-factor validation rejects malformed and invalid factors",8,0,FALSE,FALSE,0,0.017000000000003,0,0.0169999999999959,8
+"test-bootstrap.R","bootstrap","Poisson multiplier replicates condition on a non-empty cohort",4,0,FALSE,FALSE,0,0.0109999999999957,0.000999999999997669,0.0120000000000005,4
+"test-bootstrap.R","bootstrap","projection bootstrap returns expected shapes",7,0,FALSE,FALSE,0,0.0320000000000036,0.00200000000000244,0.0339999999999918,7
+"test-bootstrap.R","bootstrap","q-space bootstrap runs with cached transport",9,0,FALSE,FALSE,0,0.0579999999999998,0.00199999999999534,0.0600000000000023,9
+"test-bootstrap.R","bootstrap","q-space bootstrap separates moment and equal-subject group weights",8,0,FALSE,FALSE,0,0.0110000000000028,0.00200000000000244,0.0130000000000052,8
+"test-bootstrap.R","bootstrap","q-space bootstrap rejects a typed cache bound to another fit",11,0,FALSE,FALSE,0,0.0410000000000039,0.00300000000000011,0.0439999999999969,11
+"test-bootstrap.R","bootstrap","spatial solve factors are validated and bound to bootstrap caches",44,0,FALSE,FALSE,0,0.753999999999998,0.00399999999999778,0.760999999999996,44
+"test-bootstrap.R","bootstrap","residualized bootstrap cache is bound to its contrast family",1,0,FALSE,FALSE,0,0.00799999999999557,0,0.00799999999999557,1
+"test-bootstrap.R","bootstrap","independent bootstrap cache is bound to its contrast family",2,0,FALSE,FALSE,0,0.0439999999999969,0.000999999999997669,0.0459999999999923,2
+"test-bootstrap.R","bootstrap","analytic bootstrap falls back gracefully",5,0,FALSE,FALSE,0,0.0160000000000053,0.000999999999997669,0.0180000000000007,5
+"test-bootstrap.R","bootstrap","q-space bootstrap refuses a typed nonconverged alignment",1,0,FALSE,FALSE,0,0.00500000000000256,0.00200000000000244,0.00600000000000023,1
+"test-cell-vs-cell-cross.R","cell-vs-cell-cross","cell mode loaders use the global fit$U for every fold",5,0,FALSE,FALSE,0,0.100999999999999,0.00200000000000244,0.102999999999994,5
+"test-cell-vs-cell-cross.R","cell-vs-cell-cross","cell_cross mode loaders use fold-specific LOSO bases",1,0,FALSE,FALSE,0,0.0300000000000011,0.000999999999997669,0.0309999999999917,1
+"test-cell-vs-cell-cross.R","cell-vs-cell-cross","held-out subject Y matrix differs between cell and cell_cross",1,0,FALSE,FALSE,0,0.00999999999999801,0,0.0100000000000051,1
+"test-cell-vs-cell-cross.R","cell-vs-cell-cross","cell and cell_cross produce different row-level feature values",3,0,FALSE,FALSE,0,0.140000000000001,0.000999999999997669,0.141999999999996,3
+"test-cell-vs-cell-cross.R","cell-vs-cell-cross","cell mode basis includes held-out subject (documented leakage)",5,0,FALSE,FALSE,0,0.0129999999999981,0.00200000000000244,0.0139999999999958,5
+"test-cell-vs-cell-cross.R","cell-vs-cell-cross","auto mode selects cell for within-subject targets",1,0,FALSE,FALSE,0,0.00800000000000267,0,0.00799999999999557,1
+"test-classify.R","classify","dkge_targets constructs effect targets",3,0,FALSE,FALSE,0,0.00800000000000267,0.000999999999997669,0.00799999999999557,3
+"test-classify.R","classify","dkge_targets rematches both named map axes and rejects ambiguity",6,0,FALSE,FALSE,0,0.0169999999999959,0.00200000000000244,0.0190000000000055,6
+"test-classify.R","classify","dkge_classify returns metrics",4,0,FALSE,FALSE,0,0.027000000000001,0.000999999999997669,0.027000000000001,4
+"test-classify.R","classify","dkge_classify supports logit backend",2,0,FALSE,FALSE,0,0.0810000000000031,0.00100000000000477,0.0820000000000078,2
+"test-classify.R","classify","dkge_classify lambda control grid works",1,0,FALSE,FALSE,0,0.0110000000000028,0.000999999999997669,0.0120000000000005,1
+"test-classify.R","classify","dkge_classify lambda control function works",1,0,FALSE,FALSE,0,0.0069999999999979,0,0.007000000000005,1
+"test-classify.R","classify","dkge_classify delta mode handles rank-1 targets",3,0,FALSE,FALSE,1,0.0279999999999987,0,0.0290000000000106,2
+"test-classify.R","classify","delta mode computes label-aware metrics",4,0,FALSE,FALSE,0,0.0760000000000005,0.00200000000000244,0.0769999999999982,4
+"test-classify.R","classify","delta mode errors on mismatched labels",2,0,FALSE,FALSE,0,0.0140000000000029,0,0.0150000000000006,2
+"test-classify.R","classify","dkge_confusion aggregates per-target matrices",3,0,FALSE,FALSE,0,0.0339999999999989,0.00100000000000477,0.0349999999999966,3
+"test-classify.R","classify","classification diagnostics expose per-fold data frames",2,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0099999999999909,2
+"test-classify.R","classify","logit predictions renormalize underflowed rows",2,0,FALSE,FALSE,0,0.00200000000000244,0.000999999999997669,0.00400000000000489,2
+"test-classify.R","classify","dkge_pipeline integrates classification",2,0,FALSE,FALSE,0,0.0529999999999973,0.00100000000000477,0.0539999999999878,2
+"test-compat_neuralign.R","compat_neuralign","dkge registers a neuralign aligner and fits K-Procrustes operators",3,0,FALSE,FALSE,0,0.0129999999999981,0.00200000000000244,0.019999999999996,3
+"test-component-write.R","component-write","dkge_write_component_stats writes tidy CSV output",7,0,FALSE,FALSE,0,0.0140000000000029,0.00200000000000244,0.0170000000000101,7
+"test-components.R","components","dkge_component_stats returns tidy summary",9,0,FALSE,FALSE,0,0.027000000000001,0.00300000000000011,0.0289999999999964,9
+"test-components.R","components","auto centroids and Sinkhorn mapper produce consensus summary",2,0,FALSE,FALSE,0,0.0700000000000003,0.367999999999995,0.113,2
+"test-components.R","components","component stats keep every medoid cluster at rank 2",3,0,FALSE,FALSE,0,0.0119999999999933,0.00100000000000477,0.0130000000000052,3
+"test-components.R","components","dkge_component_stats analyzes all medoid clusters (not the first `rank`)",4,0,FALSE,FALSE,0,0.0120000000000005,0.00199999999999534,0.0139999999999958,4
+"test-components.R","components","dkge_component_stats selects the requested component",4,0,FALSE,FALSE,0,0.0120000000000005,0.00100000000000477,0.0120000000000005,4
+"test-components.R","components","dkge_component_stats rejects out-of-range component indices",1,0,FALSE,FALSE,0,0.00800000000000267,0,0.00900000000000034,1
+"test-contrast-validated.R","contrast-validated","dkge_contrast_validated returns dual paths and coverage",7,0,FALSE,FALSE,0,0.0409999999999968,0.00200000000000244,0.0510000000000019,7
+"test-contrast-validated.R","contrast-validated","dkge_contrast_validated handles zero-sum subject weights",2,0,FALSE,FALSE,0,0.0379999999999967,0.000999999999997669,0.0400000000000063,2
+"test-contrast.R","contrast","dkge_contrast works with single contrast vector",5,0,FALSE,FALSE,0,0.0169999999999959,0.00100000000000477,0.0170000000000101,5
+"test-contrast.R","contrast","dkge_contrast works with multiple contrasts",46,0,FALSE,FALSE,0,0.0730000000000004,0.0119999999999933,0.0840000000000032,46
+"test-contrast.R","contrast","fold receipt features are invariant to admissible basis gauge rotation",2,0,FALSE,FALSE,0,0.0150000000000006,0.00100000000000477,0.0150000000000006,2
+"test-contrast.R","contrast","LOSO receipts are subject-order equivariant up to one cohort gauge",15,0,FALSE,FALSE,0,0.0329999999999941,0.00300000000000011,0.0360000000000014,15
+"test-contrast.R","contrast","analytic alignment receipts fail closed unless the subject path is exact",22,0,FALSE,FALSE,0,0.0349999999999966,0.00499999999999545,0.039999999999992,22
+"test-contrast.R","contrast","dkge_contrast works with matrix input",2,0,FALSE,FALSE,0,0.0239999999999938,0.00100000000000477,0.0250000000000057,2
+"test-contrast.R","contrast","LOSO produces unbiased estimates",42,0,FALSE,FALSE,0,0.0719999999999956,0.00999999999999801,0.0820000000000078,42
+"test-contrast.R","contrast","K-fold cross-fitting works correctly",8,0,FALSE,FALSE,0,0.019999999999996,0.00200000000000244,0.0220000000000056,8
+"test-contrast.R","contrast","Analytic approximation matches LOSO for small perturbations",17,0,FALSE,FALSE,0,0.0450000000000017,0.000999999999997669,0.0450000000000017,17
+"test-contrast.R","contrast","as.matrix method works for dkge_contrasts",4,0,FALSE,FALSE,0,0.0200000000000031,0.000999999999997669,0.0220000000000056,4
+"test-contrast.R","contrast","as.matrix requires transport when cluster counts differ",1,0,FALSE,FALSE,0,0.017000000000003,0,0.0169999999999959,1
+"test-contrast.R","contrast","ridge mapper aligns mismatched cluster sizes",1,0,FALSE,FALSE,0,0.0150000000000006,0.000999999999997669,0.0150000000000006,1
+"test-contrast.R","contrast","Cross-fitting methods respect K-metric",8,0,FALSE,FALSE,0,0.0459999999999994,0.00300000000000011,0.0490000000000066,8
+"test-contrast.R","contrast","Ridge parameter affects results",2,0,FALSE,FALSE,0,0.0320000000000036,0.000999999999997669,0.0330000000000013,2
+"test-contrast.R","contrast","as.matrix hints about transport when cluster counts differ",1,0,FALSE,FALSE,0,0.00999999999999801,0,0.0099999999999909,1
+"test-contrast.R","contrast","contrasts carry within/between/mixed estimability metadata",5,0,FALSE,FALSE,0,0.0489999999999995,0.000999999999997669,0.0490000000000066,5
+"test-contrast.R","contrast","estimability falls back to a structural classifier for arbitrary names",5,0,FALSE,FALSE,0,0.0600000000000023,0.00200000000000244,0.0620000000000118,5
+"test-contrast.R","contrast","a between-subject contrast named after a within term is still flagged",4,0,FALSE,FALSE,0,0.0120000000000005,0.000999999999997669,0.0139999999999958,4
+"test-contrast.R","contrast","structural scope keys on factor dependence, not contrast magnitude",6,0,FALSE,FALSE,0,0.00999999999999801,0.00200000000000244,0.0120000000000005,6
+"test-contrast.R","contrast","matrix contrast input propagates dkge_scope and dkge_term",6,0,FALSE,FALSE,0,0.0110000000000028,0.00199999999999534,0.0130000000000052,6
+"test-contrast.R","contrast","normalizing contrasts keeps effect names and fills missing labels",9,0,FALSE,FALSE,0,0.0249999999999986,0.00300000000000011,0.0280000000000058,9
+"test-contrast.R","contrast","structural estimability rematches permuted cells by name",5,0,FALSE,FALSE,0,0.0150000000000006,0.00100000000000477,0.0169999999999959,5
+"test-contrast.R","contrast","unmatched cell_labels fail closed for structural scope",1,0,FALSE,FALSE,0,0.0279999999999987,0,0.0289999999999964,1
+"test-contrast.R","contrast","effect-basis cell metadata is rejected by structural estimability",1,0,FALSE,FALSE,0,0.00400000000000489,0,0.00400000000000489,1
+"test-contrast.R","contrast","contrast estimability has clean row names and validates dkge_scope",3,0,FALSE,FALSE,0,0.0200000000000031,0.000999999999997669,0.0210000000000008,3
+"test-coverage-gaps.R","coverage-gaps","dkge_sim_toy returns expected structure",5,0,FALSE,FALSE,0,0.007000000000005,0.000999999999997669,0.007000000000005,5
+"test-coverage-gaps.R","coverage-gaps","dkge_sim_toy respects seed parameter",1,0,FALSE,FALSE,0,0.00199999999999534,0.000999999999997669,0.00199999999999534,1
+"test-coverage-gaps.R","coverage-gaps","design_kernel handles different normalization options",3,0,FALSE,FALSE,0,0.00399999999999778,0.00100000000000477,0.00499999999999545,3
+"test-coverage-gaps.R","coverage-gaps","design_kernel ordinal factor produces valid RBF kernel",3,0,FALSE,FALSE,0,0.00399999999999778,0,0.00300000000000011,3
+"test-coverage-gaps.R","coverage-gaps","design_kernel circular factor wraps correctly",1,0,FALSE,FALSE,0,0.00200000000000244,0,0.00200000000000955,1
+"test-coverage-gaps.R","coverage-gaps","dkge_weights prior_mask helper works",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00200000000000955,1
+"test-coverage-gaps.R","coverage-gaps","dkge_weights prior_roi helper works",2,0,FALSE,FALSE,0,0.00200000000000244,0,0.00300000000000011,2
+"test-coverage-gaps.R","coverage-gaps","dkge_weights auto creates default spec",3,0,FALSE,FALSE,0,0.00300000000000011,0.00100000000000477,0.00300000000000011,3
+"test-coverage-gaps.R","coverage-gaps","kernel_roots handles near-singular kernels",3,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00499999999999545,3
+"test-coverage-gaps.R","coverage-gaps","kernel_alignment score is in [0,1]",2,0,FALSE,FALSE,0,0.00200000000000244,0,0.00100000000000477,2
+"test-coverage-gaps.R","coverage-gaps","helmert_contrasts produces orthogonal contrasts",5,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.007000000000005,5
+"test-coverage-gaps.R","coverage-gaps","sum_contrasts produces sum-to-zero contrasts",3,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00499999999999545,3
+"test-coverage-gaps.R","coverage-gaps","dkge_clear_sinkhorn_cache returns TRUE",1,0,FALSE,FALSE,0,0.00200000000000244,0.000999999999997669,0.00199999999999534,1
+"test-coverage-gaps.R","coverage-gaps","dkge_pipeline handles minimal inputs",3,0,FALSE,FALSE,0,0.0180000000000007,0.00100000000000477,0.0180000000000007,3
+"test-coverage-gaps.R","coverage-gaps","dkge_contrast analytic method returns valid structure",3,0,FALSE,FALSE,0,0.0100000000000051,0.000999999999997669,0.0120000000000005,3
+"test-coverage-gaps.R","coverage-gaps","dkge_contrast kfold method works",2,0,FALSE,FALSE,0,0.00900000000000034,0,0.00900000000000034,2
+"test-coverage-gaps.R","coverage-gaps","print.dkge_contrasts works",2,0,FALSE,FALSE,0,0.00900000000000034,0,0.0099999999999909,2
+"test-coverage-gaps.R","coverage-gaps","as.data.frame.dkge_contrasts works",4,0,FALSE,FALSE,0,0.0280000000000058,0.00100000000000477,0.0300000000000011,4
+"test-coverage-gaps.R","coverage-gaps","print.dkge_weights works",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00300000000000011,2
+"test-coverage-gaps.R","coverage-gaps","dkge_signflip_maxT handles minimum inputs",5,0,FALSE,FALSE,0,0.0240000000000009,0.000999999999997669,0.0250000000000057,5
+"test-coverage-gaps.R","coverage-gaps","dkge_signflip_maxT handles different tails",3,0,FALSE,FALSE,0,0.0159999999999982,0,0.0160000000000053,3
+"test-coverage-gaps.R","coverage-gaps","dkge_cosines_K computes principal angles",2,0,FALSE,FALSE,0,0.00199999999999534,0,0.00300000000000011,2
+"test-coverage-gaps.R","coverage-gaps","dkge_cosines_K returns 1 for identical subspaces",1,0,FALSE,FALSE,0,0.00199999999999534,0.000999999999997669,0.00200000000000955,1
+"test-cpca-integration.R","cpca-integration","CPCA design basis replaces Chat and basis",5,0,FALSE,FALSE,0,0.00800000000000267,0.00200000000000244,0.0100000000000051,5
+"test-cpca-integration.R","cpca-integration","CPCA residual basis is returned when requested",4,0,FALSE,FALSE,1,0.0180000000000007,0.000999999999997669,0.0189999999999912,3
+"test-cpca-integration.R","cpca-integration","CPCA both stores design and residual bases and they are K-orthogonal",3,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00699999999999079,3
+"test-cpca-integration.R","cpca-integration","CPCA ridge shifts filtered matrix",1,0,FALSE,FALSE,0,0.00500000000000256,0,0.00499999999999545,1
+"test-cpca-integration.R","cpca-integration","dkge_cpca_fit wrapper matches dkge",2,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00799999999999557,2
+"test-cpca-integration.R","cpca-integration","CPCA fits fail closed when exact fold replay is unavailable",4,0,FALSE,FALSE,0,0.0219999999999985,0.000999999999997669,0.0229999999999961,4
+"test-cpca.R","cpca","dkge_projector_K builds valid projectors",3,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.007000000000005,3
+"test-cpca.R","cpca","dkge_fit_cpca returns design/residual bases",3,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00799999999999557,3
+"test-cross-fitting-leakage.R","cross-fitting-leakage","LOSO: held-out basis U_minus differs from full basis U",6,0,FALSE,FALSE,0,0.00999999999999801,0.00100000000000477,0.0099999999999909,6
+"test-cross-fitting-leakage.R","cross-fitting-leakage","LOSO: extreme values in held-out subject do not affect U_minus",3,0,FALSE,FALSE,0,0.0200000000000031,0.000999999999997669,0.019999999999996,3
+"test-cross-fitting-leakage.R","cross-fitting-leakage","LOSO: different subjects get different held-out bases",3,0,FALSE,FALSE,0,0.00799999999999557,0,0.00799999999999557,3
+"test-cross-fitting-leakage.R","cross-fitting-leakage","KFOLD: k=S produces identical per-subject values to LOSO",5,0,FALSE,FALSE,0,0.0139999999999958,0.000999999999997669,0.0150000000000006,5
+"test-cross-fitting-leakage.R","cross-fitting-leakage","KFOLD: held-out bases match between k=S K-fold and LOSO",8,0,FALSE,FALSE,0,0.0159999999999982,0.00100000000000477,0.0169999999999959,8
+"test-cross-fitting-leakage.R","cross-fitting-leakage","LOSO: Chat_minus renormalizes raw weights over all-but-one subject",6,0,FALSE,FALSE,0,0.00999999999999801,0.000999999999997669,0.0110000000000099,6
+"test-cv.R","cv","dkge_variance_explained returns normalized proportions",5,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0110000000000099,5
+"test-cv.R","cv","dkge_cv_rank_loso evaluates candidate ranks",4,0,FALSE,FALSE,0,0.0300000000000011,0.000999999999997669,0.0310000000000059,4
+"test-cv.R","cv","dkge_cv_kernel_grid scores candidate kernels",3,0,FALSE,FALSE,0,0.0189999999999984,0.00100000000000477,0.019999999999996,3
+"test-data-neuroim2.R","data-neuroim2","neuroim2 integration: NeuroVec with pre-computed betas works",5,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0100000000000051,5
+"test-data-neuroim2.R","data-neuroim2","neuroim2 integration: NeuroVec with mask works",4,0,FALSE,FALSE,0,0.0159999999999982,0.00200000000000244,0.0169999999999959,4
+"test-data-neuroim2.R","data-neuroim2","neuroim2 integration: dkge_data bundles neuroim2 subjects",4,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00799999999999557,4
+"test-data-validation.R","data-validation","dkge_subject rejects invalid input types with clear messages",4,0,FALSE,FALSE,0,0.00900000000000034,0,0.0100000000000051,4
+"test-data-validation.R","data-validation","dkge_subject rejects beta with NA values",1,0,FALSE,FALSE,0,0.000999999999997669,0.000999999999997669,0.00100000000000477,1
+"test-data-validation.R","data-validation","dkge_subject rejects beta with Inf values",1,0,FALSE,FALSE,0,0.000999999999997669,0,0.000999999999990564,1
+"test-data-validation.R","data-validation","dkge_subject rejects dimension mismatch between beta and design",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000000011,1
+"test-data-validation.R","data-validation","dkge_subject handles empty beta matrix gracefully",3,0,FALSE,FALSE,1,0.00500000000000256,0,0.00600000000000023,2
+"test-data-validation.R","data-validation","dkge_subject handles duplicate effect names in design",1,0,FALSE,FALSE,0,0.00200000000000244,0,0.00300000000000011,1
+"test-data-validation.R","data-validation","dkge_data rejects empty betas list with informative message",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000000011,1
+"test-data-validation.R","data-validation","dkge_data requires minimum 2 subjects for group analysis",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00400000000000489,1
+"test-data-validation.R","data-validation","dkge_data handles zero-cluster subjects",1,0,FALSE,FALSE,0,0.00100000000000477,0.000999999999997669,0.00300000000000011,1
+"test-data-validation.R","data-validation","dkge_data tracks provenance for disjoint effects",5,0,FALSE,FALSE,0,0.0429999999999993,0.00100000000000477,0.0450000000000017,5
+"test-data-validation.R","data-validation","dkge_data validates consistent dimensions within betas list",3,0,FALSE,FALSE,2,0.0069999999999979,0,0.00699999999999079,1
+"test-data-validation.R","data-validation","dkge_data handles mismatched list lengths",1,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00300000000000011,1
+"test-data-validation.R","data-validation","dkge_data handles subjects with all NA betas",1,0,FALSE,FALSE,0,0.00100000000000477,0,0.00100000000000477,1
+"test-data-validation.R","data-validation","error messages include helpful context about the problem",1,0,FALSE,FALSE,0,0.000999999999997669,0,0.00100000000000477,1
+"test-data-validation.R","data-validation","dkge_data error messages identify problematic subject",1,0,FALSE,FALSE,0,0.000999999999997669,0,0.00199999999999534,1
+"test-data.R","data","dkge_subject aligns effect names and sets defaults",5,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.007000000000005,5
+"test-data.R","data","dkge_subject carries explicit observed rows",3,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.00600000000000023,3
+"test-data.R","data","dkge_data honours observed rows when effect labels are identical",5,0,FALSE,FALSE,0,0.0459999999999994,0.00799999999999557,0.0640000000000072,5
+"test-data.R","data","unobserved row values cannot leak into the fitted moment",1,0,FALSE,FALSE,0,0.00399999999999778,0,0.00400000000000489,1
+"test-data.R","data","dkge_subject validates omega",7,0,FALSE,FALSE,0,0.0159999999999982,0.000999999999997669,0.0169999999999959,7
+"test-data.R","data","dkge_subject list method and defaults work",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00300000000000011,2
+"test-data.R","data","dkge_subject default method errors",1,0,FALSE,FALSE,0,0.00200000000000244,0.00100000000000477,0.00300000000000011,1
+"test-data.R","data","duplicated effect labels are rejected on subject, bundle, and union paths",5,0,FALSE,FALSE,0,0.0210000000000008,0,0.0219999999999914,5
+"test-data.R","data","dkge_data bundles raw matrices and normalises ids",4,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00600000000000023,4
+"test-data.R","data","dkge_data aligns partial effect overlaps and records provenance",12,0,FALSE,FALSE,0,0.0160000000000053,0.00300000000000011,0.019999999999996,12
+"test-data.R","data","dkge_data respects provided subject ids and omega",5,0,FALSE,FALSE,0,0.00600000000000023,0.00200000000000244,0.00699999999999079,5
+"test-data.R","data","dkge_data errors on mismatched effects",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00400000000000489,1
+"test-data.R","data","dkge high-level stores inputs when requested",3,0,FALSE,FALSE,0,0.00900000000000034,0.00199999999999534,0.0100000000000051,3
+"test-data.R","data","dkge rejects malformed kernel metadata before field access",2,0,FALSE,FALSE,0,0.0109999999999957,0,0.0120000000000005,2
+"test-data.R","data","dkge accepts dkge_data and omega overrides",2,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.00600000000000023,2
+"test-data.R","data","dkge omega overrides are validated",1,0,FALSE,FALSE,0,0.00499999999999545,0.000999999999997669,0.00499999999999545,1
+"test-data.R","data","dkge_data produces identical aligned effects regardless of input effect order",3,0,FALSE,FALSE,0,0.00400000000000489,0,0.00500000000000966,3
+"test-data.R","data","dkge_data is invariant to subject list ordering",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,2
+"test-data.R","data","provenance correctly tracks effect coverage with partial overlap",6,0,FALSE,FALSE,0,0.0069999999999979,0.00200000000000244,0.00799999999999557,6
+"test-data.R","data","effect alignment produces correct values after reordering",4,0,FALSE,FALSE,0,0.007000000000005,0.000999999999997669,0.007000000000005,4
+"test-data.R","data","dkge_data rejects duplicate subject identifiers",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.00600000000000023,2
+"test-data.R","data","duplicate ids cannot make two subjects share one observation mask",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00400000000000489,1
+"test-data.R","data","dkge_data(effects=) pins the global effect order",9,0,FALSE,FALSE,0,0.0230000000000032,0.00199999999999534,0.0250000000000057,9
+"test-data.R","data","dkge_data(effects=) reorders per-effect subject metadata",7,0,FALSE,FALSE,0,0.0150000000000006,0.00200000000000244,0.0160000000000053,7
+"test-data.R","data","dkge_data rejects effects that no subject observes",1,0,FALSE,FALSE,0,0.00399999999999778,0,0.00399999999999068,1
+"test-data.R","data","dkge_subject.list forwards observed_rows and reliability metadata",4,0,FALSE,FALSE,0,0.007000000000005,0.00100000000000477,0.00799999999999557,4
+"test-data.R","data","effect labels are adopted from whichever side carries them",6,0,FALSE,FALSE,0,0.00999999999999801,0.000999999999997669,0.0120000000000005,6
+"test-data.R","data","dkge_sim_toy output round-trips through dkge()",2,0,FALSE,FALSE,0,0.007000000000005,0.00100000000000477,0.00699999999999079,2
+"test-data.R","data","cohort voxel weights are resolved per subject when widths differ",6,0,FALSE,FALSE,0,0.00799999999999557,0.00199999999999534,0.0100000000000051,6
+"test-data.R","data","subjects with different cluster counts fit under cohort weights",2,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.00699999999999079,2
+"test-data.R","data","dkge_data stamps normalised ids onto the subject objects",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00400000000000489,2
+"test-design-kernel.R","design-kernel","cell-basis kernel is PSD and sized correctly",2,0,FALSE,FALSE,0,0.00500000000000256,0,0.00499999999999545,2
+"test-design-kernel.R","design-kernel","effect grid records scopes and cell labels",3,0,FALSE,FALSE,0,0.00300000000000011,0.00100000000000477,0.00400000000000489,3
+"test-design-kernel.R","design-kernel","single-factor defaults contain one unique main-effect block",22,0,FALSE,FALSE,0,0.0249999999999986,0.00600000000000023,0.0300000000000011,22
+"test-design-kernel.R","design-kernel","single-factor ordinal defaults retain length-scale semantics",3,0,FALSE,FALSE,0,0.0120000000000005,0.000999999999997669,0.012999999999991,3
+"test-design-kernel.R","design-kernel","single-factor effect labels reconcile with dkge_data effects",5,0,FALSE,FALSE,0,0.00999999999999801,0.00100000000000477,0.0109999999999957,5
+"test-design-kernel.R","design-kernel","multi-factor defaults retain main effects plus full interaction",7,0,FALSE,FALSE,0,0.00799999999999557,0.00199999999999534,0.00900000000000034,7
+"test-design-kernel.R","design-kernel","design_kernel carries scope metadata and cell dimnames",5,0,FALSE,FALSE,0,0.00500000000000256,0.00100000000000477,0.00499999999999545,5
+"test-design-kernel.R","design-kernel","block factors prevent accidental cross-group coupling",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00300000000000011,2
+"test-design-kernel.R","design-kernel","effect-basis map matches block metadata",4,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00400000000000489,4
+"test-design-kernel.R","design-kernel","normalisation removes dependence on rho scaling",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,1
+"test-design-kernel.R","design-kernel","contrasts helpers have expected shapes",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.00600000000000023,3
+"test-design-kernel.R","design-kernel","kernel roots and alignment behave",4,0,FALSE,FALSE,0,0.0109999999999957,0.000999999999997669,0.0120000000000005,4
+"test-design-kernel.R","design-kernel","kernel_roots reports clamped eigenvalues",3,0,FALSE,FALSE,0,0.00300000000000011,0.00100000000000477,0.00499999999999545,3
+"test-design-kernel.R","design-kernel","design_kernel handles 1-level factor (1x1 kernel)",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,2
+"test-design-kernel.R","design-kernel","design_kernel handles 2-level factor (2x2 kernel)",3,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00499999999999545,3
+"test-design-kernel.R","design-kernel","design_kernel rejects negative rho values",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00400000000000489,1
+"test-design-kernel.R","design-kernel","design_kernel rejects missing L for discrete factors",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,1
+"test-design-kernel.R","design-kernel","design_kernel rejects missing values for continuous factors",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000000011,1
+"test-design-kernel.R","design-kernel","design_kernel rejects unnamed factors",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000000011,1
+"test-design-kernel.R","design-kernel","kernel_roots handles diagonal matrices",2,0,FALSE,FALSE,0,0.00400000000000489,0,0.00400000000000489,2
+"test-design-kernel.R","design-kernel","kernel_roots handles near-zero eigenvalues with jitter",2,0,FALSE,FALSE,0,0.00300000000000011,0.00100000000000477,0.00300000000000011,2
+"test-design-kernel.R","design-kernel","kernel_roots warns for asymmetric input",1,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999997669,0.00400000000000489,1
+"test-design-kernel.R","design-kernel","circular factor with L=2 is well-defined",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999997669,0.00600000000000023,3
+"test-design-kernel.R","design-kernel","design_kernel rejects terms naming unknown factors",3,0,FALSE,FALSE,0,0.00800000000000267,0,0.00800000000000978,3
+"test-design-kernel.R","design-kernel","design_kernel rejects rho names that are not term names",1,0,FALSE,FALSE,0,0.00999999999999801,0,0.0100000000000051,1
+"test-design-kernel.R","design-kernel","design_kernel validates level labels against L",2,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.00699999999999079,2
+"test-design-kernel.R","design-kernel","dkge_effect_grid handles list specs without L",8,0,FALSE,FALSE,0,0.0139999999999958,0.00200000000000244,0.0150000000000006,8
+"test-design-kernel.R","design-kernel","dkge_effect_grid and design_kernel produce the same cell order",3,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00600000000000023,3
+"test-design-kernel.R","design-kernel","effect grid order can be pinned onto dkge_data",4,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0099999999999909,4
+"test-design-kernel.R","design-kernel","ordinal length-scale is not shadowed by the `levels` element",5,0,FALSE,FALSE,0,0.0069999999999979,0,0.007000000000005,5
+"test-design-kernel.R","design-kernel","partially named rho scales only the terms it names",7,0,FALSE,FALSE,0,0.0150000000000006,0.000999999999997669,0.0150000000000006,7
+"test-design-kernel.R","design-kernel","factor specs reject vector-valued L and type cleanly",6,0,FALSE,FALSE,0,0.0150000000000006,0.00100000000000477,0.0150000000000006,6
+"test-design-kernel.R","design-kernel","duplicated level labels are rejected in both constructors",8,0,FALSE,FALSE,0,0.0180000000000007,0.000999999999997669,0.0189999999999912,8
+"test-design-kernel.R","design-kernel","continuous specs coming from an effect grid keep their numeric values",3,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00499999999999545,3
+"test-design-kernel.R","design-kernel","design_kernel and dkge_effect_grid reject unknown factor-spec fields",7,0,FALSE,FALSE,0,0.0230000000000032,0.000999999999997669,0.0240000000000009,7
+"test-design-kernel.R","design-kernel","kernel_roots handles a 1x1 kernel without the diag() scalar footgun",4,0,FALSE,FALSE,0,0.007000000000005,0.00100000000000477,0.00799999999999557,4
+"test-dkge-kfold.R","dkge-kfold","dkge_define_folds(subject): reproducible seeds, full coverage, near-balanced",9,0,FALSE,FALSE,0,0.0129999999999981,0.00200000000000244,0.0150000000000006,9
+"test-dkge-kfold.R","dkge-kfold",".dkge_contrast_kfold: with k=S equals LOSO and bases are valid",55,0,FALSE,FALSE,0,0.0619999999999976,0.00600000000000023,0.0670000000000073,55
+"test-dkge-kfold.R","dkge-kfold",".dkge_contrast_kfold: permuting B_s columns only permutes that subject's v_s; bases unchanged",8,0,FALSE,FALSE,0,0.0159999999999982,0,0.0170000000000101,8
+"test-dkge-loso.R","dkge-loso","LOSO: matches manual pipeline; basis is K-orthonormal; depends on R (ruler)",12,0,FALSE,FALSE,0,0.0360000000000014,0.00200000000000244,0.0380000000000109,12
+"test-dkge-loso.R","dkge-loso","LOSO: ridge shifts eigenvalues by +ridge and preserves K-orthonormality",3,0,FALSE,FALSE,0,0.0159999999999982,0.000999999999997669,0.0150000000000006,3
+"test-dkge-loso.R","dkge-loso","LOSO: permuting columns of B_s permutes v_s identically; basis & alpha unchanged",5,0,FALSE,FALSE,0,0.007000000000005,0.000999999999997669,0.00799999999999557,5
+"test-effect-reliability.R","effect-reliability","count weighting matches a hand-computed pairwise oracle",3,0,FALSE,FALSE,0,0.00500000000000256,0.00100000000000477,0.007000000000005,3
+"test-effect-reliability.R","effect-reliability","effect precision has the expected scaling and zero-weight invariants",3,0,FALSE,FALSE,0,0.00800000000000267,0.000999999999997669,0.00900000000000034,3
+"test-effect-reliability.R","effect-reliability","unit effect precision reproduces the legacy full-coverage sum",1,0,FALSE,FALSE,0,0.00600000000000023,0.00100000000000477,0.00600000000000023,1
+"test-effect-reliability.R","effect-reliability","effective pair count controls weighted masking",4,0,FALSE,FALSE,0,0.00399999999999778,0,0.00500000000000966,4
+"test-effect-reliability.R","effect-reliability","count weighting requires count sufficient statistics",1,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00400000000000489,1
+"test-effect-reliability.R","effect-reliability","fold pooling inherits effect reliability and missingness policy",9,0,FALSE,FALSE,0,0.0249999999999986,0.00200000000000244,0.027000000000001,9
+"test-effect-reliability.R","effect-reliability","sparse-pair pooling reports the structural fallback reason",2,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.007000000000005,2
+"test-effect-reliability.R","effect-reliability","missingness='rescale' is not a no-op under effect weighting",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.00600000000000023,3
+"test-effect-reliability.R","effect-reliability","count-weighted rescale equals the unweighted per-pair mean under unequal coverage",5,0,FALSE,FALSE,0,0.0150000000000006,0.00200000000000244,0.0170000000000101,5
+"test-effect-reliability.R","effect-reliability","rescale/shrink divide by subject-weight mass under mfa_sigma1",3,0,FALSE,FALSE,0,0.00800000000000267,0.000999999999997669,0.0100000000000051,3
+"test-effect-reliability.R","effect-reliability","unweighted and precision-weighted rescale agree under unit precision",4,0,FALSE,FALSE,0,0.0159999999999982,0.00200000000000244,0.0169999999999959,4
+"test-effect-reliability.R","effect-reliability","unit-precision count weights do not inflate sparsely observed pairs",2,0,FALSE,FALSE,0,0.0160000000000053,0.000999999999997669,0.0159999999999911,2
+"test-effect-reliability.R","effect-reliability","unit-precision count weights agree on a partial-coverage miss loop",4,0,FALSE,FALSE,0,0.0189999999999984,0.00100000000000477,0.019999999999996,4
+"test-effect-reliability.R","effect-reliability","effect weighting combines with partial effect coverage",3,0,FALSE,FALSE,0,0.00400000000000489,0,0.00600000000000023,3
+"test-effect-reliability.R","effect-reliability","an all-unobserved mask yields a zero effect moment, not the unmasked one",4,0,FALSE,FALSE,0,0.00500000000000256,0.00100000000000477,0.00600000000000023,4
+"test-fit-algebra-contract.R","fit-algebra-contract","ordinary fits advertise an exact block biprojector",6,0,FALSE,FALSE,0,0.00999999999999801,0.00199999999999534,0.0120000000000005,6
+"test-fit-algebra-contract.R","fit-algebra-contract","missing rows are zeroed before non-diagonal R and K mix effects",4,0,FALSE,FALSE,0,0.00800000000000267,0.00100000000000477,0.00799999999999557,4
+"test-fit-algebra-contract.R","fit-algebra-contract","pair-normalized moments are q-space-only and fail closed",9,0,FALSE,FALSE,0,0.0120000000000005,0.00199999999999534,0.0139999999999958,9
+"test-fit-algebra-contract.R","fit-algebra-contract","indefinite analytic moments retain diagnostics but not negative components",8,0,FALSE,FALSE,0,0.0180000000000007,0.00200000000000244,0.019999999999996,8
+"test-fit-algebra-contract.R","fit-algebra-contract","q-space moments are equivariant to effect permutation",3,0,FALSE,FALSE,0,0.0159999999999982,0.000999999999997669,0.0169999999999959,3
+"test-fit-helpers.R","fit-helpers","advertised plot/component helpers are exported",1,0,FALSE,FALSE,0,0.00200000000000244,0,0.00199999999999534,1
+"test-fit-helpers.R","fit-helpers",".dkge_leading_sv_squared is exact and deterministic",3,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00499999999999545,3
+"test-fit-helpers.R","fit-helpers",".dkge_fit_prepare harmonises inputs",5,0,FALSE,FALSE,0,0.00799999999999557,0.00100000000000477,0.0099999999999909,5
+"test-fit-helpers.R","fit-helpers",".dkge_fit_accumulate returns symmetric Chat",4,0,FALSE,FALSE,0,0.00499999999999545,0.000999999999997669,0.007000000000005,4
+"test-fit-helpers.R","fit-helpers",".dkge_fit_solve produces orthonormal basis",4,0,FALSE,FALSE,0,0.00799999999999557,0.00100000000000477,0.00900000000000034,4
+"test-fit-helpers.R","fit-helpers",".dkge_fit_assemble returns dkge object",7,0,FALSE,FALSE,0,0.0109999999999957,0.00199999999999534,0.0130000000000052,7
+"test-fit.R","fit","pooled design Cholesky matches Gram matrix",2,0,FALSE,FALSE,0,0.00399999999999778,0,0.00500000000000966,2
+"test-fit.R","fit","row standardisation matches manual computation",1,0,FALSE,FALSE,0,0.00199999999999534,0.000999999999997669,0.00200000000000955,1
+"test-fit.R","fit","kernel roots reconstruct original kernel",2,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00500000000000966,2
+"test-fit.R","fit","subject weights handle MFA and Omega matrices",3,0,FALSE,FALSE,0,0.00399999999999778,0.00100000000000477,0.00500000000000966,3
+"test-fit.R","fit","MFA weights use the exact leading singular value",8,0,FALSE,FALSE,0,0.00900000000000034,0.00200000000000244,0.0110000000000099,8
+"test-fit.R","fit","raw subject scores are normalized and shrunk within the requested cohort",4,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00699999999999079,4
+"test-fit.R","fit","subject weights apply the full Khalf congruence to zero-filled rows",4,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.007000000000005,4
+"test-fit.R","fit","a subject observing no effect rows gets weight zero",4,0,FALSE,FALSE,0,0.007000000000005,0.000999999999997669,0.00900000000000034,4
+"test-fit.R","fit","missingness helper implements shared coverage policies",4,0,FALSE,FALSE,0,0.0120000000000005,0.00200000000000244,0.0139999999999958,4
+"test-fit.R","fit","missingness arguments are validated the same way on both paths",10,0,FALSE,FALSE,0,0.0249999999999986,0.000999999999997669,0.0249999999999915,10
+"test-fit.R","fit","missingness policies read pair_counts as a fractional weighted mass",12,0,FALSE,FALSE,0,0.0180000000000007,0.00300000000000011,0.0210000000000008,12
+"test-fit.R","fit","training blocks and dkge_transform_block() agree in dimnames",4,0,FALSE,FALSE,0,0.00800000000000267,0.00200000000000244,0.00900000000000034,4
+"test-fit.R","fit","kernel row/column labels must agree before any other reconciliation",4,0,FALSE,FALSE,0,0.0100000000000051,0,0.0110000000000099,4
+"test-fit.R","fit","a labelled kernel names the effects when the data only has placeholders",5,0,FALSE,FALSE,0,0.00999999999999801,0.00200000000000244,0.0120000000000005,5
+"test-fit.R","fit","kernel_info is permuted with the kernel to match data effects",12,0,FALSE,FALSE,0,0.0189999999999984,0.00300000000000011,0.0220000000000056,12
+"test-fit.R","fit","kernel metadata spaces remain distinct when cell and effect counts coincide",15,0,FALSE,FALSE,0,0.0249999999999986,0.00300000000000011,0.0289999999999964,15
+"test-fit.R","fit","kernel metadata permutation uses declared axes and name oracles",7,0,FALSE,FALSE,0,0.00999999999999801,0.00200000000000244,0.0120000000000005,7
+"test-fit.R","fit","min_pairs is compared on the unweighted subject scale",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999997669,0.00399999999999068,3
+"test-fit.R","fit","dkge_fit accepts raw lists and dkge_data",5,0,FALSE,FALSE,0,0.0119999999999933,0.00200000000000244,0.0130000000000052,5
+"test-fit.R","fit","dkge_fit can leave effect rows on input scale",3,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00900000000000034,3
+"test-fit.R","fit","dkge_fit default missingness leaves full-coverage fits unchanged",3,0,FALSE,FALSE,0,0.00800000000000267,0.000999999999997669,0.0100000000000051,3
+"test-fit.R","fit","dkge_fit applies partial-effect missingness to training Chat",4,0,FALSE,FALSE,0,0.00800000000000267,0.00100000000000477,0.0099999999999909,4
+"test-fit.R","fit","dkge_fit defaults to full rank when rank is NULL",2,0,FALSE,FALSE,0,0.007000000000005,0,0.007000000000005,2
+"test-fit.R","fit","dkge_fit honours ridge and Omega weighting",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00500000000000966,2
+"test-fit.R","fit","dkge_fit validates kernel PSD and finite values",3,0,FALSE,FALSE,0,0.00900000000000034,0.00100000000000477,0.0100000000000051,3
+"test-fit.R","fit","cpca arguments are respected",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.00699999999999079,3
+"test-fit.R","fit","dkge_fit detects dimension mismatches",1,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00300000000000011,1
+"test-fit.R","fit","K-orthonormality holds with identity kernel",1,0,FALSE,FALSE,0,0.00399999999999778,0,0.00399999999999068,1
+"test-fit.R","fit","K-orthonormality holds with RBF (ordinal) kernel",1,0,FALSE,FALSE,0,0.00399999999999778,0.00100000000000477,0.00400000000000489,1
+"test-fit.R","fit","K-orthonormality holds with multi-factor kernel",1,0,FALSE,FALSE,0,0.00399999999999778,0,0.00400000000000489,1
+"test-fit.R","fit","K-orthonormality holds for rank=1 edge case",2,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00499999999999545,2
+"test-fit.R","fit","K-orthonormality holds for full rank (rank=q)",2,0,FALSE,FALSE,0,0.00400000000000489,0,0.00399999999999068,2
+"test-fit.R","fit","K-orthonormality holds for near-full rank (rank=q-1)",2,0,FALSE,FALSE,0,0.00399999999999778,0.000999999999997669,0.00399999999999068,2
+"test-fit.R","fit","K-orthonormality holds with ridge > 0",1,0,FALSE,FALSE,0,0.00900000000000034,0,0.0100000000000051,1
+"test-fit.R","fit","K-orthonormality holds with MFA subject weights",1,0,FALSE,FALSE,0,0.00499999999999545,0,0.00500000000000966,1
+"test-fit.R","fit","K-orthonormality holds with energy subject weights",1,0,FALSE,FALSE,0,0.00399999999999778,0,0.00500000000000966,1
+"test-fit.R","fit","pooled Gram with heterogeneous T_s values",2,0,FALSE,FALSE,0,0.00400000000000489,0,0.00600000000000023,2
+"test-fit.R","fit","pooled Gram accumulation with many subjects",3,0,FALSE,FALSE,0,0.00499999999999545,0.00100000000000477,0.00600000000000023,3
+"test-fit.R","fit","row standardization produces expected scaling",5,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999997669,0.00799999999999557,5
+"test-fit.R","fit","dkge_fit is deterministic with same seed (w_method='none')",5,0,FALSE,FALSE,0,0.0110000000000028,0.00200000000000244,0.0120000000000005,5
+"test-fit.R","fit","dkge_fit is deterministic with w_method='mfa_sigma1'",5,0,FALSE,FALSE,0,0.0109999999999957,0.00199999999999534,0.0130000000000052,5
+"test-fit.R","fit","dkge_fit is deterministic with w_method='energy'",5,0,FALSE,FALSE,0,0.0109999999999957,0.00100000000000477,0.0120000000000005,5
+"test-fit.R","fit","dkge_fit with solver='pooled' is deterministic",3,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999997669,0.0100000000000051,3
+"test-fit.R","fit","dkge_fit determinism holds with ridge regularization",3,0,FALSE,FALSE,0,0.0069999999999979,0.00100000000000477,0.00800000000000978,3
+"test-fit.R","fit","dkge_fit determinism holds with Omega_list spatial weights",3,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0100000000000051,3
+"test-fit.R","fit","Chat equals X_concat %*% t(X_concat) under partial coverage",3,0,FALSE,FALSE,0,0.0069999999999979,0.000999999999997669,0.00799999999999557,3
+"test-fit.R","fit","training blocks match dkge_transform_block under partial coverage",4,0,FALSE,FALSE,0,0.0330000000000013,0.00200000000000244,0.0349999999999966,4
+"test-fit.R","fit",".dkge_fold_weight_context on the full training set reproduces fit$Chat",8,0,FALSE,FALSE,0,0.0159999999999982,0.00300000000000011,0.0189999999999912,8
+"test-fit.R","fit","fold re-pooling agrees whether or not stored moments are reused",5,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999997669,0.0109999999999957,5
+"test-fit.R","fit","fast and slow fold pooling agree across subject, Omega, spatial, and missingness policies",20,0,FALSE,FALSE,0,0.248999999999995,0.00600000000000023,0.256,20
+"test-fit.R","fit","held-out beta energy cannot change training-fold MFA weights or Chat",4,0,FALSE,FALSE,0,0.0120000000000005,0.000999999999997669,0.0139999999999958,4
+"test-fit.R","fit","legacy fits recover fold weights from final shrunken weights",1,0,FALSE,FALSE,0,0.00500000000000256,0.000999999999997669,0.00600000000000023,1
+"test-fit.R","fit","design kernel labels are validated against the data effects",5,0,FALSE,FALSE,0,0.0129999999999981,0.000999999999997669,0.0139999999999958,5
+"test-fit.R","fit","wrong-length observation masks are rejected instead of ignored",2,0,FALSE,FALSE,0,0.00499999999999545,0.00100000000000477,0.00499999999999545,2
+"test-fit.R","fit","kernel with duplicated labels warns instead of silently ignoring names",1,0,FALSE,FALSE,0,0.00499999999999545,0,0.00599999999998602,1
+"test-fit.R","fit","miss_args rejects unknown field names",2,0,FALSE,FALSE,0,0.0119999999999933,0.000999999999997669,0.0130000000000052,2
+"test-fit.R","fit","split-half error names the offending subject",1,0,FALSE,FALSE,0,0.0169999999999959,0.000999999999997669,0.0180000000000007,1
+"test-full-coverage-golden.R","full-coverage-golden","canonical default MFA weights match the exact sigma1 baseline",5,0,FALSE,FALSE,0,0.0160000000000053,0.00200000000000244,0.0169999999999959,5
+"test-full-coverage-golden.R","full-coverage-golden","stored full-coverage golden evidence satisfies every threshold",9,0,FALSE,FALSE,0,0.0120000000000005,0.00300000000000011,0.0160000000000053,9
+"test-functional-alignment-benefit.R","functional-alignment-benefit","the corresponded regime really is solvable from geometry alone",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00600000000000023,2
+"test-functional-alignment-benefit.R","functional-alignment-benefit","functional alignment recovers latent correspondence far better than chance",1,0,FALSE,FALSE,0,18.422,90.929,25.484,1
+"test-functional-alignment-benefit.R","functional-alignment-benefit","functional alignment beats geometry when topography is idiosyncratic",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000000011,2
+"test-functional-alignment-benefit.R","functional-alignment-benefit","the advantage is correspondence, not extra smoothing",1,0,FALSE,FALSE,0,0.00199999999999534,0.00100000000000477,0.00200000000000955,1
+"test-functional-alignment-benefit.R","functional-alignment-benefit","functional alignment does not manufacture an advantage when anatomy is right",2,0,FALSE,FALSE,0,7.271,35.476,9.846,2
+"test-functional-alignment-certification.R","functional-alignment-certification","certification executors fail closed without a source loader",31,0,FALSE,FALSE,0,0.0259999999999962,0.00399999999999068,0.0310000000000059,31
+"test-functional-alignment-certification.R","functional-alignment-certification","two-sided loading rejects bytes changed by the loader",2,0,FALSE,FALSE,0,0.00499999999999545,0.00100000000000477,0.00800000000000978,2
+"test-functional-alignment-certification.R","functional-alignment-certification","v4 preserves the byte-frozen v3 amendment and binds source drift",25,0,FALSE,FALSE,0,0.0459999999999923,0.0109999999999957,0.0679999999999978,25
+"test-functional-alignment-certification.R","functional-alignment-certification","v4 invalidation and v5-v8 succession are immutable",14,0,FALSE,FALSE,0,0.167999999999992,0.0370000000000061,0.281000000000006,14
+"test-functional-alignment-certification.R","functional-alignment-certification","v7 supersession binds every retained execution byte",79,0,FALSE,FALSE,0,0.113,0.0550000000000068,0.191000000000003,79
+"test-functional-alignment-certification.R","functional-alignment-certification","v2 invalidation and the one-change Sinkhorn fixture are immutable",27,0,FALSE,FALSE,0,1.20299999999999,6.983,2.47499999999999,27
+"test-functional-alignment-certification.R","functional-alignment-certification","court and power run claims fail closed and bind output bytes",12,0,FALSE,FALSE,0,0.0580000000000069,0.00899999999998613,0.0690000000000026,12
+"test-functional-alignment-certification.R","functional-alignment-certification","court and known-warp harnesses bind the complete history",14,0,FALSE,FALSE,0,0.0169999999999959,0.007000000000005,0.0260000000000105,14
+"test-functional-alignment-certification.R","functional-alignment-certification","court evidence requires the exact frozen schedule and raw summary",4,0,FALSE,FALSE,0,2.809,0.0159999999999911,2.848,4
+"test-functional-alignment-certification.R","functional-alignment-certification","known-warp evidence requires every frozen seed-arm pair",3,0,FALSE,FALSE,0,0.0330000000000013,0.00100000000000477,0.034000000000006,3
+"test-functional-alignment-certification.R","functional-alignment-certification","known-warp maxT signs are exhaustive modulo global sign",10,0,FALSE,FALSE,0,0.027000000000001,0.0029999999999859,0.0290000000000106,10
+"test-functional-alignment-certification.R","functional-alignment-certification","certification runners are source-addressed and refuse overwrite",21,0,FALSE,FALSE,0,0.0220000000000056,0.00600000000000023,0.0289999999999964,21
+"test-functional-alignment-certification.R","functional-alignment-certification","certified R CMD check policy cannot skip substantive checks",12,0,FALSE,FALSE,0,0.0210000000000008,0.0040000000000191,0.0250000000000057,12
+"test-functional-alignment-certification.R","functional-alignment-certification","dependency bundle receipts fail after any harness mutation",2,0,FALSE,FALSE,0,0.00499999999999545,0.00199999999998113,0.00900000000000034,2
+"test-functional-alignment-certification.R","functional-alignment-certification","review evidence digest binds every consumed derivative",35,0,FALSE,FALSE,0,0.0869999999999891,0.0860000000000127,0.266000000000005,35
+"test-functional-alignment-certification.R","functional-alignment-certification","checked-source and pkgdown receipts are mutation-sensitive",5,0,FALSE,FALSE,0,0.0130000000000052,0.00499999999999545,0.0190000000000055,5
+"test-functional-alignment-certification.R","functional-alignment-certification","R build projection and docs overlay are explicit and fail closed",20,0,FALSE,FALSE,0,0.0990000000000038,0.0649999999999977,0.244,20
+"test-functional-alignment-certification.R","functional-alignment-certification","source-test evidence binds results, counts, and session provenance",10,0,FALSE,FALSE,0,0.0330000000000013,0.00600000000000023,0.0439999999999969,10
+"test-functional-alignment-court.R","functional-alignment-court","frozen court protocol and factor grid cover every declared axis",9,0,FALSE,FALSE,0,0.0180000000000007,0.00200000000000955,0.0180000000000007,9
+"test-functional-alignment-court.R","functional-alignment-court","court provenance hashes the live package source tree",3,0,FALSE,FALSE,0,0.00400000000000489,0.00199999999998113,0.00900000000000034,3
+"test-functional-alignment-court.R","functional-alignment-court","court DGP and sign action are seeded, symmetric, and involutive",10,0,FALSE,FALSE,0,0.0240000000000009,0.00200000000000955,0.0259999999999962,10
+"test-functional-alignment-court.R","functional-alignment-court","court exhaustive sign representatives exclude only identity",5,0,FALSE,FALSE,0,0.00600000000000023,0.00199999999998113,0.00699999999999079,5
+"test-functional-alignment-court.R","functional-alignment-court","kernel-image prototype reconstructs v and removes the family span",3,0,FALSE,FALSE,0,0.0180000000000007,0.00100000000000477,0.019999999999996,3
+"test-functional-alignment-court.R","functional-alignment-court","tiny court run exposes every frozen arm and exact raw-refit arm",4,0,FALSE,FALSE,0,0.875999999999991,5.28300000000002,1.509,4
+"test-functional-template-benefit.R","functional-template-benefit","iterative template is validated on held-out known-warp maps",14,0,FALSE,FALSE,0,12.561,79.543,22.284,14
+"test-functional-template-fit.R","functional-template-fit","iterative template exposes convergence, scale, rank, and plan diagnostics",21,0,FALSE,FALSE,0,0.707000000000008,3.66500000000002,1.154,21
+"test-functional-template-fit.R","functional-template-fit","selected support provenance survives template fitting",5,0,FALSE,FALSE,0,0.720999999999989,4.13599999999997,1.26599999999999,5
+"test-functional-template-fit.R","functional-template-fit","descriptive reference selection cannot be laundered by a template",2,0,FALSE,FALSE,0,1.102,7.02000000000004,1.97900000000001,2
+"test-functional-template-fit.R","functional-template-fit","template fitting fails closed on Sinkhorn and rank collapse",2,0,FALSE,FALSE,0,0.563000000000002,3.44999999999999,0.977000000000004,2
+"test-functional-template-fit.R","functional-template-fit","mass-aware template update matches a direct plan oracle",1,0,FALSE,FALSE,0,0.650000000000006,3.952,1.108,1
+"test-functional-template-fit.R","functional-template-fit","fitted template creates aligned subject rows on the fixed support",20,0,FALSE,FALSE,0,0.0429999999999922,0.00499999999999545,0.0480000000000018,20
+"test-functional-template-fit.R","functional-template-fit","independent template application retains its exact contrast binding",4,0,FALSE,FALSE,0,0.0160000000000053,0,0.0159999999999911,4
+"test-functional-template-fit.R","functional-template-fit","template subject weights are matched by exact subject identity",5,0,FALSE,FALSE,0,3.77000000000001,25.827,6.85399999999998,5
+"test-functional-template-fit.R","functional-template-fit","supplied initialization must be verified and independently identified",3,0,FALSE,FALSE,0,0.688999999999993,4.142,1.179,3
+"test-functional-template-fit.R","functional-template-fit","non-convergence is durable and fails closed for aligned maps",5,0,FALSE,FALSE,0,0.0580000000000069,0.271000000000015,0.092000000000013,5
+"test-functional-template-fit.R","functional-template-fit","same-data residualized templates retain their approximate label",7,0,FALSE,FALSE,0,0.0970000000000084,0.488,0.156000000000006,7
+"test-functional-template-fit.R","functional-template-fit","public template constructor cannot mint fitted eligibility",1,0,FALSE,FALSE,0,1.771,11.852,3.21299999999999,1
+"test-functional-template-fit.R","functional-template-fit","a bare MNI grid is support, not functional correspondence",3,0,FALSE,FALSE,0,0.632000000000005,3.84500000000003,1.08699999999999,3
+"test-functional-template-fit.R","functional-template-fit","template state is immutable",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.0040000000000191,1
+"test-hyperdesign-bridge.R","hyperdesign-bridge","as_dkge_kernel preserves existing matrix behaviour",2,0,FALSE,FALSE,0,0.00699999999999079,0.0010000000000332,0.00800000000000978,2
+"test-hyperdesign-bridge.R","hyperdesign-bridge","as_dkge_kernel rejects malformed metadata with a stable condition",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.0029999999999859,1
+"test-hyperdesign-bridge.R","hyperdesign-bridge","as_dkge_folds accepts subject-fold data.frame",3,0,FALSE,FALSE,0,0.00499999999999545,0.000999999999976353,0.007000000000005,3
+"test-hyperdesign-bridge.R","hyperdesign-bridge","dkge_contrast accepts folds coercible via as_dkge_folds",2,0,FALSE,FALSE,0,0.00799999999999557,0.0010000000000332,0.00899999999998613,2
+"test-inference-calibration.R","inference-calibration","max-T controls FWER under pure noise (family-wise error rate)",2,0,FALSE,FALSE,0,5.41499999999999,0.0449999999999591,5.48099999999999,2
+"test-inference-calibration.R","inference-calibration","max-T p-values have valid properties under null",3,0,FALSE,FALSE,0,1.378,0.00900000000001455,1.38999999999999,3
+"test-inference-calibration.R","inference-calibration","sign-flip null distribution is symmetric",3,0,FALSE,FALSE,0,0.019999999999996,0.000999999999976353,0.0219999999999914,3
+"test-inference-calibration.R","inference-calibration","strong signal produces small p-value while noise remains uniform",2,0,FALSE,FALSE,0,0.0570000000000022,0.000999999999976353,0.0570000000000164,2
+"test-inference-calibration.R","inference-calibration","dkge_contrast parallel matches sequential within tolerance",3,0,FALSE,FALSE,2,0.512999999999991,0.0169999999999959,2.48899999999998,1
+"test-inference-calibration.R","inference-calibration","dkge_infer statistics match between sequential and parallel",4,0,FALSE,FALSE,2,0.332000000000008,0.0110000000000241,1.94200000000001,2
+"test-inference-calibration.R","inference-calibration","parallel tests skip gracefully without future.apply",1,0,TRUE,FALSE,0,0.000999999999990564,0,0.00100000000000477,0
+"test-inference-calibration.R","inference-calibration","dkge_signflip_maxT requires minimum 5 subjects",3,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00799999999998136,3
+"test-inference-calibration.R","inference-calibration","dkge_signflip_maxT requires minimum 100 permutations",3,0,FALSE,FALSE,0,0.00799999999999557,0.0010000000000332,0.00900000000001455,3
+"test-inference-calibration.R","inference-calibration","p-values respect theoretical bounds",2,0,FALSE,FALSE,0,0.0219999999999914,0.000999999999976353,0.0230000000000246,2
+"test-inference-calibration.R","inference-calibration","inference with current static transport fails closed",1,0,FALSE,FALSE,0,0.00600000000000023,0,0.007000000000005,1
+"test-inference-calibration.R","inference-calibration","dkge_infer parametric produces valid p-values",5,0,FALSE,FALSE,0,0.0189999999999912,0.000999999999976353,0.0200000000000102,5
+"test-inference-calibration.R","inference-calibration","multiple correction methods work correctly",3,0,FALSE,FALSE,0,0.0280000000000058,0.0010000000000332,0.0279999999999916,3
+"test-inference-transport.R","inference-transport","dkge_infer errors without transport when cluster sizes differ",1,0,FALSE,FALSE,0,0.0520000000000067,0.00200000000000955,0.0550000000000068,1
+"test-inference-transport.R","inference-transport","current static fold-loading transport is typed and refused for inference",6,0,FALSE,FALSE,0,0.0219999999999914,0.00200000000000955,0.0240000000000009,6
+"test-inference-transport.R","inference-transport","inferential transport never falls back to full-fit loadings",2,0,FALSE,FALSE,0,0.0169999999999959,0.0010000000000332,0.0180000000000007,2
+"test-inference.R","inference","aligned inference help states its exchangeability and calibration limits",5,0,FALSE,FALSE,0,0.0160000000000053,0.00200000000000955,0.0180000000000007,5
+"test-inference.R","inference","dkge_infer returns expected structure",18,0,FALSE,FALSE,0,0.125,0.0029999999999859,0.127999999999986,18
+"test-inference.R","inference","unsupported parametric max-T combinations fail closed",1,0,FALSE,FALSE,0,0.0109999999999957,0,0.0110000000000241,1
+"test-inference.R","inference","multi-contrast max-T uses one family and shared subject signs",7,0,FALSE,FALSE,0,0.0319999999999965,0.00200000000000955,0.0349999999999966,7
+"test-inference.R","inference","marginal sign flips and corrections use one unequal-width family",12,0,FALSE,FALSE,0,0.0609999999999928,0.0029999999999859,0.0649999999999977,12
+"test-inference.R","inference","dkge_infer errors when cluster counts differ without transport",1,0,FALSE,FALSE,0,0.0120000000000005,0.000999999999976353,0.0130000000000052,1
+"test-inference.R","inference","dkge_infer refuses current static mapper-based transport",1,0,FALSE,FALSE,0,0.007000000000005,0,0.007000000000005,1
+"test-inference.R","inference","parametric helper consumes transported rows with unequal cluster counts",3,0,FALSE,FALSE,0,0.0160000000000053,0.0010000000000332,0.0169999999999959,3
+"test-inference.R","inference","mean max-T rejects retired center modes at the public boundary",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00499999999999545,3
+"test-inference.R","inference","one-sided sign-flip max-T uses a signed (not absolute) null",3,0,FALSE,FALSE,0,0.039999999999992,0.000999999999976353,0.039999999999992,3
+"test-inference.R","inference","sign-flip max-T exposes uncorrected p-values bounded by the adjusted ones",3,0,FALSE,FALSE,0,0.0170000000000101,0.0010000000000332,0.025999999999982,3
+"test-inference.R","inference","sign-flip adjusted and unadjusted p-values match the sampled null",10,0,FALSE,FALSE,0,0.0189999999999912,0.0029999999999859,0.021000000000015,10
+"test-inference.R","inference","sign-flip schema is seeded and stable for minimum and degenerate inputs",7,0,FALSE,FALSE,0,0.0120000000000005,0.00200000000000955,0.0139999999999816,7
+"test-info-haufe.R","info-haufe","Haufe: synthetic end-to-end recovers encoding pattern",5,0,FALSE,FALSE,0,0.0890000000000128,0.0010000000000332,0.0900000000000034,5
+"test-info-loco.R","info-loco","LOCO proxy ranks planted anchor hotspots highest",2,0,FALSE,FALSE,0,0.00799999999999557,0,0.00900000000001455,2
+"test-info-standardize.R","info-standardize","Classifier standardization is fold-wise (training-only)",2,0,FALSE,FALSE,0,0.00499999999999545,0.000999999999976353,0.00600000000000023,2
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline completes full workflow with valid multi-subject data",6,0,FALSE,FALSE,0,0.0160000000000053,0.00200000000000955,0.0170000000000243,6
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline refuses ineligible transport inference and can stop after alignment",9,0,FALSE,FALSE,0,0.126999999999995,0.514999999999986,0.171999999999997,9
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline handles both pre-computed fit and fit-from-scratch modes",6,0,FALSE,FALSE,0,0.0300000000000011,0.0010000000000332,0.0310000000000059,6
+"test-integration-pipeline.R","integration-pipeline","LOSO method produces cross-fitted results with U_minus bases",12,0,FALSE,FALSE,0,0.0250000000000057,0.00399999999996226,0.0279999999999916,12
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline errors on missing required arguments",2,0,FALSE,FALSE,0,0.007000000000005,0,0.00800000000000978,2
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline handles mismatched subject counts gracefully",3,0,FALSE,FALSE,0,0.070999999999998,0.302000000000021,0.100999999999999,3
+"test-integration-pipeline.R","integration-pipeline","contrasts from pipeline are valid for as.data.frame()",4,0,FALSE,FALSE,0,0.01400000000001,0.000999999999976353,0.0149999999999864,4
+"test-integration-pipeline.R","integration-pipeline","inference results from pipeline are valid",6,0,FALSE,FALSE,0,0.027000000000001,0.00200000000000955,0.0289999999999964,6
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline with classification produces valid results",3,0,FALSE,FALSE,0,0.0219999999999914,0.000999999999976353,0.0219999999999914,3
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline with multiple contrasts produces correct structure",5,0,FALSE,FALSE,0,0.0180000000000007,0.00200000000000955,0.0200000000000102,5
+"test-integration-pipeline.R","integration-pipeline","dkge_pipeline diagnostics contain expected metadata",3,0,FALSE,FALSE,0,0.0120000000000005,0.0010000000000332,0.0129999999999768,3
+"test-jd-solver.R","jd-solver","dkge_jd_solve matches pooled eigenvectors when matrices commute",1,0,FALSE,FALSE,0,0.012999999999991,0.0010000000000332,0.0139999999999816,1
+"test-jd-solver.R","jd-solver","dkge_fit solver='jd' returns K-orthonormal components and reduces off-diagonal energy",7,0,FALSE,FALSE,0,0.0499999999999972,0.000999999999976353,0.0519999999999925,7
+"test-jd-solver.R","jd-solver","JD solver integrates with CPCA splits",7,0,FALSE,FALSE,0,0.0160000000000053,0.00200000000000955,0.0180000000000007,7
+"test-jd-solver.R","jd-solver","JD objective decreases with backtracking line search",4,0,FALSE,FALSE,0,0.01400000000001,0.0010000000000332,0.0149999999999864,4
+"test-jd-solver.R","jd-solver","JD gradient matches finite-difference directional derivative",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00300000000001432,1
+"test-jd-solver.R","jd-solver","JD fit rejects pooled cross-fitting but supports held-out prediction",9,0,FALSE,FALSE,0,0.0829999999999984,0.00200000000000955,0.0849999999999795,9
+"test-kernel-concentration-diagnostics.R","kernel-concentration-diagnostics","kernel diagnostics expose scale-invariant spectral concentration",7,0,FALSE,FALSE,0,0.0099999999999909,0.00200000000000955,0.0129999999999768,7
+"test-kernel-concentration-diagnostics.R","kernel-concentration-diagnostics","practical query collinearity has its own default tolerance",13,0,FALSE,FALSE,0,0.0300000000000011,0.0040000000000191,0.0409999999999968,13
+"test-kernel-concentration-diagnostics.R","kernel-concentration-diagnostics","CV surfaces a predictive winner with concentrated kernel spectrum",10,0,FALSE,FALSE,0,0.0690000000000026,0.0029999999999859,0.0720000000000027,10
+"test-kernel-concentration-diagnostics.R","kernel-concentration-diagnostics","component contrasts isolate coordinates while dual saliences do not",8,0,FALSE,FALSE,0,0.01400000000001,0.00200000000000955,0.0200000000000102,8
+"test-kernel-concentration-diagnostics.R","kernel-concentration-diagnostics","new concentration thresholds fail early and readably",2,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00799999999998136,2
+"test-kernel-cv.R","kernel-cv","kernel prescreen + LOSO CV select valid kernel/rank",5,0,FALSE,FALSE,0,0.0490000000000066,0.00200000000000955,0.0509999999999877,5
+"test-kernel-invariants.R","kernel-invariants","design_kernel produces symmetric matrices for all factor types",4,0,FALSE,FALSE,0,0.00600000000000023,0.00199999999995271,0.00800000000000978,4
+"test-kernel-invariants.R","kernel-invariants","design_kernel produces PSD matrices for all factor types",4,0,FALSE,FALSE,0,0.00499999999999545,0.0010000000000332,0.007000000000005,4
+"test-kernel-invariants.R","kernel-invariants","kernel_roots reconstruction satisfies Khalf %*% Khalf = K",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.007000000000005,3
+"test-kernel-invariants.R","kernel-invariants","kernel_roots inverse satisfies Kihalf %*% K %*% Kihalf = I",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.0029999999999859,1
+"test-kernel-invariants.R","kernel-invariants","kernel_roots output matrices are symmetric",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00499999999999545,2
+"test-kernel-invariants.R","kernel-invariants","multi-factor kernels maintain symmetry and PSD",3,0,FALSE,FALSE,0,0.00400000000000489,0.0010000000000332,0.00600000000000023,3
+"test-kernel-invariants.R","kernel-invariants","kernel_roots is stable across random PSD matrices",6,0,FALSE,FALSE,0,0.00799999999999557,0.00200000000000955,0.0099999999999909,6
+"test-kernel-invariants.R","kernel-invariants","circular kernel distances are symmetric around the period",2,0,FALSE,FALSE,0,0.00300000000000011,0.0010000000000332,0.00300000000001432,2
+"test-kernel-invariants.R","kernel-invariants","effect-basis kernel is symmetric and PSD",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00499999999999545,2
+"test-kernel-invariants.R","kernel-invariants","three-factor kernels maintain symmetry and PSD",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00499999999999545,3
+"test-kernel-support-contract.R","kernel-support-contract","PSD roots preserve the exact support at every positive scale",19,0,FALSE,FALSE,0,0.0240000000000009,0.00600000000002865,0.0330000000000155,19
+"test-kernel-support-contract.R","kernel-support-contract","fit rank is capped by image(K) and remains exactly K-orthonormal",9,0,FALSE,FALSE,0,0.0210000000000008,0.00300000000004275,0.0240000000000009,9
+"test-kernel-support-contract.R","kernel-support-contract","fixed-geometry CV cannot reward a kernel for deleting target energy",6,0,FALSE,FALSE,0,0.0339999999999918,0.0029999999999859,0.0370000000000061,6
+"test-kernel-support-contract.R","kernel-support-contract","CV exposes and excludes impossible kernel-rank pairs",15,0,FALSE,FALSE,0,0.111999999999995,0.00399999999996226,0.11699999999999,15
+"test-kernel-support-contract.R","kernel-support-contract","contrast diagnostics fail on null targets and reveal query collisions",12,0,FALSE,FALSE,0,0.027000000000001,0.00300000000004275,0.0300000000000011,12
+"test-kernel-support-contract.R","kernel-support-contract","a zero-rank kernel fails before fitting",1,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00499999999999545,1
+"test-latent-info.R","latent-info","latent projections have expected shapes",5,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999976353,0.0100000000000193,5
+"test-latent-info.R","latent-info","cross-fitted latent classifier produces per-subject betas",5,0,FALSE,FALSE,0,0.0189999999999912,0.000999999999976353,0.0199999999999818,5
+"test-latent-info.R","latent-info","decoder map matches manual aggregation",7,0,FALSE,FALSE,0,0.0350000000000108,0.0029999999999859,0.039999999999992,7
+"test-latent-info.R","latent-info","Haufe map collapses to decoder when covariance is identity",3,0,FALSE,FALSE,0,0.0479999999999876,0.000999999999976353,0.0490000000000066,3
+"test-latent-info.R","latent-info","LOCO proxy returns non-negative scores of correct length",3,0,FALSE,FALSE,0,0.0150000000000006,0.000999999999976353,0.0180000000000007,3
+"test-latent-info.R","latent-info","decoder accepts a single shared beta vector",2,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.00800000000000978,2
+"test-latent-info.R","latent-info","ridge logit fallback toggles classifier label",1,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.007000000000005,1
+"test-mapper.R","mapper","sinkhorn mapper produces balanced transport plan",3,0,FALSE,FALSE,0,0.132000000000005,0.94399999999996,0.262,3
+"test-mapper.R","mapper","ridge mapper matches closed-form solution",2,0,FALSE,FALSE,0,0.00199999999999534,0,0.00300000000001432,2
+"test-mapper.R","mapper","ridge mapper applies regularisation",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00199999999998113,1
+"test-mapper.R","mapper","ridge mapper matches n-by-n solve with regularisation",1,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00300000000001432,1
+"test-mapper.R","mapper","sinkhorn mapper solves near-identity transport when supports align",3,0,FALSE,FALSE,0,0.00800000000000978,0.0040000000000191,0.0099999999999909,3
+"test-mapper.R","mapper","sinkhorn mapper honours reliability weights",2,0,FALSE,FALSE,0,0.0759999999999934,0.325999999999965,0.119,2
+"test-mapper.R","mapper","sinkhorn mapper applies conditional fields without double reliability",4,0,FALSE,FALSE,0,0.007000000000005,0.00200000000000955,0.00799999999998136,4
+"test-mapper.R","mapper","sinkhorn mapper leverages features when geometry is ambiguous",4,0,FALSE,FALSE,0,0.00300000000000011,0.00200000000000955,0.00399999999999068,4
+"test-mapper.R","mapper","knn mapper accumulates contributions when clusters share an anchor",2,0,FALSE,FALSE,0,0.00199999999999534,0.0010000000000332,0.0040000000000191,2
+"test-mapper.R","mapper","knn mapper reliability weighting handles shared anchors",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.0029999999999859,1
+"test-multi-seed-robustness.R","multi-seed-robustness","dkge_fit is deterministic given same input data and seed",4,0,FALSE,FALSE,0,0.0229999999999961,0.00200000000000955,0.0250000000000057,4
+"test-multi-seed-robustness.R","multi-seed-robustness","eigenvalues are identical across seeds",4,0,FALSE,FALSE,0,0.0159999999999911,0.00200000000000955,0.0190000000000055,4
+"test-multi-seed-robustness.R","multi-seed-robustness","Chat matrix is identical across seeds",4,0,FALSE,FALSE,0,0.0150000000000006,0.00200000000000955,0.0169999999999959,4
+"test-multi-seed-robustness.R","multi-seed-robustness","subject weights are identical across seeds",4,0,FALSE,FALSE,0,0.0179999999999865,0.00200000000000955,0.0199999999999818,4
+"test-multi-seed-robustness.R","multi-seed-robustness","recovery quality is stable across data generation seeds",2,0,FALSE,FALSE,0,0.0190000000000055,0.000999999999976353,0.021000000000015,2
+"test-multi-seed-robustness.R","multi-seed-robustness","multi-rank recovery stable across seeds",2,0,FALSE,FALSE,0,0.0180000000000007,0.000999999999976353,0.018999999999977,2
+"test-multi-seed-robustness.R","multi-seed-robustness","different w_methods produce stable results across seeds",6,0,FALSE,FALSE,0,0.0350000000000108,0.0010000000000332,0.0360000000000014,6
+"test-multi-seed-robustness.R","multi-seed-robustness","minimum subjects error is seed-independent",3,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00800000000000978,3
+"test-multi-seed-robustness.R","multi-seed-robustness","ill-conditioned warning consistent across seeds",3,0,FALSE,FALSE,0,0.0150000000000006,0.0010000000000332,0.0159999999999911,3
+"test-multi-seed-robustness.R","multi-seed-robustness","NaN exclusion consistent across seeds",9,0,FALSE,FALSE,0,0.0229999999999961,0.00199999999995271,0.0250000000000057,9
+"test-multi-seed-robustness.R","multi-seed-robustness","sparse subject warning consistent across seeds",3,0,FALSE,FALSE,0,0.00900000000000034,0.0010000000000332,0.0099999999999909,3
+"test-multi-seed-robustness.R","multi-seed-robustness","K-orthonormality holds across seeds",5,0,FALSE,FALSE,0,0.0240000000000009,0.00200000000000955,0.025999999999982,5
+"test-multi-seed-robustness.R","multi-seed-robustness","kernel root reconstruction holds across seeds",5,0,FALSE,FALSE,0,0.0159999999999911,0.00200000000000955,0.0180000000000007,5
+"test-multi-seed-robustness.R","multi-seed-robustness","Chat symmetry holds across seeds",5,0,FALSE,FALSE,0,0.0210000000000008,0.0029999999999859,0.0229999999999961,5
+"test-neuroim2.R","neuroim2","cluster aggregation works with neuroim2 objects",2,0,FALSE,FALSE,0,0.0170000000000101,0.0010000000000332,0.0200000000000102,2
+"test-neuroim2.R","neuroim2","dkge_write_group_map uses named group values",3,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00800000000000978,3
+"test-numerical-robustness.R","numerical-robustness","rank-deficient design matrix produces warning",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.0029999999999859,1
+"test-numerical-robustness.R","numerical-robustness","rank-deficient beta matrix produces warning",1,0,FALSE,FALSE,0,0.00300000000000011,0.0010000000000332,0.00200000000000955,1
+"test-numerical-robustness.R","numerical-robustness","dkge_fit completes with rank-deficient input after warning",3,0,FALSE,FALSE,0,0.00600000000000023,0,0.00600000000000023,3
+"test-numerical-robustness.R","numerical-robustness","effective_rank stored in fit object when reduced",2,0,FALSE,FALSE,0,0.00399999999999068,0.000999999999976353,0.00499999999999545,2
+"test-numerical-robustness.R","numerical-robustness","rank below minimum viable threshold produces appropriate response",2,0,FALSE,FALSE,0,0.00400000000000489,0.0010000000000332,0.00399999999999068,2
+"test-numerical-robustness.R","numerical-robustness","ill-conditioned pooled Gram produces warning",1,0,FALSE,FALSE,0,0.00499999999999545,0,0.00399999999999068,1
+"test-numerical-robustness.R","numerical-robustness","fit succeeds despite ill-conditioning warning",2,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00399999999999068,2
+"test-numerical-robustness.R","numerical-robustness","well-conditioned matrices produce no ill-conditioning warning",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000001432,1
+"test-numerical-robustness.R","numerical-robustness","beta with NA values triggers exclusion warning",4,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.00699999999997658,4
+"test-numerical-robustness.R","numerical-robustness","beta with Inf values triggers exclusion warning",3,0,FALSE,FALSE,0,0.00500000000000966,0.000999999999976353,0.007000000000005,3
+"test-numerical-robustness.R","numerical-robustness","exclusion metadata correctly identifies affected voxels",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00399999999999068,2
+"test-numerical-robustness.R","numerical-robustness","all-NaN subject triggers exclusion warning with correct count",3,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.007000000000005,3
+"test-numerical-robustness.R","numerical-robustness","sparse subject (>50% missing) produces warning",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,1
+"test-numerical-robustness.R","numerical-robustness","fit succeeds with partial overlap",2,0,FALSE,FALSE,0,0.00500000000000966,0,0.00499999999999545,2
+"test-numerical-robustness.R","numerical-robustness","disjoint effects work with zero cross-pairs",4,0,FALSE,FALSE,0,0.00500000000000966,0.000999999999976353,0.00600000000000023,4
+"test-numerical-robustness.R","numerical-robustness","single subject errors with informative message",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.0029999999999859,1
+"test-numerical-robustness.R","numerical-robustness","two subjects is minimum viable",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.0040000000000191,2
+"test-numerical-robustness.R","numerical-robustness","check_rank helper returns correct metadata",4,0,FALSE,FALSE,0,0.00499999999999545,0.0010000000000332,0.00699999999997658,4
+"test-numerical-robustness.R","numerical-robustness","check_condition returns condition number",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.0040000000000191,2
+"test-numerical-robustness.R","numerical-robustness","dkge_fit rejects non-finite betas with an informative error",1,0,FALSE,FALSE,0,0.00400000000000489,0.0010000000000332,0.0040000000000191,1
+"test-numerical-robustness.R","numerical-robustness","small-magnitude betas do not spuriously collapse the effective rank",2,0,FALSE,FALSE,0,0.00500000000000966,0.000999999999976353,0.00600000000000023,2
+"test-numerical-robustness.R","numerical-robustness","dkge_fit does not perturb the caller's RNG stream (deterministic weights)",1,0,FALSE,FALSE,0,0.00400000000000489,0,0.0040000000000191,1
+"test-pipeline.R","pipeline","dkge_pipeline returns fit, diagnostics, and contrasts",3,0,FALSE,FALSE,0,0.01400000000001,0.000999999999976353,0.01400000000001,3
+"test-pipeline.R","pipeline","dkge_pipeline builds mapper transport but refuses its static inference",5,0,FALSE,FALSE,0,0.0190000000000055,0.000999999999976353,0.0199999999999818,5
+"test-pipeline.R","pipeline","dkge_pipeline accepts service objects",8,0,FALSE,FALSE,0,0.536000000000001,3.46700000000004,1.00299999999999,8
+"test-pipeline.R","pipeline","pipeline inference fails closed and uses one joint max-T family",6,0,FALSE,FALSE,0,0.0350000000000108,0.000999999999976353,0.0360000000000014,6
+"test-plot-helpers.R","plot-helpers","plot helpers return ggplot objects",15,0,FALSE,FALSE,0,0.393000000000001,0.0040000000000191,0.39700000000002,15
+"test-plot-helpers.R","plot-helpers","component saliences are exactly K %*% U and unit scaling is K-unit",5,0,FALSE,FALSE,0,0.0100000000000051,0.000999999999976353,0.0120000000000005,5
+"test-plot-helpers.R","plot-helpers","component indexer rejects out-of-range components",4,0,FALSE,FALSE,0,0.0130000000000052,0.000999999999976353,0.01400000000001,4
+"test-plot-helpers.R","plot-helpers","dkge_design_basis columns have unit K-norm by default",6,0,FALSE,FALSE,0,0.0119999999999862,0.00200000000000955,0.0139999999999816,6
+"test-plot-helpers.R","plot-helpers","design basis follows the declared level order stored in the cells",7,0,FALSE,FALSE,0,0.0180000000000007,0.00200000000000955,0.021000000000015,7
+"test-plot-helpers.R","plot-helpers","the identity fallback basis honours `normalize`",5,0,FALSE,FALSE,0,0.0099999999999909,0.00200000000000955,0.0120000000000005,5
+"test-plot-helpers.R","plot-helpers","design basis term labels survive factor names that share a prefix",4,0,FALSE,FALSE,0,0.0150000000000006,0.000999999999976353,0.0160000000000196,4
+"test-plot-helpers.R","plot-helpers","subject projections are signed and match a hand-computed reference",13,0,FALSE,FALSE,0,0.0169999999999959,0.0029999999999859,0.0199999999999818,13
+"test-plot-helpers.R","plot-helpers","LOSO subject projections use the held-out basis and stay signed",32,0,FALSE,FALSE,0,0.0529999999999973,0.00799999999998136,0.0620000000000118,32
+"test-plot-helpers.R","plot-helpers","subject projection groups are matched by name, not position",6,0,FALSE,FALSE,0,0.0150000000000006,0.00200000000000955,0.0160000000000196,6
+"test-plot-helpers.R","plot-helpers","subject-projection voxel weights follow the fit-time policy",4,0,FALSE,FALSE,0,0.00900000000000034,0.0010000000000332,0.00899999999998613,4
+"test-plot-helpers.R","plot-helpers","subject projections are invariant to the voxel-weight scale",7,0,FALSE,FALSE,0,0.0130000000000052,0.00199999999995271,0.0149999999999864,7
+"test-plot-helpers.R","plot-helpers","plotting subject projections accepts a precomputed data frame",5,0,FALSE,FALSE,0,0.0649999999999977,0.00200000000000955,0.0660000000000025,5
+"test-plot-helpers.R","plot-helpers","supplied projections are labelled by their own mode column",9,0,FALSE,FALSE,0,0.138999999999996,0.0010000000000332,0.140999999999991,9
+"test-plot-helpers.R","plot-helpers","contrast basis defaults to factorial coordinates for cell kernels",6,0,FALSE,FALSE,0,0.0120000000000005,0.000999999999976353,0.0130000000000052,6
+"test-plot-helpers.R","plot-helpers","design basis rematches permuted cell metadata by name",4,0,FALSE,FALSE,0,0.01400000000001,0.000999999999976353,0.0159999999999911,4
+"test-plot-helpers.R","plot-helpers","equal-dimension effect metadata is not consumed as a cell design",2,0,FALSE,FALSE,0,0.0110000000000099,0.0010000000000332,0.0120000000000005,2
+"test-plot-helpers.R","plot-helpers","component contrast scores use the name-matched task column",2,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00799999999998136,2
+"test-plot-helpers.R","plot-helpers","design basis quotes non-syntactic factor names and drops 1-level factors",7,0,FALSE,FALSE,0,0.0120000000000005,0.00200000000000955,0.0130000000000052,7
+"test-plot-helpers.R","plot-helpers","unmatched cell_labels fail closed for a declared cell basis",1,0,FALSE,FALSE,0,0.00499999999999545,0,0.00499999999999545,1
+"test-plot-helpers.R","plot-helpers","user term/source attributes survive design-basis validation",3,0,FALSE,FALSE,0,0.00699999999999079,0,0.00799999999998136,3
+"test-plot-helpers.R","plot-helpers","projection and energy both respond to voxel weights",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.00600000000000023,2
+"test-plot-helpers.R","plot-helpers","subject-contrib panels share subject order and block separators follow min(idx)",3,0,FALSE,FALSE,0,0.153999999999996,0.0029999999999859,0.158999999999992,3
+"test-plot-suite.R","plot-suite","plot suite falls back gracefully when patchwork missing",2,0,FALSE,FALSE,1,0.0159999999999911,0.0010000000000332,0.0159999999999911,1
+"test-predict-s3.R","predict-s3","predict.dkge matches dkge_predict",4,0,FALSE,FALSE,0,0.0269999999999868,0.00200000000000955,0.0290000000000248,4
+"test-predict-s3.R","predict-s3","predict.dkge_model dispatches to dkge_predict",2,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.00600000000000023,2
+"test-predict-stream.R","predict-stream","dkge_predict_stream maps loader outputs to contrast values",10,0,FALSE,FALSE,0,0.0120000000000005,0.0029999999999859,0.0149999999999864,10
+"test-print-methods.R","print-methods","print.dkge exposes subject-weight provenance and dispersion",6,0,FALSE,FALSE,0,0.0210000000000008,0.0010000000000332,0.0219999999999914,6
+"test-print-methods.R","print-methods","print.dkge_classification returns invisibly",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.007000000000005,3
+"test-print-methods.R","print-methods","print.dkge_classification_spec returns invisibly",3,0,FALSE,FALSE,0,0.00300000000000011,0.0010000000000332,0.00399999999999068,3
+"test-print-methods.R","print-methods","print.dkge_contrast_validated returns invisibly",3,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00399999999999068,3
+"test-print-methods.R","print-methods","print.dkge_contrasts returns invisibly",3,0,FALSE,FALSE,0,0.0170000000000101,0.000999999999976353,0.0180000000000007,3
+"test-print-methods.R","print-methods","print.dkge_folds returns invisibly",3,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.007000000000005,3
+"test-print-methods.R","print-methods","print.dkge_inference returns invisibly",3,0,FALSE,FALSE,0,0.0169999999999959,0.000999999999976353,0.0180000000000007,3
+"test-print-methods.R","print-methods","print.dkge_inference_spec returns invisibly",3,0,FALSE,FALSE,0,0.00300000000000011,0.0010000000000332,0.00300000000001432,3
+"test-print-methods.R","print-methods","print.dkge_regress returns invisibly",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00399999999999068,3
+"test-print-methods.R","print-methods","print.dkge_transport_spec returns invisibly",3,0,FALSE,FALSE,0,0.00300000000000011,0,0.0029999999999859,3
+"test-print-methods.R","print-methods","print.dkge_weights returns invisibly",3,0,FALSE,FALSE,0,0.01400000000001,0.000999999999976353,0.0150000000000148,3
+"test-print-methods.R","print-methods","print.dkge_contrasts includes method and counts",3,0,FALSE,FALSE,0,0.0160000000000053,0,0.0160000000000196,3
+"test-print-methods.R","print-methods","print.dkge_inference includes method and correction",3,0,FALSE,FALSE,0,0.0220000000000056,0,0.0219999999999914,3
+"test-print-methods.R","print-methods","print.dkge_folds includes type and fold count",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00499999999999545,2
+"test-print-methods.R","print-methods","print.dkge_weights includes key fields",3,0,FALSE,FALSE,0,0.00199999999999534,0.000999999999976353,0.00199999999998113,3
+"test-procrustes.R","procrustes","dkge_k_orthonormalize produces K-orthonormal basis",1,0,FALSE,FALSE,0,0.00200000000000955,0,0.00199999999998113,1
+"test-procrustes.R","procrustes","dkge_procrustes_K aligns basis to reference",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000001432,2
+"test-procrustes.R","procrustes","dkge_align_bases_K returns aligned set and scores",3,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.0040000000000191,3
+"test-procrustes.R","procrustes","dkge_procrustes_K recovers the rotation and maximises overlap for large angles",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00399999999999068,3
+"test-procrustes.R","procrustes","dkge_procrustes_K without reflection returns a proper rotation",5,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.00799999999998136,5
+"test-procrustes.R","procrustes","K-orthonormalization rejects indefinite and metric-rank-deficient inputs",3,0,FALSE,FALSE,0,0.007000000000005,0,0.007000000000005,3
+"test-procrustes.R","procrustes","Procrustes fails closed for bases outside its K-orthonormal contract",2,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.00600000000000023,2
+"test-procrustes.R","procrustes","consensus is K-orthonormal and invariant to basis-list order",4,0,FALSE,FALSE,0,0.00699999999999079,0.000999999999976353,0.00799999999998136,4
+"test-procrustes.R","procrustes","alignment and consensus validate references, weights, and controls",5,0,FALSE,FALSE,0,0.0120000000000005,0.0010000000000332,0.0120000000000005,5
+"test-project.R","project","subject weights shrink correctly",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,2
+"test-project.R","project","Omega vector accumulation matches sqrt weighting",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000001432,2
+"test-project.R","project","preprocess recreates training blocks",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00300000000001432,1
+"test-project.R","project","project blocks reproduces training scores",1,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999976353,0.00799999999998136,1
+"test-project.R","project","cluster projection matches training loadings",12,0,FALSE,FALSE,0,0.0220000000000056,0.0029999999999859,0.0250000000000057,12
+"test-project.R","project","predict loadings reproduce training loadings",1,0,FALSE,FALSE,0,0.00200000000000955,0.0010000000000332,0.0029999999999859,1
+"test-project.R","project","predict respects effect reordering",1,0,FALSE,FALSE,0,0.00200000000000955,0.000999999999976353,0.00300000000001432,1
+"test-project.R","project","dkge_predict preserves subject identifiers",2,0,FALSE,FALSE,0,0.00399999999999068,0,0.0029999999999859,2
+"test-project.R","project","dkge_predict zero-fills missing effects and reports coverage",4,0,FALSE,FALSE,0,0.00500000000000966,0.000999999999976353,0.00600000000000023,4
+"test-project.R","project","latent loadings self-transport the reference",1,0,FALSE,FALSE,0,0.119,0.781999999999982,0.215000000000003,1
+"test-project.R","project","legacy contrast transport applies the fitted self-map",1,0,FALSE,FALSE,0,0.0949999999999989,0.621000000000038,0.172999999999973,1
+"test-project.R","project","transform of a training subject applies the voxel prior",3,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00800000000000978,3
+"test-project.R","project","preprocess_blocks keeps new-data column names",2,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.007000000000005,2
+"test-random-effects-reliability.R","random-effects-reliability","random effects cap a high-count heterogeneous subject",9,0,FALSE,FALSE,0,0.01400000000001,0.000999999999976353,0.0149999999999864,9
+"test-random-effects-reliability.R","random-effects-reliability","noise-based random effects downweight heteroscedastic subjects",4,0,FALSE,FALSE,0,0.046999999999997,0.0010000000000332,0.0480000000000018,4
+"test-random-effects-reliability.R","random-effects-reliability","random effects handle locally sparse and disjoint effect blocks",8,0,FALSE,FALSE,0,0.0099999999999909,0.00200000000000955,0.0130000000000052,8
+"test-random-effects-reliability.R","random-effects-reliability","random-effects geometry beats count ownership in simulation",2,0,FALSE,FALSE,0,0.183999999999997,0.00200000000000955,0.186999999999983,2
+"test-random-effects-reliability.R","random-effects-reliability","random-effects validation and automatic source fail closed",3,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999976353,0.00900000000001455,3
+"test-random-effects-reliability.R","random-effects-reliability","random-effects masks keep the main length check",1,0,FALSE,FALSE,0,0.00399999999999068,0,0.0040000000000191,1
+"test-reference-selection.R","reference-selection","explicit references are fixed inputs, not medoids",6,0,FALSE,FALSE,0,0.00800000000000978,0.000999999999976353,0.0099999999999909,6
+"test-reference-selection.R","reference-selection","geometry-only medoids are order invariant with deterministic ties",6,0,FALSE,FALSE,0,0.0169999999999959,0.0269999999999868,0.0220000000000198,6
+"test-reference-selection.R","reference-selection","reference receipts cannot be reused under different mapper scaling",1,0,FALSE,FALSE,0,0.0279999999999916,0.0260000000000105,0.0319999999999823,1
+"test-reference-selection.R","reference-selection","functional selection fits and scores on distinct independent channels",11,0,FALSE,FALSE,0,0.0960000000000036,0.363,0.141999999999996,11
+"test-reference-selection.R","reference-selection","known functional correspondence can overturn misleading geometry",8,0,FALSE,FALSE,0,0.143000000000001,0.915999999999997,0.257000000000005,8
+"test-reference-selection.R","reference-selection","training-feature selection is labelled descriptive and ineligible",4,0,FALSE,FALSE,0,0.0539999999999878,0.229999999999961,0.0939999999999941,4
+"test-reference-selection.R","reference-selection","reference selection is structurally bound to fitted transport",6,0,FALSE,FALSE,0,0.102000000000004,0.515000000000043,0.164999999999992,6
+"test-reference-selection.R","reference-selection","diffuse plans expose their point spread instead of masquerading as identity",4,0,FALSE,FALSE,0,0.0120000000000005,0.0139999999999532,0.0150000000000148,4
+"test-reference-selection.R","reference-selection","reference scoring fails closed on any non-converged Sinkhorn pair",1,0,FALSE,FALSE,0,0.0110000000000099,0.00200000000000955,0.0109999999999957,1
+"test-regress.R","regress","dkge_regress with lm engine reconstructs linear map",5,0,FALSE,FALSE,0,0.0109999999999957,0.0010000000000332,0.0130000000000052,5
+"test-regress.R","regress","dkge_regress works with glmnet engine",2,0,FALSE,FALSE,0,0.152000000000001,0.0010000000000332,0.153999999999996,2
+"test-reliability-weights.R","reliability-weights","reliability weights rank high-correlation voxels above noise voxels",4,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00499999999999545,4
+"test-reliability-weights.R","reliability-weights","reliability weight is near 1 for perfectly correlated voxels",1,0,FALSE,FALSE,0,0.00200000000000955,0,0.00300000000001432,1
+"test-reliability-weights.R","reliability-weights","reliability weight falls back to uniform when B_list2 is NULL",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00199999999998113,1
+"test-reliability-weights.R","reliability-weights","reliability weights handle zero-variance voxels gracefully",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00499999999999545,3
+"test-reliability-weights.R","reliability-weights","dkge_weights stores B_list2 and reports it in print",3,0,FALSE,FALSE,0,0.00300000000000011,0.0010000000000332,0.0040000000000191,3
+"test-reliability-weights.R","reliability-weights","dkge_weights warns when reliability requested without B_list2",1,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00300000000001432,1
+"test-reliability-weights.R","reliability-weights","reliability weights integrate into full fit pipeline",2,0,FALSE,FALSE,0,0.00699999999999079,0,0.00799999999998136,2
+"test-render.R","render","kNN mapper preserves constant fields on covered anchors",1,0,FALSE,FALSE,0,0.00199999999999534,0.0010000000000332,0.0029999999999859,1
+"test-render.R","render","kNN mapper reduces to identity when anchors equal centroids",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00200000000000955,1
+"test-render.R","render","anchor smoothing reduces Laplacian energy",1,0,FALSE,FALSE,0,0.00900000000000034,0,0.00899999999998613,1
+"test-render.R","render","renderer builds anchors from voxels when not supplied",3,0,FALSE,FALSE,0,0.00400000000000489,0.0010000000000332,0.00499999999999545,3
+"test-render.R","render","barycentric aggregation recovers smooth analytic field",1,0,FALSE,FALSE,0,0.0099999999999909,0.000999999999976353,0.0099999999999909,1
+"test-render.R","render","reliability weights dampen uncertain contributions",2,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00300000000001432,2
+"test-render.R","render","anchor-to-voxel decoder preserves aligned values",1,0,FALSE,FALSE,0,0.00900000000000034,0.0010000000000332,0.0100000000000193,1
+"test-render.R","render","anchor-to-voxel fit guards tiny sigma estimates",3,0,FALSE,FALSE,0,0.00399999999999068,0.000999999999976353,0.00499999999999545,3
+"test-render.R","render","sinkhorn renderer uses latent features and reports diagnostics",10,0,FALSE,FALSE,0,0.0139999999999958,0.00200000000000955,0.0169999999999959,10
+"test-render.R","render","legacy Sinkhorn mapper and renderer fail closed on nonconvergence",2,0,FALSE,FALSE,0,0.00799999999999557,0.00199999999995271,0.00799999999998136,2
+"test-s3-contracts.R","s3-contracts","predict.dkge returns matrix with expected structure",3,0,FALSE,FALSE,0,0.00699999999999079,0.000999999999976353,0.007000000000005,3
+"test-s3-contracts.R","s3-contracts","predict.dkge returns matrix per subject with contrasts as columns",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00600000000000023,2
+"test-s3-contracts.R","s3-contracts","predict.dkge_model dispatches correctly",3,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999976353,0.0099999999999909,3
+"test-s3-contracts.R","s3-contracts","predict.dkge handles return_loadings flag",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.007000000000005,2
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_contrasts returns data.frame class",1,0,FALSE,FALSE,0,0.0169999999999959,0,0.0169999999999959,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_contrasts has expected columns",1,0,FALSE,FALSE,0,0.0169999999999959,0.0010000000000332,0.0169999999999959,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_contrasts row count matches structure",1,0,FALSE,FALSE,0,0.0169999999999959,0,0.0180000000000007,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_inference returns data.frame class",1,0,FALSE,FALSE,0,0.0289999999999964,0,0.0299999999999727,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_inference has expected columns",1,0,FALSE,FALSE,0,0.0159999999999911,0.0010000000000332,0.0169999999999959,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_inference has no NA statistics",1,0,FALSE,FALSE,0,0.0220000000000056,0.000999999999976353,0.0229999999999961,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_classification returns data.frame class",1,0,FALSE,FALSE,0,0.00200000000000955,0,0.00200000000000955,1
+"test-s3-contracts.R","s3-contracts","as.data.frame.dkge_classification summary has expected columns",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00199999999998113,1
+"test-s3-contracts.R","s3-contracts","print methods are registered in S3 method table",11,0,FALSE,FALSE,0,0.0189999999999912,0.0029999999999859,0.0220000000000198,11
+"test-s3-contracts.R","s3-contracts","predict methods are registered in S3 method table",2,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999976353,0.00900000000001455,2
+"test-s3-contracts.R","s3-contracts","as.data.frame methods are registered in S3 method table",3,0,FALSE,FALSE,0,0.00900000000000034,0.000999999999976353,0.0109999999999957,3
+"test-s3-contracts.R","s3-contracts","generic dispatch for print works correctly",3,0,FALSE,FALSE,0,0.0180000000000007,0.000999999999976353,0.0190000000000055,3
+"test-s3-contracts.R","s3-contracts","generic dispatch for predict works correctly",5,0,FALSE,FALSE,0,0.00900000000000034,0.0010000000000332,0.0100000000000193,5
+"test-s3-contracts.R","s3-contracts","generic dispatch for as.data.frame works correctly",4,0,FALSE,FALSE,0,0.0289999999999964,0,0.0290000000000248,4
+"test-s3-contracts.R","s3-contracts","class-specific dispatch works for dkge_model",3,0,FALSE,FALSE,0,0.007000000000005,0.0010000000000332,0.00800000000000978,3
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Sinkhorn plan is doubly-stochastic with uniform weights",3,0,FALSE,FALSE,0,0.0139999999999958,0.0660000000000309,0.0220000000000198,3
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Sinkhorn plan is doubly-stochastic with non-uniform weights",3,0,FALSE,FALSE,0,0.0150000000000006,0.075999999999965,0.0249999999999773,3
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Sinkhorn plan is doubly-stochastic with square cost matrix",4,0,FALSE,FALSE,0,0.0109999999999957,0.0300000000000296,0.0160000000000196,4
+"test-sinkhorn-convergence.R","sinkhorn-convergence","reference subject receives entropic self-transport (index 1)",6,0,FALSE,FALSE,0,0.0120000000000005,0.01400000000001,0.0149999999999864,6
+"test-sinkhorn-convergence.R","sinkhorn-convergence","reference subject receives entropic self-transport (middle)",6,0,FALSE,FALSE,0,0.400999999999996,2.73199999999997,0.734000000000009,6
+"test-sinkhorn-convergence.R","sinkhorn-convergence","reference subject receives entropic self-transport (last)",6,0,FALSE,FALSE,0,0.180000000000007,1.24600000000004,0.335000000000008,6
+"test-sinkhorn-convergence.R","sinkhorn-convergence","public Sinkhorn transport fails closed on a non-converged plan",1,0,FALSE,FALSE,0,0.00499999999999545,0.0010000000000332,0.00399999999999068,1
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Identical embeddings produce near-diagonal transport with small epsilon",1,0,FALSE,FALSE,0,0.00400000000000489,0.00199999999995271,0.00399999999999068,1
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Similar embeddings produce transport with high sparsity",1,0,FALSE,FALSE,0,0.00300000000000011,0.00499999999999545,0.00499999999999545,1
+"test-sinkhorn-convergence.R","sinkhorn-convergence","reference Sinkhorn and deprecated cpp alias produce identical results",4,0,FALSE,FALSE,0,0.0339999999999918,0.110000000000014,0.0480000000000018,4
+"test-sinkhorn-convergence.R","sinkhorn-convergence","R and C++ produce identical results with non-uniform weights",3,0,FALSE,FALSE,0,0.0360000000000014,0.127999999999986,0.054000000000002,3
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Very small epsilon converges (near-deterministic)",4,0,FALSE,FALSE,0,0.00400000000000489,0.0029999999999859,0.00499999999999545,4
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Non-convergence with very small max_iter returns best-effort result",5,0,FALSE,FALSE,0,0.00699999999999079,0.00200000000000955,0.00799999999998136,5
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Mismatched mass totals produces error",1,0,FALSE,FALSE,0,0.00300000000000011,0.000999999999976353,0.00300000000001432,1
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Zero or negative weights produce error",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00499999999999545,2
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Non-convergence returns valid best-effort result without error",5,0,FALSE,FALSE,0,0.00600000000000023,0.00300000000004275,0.00799999999998136,5
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Tighter tolerance achieves closer marginal match",4,0,FALSE,FALSE,0,0.0559999999999974,0.379999999999995,0.103000000000009,4
+"test-sinkhorn-convergence.R","sinkhorn-convergence","a small iteration budget is explicitly diagnosed",3,0,FALSE,FALSE,0,0.00799999999999557,0.021000000000015,0.0099999999999909,3
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Tolerance affects marginal accuracy as expected",2,0,FALSE,FALSE,0,0.0789999999999935,0.546999999999969,0.146999999999991,2
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Cache stores and retrieves dual variables",3,0,FALSE,FALSE,0,0.00300000000000011,0.0029999999999859,0.00499999999999545,3
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Different inputs create separate cache entries",1,0,FALSE,FALSE,0,0.00300000000000011,0.0040000000000191,0.00300000000001432,1
+"test-sinkhorn-convergence.R","sinkhorn-convergence","Cache isolation between tests via dkge_clear_sinkhorn_cache",2,0,FALSE,FALSE,0,0.00900000000000034,0.0380000000000109,0.01400000000001,2
+"test-spatial-regularization.R","spatial-regularization","coordinate construction dogfoods the adjoin Laplacian",6,0,FALSE,FALSE,0,0.0170000000000101,0.00199999999995271,0.018999999999977,6
+"test-spatial-regularization.R","spatial-regularization","mutable spatial specifications are revalidated at fit and CV boundaries",23,0,FALSE,FALSE,0,0.201000000000008,0.00200000000000955,0.204000000000008,23
+"test-spatial-regularization.R","spatial-regularization","spatial constructor and domain contracts fail closed",10,0,FALSE,FALSE,0,0.0769999999999982,0.00200000000000955,0.078000000000003,10
+"test-spatial-regularization.R","spatial-regularization","regularized moment and maps match a dense resolvent oracle",13,0,FALSE,FALSE,0,0.156000000000006,0.0040000000000191,0.161000000000001,13
+"test-spatial-regularization.R","spatial-regularization","lambda zero is an exact identity fit",5,0,FALSE,FALSE,0,0.0669999999999931,0.000999999999976353,0.068000000000012,5
+"test-spatial-regularization.R","spatial-regularization","spatial regularization changes the learned solution and reduces roughness",5,0,FALSE,FALSE,0,0.0609999999999928,0.0010000000000332,0.0629999999999882,5
+"test-spatial-regularization.R","spatial-regularization","LOSO maps use the same fitted spatial operator",1,0,FALSE,FALSE,0,0.295999999999992,0.000999999999976353,0.298000000000002,1
+"test-spatial-regularization.R","spatial-regularization","prediction reuses shared domains and requires new subject-specific domains",7,0,FALSE,FALSE,0,0.266000000000005,0.0040000000000191,0.269999999999982,7
+"test-spatial-regularization.R","spatial-regularization","analytic noise debiasing is rejected but split-half moments are regularized",4,0,FALSE,FALSE,0,0.0480000000000018,0.00199999999995271,0.0490000000000066,4
+"test-spatial-regularization.R","spatial-regularization","kernel-factor inputs cannot masquerade as a spatial domain",1,0,FALSE,FALSE,0,0.00699999999999079,0,0.007000000000005,1
+"test-spatial-regularization.R","spatial-regularization","spatial CV scores raw held-out blocks and prefers smoother one-SE fits",8,0,FALSE,FALSE,0,0.116,0.00200000000000955,0.119,8
+"test-spatial-regularization.R","spatial-regularization","spatial CV keeps Omega but omits candidate smoothing from held-out scores",3,0,FALSE,FALSE,0,0.129000000000005,0.00199999999995271,0.131999999999977,3
+"test-spatial-regularization.R","spatial-regularization","the resolvent has the analytic Laplacian eigenmode response",4,0,FALSE,FALSE,0,0.0170000000000101,0.0010000000000332,0.0180000000000007,4
+"test-spatial-regularization.R","spatial-regularization","irregular three-dimensional geometry smooths within graph components",8,0,FALSE,FALSE,0,0.0250000000000057,0.00200000000000955,0.0279999999999916,8
+"test-spatial-regularization.R","spatial-regularization","fitting and projection are equivariant to spatial permutation",8,0,FALSE,FALSE,0,0.254999999999995,0.0029999999999859,0.259000000000015,8
+"test-spatial-regularization.R","spatial-regularization","spatial CV recovers a shared smooth truth over subject-specific rough noise",5,0,FALSE,FALSE,0,0.213000000000008,0.000999999999976353,0.215000000000003,5
+"test-spatial-regularization.R","spatial-regularization","large spatial domains retain sparse linear storage",10,0,FALSE,FALSE,0,1.41999999999999,0.204999999999984,1.68900000000002,10
+"test-spatial-regularization.R","spatial-regularization","an edgeless graph is reported rather than silently inert",18,0,FALSE,FALSE,0,0.0400000000000063,0.0050000000000523,0.0440000000000111,18
+"test-spatial-regularization.R","spatial-regularization","edgeless status survives fitting and stale positive retunes re-warn",13,0,FALSE,FALSE,0,0.109999999999999,0.00399999999996226,0.115000000000009,13
+"test-spatial-regularization.R","spatial-regularization","spatial CV fails closed when positive lambdas cannot change the fit",5,0,FALSE,FALSE,0,0.219999999999999,0.0149999999999864,0.236000000000018,5
+"test-spatial-regularization.R","spatial-regularization","subject-specific edgeless graphs are reported as partially active",12,0,FALSE,FALSE,0,0.113000000000014,0.0040000000000191,0.11699999999999,12
+"test-spatial-regularization.R","spatial-regularization","voxel weights smooth inside the resolvent and Omega outside it",4,0,FALSE,FALSE,0,0.0370000000000061,0.00199999999995271,0.039999999999992,4
+"test-specs.R","specs","dkge_transport_spec validates medoid and shape",4,0,FALSE,FALSE,0,0.00499999999999545,0.0010000000000332,0.00600000000000023,4
+"test-specs.R","specs","dkge_inference_spec records the supported mean statistic",8,0,FALSE,FALSE,0,0.0150000000000006,0.00200000000000955,0.0169999999999959,8
+"test-specs.R","specs","dkge_classification_spec stores metadata",5,0,FALSE,FALSE,0,0.00399999999999068,0.000999999999976353,0.00499999999999545,5
+"test-specs.R","specs","dkge_predict_subjects handles list inputs",2,0,FALSE,FALSE,0,0.00499999999999545,0.000999999999976353,0.00600000000000023,2
+"test-specs.R","specs","dkge_predict_subjects accepts dkge_data",3,0,FALSE,FALSE,0,0.0190000000000055,0.0010000000000332,0.0199999999999818,3
+"test-toy-analytic.R","toy-analytic","Analytic LOSO agrees with exact LOSO in well-separated regime",1,0,FALSE,FALSE,0,0.0120000000000005,0,0.0130000000000052,1
+"test-toy-generator.R","toy-generator","dkge_sim_toy generates coherent shapes and PSD kernel",5,0,FALSE,FALSE,0,0.00699999999999079,0.000999999999976353,0.007000000000005,5
+"test-toy-generator.R","toy-generator","single-column term blocks are sampled by value, not as 1:n",4,0,FALSE,FALSE,0,0.00600000000000023,0.00200000000000955,0.00699999999997658,4
+"test-toy-kernel.R","toy-kernel","dkge_kernel_prescreen orders kernels by alignment",3,0,FALSE,FALSE,0,0.00399999999999068,0.000999999999976353,0.00499999999999545,3
+"test-toy-kfold.R","toy-kfold","K-fold with k = S matches LOSO",1,0,FALSE,FALSE,0,0.00799999999999557,0,0.00899999999998613,1
+"test-toy-rank.R","toy-rank","LOSO CV rank selection is close to true rank in multi-factor toy",7,0,FALSE,FALSE,4,0.0279999999999916,0.0010000000000332,0.02800000000002,3
+"test-toy-recovery.R","toy-recovery","DKGE recovers a single main-effect component and contrasts line up",2,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999976353,0.00800000000000978,2
+"test-toy-recovery.R","toy-recovery","Recovery achieves high cosine (> 0.98) at very high SNR (20)",1,0,FALSE,FALSE,0,0.00399999999999068,0,0.00500000000002387,1
+"test-toy-recovery.R","toy-recovery","Recovery achieves good cosine (> 0.90) at medium SNR (8)",1,0,FALSE,FALSE,0,0.00400000000000489,0,0.00500000000002387,1
+"test-toy-recovery.R","toy-recovery","Recovery achieves acceptable cosine (> 0.70) at low SNR (2)",1,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.00600000000000023,1
+"test-toy-recovery.R","toy-recovery","Recovery quality degrades gracefully with decreasing SNR",5,0,FALSE,FALSE,0,0.0150000000000006,0,0.01400000000001,5
+"test-toy-recovery.R","toy-recovery","Multi-rank recovery (r=2) recovers both components",2,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.007000000000005,2
+"test-toy-recovery.R","toy-recovery","Multi-rank recovery (r=3) recovers all components",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.007000000000005,2
+"test-toy-recovery.R","toy-recovery","Multi-factor recovery works with two nominal factors",2,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.00600000000000023,2
+"test-toy-recovery.R","toy-recovery","Multi-factor with interaction recovers all components",2,0,FALSE,FALSE,0,0.00799999999999557,0.0010000000000332,0.00800000000000978,2
+"test-toy-scenarios.R","toy-scenarios","DKGE recovers a multi-component subspace",2,0,FALSE,FALSE,0,0.00600000000000023,0,0.00600000000000023,2
+"test-toy-scenarios.R","toy-scenarios","dkge_sim_toy allows heterogeneous cluster counts",2,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,2
+"test-toy-scenarios.R","toy-scenarios","Simulated SNRs follow the requested subject profile",1,0,FALSE,FALSE,0,0.00300000000000011,0,0.00399999999999068,1
+"test-toy-weights.R","toy-weights","MFA-type weighting downweights the noisiest subject",1,0,FALSE,FALSE,0,0.00499999999999545,0,0.00600000000000023,1
+"test-transport-contracts.R","transport-contracts","joint plans and application operators obey distinct conservation laws",6,0,FALSE,FALSE,0,0.0139999999999958,0.00199999999995271,0.0169999999999959,6
+"test-transport-contracts.R","transport-contracts","reference transport preserves constants or total mass end to end",9,0,FALSE,FALSE,0,0.248000000000005,1.60500000000002,0.445999999999998,9
+"test-transport-contracts.R","transport-contracts","reference transport inherits an exact non-default cached mapper",9,0,FALSE,FALSE,0,0.0190000000000055,0.00600000000002865,0.0219999999999914,9
+"test-transport-contracts.R","transport-contracts","Sinkhorn cache keys include every cost entry and reuse exact solves",6,0,FALSE,FALSE,0,0.00699999999999079,0.00599999999997181,0.00900000000001455,6
+"test-transport-contracts.R","transport-contracts","non-converged Sinkhorn state is diagnosed and never cached",4,0,FALSE,FALSE,0,0.007000000000005,0.00200000000000955,0.00800000000000978,4
+"test-transport-contracts.R","transport-contracts","default Sinkhorn budget converges on a deterministic representative problem",3,0,FALSE,FALSE,0,0.027000000000001,0.15100000000001,0.0430000000000064,3
+"test-transport-contracts.R","transport-contracts","direct Sinkhorn mapper fitting fails closed on non-convergence",1,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00399999999999068,1
+"test-transport-contracts.R","transport-contracts","transport method aliases are honest and unsupported kNN fails early",5,0,FALSE,FALSE,0,0.00799999999999557,0.0010000000000332,0.0099999999999909,5
+"test-transport-contracts.R","transport-contracts","transported-map targets honor the method stored in their spec",2,0,FALSE,FALSE,0,0.0249999999999915,0.000999999999976353,0.0260000000000105,2
+"test-transport-contracts.R","transport-contracts","dense mapper constructor supports extension-defined S3 backends",3,0,FALSE,FALSE,0,0.00499999999999545,0,0.00500000000002387,3
+"test-transport-prepare.R","transport-prepare","dkge_prepare_transport builds mapper cache without prior operators",18,0,FALSE,FALSE,0,0.0220000000000056,0.00399999999996226,0.025999999999982,18
+"test-transport-prepare.R","transport-prepare","loose preparation cannot mint inferential provenance",1,0,FALSE,FALSE,0,0.007000000000005,0,0.00600000000000023,1
+"test-transport-prepare.R","transport-prepare","fitted alignment rejects every mutated structural input",12,0,FALSE,FALSE,0,0.0319999999999965,0.00200000000000955,0.0330000000000155,12
+"test-transport-sinkhorn.R","transport-sinkhorn","Sinkhorn plan matches T4transport for simple Gaussian blobs",4,0,FALSE,FALSE,0,0.0220000000000056,0.0459999999999923,0.068000000000012,4
+"test-transport-sinkhorn.R","transport-sinkhorn","Sinkhorn plan matches T4transport with non-uniform weights",4,0,FALSE,FALSE,0,0.00799999999999557,0.007000000000005,0.0099999999999909,4
+"test-transport-sinkhorn.R","transport-sinkhorn","spatial penalty biases Sinkhorn plan toward nearby targets",2,0,FALSE,FALSE,0,0.138999999999996,1.02800000000002,0.269000000000005,2
+"test-transport-sinkhorn.R","transport-sinkhorn","CPP Sinkhorn wrapper honours return_plans flag",4,0,FALSE,FALSE,0,0.012999999999991,0.00499999999999545,0.01400000000001,4
+"test-transport-sinkhorn.R","transport-sinkhorn","dkge_clear_sinkhorn_cache removes cached entries",4,0,FALSE,FALSE,0,0.0420000000000016,0.225000000000023,0.0730000000000075,4
+"test-transport.R","transport","sinkhorn transport produces deterministic operators",8,0,FALSE,FALSE,0,0.0109999999999957,0.00600000000002865,0.01400000000001,8
+"test-transport.R","transport","cpp sinkhorn wrapper matches deterministic R transport",4,0,FALSE,FALSE,0,0.0109999999999957,0.00599999999997181,0.0130000000000052,4
+"test-transport.R","transport","medoid-named Sinkhorn entry point is a deprecated compatibility shim",3,0,FALSE,FALSE,0,0.0120000000000005,0.0010000000000332,0.0130000000000052,3
+"test-transport.R","transport","size penalty contributes to cost matrix for sub-unit masses",1,0,FALSE,FALSE,0,0.000999999999990564,0,0.00199999999998113,1
+"test-trial-subject-chunks.R","trial-subject-chunks","chunked trial reduction matches the dense constructor",10,0,FALSE,FALSE,0,0.0189999999999912,0.00200000000000955,0.0209999999999866,10
+"test-trial-subject-chunks.R","trial-subject-chunks","function chunk sources terminate without retaining trialwise Y",5,0,FALSE,FALSE,0,0.0339999999999918,0.0010000000000332,0.0360000000000014,5
+"test-trial-subject-chunks.R","trial-subject-chunks","chunked run splits combine halves before reliability estimation",3,0,FALSE,FALSE,0,0.0240000000000009,0,0.0240000000000009,3
+"test-trial-subject-chunks.R","trial-subject-chunks","chunk sources fail clearly on malformed or unterminated input",4,0,FALSE,FALSE,0,0.0100000000000051,0,0.0109999999999957,4
+"test-trial-subject-chunks.R","trial-subject-chunks","chunked construction preserves omitted-split run labels",4,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00899999999998613,4
+"test-trial-subject-chunks.R","trial-subject-chunks","saturated chunked designs keep an unavailable noise trace",3,0,FALSE,FALSE,0,0.00399999999999068,0,0.00499999999999545,3
+"test-trial-subject-chunks.R","trial-subject-chunks","analytic Chat agrees for dense and chunked subjects under omega weights",3,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999976353,0.0100000000000193,3
+"test-trial-subject.R","trial-subject","trialwise constructor matches QR sufficient statistics",13,0,FALSE,FALSE,0,0.0150000000000006,0.00300000000004275,0.0180000000000007,13
+"test-trial-subject.R","trial-subject","analytic debiasing matches the finite-trial noise oracle",3,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.007000000000005,3
+"test-trial-subject.R","trial-subject","analytic noise trace respects spatial and voxel diagonals",1,0,FALSE,FALSE,0,0.00199999999999534,0,0.00200000000000955,1
+"test-trial-subject.R","trial-subject","split-half debiasing matches the symmetrized cross-moment oracle",2,0,FALSE,FALSE,0,0.0110000000000099,0,0.0120000000000005,2
+"test-trial-subject.R","trial-subject","split-half debiasing requires stored full-rank halves",2,0,FALSE,FALSE,0,0.007000000000005,0,0.00799999999998136,2
+"test-trial-subject.R","trial-subject","analytic debiasing handles an indefinite corrected moment",4,0,FALSE,FALSE,0,0.00599999999998602,0.0010000000000332,0.007000000000005,4
+"test-trial-subject.R","trial-subject","trialwise validation catches rank and residual-df edge cases",2,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.007000000000005,2
+"test-trial-subject.R","trial-subject","the 3 by 5 by 4 trialwise design stays in 60-dimensional effect space",5,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999976353,0.0109999999999957,5
+"test-trial-subject.R","trial-subject","a supplied noise trace is used for unweighted analytic debiasing",7,0,FALSE,FALSE,0,0.00799999999999557,0.000999999999976353,0.0109999999999957,7
+"test-voxel.R","voxel","dkge_transport_to_voxels maps values",4,0,FALSE,FALSE,0,0.00800000000000978,0.000999999999976353,0.00899999999998613,4
+"test-voxel.R","voxel","dkge_transport_to_voxels handles missing sizes weights",1,0,FALSE,FALSE,0,0.0120000000000005,0,0.0130000000000052,1
+"test-weights-adapt.R","weights-adapt","adaptive weights: kenergy, precision, kenergy_prec",3,0,FALSE,FALSE,0,0.00400000000000489,0.000999999999976353,0.00499999999999545,3
+"test-weights-adapt.R","weights-adapt","weight API fails closed for unsupported permutation-sensitive extensions",2,0,FALSE,FALSE,0,0.00499999999999545,0,0.00499999999999545,2
+"test-weights-adapt.R","weights-adapt","adaptive weighting homes in on informative voxels across rules",4,0,FALSE,FALSE,0,0.0499999999999972,0.00200000000000955,0.0520000000000209,4
+"test-weights-collapse.R","weights-collapse","k-energy kernel resolves with time collapse correctly",2,0,FALSE,FALSE,0,0.00300000000000011,0.0010000000000332,0.00399999999999068,2
+"test-weights-combine.R","weights-combine","combine product/sum/overrides are consistent and normalized",5,0,FALSE,FALSE,0,0.00699999999999079,0.00200000000000955,0.00799999999998136,5
+"test-weights-combine.R","weights-combine","winsor and shrink behave as expected",2,0,FALSE,FALSE,0,0.00199999999999534,0,0.00200000000000955,2
+"test-weights-combine.R","weights-combine","ROI smoothing produces piecewise-constant weights within ROIs",3,0,FALSE,FALSE,0,0.00400000000000489,0.0010000000000332,0.00499999999999545,3
+"test-weights-constructor.R","weights-constructor","dkge_weights constructor/print behave",8,0,FALSE,FALSE,0,0.007000000000005,0.00200000000000955,0.00800000000000978,8
+"test-weights-constructor.R","weights-constructor","prior sugar helpers build numeric vectors",5,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00799999999998136,5
+"test-weights-constructor.R","weights-constructor","ROI label priors yield uniform within-ROI weights",8,0,FALSE,FALSE,0,0.00900000000000034,0.00200000000000955,0.0109999999999957,8
+"test-weights-folds.R","weights-folds","fold builder uses training-only adaptive weights and weighted G",6,0,FALSE,FALSE,0,0.007000000000005,0.000999999999976353,0.00799999999998136,6
+"test-weights-folds.R","weights-folds","time collapse in weights integrates with fold builder",2,0,FALSE,FALSE,0,0.0180000000000007,0.000999999999976353,0.0190000000000055,2
+"test-weights-folds.R","weights-folds","short voxel weight vectors trigger recycling warning",2,0,FALSE,FALSE,0,0.00500000000000966,0.0010000000000332,0.00600000000000023,2
+"test-weights-permutation-null.R","weights-permutation-null","Null p-values are approximately Uniform(0,1) with LOSO and adaptive weights (quick)",9,0,FALSE,FALSE,0,4.078,0.257000000000005,4.34300000000002,9
+"test-weights-permutation-null.R","weights-permutation-null","Null p-values ~ Uniform(0,1) in a longer run (opt-in)",1,0,TRUE,FALSE,0,0.000999999999976353,0.000999999999976353,0.00100000000000477,0
+"test-weights-reliability-folds.R","weights-reliability-folds","reliability weights do not crash under fold subsetting",5,0,FALSE,FALSE,0,0.00600000000000023,0.0010000000000332,0.00699999999997658,5
+"test-weights-reliability-prior.R","weights-reliability-prior","Sign-invariant reliability prior maintains uniform null p-values",3,0,FALSE,FALSE,0,1.369,0.0749999999999886,1.447,3
+"test-weights-update.R","weights-update","dkge_update_weights rebuilds bases with new weights",5,0,FALSE,FALSE,0,0.01400000000001,0.0010000000000332,0.0150000000000148,5
+"test_dkge_analytic.R","dkge_analytic","Analytic LOSO matches exact LOSO for low-leverage subject",4,0,FALSE,FALSE,0,0.00699999999997658,0.0010000000000332,0.00800000000000978,4
+"test_dkge_analytic.R","dkge_analytic","Analytic LOSO falls back when eigengap is tiny (near-degenerate spectrum)",3,0,FALSE,FALSE,0,0.0200000000000102,0.000999999999976353,0.0199999999999818,3
+"test_dkge_analytic.R","dkge_analytic","Analytic LOSO values are invariant to permutation of stored eigenbasis",4,0,FALSE,FALSE,0,0.00600000000000023,0.000999999999976353,0.007000000000005,4

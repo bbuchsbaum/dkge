@@ -65,10 +65,24 @@ test_that("Sinkhorn plan is doubly-stochastic with square cost matrix", {
 })
 
 # =============================================================================
-# Test 2: Identity transport for medoid
+# Test 2: Symmetric entropic self-transport for the reference
 # =============================================================================
 
-test_that("Medoid subject receives identity transport plan (medoid=1)", {
+expect_entropic_self_map <- function(res, index, Q, values) {
+  plan <- res$plans[[index]]
+  operator <- res$operators[[index]]
+  expect_equal(rowSums(plan), rep(1 / Q, Q), tolerance = 1e-4)
+  expect_equal(colSums(plan), rep(1 / Q, Q), tolerance = 1e-4)
+  expect_equal(rowSums(operator), rep(1, Q), tolerance = 1e-4)
+  expect_equal(res$subj_values[index, ],
+               as.numeric(operator %*% values), tolerance = 1e-7)
+  expect_true(res$diagnostics[[index]]$self_map)
+  expect_gte(
+    res$diagnostics[[index]]$point_spread$mean_effective_points, 1
+  )
+}
+
+test_that("reference subject receives entropic self-transport (index 1)", {
   set.seed(42)
   Q <- 4
 
@@ -86,20 +100,18 @@ test_that("Medoid subject receives identity transport plan (medoid=1)", {
   )
   v_list <- list(runif(Q), runif(Q), runif(Q))
 
-  res <- dkge_transport_to_medoid_sinkhorn(
+  res <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
-    medoid = 1,
+    reference_subject = 1,
     epsilon = 0.05,
     max_iter = 5000,
     tol = 1e-4
   )
 
-  # The medoid joint plan carries its mass; its application operator is identity.
-  expect_equal(res$plans[[1]], diag(1 / Q, Q))
-  expect_equal(res$operators[[1]], diag(1, Q))
+  expect_entropic_self_map(res, 1L, Q, v_list[[1]])
 })
 
-test_that("Medoid subject receives identity transport plan (medoid=middle)", {
+test_that("reference subject receives entropic self-transport (middle)", {
   set.seed(42)
   Q <- 5
   S <- 5
@@ -109,19 +121,18 @@ test_that("Medoid subject receives identity transport plan (medoid=middle)", {
   centroids <- lapply(1:S, function(s) matrix(runif(Q * 3), Q, 3))
   v_list <- lapply(1:S, function(s) runif(Q))
 
-  res <- dkge_transport_to_medoid_sinkhorn(
+  res <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
-    medoid = medoid_idx,
+    reference_subject = medoid_idx,
     epsilon = 0.05,
     max_iter = 5000,
     tol = 1e-4
   )
 
-  expect_equal(res$plans[[medoid_idx]], diag(1 / Q, Q))
-  expect_equal(res$operators[[medoid_idx]], diag(1, Q))
+  expect_entropic_self_map(res, medoid_idx, Q, v_list[[medoid_idx]])
 })
 
-test_that("Medoid subject receives identity transport plan (medoid=last)", {
+test_that("reference subject receives entropic self-transport (last)", {
   set.seed(42)
   Q <- 3
   S <- 4
@@ -131,16 +142,32 @@ test_that("Medoid subject receives identity transport plan (medoid=last)", {
   centroids <- lapply(1:S, function(s) matrix(runif(Q * 3), Q, 3))
   v_list <- lapply(1:S, function(s) runif(Q))
 
-  res <- dkge_transport_to_medoid_sinkhorn(
+  res <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
-    medoid = medoid_idx,
+    reference_subject = medoid_idx,
     epsilon = 0.05,
     max_iter = 5000,
     tol = 1e-4
   )
 
-  expect_equal(res$plans[[medoid_idx]], diag(1 / Q, Q))
-  expect_equal(res$operators[[medoid_idx]], diag(1, Q))
+  expect_entropic_self_map(res, medoid_idx, Q, v_list[[medoid_idx]])
+})
+
+test_that("public Sinkhorn transport fails closed on a non-converged plan", {
+  set.seed(260866L)
+  Q <- 5L
+  A_list <- lapply(seq_len(3L), function(s) matrix(rnorm(Q * 2L), Q, 2L))
+  centroids <- lapply(seq_len(3L), function(s) matrix(runif(Q * 3L), Q, 3L))
+  values <- lapply(seq_len(3L), function(s) rnorm(Q))
+  expect_error(
+    suppressWarnings(dkge_transport_to_reference_sinkhorn(
+      values, A_list, centroids, reference_subject = 2L,
+      epsilon = 1e-5, max_iter = 1L, tol = 1e-14,
+      warm_start = FALSE
+    )),
+    "numerical contract|did not satisfy|converge",
+    class = "dkge_alignment_numerical_error"
+  )
 })
 
 # =============================================================================
@@ -166,9 +193,9 @@ test_that("Identical embeddings produce near-diagonal transport with small epsil
   )
   v_list <- list(1:Q, 1:Q)
 
-  res <- dkge_transport_to_medoid_sinkhorn(
+  res <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
-    medoid = 1,
+    reference_subject = 1,
     epsilon = 1e-4,  # Small epsilon for near-deterministic
     max_iter = 2000,
     tol = 1e-9
@@ -197,9 +224,9 @@ test_that("Similar embeddings produce transport with high sparsity", {
   centroids <- list(shared_centroids, shared_centroids)
   v_list <- list(1:Q, 1:Q)
 
-  res <- dkge_transport_to_medoid_sinkhorn(
+  res <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
-    medoid = 1,
+    reference_subject = 1,
     epsilon = 1e-4,
     max_iter = 2000,
     tol = 1e-9
@@ -218,7 +245,7 @@ test_that("Similar embeddings produce transport with high sparsity", {
 # Test 4: R/C++ equivalence
 # =============================================================================
 
-test_that("dkge_transport_to_medoid_sinkhorn and _cpp produce identical results", {
+test_that("reference Sinkhorn and deprecated cpp alias produce identical results", {
   set.seed(42)
   Q <- 5
   S <- 3
@@ -227,12 +254,12 @@ test_that("dkge_transport_to_medoid_sinkhorn and _cpp produce identical results"
   centroids <- lapply(1:S, function(s) matrix(runif(Q * 3), Q, 3))
   v_list <- lapply(1:S, function(s) runif(Q))
 
-  res_r <- dkge_transport_to_medoid_sinkhorn(
+  res_r <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
-    medoid = 1,
+    reference_subject = 1,
     epsilon = 0.1,
-    max_iter = 300,
-    tol = 1e-8
+    max_iter = 2000,
+    tol = 1e-7
   )
 
   expect_warning(
@@ -240,8 +267,8 @@ test_that("dkge_transport_to_medoid_sinkhorn and _cpp produce identical results"
       v_list, A_list, centroids,
       medoid = 1,
       epsilon = 0.1,
-      max_iter = 300,
-      tol = 1e-8,
+      max_iter = 2000,
+      tol = 1e-7,
       return_plans = TRUE
     ),
     "deprecated"
@@ -269,13 +296,13 @@ test_that("R and C++ produce identical results with non-uniform weights", {
     sz / sum(sz)
   })
 
-  res_r <- dkge_transport_to_medoid_sinkhorn(
+  res_r <- dkge_transport_to_reference_sinkhorn(
     v_list, A_list, centroids,
     sizes = sizes,
-    medoid = 2,
+    reference_subject = 2,
     epsilon = 0.05,
-    max_iter = 500,
-    tol = 1e-8
+    max_iter = 5000,
+    tol = 1e-5
   )
 
   expect_warning(
@@ -284,8 +311,8 @@ test_that("R and C++ produce identical results with non-uniform weights", {
       sizes = sizes,
       medoid = 2,
       epsilon = 0.05,
-      max_iter = 500,
-      tol = 1e-8,
+      max_iter = 5000,
+      tol = 1e-5,
       return_plans = TRUE
     ),
     "deprecated"

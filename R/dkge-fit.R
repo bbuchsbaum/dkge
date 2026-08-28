@@ -67,49 +67,7 @@
   max(0, eigen(G, symmetric = TRUE, only.values = TRUE)$values[1L])
 }
 
-#' Frozen MFA power-iteration approximation
-#'
-#' The original public default used this 50-step approximation. Its random
-#' initial vector was formerly drawn from the caller's RNG stream. The enclosing
-#' subject-weight calculation now runs it in one frozen, private RNG scope, which
-#' preserves the historical numerical result for the canonical compatibility
-#' seed without perturbing or depending on caller state.
-#'
-#' @param X Numeric matrix.
-#' @param tol Relative convergence tolerance.
-#' @param max_iter Maximum number of iterations.
-#' @return Approximate squared leading singular value.
-#' @keywords internal
-#' @noRd
-.dkge_mfa_leading_sv_squared <- function(X, tol = 1e-6, max_iter = 50L) {
-  X <- as.matrix(X)
-  if (!all(is.finite(X))) X[!is.finite(X)] <- 0
-  n <- nrow(X)
-  if (n == 0L || ncol(X) == 0L) return(0)
-
-  v <- stats::rnorm(n)
-  v_norm <- sqrt(sum(v * v))
-  if (!is.finite(v_norm) || v_norm == 0) return(0)
-  v <- v / v_norm
-  sigma_sq <- 0
-  for (iter in seq_len(max_iter)) {
-    w <- X %*% (t(X) %*% v)
-    w_norm <- sqrt(sum(w * w))
-    if (!is.finite(w_norm) || w_norm == 0) break
-    v <- w / w_norm
-    s_sq_new <- sum((t(X) %*% v)^2)
-    if (abs(s_sq_new - sigma_sq) <= tol * max(1, sigma_sq)) {
-      sigma_sq <- s_sq_new
-      break
-    }
-    sigma_sq <- s_sq_new
-  }
-  sigma_sq
-}
-
-.dkge_mfa_compatibility_seed <- 8172026L
-
-#' Derive optional subject-level weights
+#' Derive raw subject-level weight scores
 #'
 #' Weights are computed on the same quantity the eigensolve sees: the subject's
 #' contribution to `Chat` is \eqn{w_s X_s X_s^\top} with
@@ -122,24 +80,20 @@
 #' @param Omega_list Optional per-subject spatial weights.
 #' @param Khalf Kernel square root used for energy computations.
 #' @param w_method Weighting scheme (`"mfa_sigma1"`, `"energy"`, or `"none"`).
-#' @param w_tau Shrinkage parameter toward equal weights.
 #' @param obs_masks Optional per-subject observation masks, used only to detect
 #'   subjects that observe no effect row at all (they receive weight 0).
 #'   Voxel/parcel weights are ignored here: this uses the non-debiased `Btil`
 #'   matrices (row-standardised betas) and optional `Omega_list` only.
 #' @param spatial_list Optional resolved spatial operators, one per subject.
-#' @return Numeric vector of subject weights.
+#' @return List with non-negative `raw` scores and a logical `usable` mask.
 #' @keywords internal
 #' @noRd
-.dkge_subject_weights <- function(Btil, Omega_list, Khalf, w_method, w_tau,
-                                  obs_masks = NULL, spatial_list = NULL) {
+.dkge_subject_weight_scores <- function(Btil, Omega_list, Khalf, w_method,
+                                        obs_masks = NULL,
+                                        spatial_list = NULL) {
   S <- length(Btil)
   if (w_method == "none") {
-    return(rep(1, S))
-  }
-  if (identical(w_method, "mfa_sigma1")) {
-    rng_state <- .dkge_seed_enter(.dkge_mfa_compatibility_seed)
-    on.exit(.dkge_seed_exit(rng_state), add = TRUE)
+    return(list(raw = rep(1, S), usable = rep(TRUE, S)))
   }
   q <- nrow(Btil[[1]])
   if (is.null(spatial_list)) spatial_list <- vector("list", S)
@@ -147,14 +101,14 @@
     .dkge_abort("`spatial_list` must have one entry per subject.",
                 "dkge_spatial_domain_error")
   }
-  weights <- numeric(S)
+  scores <- numeric(S)
   usable <- rep(TRUE, S)
   for (s in seq_len(S)) {
     Bts <- .dkge_spatial_apply_betas(Btil[[s]], spatial_list[[s]])
     mask_s <- if (is.null(obs_masks) || length(obs_masks) < s) NULL else obs_masks[[s]]
     if (!length(.dkge_observed_rows(mask_s, q))) {
       usable[s] <- FALSE
-      weights[s] <- 0
+      scores[s] <- 0
       next
     }
     Omega <- Omega_list[[s]]
@@ -169,10 +123,10 @@
       Khalf %*% Bts %*% sqrtm_sym(Omega)
     }
     if (w_method == "mfa_sigma1") {
-      sigma_sq <- .dkge_mfa_leading_sv_squared(KsBt)
-      weights[s] <- 1 / (sigma_sq + 1e-12)
+      sigma_sq <- .dkge_leading_sv_squared(KsBt)
+      scores[s] <- 1 / (sigma_sq + 1e-12)
     } else {
-      weights[s] <- 1 / (sum(KsBt * KsBt) + 1e-12)
+      scores[s] <- 1 / (sum(KsBt * KsBt) + 1e-12)
     }
   }
   if (!any(usable)) {
@@ -185,9 +139,65 @@
       paste(which(!usable), collapse = ", ")
     ), call. = FALSE)
   }
-  w_norm <- weights
-  w_norm[usable] <- weights[usable] / mean(weights[usable])
-  (1 - w_tau) * w_norm + w_tau * as.numeric(usable)
+  list(raw = scores, usable = usable)
+}
+
+#' Normalize and shrink raw subject-weight scores
+#'
+#' The normalization cohort is part of the estimand. In particular, a fold
+#' must normalize over its training subjects rather than subset weights that
+#' were normalized over the full cohort.
+#'
+#' @param raw Non-negative raw subject scores.
+#' @param usable Logical vector identifying contributing subjects.
+#' @param w_tau Shrinkage parameter toward equal weights.
+#' @return Mean-one weights over usable subjects and zero elsewhere.
+#' @keywords internal
+#' @noRd
+.dkge_normalize_subject_weights <- function(raw, usable, w_tau) {
+  raw <- as.numeric(raw)
+  usable <- as.logical(usable)
+  if (length(raw) != length(usable) || anyNA(usable)) {
+    stop("Raw subject scores and `usable` must have the same finite length.",
+         call. = FALSE)
+  }
+  if (!is.numeric(w_tau) || length(w_tau) != 1L || !is.finite(w_tau) ||
+      w_tau < 0 || w_tau > 1) {
+    stop("`w_tau` must be one finite number in [0, 1].", call. = FALSE)
+  }
+  if (!any(usable)) {
+    stop("No usable subjects are available for weight normalization.",
+         call. = FALSE)
+  }
+  if (any(!is.finite(raw[usable])) || any(raw[usable] < 0) ||
+      mean(raw[usable]) <= 0) {
+    stop("Usable raw subject scores must be finite, non-negative, and have positive mean.",
+         call. = FALSE)
+  }
+
+  normalized <- numeric(length(raw))
+  normalized[usable] <- raw[usable] / mean(raw[usable])
+  (1 - w_tau) * normalized + w_tau * as.numeric(usable)
+}
+
+#' Derive optional subject-level weights
+#'
+#' Compatibility wrapper combining raw-score calculation with cohort-specific
+#' normalization and shrinkage.
+#'
+#' @inheritParams .dkge_subject_weight_scores
+#' @param w_tau Shrinkage parameter toward equal weights.
+#' @return Numeric vector of subject weights.
+#' @keywords internal
+#' @noRd
+.dkge_subject_weights <- function(Btil, Omega_list, Khalf, w_method, w_tau,
+                                  obs_masks = NULL, spatial_list = NULL) {
+  score_info <- .dkge_subject_weight_scores(
+    Btil, Omega_list, Khalf, w_method,
+    obs_masks = obs_masks,
+    spatial_list = spatial_list
+  )
+  .dkge_normalize_subject_weights(score_info$raw, score_info$usable, w_tau)
 }
 
 #' Resolve observed effect rows for a subject
@@ -350,7 +360,7 @@
 
 #' Accumulate compressed covariance in the K-metric
 #'
-#' Used by fold re-pooling ([.dkge_fold_weight_context()]) to rebuild `Chat`
+#' Used by fold re-pooling (`.dkge_fold_weight_context()`) to rebuild `Chat`
 #' from a training subset of `Btil` without going through the full fit
 #' pipeline. Subject contributions are `K^{1/2} B_s B_s' K^{1/2}` (or the
 #' Omega-weighted analogue), then pooled with the supplied subject weights.

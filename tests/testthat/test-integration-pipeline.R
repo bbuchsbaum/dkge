@@ -57,7 +57,7 @@ test_that("dkge_pipeline completes full workflow with valid multi-subject data",
   expect_equal(length(res$fit$Btil), 6)
 })
 
-test_that("dkge_pipeline chains fit -> LOSO contrast -> transport -> inference correctly", {
+test_that("dkge_pipeline refuses ineligible transport inference and can stop after alignment", {
   dat <- make_integration_data(S = 6, q = 5, P = 20)
   centroids <- make_integration_centroids(S = 6, P = 20)
 
@@ -73,27 +73,36 @@ test_that("dkge_pipeline chains fit -> LOSO contrast -> transport -> inference c
 
   cvec <- c(1, -1, 0, 0, 0)
 
+  expect_error(
+    suppressWarnings(dkge_pipeline(
+      fit = fit,
+      contrasts = cvec,
+      transport = transport_cfg,
+      inference = inference_cfg
+    )),
+    class = "dkge_alignment_ineligible_error"
+  )
+
   res <- suppressWarnings(dkge_pipeline(
     fit = fit,
     contrasts = cvec,
     transport = transport_cfg,
-    inference = inference_cfg
+    inference = NULL
   ))
 
   # Verify full chain
   expect_s3_class(res$fit, "dkge")
   expect_s3_class(res$contrasts, "dkge_contrasts")
   expect_false(is.null(res$transport))
-  expect_false(is.null(res$inference))
+  expect_null(res$inference)
 
   # Verify transport produced results for each subject
   expect_equal(length(res$transport), 1)  # one contrast
   expect_false(is.null(res$transport[[1]]$subj_values))
 
-  # Verify inference produced results
-  expect_equal(length(res$inference), 1)  # one contrast
-  expect_false(is.null(res$inference[[1]]$stat))
-  expect_false(is.null(res$inference[[1]]$p))
+  expect_s3_class(attr(res$transport, "aligned_maps"), "dkge_aligned_maps")
+  expect_identical(attr(res$transport, "aligned_maps")$eligibility$status,
+                   "ineligible")
 })
 
 test_that("dkge_pipeline handles both pre-computed fit and fit-from-scratch modes", {
@@ -210,7 +219,8 @@ test_that("dkge_pipeline handles mismatched subject counts gracefully",
   res <- suppressWarnings(dkge_pipeline(
     fit = fit,
     contrasts = cvec,
-    transport = transport_cfg
+    transport = transport_cfg,
+    inference = NULL
   ))
 
   expect_s3_class(res$contrasts, "dkge_contrasts")
@@ -254,22 +264,25 @@ test_that("inference results from pipeline are valid", {
   res <- suppressWarnings(dkge_pipeline(
     fit = fit,
     contrasts = cvec,
-    transport = list(centroids = centroids, medoid = 1L),
-    inference = list(B = 100)
+    inference = list(B = 100, allow_approximate_alignment = TRUE)
   ))
 
   # Verify inference has expected structure
-  expect_false(is.null(res$inference))
-  infer <- res$inference[[1]]
+  expect_s3_class(res$inference, "dkge_inference")
+  infer <- res$inference
 
   # p-values in [0, 1]
-  expect_true(all(infer$p >= 0 & infer$p <= 1))
+  expect_true(all(unlist(infer$p_adjusted) >= 0 &
+                  unlist(infer$p_adjusted) <= 1))
 
   # statistics are finite
-  expect_true(all(is.finite(infer$stat)))
+  expect_true(all(is.finite(unlist(infer$statistics))))
 
   # Result has expected list elements
-  expect_true(all(c("stat", "p") %in% names(infer)))
+  expect_true(all(c("statistics", "p_values", "p_adjusted") %in% names(infer)))
+  expect_identical(infer$metadata$family_scope,
+                   "all_contrasts_and_support_locations")
+  expect_identical(infer$metadata$estimator$status, "approximate")
 })
 
 test_that("dkge_pipeline with classification produces valid results", {

@@ -3,8 +3,11 @@
 
 #' End-to-end DKGE workflow
 #'
-#' Fits DKGE (if needed), computes cross-fitted contrasts, optionally transports
-#' them to a medoid parcellation, and performs sign-flip inference.
+#' Fits DKGE (if needed), computes cross-fitted contrasts, optionally produces
+#' legacy descriptive transport output, and performs native-support sign-flip
+#' inference. Pipeline transport and inference cannot be composed. Functional
+#' alignment inference uses [dkge_transport_contrasts_to_reference()] followed
+#' by [dkge_infer_aligned()].
 #'
 #' @param fit Optional pre-computed `dkge` object. If `NULL`, provide `betas`,
 #'   `designs`, and `kernel` to fit inside the pipeline.
@@ -18,15 +21,18 @@
 #'   only to the raw-beta fitting stage. Current anchor input descriptors do not
 #'   expose a physical beta-column domain and therefore reject this argument.
 #' @param contrasts Contrast specification as accepted by [dkge_contrast()].
-#' @param transport Either a transport specification/service or `NULL`.
-#' @param inference Either an inference specification/service or `NULL`.
+#' @param transport Either a legacy descriptive transport specification/service
+#'   or `NULL`. It cannot be combined with `inference`.
+#' @param inference Either an inference specification/service or `NULL` (the
+#'   default). Same-data rank-truncated inference is approximate and requires an
+#'   explicit `allow_approximate_alignment = TRUE` in the inference spec.
 #' @param classification Optional specification passed to [dkge_classify()].
 #' @param method Cross-fitting strategy for contrasts (default "loso").
 #' @param ridge Optional ridge added during held-out decompositions.
 #' @param ... Additional arguments passed to [dkge()] when fitting inside the
 #'   pipeline, or to [dkge_contrast()].
-#' @return List containing the fit, diagnostics, raw contrast values, transported
-#'   maps (if requested), and inference results.
+#' @return List containing the fit, diagnostics, raw contrast values, optional
+#'   legacy descriptive maps, and optional native-support inference results.
 #' @examples
 #' # Simulate toy data
 #' toy <- dkge_sim_toy(
@@ -50,7 +56,7 @@ dkge_pipeline <- function(fit = NULL,
                           spatial = NULL,
                           contrasts,
                           transport = NULL,
-                          inference = list(),
+                          inference = NULL,
                           classification = NULL,
                           method = c("loso", "kfold", "analytic"),
                           ridge = 0,
@@ -66,6 +72,16 @@ dkge_pipeline <- function(fit = NULL,
   }
   if (inherits(classification, "dkge_classification_spec")) {
     classification <- unclass(classification)
+  }
+  if (!is.null(transport) && !is.null(inference)) {
+    .dkge_abort(
+      paste0(
+        "`dkge_pipeline()` cannot compose its legacy descriptive transport ",
+        "with inference. Use `dkge_transport_contrasts_to_reference()` ",
+        "followed by `dkge_infer_aligned()`."
+      ),
+      "dkge_alignment_ineligible_error"
+    )
   }
 
   if (is.null(fit)) {

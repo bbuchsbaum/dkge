@@ -576,6 +576,7 @@
 #'
 #' @noRd
 .dkge_repool_fit <- function(fit, sample_weights = NULL, indices = NULL,
+                             subject_weights = NULL,
                              missingness = NULL, miss_args = NULL) {
   S <- length(fit$Btil)
   indices <- indices %||% seq_len(S)
@@ -593,6 +594,25 @@
   if (length(sample_weights) == S && length(indices) != S) {
     sample_weights <- sample_weights[indices]
   }
+  if (is.null(subject_weights)) {
+    subject_weights <- if (identical(as.integer(indices), seq_len(S))) {
+      as.numeric(fit$weights)
+    } else {
+      .dkge_fold_subject_weights(
+        fit, as.integer(indices), obs_masks_all = masks
+      )$weights
+    }
+  } else {
+    subject_weights <- as.numeric(subject_weights)
+    if (length(subject_weights) == S && length(indices) != S) {
+      subject_weights <- subject_weights[indices]
+    }
+    if (length(subject_weights) != length(indices) ||
+        any(!is.finite(subject_weights)) || any(subject_weights < 0)) {
+      stop("`subject_weights` must be one finite non-negative value per selected subject.",
+           call. = FALSE)
+    }
+  }
   missingness <- missingness %||% fit$missingness %||% "none"
   miss_args <- miss_args %||% fit$miss_args %||% list()
 
@@ -607,7 +627,7 @@
 
   pool <- .dkge_pool_effect_moments(
     moments = moments[indices],
-    subject_weights = fit$weights[indices],
+    subject_weights = subject_weights,
     obs_masks = masks[indices],
     effect_precision = precision[indices],
     effect_method = fit$effect_weight_spec$method %||% "none",

@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.4.0",
+  "tarball": "dkge_0.0.0.9000.tar.gz",
+  "tarball_sha256": "9b117ec2441a4d6d94d23c39b977828aab8a5fea6c7ce09b96ef741d4c5cbc59",
+  "tarball_source_tree_sha256": "e38585975999d2bc6bdc1b76747e90a3ab89328940c92d676592494255831400",
+  "tarball_raw_source_tree_sha256": "442d9febc3d091b74b62cf4d4323696b26884a50fe5f7bf4226364f556dc2331",
+  "package_source_projection_sha256": "e8e190644cff5a8f6a78d54fcf576a342e72f750a317bf81e4cd112b50f3f6d5",
+  "tarball_shipped_payload_tree_sha256": "e2e76c1052919447c5b478e5dfb2975dbf5084b06e3b6d2c63b778c8ca89c0b3",
+  "description_semantic_sha256": "97f678f548d150e47f0d2038ef621db4476fdef60d07f158b2c40c933d26d39c",
+  "source_projection_checks": {
+    "certified_source_tree": true,
+    "description_projection": true,
+    "source_file_names": true,
+    "source_file_bytes": true,
+    "shipped_payload_file_names": true,
+    "shipped_payload_file_bytes": true,
+    "closed_world_package_file_names": true,
+    "closed_world_package_file_bytes": true
+  },
+  "docs_input_sha256": "62afbd54f3ed6aaa0f3ea36e21c8f64ad8e58b96d88ca16d82b1bbc4c60588f2",
+  "packaged_docs_tree_sha256": "eec80acfc2102b6f97d2c6b1f388bb173c90616d32681c6487a91383fb3ada5a",
+  "docs_overlay_bundle_sha256": "a54594dd1b40cd33aeee1ce77fa3483f65ae5ce5fa8cbc63d15f2dc6cd38a89e",
+  "docs_projection_checks": {
+    "packaged_doc_names": true,
+    "packaged_doc_bytes": true,
+    "site_config_present": true
+  },
+  "site_content_sha256": "b3c17aa07dae899ec92899cf4606410cab7b25909625f64cbf428d46764a7c35",
+  "required_files": [
+    "index.html",
+    "articles/dkge-functional-alignment.html",
+    "reference/index.html",
+    "reference/dkge_prepare_alignment.html",
+    "reference/dkge_fit_functional_template.html",
+    "reference/dkge_infer_aligned.html",
+    "reference/dkge_render_aligned.html"
+  ],
+  "builder_bundle_sha256": "9711a5182ba832636557015a6037624adfd7029ead0e4c0b4514b2d5ea4774d5",
+  "builder_files": {
+    "inst/validation/functional-alignment-certification/evidence-utils.R": "1420b81421e7c177725730f29f284b2f3936fc635e54dd49b6f96cc7e96ea02b",
+    "inst/validation/functional-alignment-certification/package-provenance.R": "2203c715a2404b4738a0d0280b88f82a90ef327c44d98cb0cad5e878dd788fd0",
+    "inst/validation/functional-alignment-certification/run-pkgdown.R": "10fcad575ab9b32c9303e8042771171d6909d876f7c4f7f2f94e28fc9bac2e43",
+    "inst/validation/functional-alignment-court/court.R": "b899bb34d5045a1effdf55e3d664b161e33df3d26f22278d6156b0f66742db59"
+  },
+  "loaded_input_snapshot_sha256": "14ef01830efac9666c66c4d76c5a2ca44b2c5df8725537a281773b8c6ea9ea17",
+  "utf8_locale": true,
+  "locale": "en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8",
+  "generated_at_utc": "2026-08-28 00:07:38 UTC",
+  "R": "R version 4.5.1 (2025-06-13)",
+  "pkgdown": "2.2.1"
+}

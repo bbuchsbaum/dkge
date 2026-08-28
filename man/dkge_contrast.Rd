@@ -88,6 +88,11 @@ throughout. A semidefinite kernel defines a quotient effect space:
 only part of a contrast is represented, and reports transformed-query
 collisions in \code{metadata$kernel_query_pairs}. Multiple contrasts can be
 evaluated simultaneously for efficiency.
+
+Exact fold replay currently supports fits made with \code{solver = "pooled"} and
+\code{cpca_part = "none"}. CPCA and joint-diagonalization fits fail closed for all
+three methods; DKGE does not replace their fitted estimator with an ordinary
+pooled eigensolve while calling the result cross-fitted.
 }
 \examples{
 # Simulate and fit

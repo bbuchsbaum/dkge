@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "recorded_on": "2026-08-27",
+  "status": "superseded_before_execution_due_candidate_source_drift",
+  "superseded_protocol": {
+    "protocol_id": "dkge-functional-alignment-certification-v3",
+    "path": "protocol-v3.json",
+    "sha256": "f2b843c630ec2166a152b306938b105e42a9e06203fc0cd50e3855d343d78dc7",
+    "candidate_source_tree_sha256_before_drift": "0be19103609aa074d2ff86c15c27f6f701442623800a10cbe599b01c141ae87f"
+  },
+  "materialization": {
+    "court_started": false,
+    "known_warp_power_started": false,
+    "statistical_outputs_materialized": false,
+    "statistical_results_used_for_supersession": false
+  },
+  "source_change": {
+    "path": "R/dkge-spatial.R",
+    "sha256_after_drift": "f3e7c84558c34ebe2b88d8427faf2deb1316b9071c214bf419435d2765d8dca2",
+    "candidate_source_tree_sha256_after_drift": "17e10ec404ab7758ada4591522ec415a98cc6c93e7a203d0ba6b42ac9aee066f",
+    "reason": "A concurrent spatial-regularization edit landed after v3 was frozen and before any v3 certification executor ran. The coherent edit was retained rather than overwritten, so v3 cannot certify the changed candidate."
+  },
+  "successor": {
+    "protocol_id": "dkge-functional-alignment-certification-v4",
+    "path": "protocol.json",
+    "candidate_source_tree_sha256": "17e10ec404ab7758ada4591522ec415a98cc6c93e7a203d0ba6b42ac9aee066f",
+    "numerical_protocol_change": false
+  }
+}

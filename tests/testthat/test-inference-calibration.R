@@ -205,14 +205,16 @@ test_that("dkge_infer statistics match between sequential and parallel", {
 
   # Use parametric inference to compare statistics (avoids random seed issues with sign-flip)
   result_seq <- dkge_infer(fit, contrast_vec, inference = "parametric",
-                           correction = "none", parallel = FALSE)
+                           correction = "none", parallel = FALSE,
+                           allow_approximate_alignment = TRUE)
 
   old_plan <- future::plan()
   on.exit(future::plan(old_plan), add = TRUE)
   future::plan(future::multisession, workers = 2)
 
   result_par <- dkge_infer(fit, contrast_vec, inference = "parametric",
-                           correction = "none", parallel = TRUE)
+                           correction = "none", parallel = TRUE,
+                           allow_approximate_alignment = TRUE)
 
   future::plan(future::sequential)
 
@@ -285,7 +287,7 @@ test_that("p-values respect theoretical bounds", {
   expect_true(all(result$p >= min_theoretical))
 })
 
-test_that("inference with transport works on mismatched clusters", {
+test_that("inference with current static transport fails closed", {
   skip_if_not_installed("future.apply")
 
   data <- create_mismatched_data()
@@ -298,18 +300,12 @@ test_that("inference with transport works on mismatched clusters", {
     betas = data$betas
   )
 
-  # Should complete without error when transport is configured
-  result <- suppressWarnings(dkge_infer(fit, c(1, -1, 0), transport = transport_cfg))
-
-  # Verify valid output
-
-  expect_s3_class(result, "dkge_inference")
-  expect_true(!is.null(result$transport))
-
-  # P-values should be valid
-  pvals <- result$p_values[[1]]
-  expect_true(all(pvals >= 0 & pvals <= 1))
-  expect_false(anyNA(pvals))
+  expect_error(
+    suppressWarnings(dkge_infer(
+      fit, c(1, -1, 0), transport = transport_cfg
+    )),
+    class = "dkge_alignment_ineligible_error"
+  )
 })
 
 test_that("dkge_infer parametric produces valid p-values", {
@@ -335,7 +331,10 @@ test_that("dkge_infer parametric produces valid p-values", {
 
   fit <- dkge_fit(dkge_data(betas, designs = designs), K = diag(q), rank = 2)
 
-  result <- dkge_infer(fit, c(1, -1, 0), inference = "parametric", correction = "fdr")
+  result <- dkge_infer(
+    fit, c(1, -1, 0), inference = "parametric", correction = "fdr",
+    allow_approximate_alignment = TRUE
+  )
 
   expect_s3_class(result, "dkge_inference")
   expect_equal(result$inference, "parametric")
@@ -371,9 +370,18 @@ test_that("multiple correction methods work correctly", {
   contrast_vec <- c(1, -1, 0)
 
   # Test each correction method
-  res_none <- dkge_infer(fit, contrast_vec, inference = "parametric", correction = "none")
-  res_fdr <- dkge_infer(fit, contrast_vec, inference = "parametric", correction = "fdr")
-  res_bonf <- dkge_infer(fit, contrast_vec, inference = "parametric", correction = "bonferroni")
+  res_none <- dkge_infer(
+    fit, contrast_vec, inference = "parametric", correction = "none",
+    allow_approximate_alignment = TRUE
+  )
+  res_fdr <- dkge_infer(
+    fit, contrast_vec, inference = "parametric", correction = "fdr",
+    allow_approximate_alignment = TRUE
+  )
+  res_bonf <- dkge_infer(
+    fit, contrast_vec, inference = "parametric", correction = "bonferroni",
+    allow_approximate_alignment = TRUE
+  )
 
   # None: p_adjusted == p_values
   expect_equal(res_none$p_adjusted[[1]], res_none$p_values[[1]])

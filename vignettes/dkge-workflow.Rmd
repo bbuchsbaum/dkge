@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 
 knitr::opts_chunk$set(
@@ -300,68 +302,17 @@ centroids <- lapply(seq_along(toy$B_list), function(s) {
 })
 ```
 
-Use the ridge mapper for a dependency-light example and select subject 1 as the
-reference parcellation:
+These coordinates are enough for geometry-only resampling, but this synthetic
+example contains no independent functional acquisition from which to identify
+parcel correspondence. It therefore stops before feature-level group
+alignment rather than silently treating subject 1 or a bare grid as functional
+truth.
 
-```{r transport-contrast}
-transported <- dkge_transport_contrasts_to_medoid(
-  fit_structured,
-  condition_loso,
-  medoid = 1,
-  centroids = centroids,
-  method = "ridge"
-)
-dim(transported$condition$subj_values)
-```
-
-The returned matrix has subjects in rows and reference clusters in columns;
-`transported$condition$value` is its across-subject median on the medoid
-parcellation. The attached `attr(transported, "cache")` can be reused for
-other contrasts or resampling.
-
-```{r transported-field, echo=FALSE, fig.height=4.2, fig.alt="Six faint subject-level transported contrast profiles with their median highlighted across the reference clusters."}
-transported_matrix <- transported$condition$subj_values
-transport_long <- data.frame(
-  subject = rep(toy$subject_ids, each = ncol(transported_matrix)),
-  cluster = rep(seq_len(ncol(transported_matrix)), times = nrow(transported_matrix)),
-  value = as.vector(t(transported_matrix))
-)
-transport_median <- data.frame(
-  cluster = seq_len(ncol(transported_matrix)),
-  value = apply(transported_matrix, 2, stats::median)
-)
-ggplot2::ggplot(transport_long, ggplot2::aes(cluster, value, group = subject)) +
-  ggplot2::geom_hline(yintercept = 0, colour = "grey75") +
-  ggplot2::geom_line(colour = "#7f8c8d", alpha = 0.42, linewidth = 0.55) +
-  ggplot2::geom_line(
-    data = transport_median,
-    ggplot2::aes(cluster, value),
-    inherit.aes = FALSE, colour = "#b33b2e", linewidth = 1.2
-  ) +
-  ggplot2::labs(
-    title = "Cross-fitted subject fields after transport",
-    subtitle = "Grey: subjects; red: coordinate-wise median on the reference parcellation",
-    x = "Reference cluster", y = "Condition contrast"
-  ) +
-  ggplot2::theme_minimal(base_size = 11)
-```
-
-This is the first point at which a feature-by-feature group summary is
-well-defined. The grey profiles preserve the between-subject variation needed
-for inference; the red line is a descriptive center, not a substitute for
-subject-level uncertainty.
-
-```{r transport-checks, include=FALSE}
-stopifnot(nrow(transported_matrix) == length(toy$B_list))
-stopifnot(ncol(transported_matrix) == ncol(toy$B_list[[1]]))
-stopifnot(all(is.finite(transported_matrix)))
-stopifnot(stats::sd(as.vector(transported_matrix)) > 0)
-```
-
-Transport quality depends on the features, masses, mapper, and reference
-choice. Inspect mapper diagnostics and repeat defensible sensitivity analyses;
-a successful matrix multiplication is not evidence that parcels are
-biologically homologous.
+For the complete path—independent kernel-image features, held-out reference
+selection, a group functional template, aligned subject rows, inference, and
+rendering—continue with `vignette("dkge-functional-alignment")`. The key output
+there is an `S` by `Q` matrix for each contrast: subjects are the inference
+units, and columns are locations on one identified support.
 
 ## What should you save and report?
 
@@ -372,11 +323,13 @@ For a reproducible analysis, retain:
   chosen rank;
 - the identity-versus-structured comparison;
 - cross-fitting folds or LOSO specification;
-- cluster coordinates, masses, mapper settings, medoid choice, and transport
+- cluster coordinates, masses, typed feature provenance, mapper settings,
+  reference-selection criterion, template trajectory, and transport
   diagnostics; and
 - the inference unit and multiplicity procedure for every reported claim.
 
 Continue with `vignette("dkge-concepts")` for the fitted moment and inference
 levels, `vignette("dkge-contrasts-inference")` for uncertainty, and
-`vignette("dkge-weighting")` for the distinct roles of spatial, effect,
-subject, and transport weights.
+`vignette("dkge-functional-alignment")` for cross-subject correspondence.
+`vignette("dkge-weighting")` distinguishes spatial, effect, subject, and
+transport weights.

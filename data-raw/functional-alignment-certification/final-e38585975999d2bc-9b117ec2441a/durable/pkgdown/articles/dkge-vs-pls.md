@@ -1,0 +1,176 @@
+# DKGE versus Partial Least Squares
+
+You are choosing between DKGE and PLS for a study, and the two answer
+different questions from different inputs. “PLS” names several related
+methods, and implementation choices matter, so the summary here follows
+the neuroimaging accounts of [McIntosh and Lobaugh
+(2004)](https://doi.org/10.1016/j.neuroimage.2004.07.020) and [Krishnan
+et al. (2011)](https://doi.org/10.1016/j.neuroimage.2010.07.034).
+
+This page compares what each method estimates and what each requires as
+input. It does not benchmark accuracy or power.
+
+------------------------------------------------------------------------
+
+## What classical PLS does
+
+Classical PLS builds latent variables that maximize the covariance
+between an exogenous block, such as task design or behavior, and a
+brain-data block of elements by time.
+
+Four **variants** answer different questions: task PLS analyzes
+condition differences, behavior PLS examines brain-behavior coupling,
+seed PLS investigates connectivity, and spatiotemporal PLS treats space
+and time jointly.
+
+The **computational workflow** is: 1. Data are arranged as one matrix
+$`M \in \mathbb{R}^{(n k) \times (m t)}`$, observations by measurements.
+2. Cross-block covariance is formed against an orthonormal design
+matrix, then decomposed by SVD. 3. Element and time saliences, design
+saliences, and singular values are extracted. 4. Brain scores
+$`B = M U`$ and design scores $`D = C V`$ characterize the patterns. 5.
+Behavior PLS replaces the design block with behavior matrices and
+correlates them per group.
+
+**Inference** is by resampling: permutation for LV significance,
+bootstrap for salience reliability, and Procrustes alignment to
+stabilize resampled LVs.
+
+The method targets whole-pattern effects and time-resolved couplings,
+using resampling rather than a parametric null.
+
+## How DKGE relates
+
+Both methods construct compact latent representations, but they begin
+from different objects. Classical task or behavior PLS constructs a
+cross-block matrix linking a design/behavior block to brain
+measurements. DKGE pools subject-level GLM effect moments and applies an
+explicit effect-space kernel. The table records implemented differences;
+it does not establish that one method is generally more accurate or more
+stable.
+
+The word *salience* also refers to different objects here. In PLS, brain
+and design saliences are singular vectors of the cross-block matrix. In
+DKGE, the effect-space salience of a component is $`K U`$: the fitted
+component direction $`U`$ expressed through the design kernel $`K`$.
+
+## When the objectives give different answers
+
+The following construction isolates the difference before any
+implementation detail can obscure it. Six subjects share a coherent
+effect of magnitude 2. A second effect is twice as large within every
+subject but alternates sign across subjects. A task-mean PLS SVD sees
+the cross-subject mean, so the second effect cancels. DKGE pools each
+subject’s second moment, so its squared energy does not cancel and the
+second effect leads.
+
+``` r
+subject_sign <- rep(c(-1, 1), 3)
+effect_names <- c("coherent", "sign_varying")
+
+beta_list <- lapply(subject_sign, function(sign) {
+  beta <- diag(c(2, 4 * sign))
+  dimnames(beta) <- list(effect_names, c("feature1", "feature2"))
+  beta
+})
+
+subjects <- lapply(seq_along(beta_list), function(i) {
+  design <- diag(2)
+  colnames(design) <- effect_names
+  dkge_subject(beta_list[[i]], design = design, id = paste0("sub", i))
+})
+```
+
+The PLS calculation below is the SVD of the task-mean beta matrix,
+written directly so the example needs no PLS package. The DKGE fit uses
+an identity kernel and disables adaptive and subject weighting, leaving
+the pooled second-moment objective as the only source of the difference.
+
+``` r
+mean_beta <- Reduce(`+`, beta_list) / length(beta_list)
+pls_direction <- svd(mean_beta, nu = 2, nv = 0)$u[, 1]
+
+fit_difference <- dkge(
+  subjects,
+  K = diag(2),
+  rank = 2,
+  w_method = "none",
+  effect_scaling = "none",
+  weights = dkge_weights(adapt = "none")
+)
+dkge_direction <- fit_difference$U[, 1]
+
+data.frame(
+  method = c("task-mean PLS", "DKGE"),
+  coherent = abs(c(pls_direction[1], dkge_direction[1])),
+  sign_varying = abs(c(pls_direction[2], dkge_direction[2]))
+)
+#>          method coherent sign_varying
+#> 1 task-mean PLS        1            0
+#> 2          DKGE        0            1
+```
+
+The methods return orthogonal leading directions because they answer
+different questions: coherent mean signal versus average within-subject
+second-moment energy. This is an estimand example, not a power
+comparison; neither answer is better without first deciding which
+quantity the study is meant to recover.
+
+| Aspect | Partial Least Squares | DKGE |
+|----|----|----|
+| Latent-space construction | SVD on cross-block covariance between design/behavior and brain data; columns of $`U`$ and $`V`$ are saliences. | Eigen-decomposition of a design-kernel-weighted covariance, producing orthonormal components $`U`$. |
+| Design information | Specified through the exogenous/design block; the exact coding and available structure depend on the PLS variant. | Explicit design kernel $`K`$ encodes factorial structure, smoothness, or prior correlations among effects. |
+| Data normalisation | Conditions averaged or mean-centred before SVD; each voxel treated equally. | Row standardisation of subject betas using the pooled design Cholesky factor; optional spatial/reliability weights $`\Omega_s`$. |
+| Cross-validation | Classical neuroimaging workflows commonly use permutation for LV significance and bootstrap for salience stability; predictive cross-validation can be added but is not the same estimand. | LOSO / K-fold cross-fitting (`dkge_contrast`); typed aligned-map inference and bootstrap with validated correspondence receipts. Rank-truncated cohort-trained routes are labelled approximate and require explicit opt-in. |
+| Transport / alignment | Outputs latent scores; spatial interpretation relies on the original voxel grid. | Provides barycentric kNN and Sinkhorn transports, anchor graphs, and voxel decoders for consistent spatial maps across parcellations. |
+| Reliability weighting | Baseline formulations often use uniform observation weights; weighted, sparse, and regularized PLS variants also exist. | Subject- and cluster-level reliabilities enter directly (e.g. sizes, inverse variances), influencing fits and transport. |
+| Spatiotemporal support | ST-PLS handles time by stacking features. | DKGE works on any GLM-derived beta blocks; temporal modelling is delegated to the design matrix and optional kernels. |
+| Implementation focus | Exploratory LVs; complementary to other analyses. | Integrated workflow for group GLM analysis, transport, and inference tailored to fMRI/ERP pipelines. |
+
+## Similarities worth noting
+
+The two share a mathematical core. Both use SVD or eigendecomposition to
+obtain orthogonal latent patterns and scores.
+
+Both rest on resampling, implemented differently: PLS permutes and
+bootstraps directly; DKGE cross-fits and then resamples the held-out
+fields.
+
+Both require reading latent loadings or saliences alongside subject
+scores to see what a component means.
+
+## Which method matches the question?
+
+Choose a PLS formulation when the target quantity is cross-block
+covariance between a brain block and an experimental or behavioral block
+and the chosen PLS implementation supplies the resampling procedure you
+need. Choose DKGE when the inputs are already subject-level GLM beta
+matrices, the scientific model requires an explicit effect-space metric,
+or subject-specific parcellations must be transported before
+feature-level summaries.
+
+These are workflow distinctions, not demonstrated performance
+advantages. DKGE’s cross-fitting addresses basis reuse only when the
+selected mode actually refits the basis; reliability weights help only
+when their construction is defensible; and spatial transport is useful
+only when its features and mapper support plausible correspondence.
+Conversely, the table does not cover the many sparse, regularized,
+predictive, or multilevel PLS variants.
+
+For an empirical comparison, prespecify one estimand, fit both methods
+to the same analysis units, use identical outer resampling splits, and
+compare a held-out metric with uncertainty. Do not infer superiority
+from the fact that one package exposes a helper that the other workflow
+leaves to the analyst.
+
+## Where to go next
+
+- [`vignette("dkge-concepts")`](https://bbuchsbaum.github.io/dkge/articles/dkge-concepts.md)
+  sets out what each DKGE analysis licenses you to claim, which is the
+  question this comparison keeps returning to.
+- [`vignette("dkge-design-kernels")`](https://bbuchsbaum.github.io/dkge/articles/dkge-design-kernels.md)
+  covers the kernel that gives DKGE its metric, and which classical PLS
+  has no analogue for.
+- [`vignette("dkge-contrasts-inference")`](https://bbuchsbaum.github.io/dkge/articles/dkge-contrasts-inference.md)
+  is the inference route for a prespecified effect, where PLS would
+  resample the latent variable instead.

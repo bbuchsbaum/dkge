@@ -2,7 +2,7 @@
 % Please edit documentation in R/dkge-transport.R
 \name{dkge_transport_loadings_to_medoid}
 \alias{dkge_transport_loadings_to_medoid}
-\title{Transport component loadings to a medoid parcellation}
+\title{Transport component loadings for legacy descriptive display}
 \usage{
 dkge_transport_loadings_to_medoid(
   fit,
@@ -38,8 +38,8 @@ When \code{NULL}, defaults to Sinkhorn with the supplied parameters.}
 \item{method}{Mapper strategy (\code{"sinkhorn"}, \code{"ridge"}, or \code{"ols"}). The
 legacy \code{"sinkhorn_cpp"} name is a deprecated alias for \code{"sinkhorn"}.}
 
-\item{transport_cache}{Optional cache from \code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}. When
-supplied, cached operators are reused for all components.}
+\item{transport_cache}{Optional fitted alignment from
+\code{\link[=dkge_prepare_transport]{dkge_prepare_transport()}}. Reuse requires exact structural fingerprints.}
 
 \item{...}{Additional parameters passed when building the default mapper
 specification (e.g. \code{epsilon}, \code{lambda_emb}).}
@@ -50,5 +50,8 @@ List with \code{group} (medoid cluster vectors per component),
 reused for future calls).
 }
 \description{
-Transport component loadings to a medoid parcellation
+This compatibility helper learns correspondence from full-fit component
+loadings and is therefore descriptive/ineligible. It cannot supply an
+inferential alignment. New workflows should build typed alignment features
+and call \code{\link[=dkge_prepare_alignment]{dkge_prepare_alignment()}}.
 }

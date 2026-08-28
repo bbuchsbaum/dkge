@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "status": "invalidated",
+  "started_at_utc": "2026-08-27 14:44:25 UTC",
+  "protocol_id": "dkge-functional-alignment-certification-v4",
+  "run_id": "court-17e10ec404ab7758-20e29b85364e",
+  "source_tree_sha256": "17e10ec404ab7758ada4591522ec415a98cc6c93e7a203d0ba6b42ac9aee066f",
+  "protocol_sha256": "728a40762eeeca517760452d854cf2a870ba299cad05d77366f7afb43acd4cba",
+  "protocol_v4_sha256": "728a40762eeeca517760452d854cf2a870ba299cad05d77366f7afb43acd4cba",
+  "protocol_v3_sha256": "f2b843c630ec2166a152b306938b105e42a9e06203fc0cd50e3855d343d78dc7",
+  "protocol_v3_supersession_sha256": "9e29eeb8d58da95e30eafe4818361bad7b1e44b51dbac5ee074b46dce4be0f16",
+  "court_harness_bundle_sha256": "20e29b85364ec73df7a0ba218f984908d333b07e9f7905399ef269b6c3c18e2b",
+  "v2_historical_evidence_bundle_sha256": "ba8afb6e29f53fd705646086a9eaabcaff161c4793ea0b71eb591332281e8cfa",
+  "formal_completed_at_utc": "2026-08-27 15:43:03 UTC",
+  "outputs": {
+    "formal_complete": {
+      "formal_budget": "c553e88d2e8a4876063b92fab74d1ebc4aa88dc5feea3ac54fb2bee523034052",
+      "formal_grid": "c22e927a5c1eec8e4f3f693c6677fac79dc274f5b5954bb9f7b7c7a242fa8e76",
+      "formal_raw": "dee3246a946fc5b8398d45f75f32cff29c2f7fce0eeb1d1ce7535d5ddfc6bd74",
+      "formal_summary": "3c4c9d35aafc8e48faf9672639c9a94640a62b4d149a5469e4c7b17ea2f43d0b",
+      "formal_inflation_flags": "76a3889e433cdfb64fcbd1286c0d5e1d0ef7d52c4d5f3802b99388f56154920c",
+      "latent_span_model": "688de52819efd16838a75bc1043a8f3b8ca17f0ecacf17c06c53cd2eeb279952",
+      "formal_manifest": "6fb6d42892d3af7134f5cf8f335011f01153ba44ebc1ad48b9914668d0c344ee"
+    }
+  },
+  "invalidated_at_utc": "2026-08-27 15:46:41 UTC",
+  "condition": {
+    "classes": [
+      "dkfa_candidate_source_drift"
+    ],
+    "message": "Live candidate source changed after the v4 court started and before analysis; formal outputs are retained but are inadmissible for certification.",
+    "source_tree_sha256_at_start": "17e10ec404ab7758ada4591522ec415a98cc6c93e7a203d0ba6b42ac9aee066f",
+    "source_tree_sha256_at_detection": "1cff0f30bf445c21078cbf64adc316ed50b7aa995059c043f2f10f9fdb017136",
+    "analysis_started": false,
+    "statistical_outputs_inspected": false
+  }
+}

@@ -120,7 +120,8 @@ test_that("as.data.frame.dkge_inference returns data.frame class", {
                           method = "analytic",
                           inference = "parametric",
                           correction = "none",
-                          n_perm = 10)
+                          n_perm = 10,
+                          allow_approximate_alignment = TRUE)
 
   df <- as.data.frame(infer_obj)
 
@@ -134,7 +135,8 @@ test_that("as.data.frame.dkge_inference has expected columns", {
                           method = "analytic",
                           inference = "parametric",
                           correction = "none",
-                          n_perm = 10)
+                          n_perm = 10,
+                          allow_approximate_alignment = TRUE)
 
   df <- as.data.frame(infer_obj)
 
@@ -151,7 +153,8 @@ test_that("as.data.frame.dkge_inference has no NA statistics", {
                           method = "analytic",
                           inference = "parametric",
                           correction = "none",
-                          n_perm = 10)
+                          n_perm = 10,
+                          allow_approximate_alignment = TRUE)
 
   df <- as.data.frame(infer_obj)
 
@@ -210,10 +213,13 @@ test_that("as.data.frame.dkge_classification summary has expected columns", {
 test_that("print methods are registered in S3 method table", {
   # Get all registered print methods for dkge classes
   print_methods <- methods(print)
-  dkge_print_methods <- print_methods[grepl("^print\\.dkge_", print_methods)]
+  dkge_print_methods <- print_methods[
+    grepl("^print\\.dkge(?:_|$)", print_methods, perl = TRUE)
+  ]
 
   # Verify key print methods exist
   expected_methods <- c(
+    "print.dkge",
     "print.dkge_classification",
     "print.dkge_classification_spec",
     "print.dkge_contrast_validated",
@@ -313,7 +319,9 @@ test_that("generic dispatch for as.data.frame works correctly", {
 
   # as.data.frame.dkge_inference dispatch
   infer_obj <- dkge_infer(fixture$fit, contrasts, method = "analytic",
-                          inference = "parametric", correction = "none", n_perm = 10)
+                          inference = "parametric", correction = "none",
+                          n_perm = 10,
+                          allow_approximate_alignment = TRUE)
   expect_s3_class(infer_obj, "dkge_inference")
   df <- as.data.frame(infer_obj)
   expect_s3_class(df, "data.frame")

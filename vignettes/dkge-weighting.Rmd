@@ -27,8 +27,10 @@ vignette: |
 
 ```{r setup, include=FALSE}
 if (requireNamespace("ragg", quietly = TRUE)) knitr::opts_chunk$set(dev = "ragg_png")
-if (requireNamespace("systemfonts", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) albersdown::albers_register_fonts()
-if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("albersdown", quietly = TRUE)) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
+has_albers_v2 <- requireNamespace("albersdown", quietly = TRUE) &&
+  utils::packageVersion("albersdown") >= base::package_version("2.0.0")
+if (requireNamespace("systemfonts", quietly = TRUE) && has_albers_v2) albersdown::albers_register_fonts()
+if (requireNamespace("ggplot2", quietly = TRUE) && has_albers_v2) ggplot2::theme_set(albersdown::theme_albers(family = params$family, preset = params$preset))
 library(dkge)
 library(ggplot2)
 
@@ -334,6 +336,17 @@ stopifnot(!isTRUE(all.equal(fit_energy$weights, fit_size$weights)))
 `w_tau` shrinks extreme weights toward equal subject contributions, which
 matters most when one subject would otherwise dominate.
 
+These are **pooled-moment weights**: they determine how strongly each beta
+block contributes to the DKGE eigensolve. Cross-fitted folds re-normalize the
+stored raw MFA/energy scores over the training subjects and then reapply
+`w_tau`; a held-out subject therefore cannot change the training fold's weight
+scale. They are not automatically reused as inverse-variance weights in a
+one-sample group test. Any group-level subject weighting is a separate
+estimand. Current `dkge_infer_aligned()` inference supports equal-subject
+weighting only. Explicit fixed weights may be recorded for descriptive
+rendering and conditional projected-bootstrap summaries, but they are not a
+calibrated weighted group test.
+
 ## Weighting During Transport
 
 Transport takes its own `sizes` argument. It mirrors `omega` but acts at a
@@ -343,25 +356,25 @@ sizes there keeps the medoid representation faithful to parcel surface area.
 ```{r transport-weighting}
 fit_mfa$centroids <- centroids  # attach for transport helpers; pass explicitly in production
 
-comp_equal <- dkge_component_stats(
+comp_equal <- suppressWarnings(dkge_component_stats(
   fit_mfa,
   mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, max_iter = 2000),
   centroids = centroids,
-  inference = list(type = "parametric"),
+  inference = NULL,
   medoid = 1L
-)
+))
 
-comp_weighted <- dkge_component_stats(
+comp_weighted <- suppressWarnings(dkge_component_stats(
   fit_mfa,
   mapper = dkge_mapper_spec("sinkhorn", epsilon = 0.05, max_iter = 2000),
   centroids = centroids,
   sizes = cluster_sizes,
-  inference = list(type = "parametric"),
+  inference = NULL,
   medoid = 1L
-)
+))
 
-data.frame(equal = head(comp_equal$summary$stat),
-           size_weighted = head(comp_weighted$summary$stat))
+data.frame(equal = head(comp_equal$summary$mean),
+           size_weighted = head(comp_weighted$summary$mean))
 ```
 
 ```{r transport-weighting-checks, include=FALSE}
@@ -369,19 +382,22 @@ n_medoid <- P[[1]]
 stopifnot(nrow(comp_equal$summary) == n_medoid * fit_mfa$rank)
 stopifnot(nrow(comp_weighted$summary) == n_medoid * fit_mfa$rank)
 stopifnot(ncol(comp_equal$transport[[1]]) == n_medoid)
-stopifnot(!isTRUE(all.equal(comp_equal$summary$stat, comp_weighted$summary$stat)))
+stopifnot(!isTRUE(all.equal(comp_equal$summary$mean, comp_weighted$summary$mean)))
 ```
 
-Reweighting during transport shifts the medoid summary even when the component
-scores are identical, because it changes how cluster values are pooled onto
-the reference parcellation.
+This deprecated component helper is descriptive only: it has no p-values or
+significance fields. Supplying `sizes` changes the displayed reference-support
+means because parcel mass changes the transport plan. Group subject weighting
+remains equal unless fixed weights are declared in a typed aligned-map object.
 
 ## What to check before reporting
 
 Construct subjects with `dkge_subject()`: weights stay attached to the data
-through pipelines and streaming loaders. For voxelwise analyses, pass cluster
-sizes to `dkge_transport_to_voxels()` via `sizes`, or volumetric weighting is
-lost in the mapping.
+through pipelines and streaming loaders. In the legacy descriptive voxel
+mapper, pass cluster sizes to `dkge_transport_to_voxels()` via `sizes`, or
+volumetric weighting is lost. That helper learns from full-fit loadings and
+does not produce typed inferential alignment; use the functional-alignment
+workflow for group statistics.
 
 Keep vectors positive and add a mild ridge such as `+ 1e-6` to covariance
 matrices. Revisit each fit's `weights`, singular values, and eigenspectra

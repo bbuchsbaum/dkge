@@ -3,8 +3,6 @@
 
 library(testthat)
 
-skip_if_no_T4transport()
-
 compare_sinkhorn <- function(C, mu, nu, epsilon, max_iter = 5000, tol = 1e-12) {
   ours <- dkge:::.dkge_sinkhorn_plan(C, mu, nu, epsilon = epsilon, max_iter = max_iter, tol = tol)
   ref <- T4transport::sinkhornD(C, p = 1, wx = mu, wy = nu, lambda = epsilon,
@@ -13,6 +11,7 @@ compare_sinkhorn <- function(C, mu, nu, epsilon, max_iter = 5000, tol = 1e-12) {
 }
 
 test_that("Sinkhorn plan matches T4transport for simple Gaussian blobs", {
+  skip_if_no_T4transport()
   set.seed(123)
   X <- matrix(rnorm(3 * 2), 3, 2)
   Y <- matrix(rnorm(4 * 2) + 0.1, 4, 2)
@@ -30,6 +29,7 @@ test_that("Sinkhorn plan matches T4transport for simple Gaussian blobs", {
 })
 
 test_that("Sinkhorn plan matches T4transport with non-uniform weights", {
+  skip_if_no_T4transport()
   set.seed(456)
   X <- matrix(runif(5 * 3), 5, 3)
   Y <- matrix(runif(6 * 3) + 0.3, 6, 3)
@@ -53,7 +53,7 @@ test_that("spatial penalty biases Sinkhorn plan toward nearby targets", {
   target_xyz <- matrix(c(0, 0, 4, 0), ncol = 2, byrow = TRUE)
 
   spec <- dkge_mapper_spec("sinkhorn", lambda_emb = 0, lambda_spa = 1, sigma_mm = 1,
-                           epsilon = 0.1, max_iter = 500)
+                           epsilon = 0.1, max_iter = 5000)
   mapping <- fit_mapper(spec, source_feat = source_feat, target_feat = target_feat,
                         source_xyz = source_xyz, target_xyz = target_xyz)
   plan <- mapping$operator

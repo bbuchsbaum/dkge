@@ -1,0 +1,2 @@
+"n_sim","n_perm","predicted_seconds","seconds_per_exact_perm","resource_limited","exact_cells"
+24,31,4563.324,0.4089,TRUE,6

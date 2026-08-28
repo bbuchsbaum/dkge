@@ -1,0 +1,34 @@
+{
+  "gate": "full_source_test_suite",
+  "passed": true,
+  "source_tree_sha256": "6d6c84f34e5b7e7bd7952ef14a8c4f1c950e6a51cd8d7afcd59a5c786732ed44",
+  "test_validation_tree_sha256": "97bb2838d876691350525502b3e21245cfa1dd1da6eac0183d36296c1ad491ea",
+  "test_blocks": 795,
+  "expectations": 3536,
+  "failed": 0,
+  "warnings": 18,
+  "skipped": 4,
+  "elapsed_seconds": 137.4,
+  "optional_backends": {
+    "future": true,
+    "future.apply": true,
+    "T4transport": false,
+    "neuralign": true,
+    "patchwork": true,
+    "ragg": true,
+    "pkgdown": true
+  },
+  "skip_classification": {
+    "long_between_subject_null": "opt-in DKGE_LONG_TESTS; unrelated to alignment candidate",
+    "future_apply_absence_branch": "installed backend makes absence-only branch inapplicable",
+    "T4transport": "not installed; optional comparison backend skip",
+    "long_weight_null": "opt-in DKGE_LONG_TESTS; unrelated to alignment candidate"
+  },
+  "warning_classification": {
+    "expected_model_diagnostics": "rank reduction, degenerate classification target, reduced-rank input, and intentionally strict Sinkhorn convergence comparator warnings",
+    "optional_plot_backend": "installed",
+    "environment": "locale and package-built-under-version messages are external to DKGE"
+  },
+  "R": "R version 4.5.1 (2025-06-13)",
+  "platform": "aarch64-apple-darwin20"
+}
